@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "C-dependencies"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "npm"
+    directory: "/bluebird-hmi"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "C-dependencies"    
+    cooldown:
+      default-days: 7
+
