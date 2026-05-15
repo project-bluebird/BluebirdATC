@@ -23,10 +23,10 @@ To bridge the motivation and technical design, most importantly if this is a lar
 - Explaining the feature largely in terms of examples.
 - Explaining how both users should *think* about the feature.
 
-# Drawbacks
+# Potential drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+Why might we *not* want to do this?
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -36,4 +36,4 @@ What parts of the design are not clear and you believe remain to be discussed pr
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal. This is a good place to dump ideas of what this feature could enable.
+Think about what the natural extension and evolution of your proposal is. This is a good place to dump ideas of what this feature could enable.
