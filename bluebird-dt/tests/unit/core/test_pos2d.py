@@ -1,5 +1,5 @@
 import pytest
-import core_conftest as vt
+from . import core_conftest as vt
 
 from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.core.pos3d import Pos3D

@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 import pytest
-from conftest import make_random_aircraft
+from .conftest import make_random_aircraft
 
 from bluebird_dt.core import Environment
 from bluebird_dt.core.coordination import Coordination

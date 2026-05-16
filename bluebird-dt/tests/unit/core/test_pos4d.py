@@ -1,4 +1,4 @@
-import core_conftest as vt
+from . import core_conftest as vt
 import pytest
 import numpy as np
 

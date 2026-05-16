@@ -11,7 +11,7 @@ import tarfile
 import io
 from bluebird_dt.utility.logging_utils import (save_df_to_parquet_tar)
 import pandas as pd
-from conftest import make_random_coordination
+from .conftest import make_random_coordination
 
 @pytest.mark.parametrize(
     "callsign, from_sector, to_sector, fl, fix, direction, level_by, level_by_details, secondary_coord_conditions, the_datetime",

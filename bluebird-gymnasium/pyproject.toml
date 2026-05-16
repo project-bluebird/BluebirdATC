@@ -27,7 +27,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-bluebird-dt = {path = "../bluebird-dt", editable = true}
+bluebird-dt = { workspace = true, editable = true}
 
 [tool.ruff]
 extend-exclude = ["*.ipynb", "tests/*"]

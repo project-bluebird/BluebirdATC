@@ -12,7 +12,7 @@ from bluebird_dt.events.event_handler import (
 from bluebird_dt.events.event_logger import EventLogger
 from bluebird_dt.events.event_dtypes import EventDtypes
 from bluebird_dt.core import Aircraft, Coordination, Environment, WindField
-from conftest import (
+from .conftest import (
     pick_random_next_sector, build_default_test_df, is_deeply_equal, setup_test_sim, get_to_and_from_sectors, 
     build_test_df_for_multiple_ac, build_coordination_test_df
 )
