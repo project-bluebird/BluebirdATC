@@ -38,21 +38,13 @@ jobs:
       - name: Display Python version
         run: uv run python -c "import sys; print(sys.version)"
 
-      - name: Check linting for bluebird-dt
-        working-directory: ./bluebird-dt/bluebird_dt
+      - name: Check linting
         run: |
-          for dir in ./core/ \
-                     ./utility/ ; do
-            uv run ruff check --output-format=github $dir
-          done
+          uv run ruff check --output-format=github
 
-      - name: Check formatting for bluebird-dt
-        working-directory: ./bluebird-dt/bluebird_dt
+      - name: Check formatting
         run: |
-          for dir in ./core/ \
-                     ./utility/ ; do
-            uv run ruff format --check --diff $dir
-          done
+          uv run ruff format --check --diff
 
       - name: Check testing
         run: |
