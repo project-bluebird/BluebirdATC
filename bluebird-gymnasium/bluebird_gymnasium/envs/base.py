@@ -84,16 +84,6 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.core.predictors import Predictor
 
     from bluebird_gymnasium.envs import (
-        ActionConfig,
-        AirspaceConfig,
-        Config,
-        ForwardFixesConfig,
-        RadarConfig,
-        RewardConfig,
-        ScenarioConfig,
-        SimulationLogConfig,
-        StateReprConfig,
-        ViewConfig,
         ObsType,
         RewardType,
         DoneType,
@@ -323,7 +313,7 @@ class BaseEnv(gym.Env):
                     _vp_config[k] = _vp_default[k]
             self.config.view_config["centralized_params"] = _vp_config
 
-            if not (_vp_config["sample_strategy"] in CentralizedSampler):
+            if _vp_config["sample_strategy"] not in CentralizedSampler:
                 _msg = (
                     "'sample_strategy' in 'view_config' should set "
                     "to one of the following: {0}"
@@ -3048,21 +3038,6 @@ class BaseEnv(gym.Env):
 
         for callsign in self.simulator_env.aircraft:
             self.simulator_env.aircraft[callsign].on_route = False
-
-    def save_simulation_logs(self) -> None:
-        """Save the logs of the simulation.
-
-        Save the logs of the simulation based on the history of the events
-        and aircraft trajectory in the simulation. The operation is based on
-        the underlying save operation defined in simulator which saves the logs
-        to disk as csv and parquet files. The logs are saved to the simulator's
-        log directory.
-
-        The saved files can be analyzed and used to replay the simulation
-        (example, replay via the HMI).
-        """
-
-        pass
 
     def set_radar(self) -> None:
         """Configure the radar for the simulator visualisation."""

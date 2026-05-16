@@ -8,9 +8,6 @@ from dataclasses import dataclass
 from numpy.typing import NDArray
 from typing import TypeAlias
 
-from bluebird_dt.core.pos2d import Pos2D
-from bluebird_gymnasium.utils.types import PositionStatus
-
 ActionConfig: TypeAlias = dict[str, bool | list[int]]
 AirspaceConfig: TypeAlias = dict[str, None | bool | str | list]
 ForwardFixesConfig: TypeAlias = dict[str, bool | int]
@@ -172,6 +169,7 @@ SCENARIO_CLS: dict[str, ScenarioManager] = {
 
 # now envs module imports
 from bluebird_gymnasium.envs.base import BaseEnv
+from bluebird_gymnasium.envs.infinite import CustomInfiniteEnv, InfiniteEnv
 from bluebird_gymnasium.envs.sector_i import SectorIEnv
 from bluebird_gymnasium.envs.sector_x import SectorXEnv
 from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv
@@ -180,6 +178,8 @@ from bluebird_gymnasium.envs.springfield import SpringfieldEnv
 
 registry_env: dict[str, BaseEnv] = {
     "base": BaseEnv,
+    "CustomInfiniteEnv-v0": CustomInfiniteEnv,
+    "InfiniteEnv-v0": InfiniteEnv,
     "SectorIEnv-v0": SectorIEnv,
     "SectorXEnv-v0": SectorXEnv,
     "SectorXPlusEnv-v0": SectorXPlusEnv,
@@ -188,6 +188,8 @@ registry_env: dict[str, BaseEnv] = {
 }
 
 name_to_gym_key: dict[str, str] = {
+    "CustomInfiniteEnv-v0": "custom_infinite",
+    "InfiniteEnv-v0": "infinite",
     "SectorIEnv-v0": "sector_i",
     "SectorXEnv-v0": "sector_x",
     "SectorXPlusEnv-v0": "sector_xplus",
@@ -241,6 +243,8 @@ def get_env_cls_and_config(env_name):
 
 __all__ = [
     "BaseEnv",
+    "CustomInfiniteEnv",
+    "InfiniteEnv",
     "SectorIEnv",
     "SectorXEnv",
     "SectorXPlusEnv",

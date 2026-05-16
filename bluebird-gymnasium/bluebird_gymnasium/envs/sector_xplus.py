@@ -1,12 +1,11 @@
 from __future__ import annotations
 import datetime
-import os
 import typing
 
 # simulator package
 from bluebird_dt.airspace_generator import SectorXPlus
 from bluebird_dt.utility.geo_helper import GeoHelper
-from bluebird_dt.predictor import SimplePredictor
+from bluebird_dt.predictor import LinearPredictor
 
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import (
@@ -21,21 +20,8 @@ from bluebird_gymnasium.envs.base import BaseEnv
 from bluebird_gymnasium.utils.constants import (
     DEFAULT_RENDER_DIR,
 )
-from bluebird_gymnasium.utils.constants import SIMULATION_LOG_DIR as REPLAY_DIR
 
 if typing.TYPE_CHECKING:
-    from bluebird_gymnasium.envs import (
-        ActionConfig,
-        AirspaceConfig,
-        Config,
-        ForwardFixesConfig,
-        RadarConfig,
-        RewardConfig,
-        ScenarioConfig,
-        SimulationLogConfig,
-        StateReprConfig,
-        ViewConfig,
-    )
     from bluebird_dt.simulator import Simulator
 
 
@@ -116,7 +102,7 @@ class SectorXPlusEnv(BaseEnv):
         ####### trajectory predictor (world model)
         # trajectory predictor for computing an estimated
         # future (rollout) trajectories. used in safety reward functions.
-        self.rollout_predictor = SimplePredictor(
+        self.rollout_predictor = LinearPredictor(
             dt=12,
             fix_proximity_threshold=2.0,
             fixes=airspace.fixes,
@@ -127,7 +113,7 @@ class SectorXPlusEnv(BaseEnv):
         if len(airspace_sectors) == 1 and airspace_sectors[0] == "sector_xplus":
             self.active_airspace_sector = airspace_sectors[0]
         else:
-            raise Value("Could not initialise sector")
+            raise ValueError("Could not initialise sector")
 
         ####### reset env
         self.reset()
@@ -180,7 +166,6 @@ class SectorXPlusEnv(BaseEnv):
 
         # airspace
         airspace_height = 120  # nautical miles
-        airspace_width = 40  # nautical miles
 
         # radar
         ## relative scale: for adjusting airspace and aircraft size
