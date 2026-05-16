@@ -60,7 +60,7 @@ decorator==5.2.1
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-docutils==0.21.2
+docutils==0.22.4
     # via
     #   sphinx
     #   sphinx-rtd-theme
@@ -193,7 +193,7 @@ markupsafe==3.0.3
     #   nbconvert
 matplotlib==3.10.9
     # via bluebird-dt
-matplotlib-inline==0.2.1
+matplotlib-inline==0.2.2
     # via
     #   ipykernel
     #   ipython
@@ -369,7 +369,7 @@ sphinx==8.2.3
     #   bluebird-gymnasium (pyproject.toml:dev)
     #   sphinx-rtd-theme
     #   sphinxcontrib-jquery
-sphinx-rtd-theme==3.0.2
+sphinx-rtd-theme==3.1.0
     # via bluebird-gymnasium (pyproject.toml:dev)
 sphinxcontrib-applehelp==2.0.0
     # via sphinx
@@ -391,7 +391,7 @@ terminado==0.18.1
     # via
     #   jupyter-server
     #   jupyter-server-terminals
-tinycss2==1.4.0
+tinycss2==1.5.1
     # via bleach
 tornado==6.5.5
     # via
