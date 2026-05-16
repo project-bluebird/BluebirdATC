@@ -34,7 +34,7 @@
     "ts-node": "^10.9.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.36.0",
+    "@eslint/js": "^10.0.1",
     "@rtk-query/codegen-openapi": "^2.2.0",
     "@types/d3": "^7.4.3",
     "@types/node": "^25.5.0",
