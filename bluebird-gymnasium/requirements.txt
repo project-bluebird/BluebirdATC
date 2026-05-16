@@ -273,7 +273,7 @@ ptyprocess==0.7.0
     #   terminado
 pure-eval==0.2.3
     # via stack-data
-pyarrow==23.0.1
+pyarrow==24.0.0
     # via bluebird-dt
 pycparser==3.0
     # via cffi
