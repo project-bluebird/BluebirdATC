@@ -21,4 +21,4 @@ To see the full list and description of API endpoints, with the application runn
 
 ## Frontend visualisation
 
-The app also serves the frontend visualization (more details on that can be found [here](../bluebird-hmi/README.md)), at the URL [http://localhost:8000/hmi](http://localhost:8000/hmi).
+The app also serves the frontend visualization (more details on that can be found [here](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-hmi/README.md)), at the URL [http://localhost:8000/hmi](http://localhost:8000/hmi).

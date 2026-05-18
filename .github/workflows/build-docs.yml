@@ -1,0 +1,40 @@
+name: Build and deploy documentation to GitHub pages
+
+on:
+  release:
+    types: [published]
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: docs
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: Run docs build script
+        run: bash ./scripts/docs-build
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
