@@ -17,6 +17,10 @@ dependencies = [
   "uvicorn>=0.46.0,<0.47",
 ]
 
+[project.urls]
+Documentation = "http://docs.projectbluebird.ai"
+Repository = "https://github.com/project-bluebird/BluebirdATC"
+
 [dependency-groups]
 dev = [
   "pre-commit>=4.2.0",

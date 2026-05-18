@@ -24,6 +24,10 @@ dev = [
     "ruff>=0.15.11,<0.16",
 ]
 
+[project.urls]
+Documentation = "http://docs.projectbluebird.ai"
+Repository = "https://github.com/project-bluebird/BluebirdATC"
+
 [tool.uv.sources]
 bluebird-dt = { workspace = true }
 
