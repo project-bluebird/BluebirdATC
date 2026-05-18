@@ -1,4 +1,4 @@
-name: Build and deploy documentations to GitHub pages
+name: Build and deploy documentation to GitHub pages
 
 on:
   release:
