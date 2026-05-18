@@ -52,8 +52,8 @@ If you then want to update the built application in Github, first see the CONTRI
 Changes not staged for commit:
   (use "git add/rm <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
-	deleted:    bluebird-api/bluebird_api/hmi/assets/index-<some-random-string>.js
-	modified:   bluebird-api/bluebird_api/hmi/index.html
+	deleted:    ../bluebird-api/bluebird_api/hmi/assets/index-<some-random-string>.js
+	modified:   ../bluebird-api/bluebird_api/hmi/index.html
 
 Untracked files:
   (use "git add <file>..." to include in what will be committed)
@@ -63,7 +63,7 @@ Untracked files:
 You can then do:
 
 ```shell
-git add bluebird-api/bluebird_api/hmi/*
+git add ../bluebird-api/bluebird_api/hmi/*
 git commit -m "update HMI build"
 git push
 ```

@@ -23,6 +23,7 @@ export default defineConfig(({ command}) => ({
     }
   },
   build: {
-    outDir: "../bluebird-api/bluebird_api/hmi"
+    outDir: "../bluebird-api/bluebird_api/hmi",
+    emptyOutDir: true,
   }
 }));
