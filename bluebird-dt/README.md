@@ -49,4 +49,4 @@ then navigating a web browser to `http://localhost:8888` (if it doesn't open aut
 
 ### Running the digital twin as a server.
 
-A FastApi app is included, allowing the simulation to be run as a server, with the user (or an agent) interacting via a REST API.   For information on this, see [here](../bluebird-api/README.md).
+A FastApi app is included, allowing the simulation to be run as a server, with the user (or an agent) interacting via a REST API.   For information on this, see [here](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-api/README.md).

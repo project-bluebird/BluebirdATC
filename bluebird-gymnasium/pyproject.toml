@@ -1,6 +1,6 @@
 [project]
 name = "bluebird-gymnasium"
-version = "0.0.0"
+version = "0.1.0"
 license = "AGPL-3.0-or-later"
 description = "An gymnasium environment for air traffic control."
 authors = [{name="Project Bluebird"}]
@@ -11,7 +11,7 @@ dependencies = [
     "gymnasium>=0.29.1",
     "imageio>=2.37.3,<3",
     "jupyter>=1.1.1,<2",
-    "bluebird-dt",
+    "bluebird-dt==0.1.0",
 ]
 
 # list of extras (optional dependencies)
@@ -23,6 +23,10 @@ dev = [
     "pytest-xdist>=3.8.0,<4.0.0",
     "ruff>=0.15.11,<0.16",
 ]
+
+[project.urls]
+Documentation = "http://docs.projectbluebird.ai"
+Repository = "https://github.com/project-bluebird/BluebirdATC"
 
 [tool.uv.sources]
 bluebird-dt = { workspace = true }

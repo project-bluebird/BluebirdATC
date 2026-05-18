@@ -47,6 +47,10 @@ docs = [
   "tomli>=2.2.1",
 ]
 
+[project.urls]
+Documentation = "http://docs.projectbluebird.ai"
+Repository = "https://github.com/project-bluebird/BluebirdATC"
+
 [tool.hatch.build]
 packages = ["bluebird_dt"]
 

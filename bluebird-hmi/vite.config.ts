@@ -21,5 +21,9 @@ export default defineConfig(({ command}) => ({
       slices: path.resolve(__dirname, "src/slices"),
       utils: path.resolve(__dirname, "src/utils"),
     }
+  },
+  build: {
+    outDir: "../bluebird-api/bluebird_api/hmi",
+    emptyOutDir: true,
   }
 }));
