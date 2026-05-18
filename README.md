@@ -4,7 +4,7 @@ A Digital Twin for use in ATC simulations, and a training environment for AI age
 This repository contains the following packages:
  * `bluebird-dt` - the digital twin.  See [here](bluebird-dt/README.md) for more information. [![PyPI version](https://img.shields.io/pypi/v/bluebird-dt.svg)](https://pypi.org/project/bluebird-dt/)
  * `bluebird-api` - A REST api for the digital twin.  See [here](bluebird-api/README.md) for more information. [![PyPI version](https://img.shields.io/pypi/v/bluebird-api.svg)](https://pypi.org/project/bluebird-api/)
- * `bluebird-gymnasium` - a gym environment for reinforcement learning agents.  See [here](bluebird-gymnasium/README.md) for more details. [![PyPI version](https://img.shields.io/pypi/v/bluebird-gymnasium.svg)](https://pypi.org/project/bluebird-gymnasium/)
+ * `bluebird-gymnasium` - a gym environment for AI agents.  See [here](bluebird-gymnasium/README.md) for more details. [![PyPI version](https://img.shields.io/pypi/v/bluebird-gymnasium.svg)](https://pypi.org/project/bluebird-gymnasium/)
  * `bluebird-hmi` - an optional web-based visualisation package.  See [here](bluebird-hmi/README.md) for details.
   
 ## (AI)r traffic controller challenge
