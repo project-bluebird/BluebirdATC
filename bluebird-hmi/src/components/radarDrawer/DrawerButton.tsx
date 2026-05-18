@@ -1,4 +1,4 @@
-import { MenuItem } from "@mui/material";
+import { MenuItem, MenuList } from "@mui/material";
 import Box from "@mui/material/Box";
 
 interface DrawerButtonProps {
@@ -13,7 +13,8 @@ interface DrawerButtonProps {
 
 export default function DrawerButton(props: DrawerButtonProps) {
     return (
-        <Box display="flex" justifyContent="center" alignItems="center">
+        <Box sx={{display: "flex", justifyContent:"center", alignItems:"center"}}>
+            <MenuList>
             <MenuItem
                 className={"DrawerButton"}
                 onClick={props.onClick}
@@ -26,6 +27,7 @@ export default function DrawerButton(props: DrawerButtonProps) {
             >
                 {props.text}
             </MenuItem>
+            </MenuList>
         </Box>
     );
 }

@@ -11,9 +11,9 @@ interface DrawerSwitchProps {
 
 export default function DrawerSwitch(props: DrawerSwitchProps) {
     return (
-        <Grid container alignItems="center">
+        <Grid container sx={{alignItems:"center"}}>
             <Grid size={1} />
-            <Grid size={8} textAlign="left">
+            <Grid size={8} sx={{textAlign:"left"}}>
                 <Typography
                     sx={{
                         color: props.disabled

@@ -24,16 +24,18 @@ interface PanelButtonProps {
 export default function PanelButton({ text, icon, disabled = false, onClick }: PanelButtonProps) {
     const iconGridWidth = 1.5;
     return (
-        <Grid container spacing={10} justifyContent="center" alignItems="center">
+        <Grid container spacing={10} sx={{ justifyContent: "center", alignItems: "center" }}>
             <Grid size = {{ xs: iconGridWidth}} >
                 <MenuList>
                     <StyledMenuIcon icon={icon} />
                 </MenuList>
             </Grid>
             <Grid size = {{ xs: 12 - 2 * iconGridWidth}}>
+                <MenuList>
                 <StyledMenuItem disabled={disabled} onClick={onClick && onClick}>
                     <ListItemText>{truncateString(text, 100)}</ListItemText>
                 </StyledMenuItem>{" "}
+                </MenuList>
             </Grid>
         </Grid>
     );

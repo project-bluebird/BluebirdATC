@@ -17,8 +17,10 @@ export default function DrawerTime(props: DrawerTimeProps) {
                 noWrap
                 component="div"
                 color={colour}
-                textAlign="center"
-                flexGrow={1}
+                sx={{
+                    textAlign:"center",
+                    flexGrow: 1
+                }}
             >
                 {text ? text : "No scenario running"}
             </Typography>

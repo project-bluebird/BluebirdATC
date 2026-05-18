@@ -1,6 +1,6 @@
 import { Typography } from "@mui/material";
 import FormControl from "@mui/material/FormControl";
-import MenuItem from "@mui/material/MenuItem";
+import {MenuItem, MenuList}  from "@mui/material";
 import Select, { SelectChangeEvent } from "@mui/material/Select";
 import { colourScaleFunctions } from "utils/profiles/ColourScales";
 
@@ -24,9 +24,11 @@ export default function ColourScaleDropdown(props: ColourScaleDropdownProps) {
                 onChange={handleChange}
             >
                 {Object.keys(colourScaleFunctions).map((key) => (
+                    <MenuList>
                     <MenuItem key={key} value={key}>
                         {key.slice(14)}
                     </MenuItem>
+                    </MenuList>
                 ))}
             </Select>
         </FormControl>

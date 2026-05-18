@@ -1,6 +1,6 @@
 import { Box, Typography } from "@mui/material";
 import FormControl from "@mui/material/FormControl";
-import MenuItem from "@mui/material/MenuItem";
+import {MenuItem, MenuList} from "@mui/material";
 import Select, { SelectChangeEvent } from "@mui/material/Select";
 
 interface DrawerBlockDropdownProps<E> {
@@ -29,9 +29,11 @@ export default function DrawerBlockDropdown<E>(props: DrawerBlockDropdownProps<E
                     onChange={handleChange}
                 >
                     {Object.values(props.blockOptions).map((stateOption) => (
+                        <MenuList>
                         <MenuItem key={stateOption} value={stateOption}>
                             {stateOption}
                         </MenuItem>
+                        </MenuList>
                     ))}
                 </Select>
             </FormControl>
