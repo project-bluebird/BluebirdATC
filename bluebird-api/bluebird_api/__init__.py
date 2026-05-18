@@ -41,8 +41,8 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # serve the frontend
-repo_root = Path(__file__).resolve().parents[2]
-dist_path = repo_root / "bluebird-hmi" / "dist"
+package_root = Path(__file__).resolve().parents[1]
+dist_path = package_root / "bluebird_api" / "hmi"
 
 if dist_path.is_dir():
     app.mount("/hmi", StaticFiles(directory=str(dist_path), html=True), name="frontend")
