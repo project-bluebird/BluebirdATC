@@ -35,9 +35,7 @@ export default function PanelInput(props: PanelInputProps) {
     <Grid
       container
       spacing={3}
-      sx = {{ mb: 1.5}}
-      alignItems="center"
-      justifyContent="flex-start"  
+      sx = {{ mb: 1.5, alignItems: "center", justifyContent: "flex-start"}}
     >
       {/* text input */}
       <Grid size={{ xs: 6 }}>

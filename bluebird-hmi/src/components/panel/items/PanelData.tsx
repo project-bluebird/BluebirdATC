@@ -14,7 +14,7 @@ interface PanelDataProps {
 export default function PanelData({ text, icon }: PanelDataProps) {
     const iconGridWidth = 1.5;
     return (
-        <Grid container spacing={0} justifyContent="center" alignItems="center">
+        <Grid container spacing={0} sx={{justifyContent: "center", alignItems: "center"}}>
             <Grid size={iconGridWidth}>
                 <MenuList>
                     <StyledMenuIcon icon={icon} />

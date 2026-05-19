@@ -97,8 +97,8 @@ export default function RadarDrawer(props: RadarDrawerProps) {
     
     return (
         <Drawer
-            PaperProps={{
-                sx: { width: drawerWidth - 3 },
+            slotProps={{
+                paper: { sx: { width: drawerWidth - 3 } },
             }}
             // Apply styles to remove scrollbars
             sx={{

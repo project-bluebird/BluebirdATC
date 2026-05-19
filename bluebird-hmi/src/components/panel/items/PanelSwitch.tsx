@@ -16,7 +16,7 @@ export default function PanelSwitch(props: PanelSwitchProps) {
     const iconGridWidth = 1.5;
 
     return (
-        <Grid container alignItems="center">
+        <Grid container sx={{alignItems: "center"}}>
             <Grid size={iconGridWidth}>
                 <StyledMenuIcon icon={icon} />
             </Grid>

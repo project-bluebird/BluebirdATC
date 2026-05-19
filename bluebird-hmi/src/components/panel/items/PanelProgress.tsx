@@ -9,7 +9,7 @@ interface PanelProgressProps {
 
 export default function PanelProgress(props: PanelProgressProps) {
     return (
-        <Grid container spacing={0} justifyContent="center" alignItems={"center"}>
+        <Grid container spacing={0} sx={{justifyContent:"center", alignItems: "center" }}>
             <Grid size={1}>
                 <MenuList>
                     <CircularProgress />
