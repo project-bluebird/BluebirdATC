@@ -1,4 +1,4 @@
-name: Starling-hmi CI
+name: Bluebird-hmi CI
 
 on:
   workflow_dispatch:
