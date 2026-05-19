@@ -167,10 +167,10 @@ def line_intersection(
 def find_all_boundary_intersections(
     a: np.ndarray | list[float],
     b: np.ndarray | list[float],
-    airspace_or_sector: Airspace | Sector,
+    airspace_or_sector_or_area: Airspace | Sector | Area,
 ) -> list[tuple[np.ndarray, np.ndarray, float]]:
     """
-    Find all intersections between the Airspace/Sector boundary and a line a->b.
+    Find all intersections between the Airspace/Sector/Area boundary and a line a->b.
 
     Parameters
     ----------
@@ -186,10 +186,14 @@ def find_all_boundary_intersections(
         - the line a->b intersects c->d at the location: c + u * (d - c)
         - see `line_intersection()` function for more detail
     """
+    from bluebird_dt.core.area import Area # avoid circular import
 
     # extract the coordinates of the polygon -- note that the
     # attribute .xy consists of two rows: lons and lats
-    v_lons, v_lats = airspace_or_sector.boundary().boundary.exterior.coords.xy  # type: ignore
+    if isinstance(airspace_or_sector_or_area, Area):
+        v_lons, v_lats = airspace_or_sector_or_area.boundary.exterior.coords.xy  # type: ignore
+    else:
+        v_lons, v_lats = airspace_or_sector_or_area.boundary().boundary.exterior.coords.xy  # type: ignore
 
     intersections: list[tuple[np.ndarray, np.ndarray, float]] = []
 
