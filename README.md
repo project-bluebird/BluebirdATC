@@ -29,9 +29,9 @@ With the scenario loaded, the aircraft and sector should now be visible in the r
 ### Quick start examples
 
 Examples for interfacing with the digital twin:
-    - using the gymnasium is available [here](bluebird-gymnasium/README.md#getting-started)
-    - through the REST API is available [here](bluebird-api/README.md#getting-started)
-    - or directly with the digital twin [here](bluebird-dt/README.md#getting-started)
+* using the gymnasium is available [here](bluebird-gymnasium/README.md#getting-started)
+* through the REST API is available [here](bluebird-api/README.md#getting-started)
+* or directly with the digital twin [here](bluebird-dt/README.md#getting-started)
 
 ## Documentation
 
