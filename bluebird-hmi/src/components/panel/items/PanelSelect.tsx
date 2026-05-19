@@ -29,7 +29,11 @@ export default function PanelSelect(props: PanelSelectProps) {
   const iconGridWidth = 1.5;
 
   return (
-    <Grid container spacing={0} justifyContent="left" alignItems="center">
+    <Grid
+      container
+      spacing={0}
+      sx={{ justifyContent: "flex-start", alignItems: "center" }}
+    >
       <Grid size={iconGridWidth}>
         <MenuList>
           <StyledMenuIcon icon={props.icon} />
