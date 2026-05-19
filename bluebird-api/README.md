@@ -17,12 +17,17 @@ uvx bluebird-api@latest
 
 You should then be able to go to [http://localhost:8000](http://localhost:8000) in a web browser, and see the message "Hello, BluebirdATC!".
 
-To see the full list and description of API endpoints, with the application running, go to [http://localhost:8000/docs](http://localhost:8000/docs).
-
 ## Simple agent interfacing though the REST API
 
-Agents can interface with the simulator running as an API.
-The next script is an example of an agent which tells all aircraft, on incomm, to fly to their exit fix and climb directly to their exit flight level without ensuring safety or garanteeing that aircraft will leave the sector.
+Agents can interface with the simulator running behind a REST API, enabling its usage from any programming language.
+
+The next script is an example of an agent in python, which requires bluebird-dt and requests
+
+```bash
+pip install bluebird-dt requests
+```
+
+It tells all aircraft, on incomm, to fly to their exit fix and climb directly to their exit flight level without ensuring safety or garanteeing that aircraft will leave the sector.
 
 ```python
 from bluebird_dt.core import Environment, Action
@@ -76,10 +81,6 @@ while True:
 
 ```
 
-## Frontend visualisation
-
-The app also serves the frontend visualization (more details on that can be found [here](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-hmi/README.md)), at the URL [http://localhost:8000/hmi](http://localhost:8000/hmi).
-
 ## OpenAPI
 
 Documentation of the endpoints of the API is available by running 
@@ -89,3 +90,13 @@ uvx bluebird-api@latest
 ```
 
 and navigating to [http://localhost:8000/docs](http://localhost:8000/docs).
+
+A json format of this API is also available in [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json) which can be used to generate clients automatically using OpenAPI generators for the language you are using.
+
+## Frontend visualisation
+
+The app also serves the frontend visualization (more details on that can be found [here](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-hmi/README.md)), at the URL [http://localhost:8000/hmi](http://localhost:8000/hmi).
+
+## Julia example
+
+A more complete example of how to use the API is available in [NonPythonAgents.ipynb](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-dt/examples/NonPythonAgents.ipynb)
