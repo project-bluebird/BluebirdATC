@@ -22,7 +22,7 @@ or, if using [UV](https://docs.astral.sh/uv/), you can add it to your environmen
 uv add bluebird-dt
 ```
 
-### Run your first simulation
+### Getting started
 
 To run your first simulation, run the following script which issues a single instruction to an aircraft. 
 
@@ -48,7 +48,7 @@ sim.manager.receive_actions(
         )
 ```
 
-This example is very simple, various examples of using the `bluebird_dt` package can be found in the form of Jupyter notebooks in the [examples] directory.
+This example is very simple, various examples of using the `bluebird_dt` package can be found in the form of Jupyter notebooks in the [examples](https://github.com/project-bluebird/BluebirdATC/tree/main/bluebird-dt/examples) directory.
 
 ## Documentation
 
@@ -56,4 +56,4 @@ The online documentation for the `bluebird_dt` package can be found by in [https
 
 ### Running the digital twin as a server.
 
-A FastApi app is included, allowing the simulation to be run as a server, with the user (or an agent) interacting via a REST API.   For information on this, see [here](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-api/README.md).
+A FastApi app is available as bluebird-api, allowing the simulation to be run as a server, with the user (or an agent) interacting via a REST API. For information on this, see [GitHub](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-api/README.md) or [Pypi](https://pypi.org/project/bluebird-api/).

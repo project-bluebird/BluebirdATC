@@ -23,7 +23,7 @@ or, if using [UV](https://docs.astral.sh/uv/), you can add it to your environmen
 uv add bluebird-gymnasium
 ```
 
-## Usage
+## Getting started
 
 ### Basic Usage
 

@@ -19,15 +19,19 @@ uvx bluebird-api@latest
 ```
 
 then navigate to [http://localhost:8000/hmi/](http://localhost:8000/hmi/).
+
 This site will open a radar HMI, initially with no scenario loaded.
 To load a scenario, the top left of the window select `Load new scenario`.
 A window will apear in the middle of the screen, select `Artificial`, then `I-Sector Two Aircraft` and finally, `Load`.
 
 With the scenario loaded, the aircraft and sector should now be visible in the radar. Clicking the play icon in the top left of the screen will make the simulation evolve making the aircraft move.
 
-### Walkthoughs for developing agents
+### Quick start examples
 
-For agent development or advanced integration of `bluebird-dt`, we recommend downloading the Jupyter notebooks n the `examples/` directories of `bluebird-dt` for core Digital Twin use, or `bluebird-gymnasium` for Agent development using the gymnasium.
+Examples for interfacing with the digital twin:
+    - using the gymnasium is available [here](bluebird-gymnasium/README.md#getting-started)
+    - through the REST API is available [here](bluebird-api/README.md#getting-started)
+    - or directly with the digital twin [here](bluebird-dt/README.md#getting-started)
 
 ## Documentation
 

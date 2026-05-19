@@ -17,7 +17,7 @@ uvx bluebird-api@latest
 
 You should then be able to go to [http://localhost:8000](http://localhost:8000) in a web browser, and see the message "Hello, BluebirdATC!".
 
-## Simple agent interfacing though the REST API
+## Getting started
 
 Agents can interface with the simulator running behind a REST API, enabling its usage from any programming language.
 
