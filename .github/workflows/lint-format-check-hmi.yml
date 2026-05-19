@@ -128,9 +128,9 @@ jobs:
       - hmi-prettier
       - hmi-ensure-built-artifacts
     if: ${{ always() }}
-    working-directory: ${{ github.workspace }}
     steps:
       - name: Gate conditional jobs
+        working-directory: ${{ github.workspace }}
         shell: bash
         run: |
           set -euo pipefail
