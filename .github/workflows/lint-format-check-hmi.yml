@@ -84,7 +84,7 @@ jobs:
           if ! git diff --quiet; then
             echo "❌ Built artefacts are out of date."
             echo "Run the generator locally and commit the changes:"
-            echo "  cd bluebird-hmi"
+            echo "  cd bluebird-hmi
             echo "  npm ci"
             echo "  npm run build"
             echo "  git add ../bluebird-api/bluebird_api/hmi/*"
@@ -98,4 +98,3 @@ jobs:
             git diff
             exit 1
           fi
-``
