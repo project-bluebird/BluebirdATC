@@ -128,6 +128,7 @@ jobs:
       - hmi-prettier
       - hmi-ensure-built-artifacts
     if: ${{ always() }}
+    working-directory: ${{ github.workspace }}
     steps:
       - name: Gate conditional jobs
         shell: bash
