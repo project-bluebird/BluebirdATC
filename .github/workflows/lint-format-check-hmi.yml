@@ -120,55 +120,55 @@ jobs:
             exit 1
           fi   
 
-hmi-ci-gate:
-  runs-on: ubuntu-latest
-  needs:
-    - changes
-    - hmi-typecheck
-    - hmi-prettier
-    - hmi-ensure-built-artifacts
-  if: ${{ always() }}
-  steps:
-    - name: Gate conditional jobs
-      shell: bash
-      run: |
-        set -euo pipefail
+  hmi-ci-gate:
+    runs-on: ubuntu-latest
+    needs:
+      - changes
+      - hmi-typecheck
+      - hmi-prettier
+      - hmi-ensure-built-artifacts
+    if: ${{ always() }}
+    steps:
+      - name: Gate conditional jobs
+        shell: bash
+        run: |
+          set -euo pipefail
 
-        SHOULD_RUN_HMI="${{ needs.changes.outputs.should_run_hmi }}"
+          SHOULD_RUN_HMI="${{ needs.changes.outputs.should_run_hmi }}"
 
-        TYPECHECK_RESULT="${{ needs.hmi-typecheck.result }}"
-        PRETTIER_RESULT="${{ needs.hmi-prettier.result }}"
-        ARTIFACTS_RESULT="${{ needs.hmi-ensure-built-artifacts.result }}"
+          TYPECHECK_RESULT="${{ needs.hmi-typecheck.result }}"
+          PRETTIER_RESULT="${{ needs.hmi-prettier.result }}"
+          ARTIFACTS_RESULT="${{ needs.hmi-ensure-built-artifacts.result }}"
 
-        echo "should_run_hmi=$SHOULD_RUN_HMI"
-        echo "hmi-typecheck.result=$TYPECHECK_RESULT"
-        echo "hmi-prettier.result=$PRETTIER_RESULT"
-        echo "hmi-ensure-built-artifacts.result=$ARTIFACTS_RESULT"
+          echo "should_run_hmi=$SHOULD_RUN_HMI"
+          echo "hmi-typecheck.result=$TYPECHECK_RESULT"
+          echo "hmi-prettier.result=$PRETTIER_RESULT"
+          echo "hmi-ensure-built-artifacts.result=$ARTIFACTS_RESULT"
 
-        if [[ "$SHOULD_RUN_HMI" != "true" ]]; then
-          echo "HMI not required for this PR; gate passes."
-          exit 0
-        fi
-
-        fail=0
-
-        check () {
-          local name="$1"
-          local result="$2"
-          if [[ "$result" != "success" ]]; then
-            echo "::error::$name was required but did not succeed (result=$result)"
-            fail=1
+          if [[ "$SHOULD_RUN_HMI" != "true" ]]; then
+            echo "HMI not required for this PR; gate passes."
+            exit 0
           fi
-        }
 
-        check "hmi-typecheck" "$TYPECHECK_RESULT"
-        check "hmi-prettier" "$PRETTIER_RESULT"
-        check "hmi-ensure-built-artifacts" "$ARTIFACTS_RESULT"
+          fail=0
 
-        if [[ "$fail" -ne 0 ]]; then
-          echo "Gate failed."
-          exit 1
-        fi
+          check () {
+            local name="$1"
+            local result="$2"
+            if [[ "$result" != "success" ]]; then
+              echo "::error::$name was required but did not succeed (result=$result)"
+              fail=1
+            fi
+          }
 
-        echo "Gate passed."
+          check "hmi-typecheck" "$TYPECHECK_RESULT"
+          check "hmi-prettier" "$PRETTIER_RESULT"
+          check "hmi-ensure-built-artifacts" "$ARTIFACTS_RESULT"
+
+          if [[ "$fail" -ne 0 ]]; then
+            echo "Gate failed."
+            exit 1
+          fi
+
+          echo "Gate passed."
 
