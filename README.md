@@ -37,14 +37,6 @@ Examples for interfacing with the digital twin:
 
 The documentation of the latest release is available at [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai).
 
-Alternatively, to build the full web-based docs for other versions, run the following command from this directory:
-
-```bash
-./scripts/docs-serve
-```
-
-then navigate your browser to [http://localhost:8010](http://localhost:8010).
-
 ## Contributing
 
 Please see the guidelines [here](CONTRIBUTING.md) if you would like to contribute to BluebirdATC.
