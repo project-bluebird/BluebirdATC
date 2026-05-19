@@ -21,8 +21,71 @@ To see the full list and description of API endpoints, with the application runn
 
 ## Simple agent interfacing though the REST API
 
-TODO
+Agents can interface with the simulator running as an API.
+The next script is an example of an agent which tells all aircraft, on incomm, to fly to their exit fix and climb directly to their exit flight level without ensuring safety or garanteeing that aircraft will leave the sector.
+
+```python
+from bluebird_dt.core import Environment, Action
+import time, requests, json
+
+callsigns_done = []
+
+while True:
+    response = requests.get("http://localhost:8000/environment")
+    environment = Environment.from_json(response.text)
+
+    actions_to_issue: list[Action] = []
+
+    for aircraft in environment.aircraft.values():
+
+        if aircraft.callsign in callsigns_done or aircraft.current_sector != "SPRINGFIELD":
+            continue
+        
+        exit_coordination = environment.exit_coordination("SPRINGFIELD", aircraft.callsign)
+        
+        if exit_coordination is not None:
+            actions_to_issue.extend(
+                        [
+                            {
+                                "callsign": aircraft.callsign,
+                                "kind": "change_flight_level_to",
+                                "value": exit_coordination.fl,
+                                "sector": "SPRINGFIELD",
+                                "agent": "agent"
+                            },
+                            {
+                                "callsign": aircraft.callsign,
+                                "kind": "route_direct_to",
+                                "value": exit_coordination.fix,
+                                "sector": "SPRINGFIELD",
+                                "agent": "agent"
+                            }
+                        ]
+                    )
+
+        callsigns_done.append(aircraft.callsign)
+
+    if len(actions_to_issue) > 0:
+        response = requests.post(
+                "http://localhost:8000/actions",
+                data=json.dumps(actions_to_issue)
+                )
+    
+    # Wait for the next tick
+    time.sleep(4)
+
+```
 
 ## Frontend visualisation
 
 The app also serves the frontend visualization (more details on that can be found [here](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-hmi/README.md)), at the URL [http://localhost:8000/hmi](http://localhost:8000/hmi).
+
+## OpenAPI
+
+Documentation of the endpoints of the API is available by running 
+
+```bash
+uvx bluebird-api@latest
+```
+
+and navigating to [http://localhost:8000/docs](http://localhost:8000/docs).
