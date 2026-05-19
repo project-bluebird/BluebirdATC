@@ -144,39 +144,42 @@ def test_pos_information(view_type: ViewType):
     obs, info = gym_env.reset()
     simulator_env = gym_env.get_simulator_env()
 
-    for _ in range(100):
+    # forward the simulation to the time when at least one aircraft is being
+    # tracked
+    tracked_data = {}
+    max_steps = 100
+    for _ in range(max_steps):
+        tracked_data = gym_env.get_tracked_aircraft_data()
+        if tracked_data:
+            break
+
         gym_env.step(action)
 
-    tracked_data = gym_env.get_tracked_aircraft_data()
-    if tracked_data is not None and len(tracked_data) > 0:
-        callsign = list(tracked_data.keys())[0]
-                
-        # assume that aircraft is currently position before the sector entry.
-        # this is not always the case as aircraft are sometimes spawned in
-        # within the sector in lms/lus. the method call below will check
-        # and return the correct information (status and distances).
-        ret: ACPositionInfo = gym_env.check_pos_information(
-            callsign, PositionStatus.BEFORE_ENTRY, False, False, None
-        )
-
-        if ret.position_status == PositionStatus.BEFORE_ENTRY:
-            assert ret.incomm_status is False
-            assert ret.outcomm_status is False
-            assert ret.dist_to_sector_entry > 0.0
-            assert ret.dist_away_from_sector_exit == 0.0
-            assert ret.dist_away_from_incorrect_sector_exit == 0.0
-            assert ret.incorrect_exit_position is None
-        elif ret.position_status == PositionStatus.IN_SECTOR:
-            assert ret.incomm_status is True
-            assert ret.outcomm_status is False
-            assert ret.dist_to_sector_entry == 0.0
-            assert ret.dist_away_from_sector_exit == 0.0
-            assert ret.dist_away_from_incorrect_sector_exit == 0.0
-            assert ret.incorrect_exit_position is None
-        else:
-            assert False
-
     else:
-        # if there are no aircraft in the airspace still assert True as
-        # aircraft availability
-        assert True
+        pytest.fail(f"No aircraft were tracked within the step limit of {max_steps}.")
+
+    callsign = next(iter(tracked_data))
+    # assume that aircraft is currently position before the sector entry.
+    # this is not always the case as aircraft are sometimes spawned in
+    # within the sector in lms/lus. the method call below will check
+    # and return the correct information (status and distances).
+    ret: ACPositionInfo = gym_env.check_pos_information(
+        callsign, PositionStatus.BEFORE_ENTRY, False, False, None
+    )
+
+    if ret.position_status == PositionStatus.BEFORE_ENTRY:
+        assert ret.incomm_status is False
+        assert ret.outcomm_status is False
+        assert ret.dist_to_sector_entry > 0.0
+        assert ret.dist_away_from_sector_exit == 0.0
+        assert ret.dist_away_from_incorrect_sector_exit == 0.0
+        assert ret.incorrect_exit_position is None
+    elif ret.position_status == PositionStatus.IN_SECTOR:
+        assert ret.incomm_status is True
+        assert ret.outcomm_status is False
+        assert ret.dist_to_sector_entry == 0.0
+        assert ret.dist_away_from_sector_exit == 0.0
+        assert ret.dist_away_from_incorrect_sector_exit == 0.0
+        assert ret.incorrect_exit_position is None
+    else:
+        assert False
