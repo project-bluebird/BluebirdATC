@@ -1,0 +1,101 @@
+name: Starling-hmi CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "bluebird-hmi/**"
+      - ".github/workflows/lint-format-check-hmi.yml"
+
+defaults:
+  run:
+    working-directory: bluebird-hmi
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [24.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: bluebird-hmi/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+
+  prettier:
+    runs-on: [self-hosted, Linux, X64]
+    strategy:
+      matrix:
+        node-version: [24.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Prettier check
+        run: npx prettier --check "src/**/*.{ts,tsx}"
+
+  ensure-built-artifacts:
+    name: Ensure built artefacts are up-to-date
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: bluebird-hmi/package-lock.json
+
+      - name: Install dependencies
+        working-directory: bluebird-hmi
+        run: npm ci
+
+      - name: Build / generate artefacts
+        working-directory: bluebird-hmi
+        run: npm run build
+
+      - name: Show diff and instruct contributor
+        working-directory: bluebird-hmi
+        run: |
+          if ! git diff --quiet; then
+            echo "❌ Built artefacts are out of date."
+            echo "Run the generator locally and commit the changes:"
+            echo "  cd bluebird-hmi"
+            echo "  npm ci"
+            echo "  npm run build"
+            echo "  git add ../bluebird-api/bluebird_api/hmi/*"
+            echo "  git commit -m \"update HMI build\""
+            echo "  git push"
+            echo ""
+            echo "Changed files:"
+            git diff --name-only
+            echo ""
+            echo "Diff:"
+            git diff
+            exit 1
+          fi
+``
