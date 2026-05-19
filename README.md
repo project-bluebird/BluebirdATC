@@ -2,9 +2,9 @@
 A Digital Twin for use in ATC simulations, and a training environment for AI agents.
 
 This repository contains the following packages:
- * `bluebird-dt` - the digital twin.  See [here](bluebird-dt/README.md) for more information. [![PyPI version](https://img.shields.io/pypi/v/bluebird-dt.svg)](https://pypi.org/project/bluebird-dt/)
- * `bluebird-api` - A REST api for the digital twin.  See [here](bluebird-api/README.md) for more information. [![PyPI version](https://img.shields.io/pypi/v/bluebird-api.svg)](https://pypi.org/project/bluebird-api/)
- * `bluebird-gymnasium` - a gym environment for AI agents.  See [here](bluebird-gymnasium/README.md) for more details. [![PyPI version](https://img.shields.io/pypi/v/bluebird-gymnasium.svg)](https://pypi.org/project/bluebird-gymnasium/)
+ * `bluebird-dt` [![PyPI version](https://img.shields.io/pypi/v/bluebird-dt.svg)](https://pypi.org/project/bluebird-dt/) - the digital twin.  See [here](bluebird-dt/README.md) for more information.
+ * `bluebird-api` [![PyPI version](https://img.shields.io/pypi/v/bluebird-api.svg)](https://pypi.org/project/bluebird-api/) - A REST api for the digital twin.  See [here](bluebird-api/README.md) for more information.
+ * `bluebird-gymnasium` [![PyPI version](https://img.shields.io/pypi/v/bluebird-gymnasium.svg)](https://pypi.org/project/bluebird-gymnasium/) - a gym environment for AI agents.  See [here](bluebird-gymnasium/README.md) for more details. 
  * `bluebird-hmi` - an optional web-based visualisation package.  See [here](bluebird-hmi/README.md) for details.
   
 ## (AI)r traffic controller challenge
@@ -19,11 +19,15 @@ uvx bluebird-api@latest
 ```
 
 then navigate to [http://localhost:8000/hmi/](http://localhost:8000/hmi/).
+This site will open a radar HMI, initially with no scenario loaded.
+To load a scenario, the top left of the window select `Load new scenario`.
+A window will apear in the middle of the screen, select `Artificial`, then `I-Sector Two Aircraft` and finally, `Load`.
 
-For agent development or advanced integration of `bluebird-dt`, we recommend the Jupyter notebooks in the `examples/` directories of `bluebird-dt` (for core Digital Twin use) or `bluebird-gymnasium` (for Agent development).   To run these, change to the `examples/` directory and run the command:
-```
-uv run jupyter notebook
-```
+With the scenario loaded, the aircraft and sector should now be visible in the radar. Clicking the play icon in the top left of the screen will make the simulation evolve making the aircraft move.
+
+### Walkthoughs for developing agents
+
+For agent development or advanced integration of `bluebird-dt`, we recommend downloading the Jupyter notebooks n the `examples/` directories of `bluebird-dt` for core Digital Twin use, or `bluebird-gymnasium` for Agent development using the gymnasium.
 
 ## Documentation
 

@@ -1,4 +1,4 @@
-## The REST API for BluebirdATC
+# The REST API for BluebirdATC
 
 It is possible to run the BluebirdATC digital twin in a server process, such that the simulation will evolve at regular time intervals, and Agents and/or frontend visualization software can interact with it via HTTP requests.
 In particular, users can:
@@ -9,15 +9,19 @@ In particular, users can:
 * Submit `Actions` to individual aircraft.
 * Save logfiles with data on all steps of the simulation.
 
-In order to run the app, with all the correct dependencies for this feature, from the `BluebirdATC/bluebird-api` directory, run the command:
+The simplest way to run the app is using uv [(installation guide)](https://docs.astral.sh/uv/getting-started/installation/) and running 
 
-```shell
-uv run uvicorn bluebird_api:app --port 8000
+```bash
+uvx bluebird-api@latest
 ```
 
 You should then be able to go to [http://localhost:8000](http://localhost:8000) in a web browser, and see the message "Hello, BluebirdATC!".
 
 To see the full list and description of API endpoints, with the application running, go to [http://localhost:8000/docs](http://localhost:8000/docs).
+
+## Simple agent interfacing though the REST API
+
+TODO
 
 ## Frontend visualisation
 
