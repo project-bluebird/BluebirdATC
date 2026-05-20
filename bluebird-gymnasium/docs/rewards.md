@@ -24,7 +24,7 @@ The reward functions are located in `bluebird_gymnasium.rewards`, spanning acros
 
 As earlier mentioned, an agent needs to optimise for several objectives expressed as multiple reward functions that are linearly combined in a weighted fashion. The reward function(s) to use is specified in the environment configuration (which is used to instantiate an environment). The environment configuration is specified in a JSON file which is loaded from disk. See an example of a sample configuration for the `Springfield` environment, with emphasis on the reward configuration section.
 
-```
+```json
 {
     ...
     "reward_config": {

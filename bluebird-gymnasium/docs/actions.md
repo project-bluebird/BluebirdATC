@@ -47,7 +47,7 @@ The action mapping differs slightly for the single (centralised) and multi-agent
 
 The actions specification below will define the action space for a gymnasium environment instantiated using the configuration. Note that an any action not specified in the configuration is disabled by default.
 
-```
+```json
 {
     ...
     "action_config": {

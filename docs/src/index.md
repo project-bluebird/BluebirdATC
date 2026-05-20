@@ -41,17 +41,13 @@ The BluebirdATC repo is made up of four packages, `bluebird-dt`, `bluebird-api`,
 
 </div>
 
-## General ATC Introduction and Definition of Terms
-
-For a general introduction to ATC and the definition of useful domain-related words and phrases, please visit the [Introduction and Glossary](atc-introduction-and-glossary.md) page.
-
 ## References
 
-- **A Probabilistic Digital Twin of UK Airspace**, AIAA SciTech Forum (2026):  https://doi.org/10.48550/arXiv.2601.03113
-- **A framework for assuring the accuracy and fidelity of an AI-enabled Digital Twin of en route UK airspace**, AIAA SciTech Forum (2026): https://doi.org/10.48550/arXiv.2601.03120
-- **Human-in-the-Loop Testing of AI Agents for Air Traffic Control with a Regulated Assessment Framework**, AIAA SciTech Forum (2026): https://doi.org/10.48550/arXiv.2601.04288
-- **Fast Surrogate Models for Adaptive Aircraft Trajectory Prediction in En route Airspace**, AIAA SciTech Forum (2026): https://doi.org/10.48550/arXiv.2601.03075
-- **Online Action-Stacking Improves Reinforcement Learning Performance for Air Traffic Control**, AIAA SciTech Forum (2026): https://doi.org/10.48550/arXiv.2601.04287
-- **Conditioning Aircraft Trajectory Prediction on Meteorological Data with a Physics-Informed Machine Learning Approach**, AIAA SciTech Forum (2026): https://doi.org/10.48550/arXiv.2601.03152
+- **A Probabilistic Digital Twin of UK Airspace**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.03113)
+- **A framework for assuring the accuracy and fidelity of an AI-enabled Digital Twin of en route UK airspace**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.03120)
+- **Human-in-the-Loop Testing of AI Agents for Air Traffic Control with a Regulated Assessment Framework**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.04288)
+- **Fast Surrogate Models for Adaptive Aircraft Trajectory Prediction in En route Airspace**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.03075)
+- **Online Action-Stacking Improves Reinforcement Learning Performance for Air Traffic Control**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.04287)
+- **Conditioning Aircraft Trajectory Prediction on Meteorological Data with a Physics-Informed Machine Learning Approach**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.03152)
 - **A Future Capabilities Agent for Tactical Air Traffic Control**, AIAA SciTech Forum (2026): https://arxiv.org/abs/2601.04285
 - **Towards Transparent AI Agents for Air Traffic Control**, AIAA SciTech Forum (2026): http://dx.doi.org/10.2139/ssrn.6042354

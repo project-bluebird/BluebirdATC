@@ -7,7 +7,7 @@ Each environment contains a default environment configuration which can be retri
 
 The sample code snippet below fetches the default configuration for the `SectorXPlusEnv` environment.
 
-```
+```python
 from bluebird_gymnasium.envs import SectorXPlusEnv
 env_config = SectorXPlusEnv.get_default_env_config()
 ```
@@ -18,7 +18,7 @@ env_config = SectorXPlusEnv.get_default_env_config()
 
 The sample code snippet below demonstrates how to instantiate the `SectorXPlusEnv` environment.
 
-```
+```python
 from bluebird_gymnasium.envs import SectorXPlusEnv
 env_config = SectorXPlusEnv.get_default_env_config()
 
@@ -35,7 +35,7 @@ env_2 = gym.make("SectorXPlusEnv-v0", config=env_config)
 The configuration can be saved to and loaded from a disk as a JSON file.
 
 The sample code snippet below saves a configuration to disk.
-```
+```python
 # assuming env_config was previously defined
 import json
 with open("env_config.json", "w") as fp:
@@ -43,7 +43,7 @@ with open("env_config.json", "w") as fp:
 ```
 
 The sample code snippet below loads a configuration from disk.
-```
+```python
 import json
 from bluebird_gymnasium.envs import EnvConfig
 with open("env_config.json", "r") as fp:
