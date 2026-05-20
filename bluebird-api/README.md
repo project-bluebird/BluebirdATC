@@ -21,6 +21,11 @@ uvx bluebird-api@latest
 
 You should then be able to go to [http://localhost:8000](http://localhost:8000) in a web browser, and see the message "Hello, BluebirdATC!".
 
+This package includes a prebuilt HMI available by navigating to [http://localhost:8000/hmi](http://localhost:8000/hmi).
+Initially, no scenario would be loaded, therefore showing the Bluebird logo on the radar.
+To load a scenario, the top left of the window select `Load new scenario`.
+A window will appear in the middle of the screen, select `Springfield`, then `test1` and finally, `Load`.
+
 ### Using the API
 
 Agents can interface with the simulator running behind a REST API, enabling its usage from any programming language.
