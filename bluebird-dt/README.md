@@ -7,7 +7,7 @@ The python package `bluebird_dt` encodes a digital twin of an airspace, includin
 * Action, defining the schema by which agents can interact with the simulation.
 * Infrastructure classes such as Simulator, ScenarioManagers, EventHandlers, logger, to allow the user to define and run simulated ATC scenarios.
 
-## Quickstart
+## Getting started
 
 ### Installation
 
@@ -22,7 +22,7 @@ or, if using [UV](https://docs.astral.sh/uv/), you can add it to your environmen
 uv add bluebird-dt
 ```
 
-### Getting started
+### Making an agent
 
 To run your first simulation, run the following script which issues a single instruction to an aircraft. 
 

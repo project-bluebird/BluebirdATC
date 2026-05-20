@@ -1,46 +1,3 @@
-# Air Traffic Control Introduction
-
-Air Traffic Control (ATC) is a service provided to direct and organise the flow of aircraft traffic while ensuring **safe** separation between aircraft. The ATC task involves monitoring and issuing instructions to aircraft with the goal of safe, orderly, and efficient use of an airspace. A person who provides this service is referred to as an Air Traffic Controller or Air Traffic Control Officer (ATCO).
-
-The minimum safety standard in ATC is judged using lateral and vertical distances. The lateral distance is measured in nautical miles (NM), while the vertical distance is in feet or flight level (`flight level = feet / 100`). The minimum safety standard is defined as the separation of aircraft by at least `5NM` laterally or `1000 feet (10 flight level)` vertically at any given time. Any aircraft that does not meet the defined requirement at a given time is regarded to have lost separation and thus a breach in safety.
-
-
-## ATC Instructions
-ATC instructions are a set of commands that a human Air Traffic Controller (ATCO) issue/communicates to an aircraft (i.e., to the pilot, usually via radio communication), which results in the modification of the flight trajectory of the aircraft. The instructions are broadly classified into lateral, vertical and speed instructions. Lateral instructions modify the heading or instruct the aircraft to fly on its defined route. Vertical instructions modify the altitude (measured in feet or flight level; `flight level = feet / 100`) of an aircraft. Speed instructions modify the calibrated airspeed (CAS) measured in knots, causing the aircraft to reduce or increase its speed. Instructions can be specified in absolute or relative terms. For example, if an aircraft’s current heading is 150 degrees and needs to fly 170 degrees, a relative instruction could be issued to turn the aircraft right by 20 degrees or an absolute instruction could be issued to set the aircraft’s heading to 170 degrees.
-
-**Value Range:** As the instructions modify the heading, altitude and speed of an aircraft, it is important to highlight the range of values common to commercial aircraft. The range of heading is between 0 and 360 degrees. The range of altitude depends on the sector’s geometry within a volume of airspace. However, for most real-world settings it falls within the range of 80 and 480 flight levels (8000 feet and 48000 feet). The range of speed is usually between 250 and 320 nautical miles per hour (knots).
-
-**Value Constraint:** Although the heading, altitude, and speed are real/integer values, the issued instruction for each category is constrained to be in multiples of X. The value of a heading instruction should be in multiples of 5. The value of a vertical action should be in multiples of 10 flight level (1000 feet). The value of a speed action should be in multiples of 5.
-
-
-
-## Glossary
-
-### Airspace
-
-#### Area
-Refers to a pre-defined two-dimensional multi-sided polygon on a map or digital screen. It is defined using a collection of coordinates (latitudes and longitudes) alongside lines which connect consecutive coordinates to form the polygon.
-
-#### Volume
-Refers to a pre-defined three-dimensional polyhedron. It can be thought of as an area alongside additional information that defines its height using minimum and maximum altitude values.
-
-#### Sector
-Refers to a collection of volumes. In ATC, each human ATCO is assigned a sector to monitor and control air traffic.
-
-#### Airspace
-Refers to a collection of sectors.
-
-#### Fix
-Refers to a specific geographical location (defined using latitude and longitude) used as a "landmark" in an airspace. It is used in determining the navigation pathway (route) of an aircraft.
-
-#### Waypoint
-Another name for a fix.
-
-### Instruction
-#### Clearance
-Refers to the instruction/command that an ATCO issues to the pilot of an aircraft over radio communication. The instruction causes the aircraft to modify its flight trajectory.
-
-
 ### Aircraft
 
 #### Aircraft
@@ -148,17 +105,16 @@ Refers to wind that blows in the direction of an aircraft's travel, pushing it f
 #### Headwind
 Refers to wind that blows against the direction of an aircraft's travel, pushing it from the front (or pulling it from behind). This reduces the ground speed of the aircraft but does not change how the plan flies through the air (TAS).
 
+#### Bank Angle
+Refers to the angle between an aircraft's wings and the horizon (horizontal plane, the imaginary line where the sky meets the ground or sea), which represents a sideways tilt during a turn. It is measured in degrees.
 
-### Miscellaneous
+Heuristically, the bank angle is usually measured as 15% of [TAS](#true-airspeed) in order to approximately achieve the standard 3 degrees rate of turn. For example, an aircraft flying at a TAS of 100 knots will require a bank angle of 15 degrees. Note that slower aircraft (lower TAS) require a shallow bank angle, and vice versa.
 
-#### Terminal Control (TC)
-Refers to the task of ATC focused on aircraft within a terminal/airport vicinity, either planning to take off or land. ATCOs in TC are referred to as terminal controllers, and they are tasked with sequencing multiple aircraft for safe landing or taking off.
+#### Rate of Turn
+Rate of turn (or turn rate) refers to the speed at which an aircraft changes its heading. The default heuristic popularly used in ATC is that aircraft turn at a constant rate of 3 degrees per second. Therefore, a full 360-degree turn would take 2 minutes.
 
-#### Area Control (AC)
-Refers to the task of ATC focused on aircraft at higher altitudes (after take-off and before landing). ATCOs in AC are referred to as area controllers and they are tasked with monitoring and ensuring safe separation of aircraft while ensuring that they fly to their correct destinations as they transition between sectors.
+Turns can stem from an aircraft requiring a turn when navigating to its next fix during [route following](#route-following) or when a heading instruction is issued by an ATCO where the new heading is different from the aircraft's current heading.
 
-#### Trajectory Prediction (TP)
-Refers to the process of predicting the future flight path of an aircraft given its current position and other information such as heading, route following status, flight level, selected flight level, and so on. The prediction is executed using a model which can either be mathematically defined or data-driven.
 
 #### Top Of Descent
 The top of descent (TOD) for an aircraft descending to a flight level before exiting a sector (current flight level > exit flight level) is the location in its flight trajectory where an instruction to descend to the exit flight level needs to be issued. It can be calculated by first determining the distance from the exit location where the descent should begin, and then projecting backwards from the exit location to the TOD location based on this distance.
@@ -180,12 +136,5 @@ tod = ((320 - 280) / 10) * 3 = 12 nautical miles
 
 See more information about [top of descent here](https://pilotinstitute.com/how-to-calculate-descent/).
 
-#### Rate of Turn
-Rate of turn (or turn rate) refers to the speed at which an aircraft changes its heading. The default heuristic popularly used in ATC is that aircraft turn at a constant rate of 3 degrees per second. Therefore, a full 360-degree turn would take 2 minutes.
-
-Turns can stem from an aircraft requiring a turn when navigating to its next fix during [route following](#route-following) or when a heading instruction is issued by an ATCO where the new heading is different from the aircraft's current heading.
-
-#### Bank Angle
-Refers to the angle between an aircraft's wings and the horizon (horizontal plane, the imaginary line where the sky meets the ground or sea), which represents a sideways tilt during a turn. It is measured in degrees.
-
-Heuristically, the bank angle is usually measured as 15% of [TAS](#true-airspeed) in order to approximately achieve the standard 3 degrees rate of turn. For example, an aircraft flying at a TAS of 100 knots will require a bank angle of 15 degrees. Note that slower aircraft (lower TAS) require a shallow bank angle, and vice versa.
+#### Trajectory Prediction (TP)
+Refers to the process of predicting the future flight path of an aircraft given its current position and other information such as heading, route following status, flight level, selected flight level, and so on. The prediction is executed using a model which can either be mathematically defined or data-driven.

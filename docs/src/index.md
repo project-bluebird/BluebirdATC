@@ -45,10 +45,6 @@ The BluebirdATC repo is made up of four packages, `bluebird-dt`, `bluebird-api`,
 
 For a general introduction to ATC and the definition of useful domain-related words and phrases, please visit the [Introduction and Glossary](atc-introduction-and-glossary.md) page.
 
-## Getting Started
-
-Start with the `Examples` tab in these docs for rendered notebook walkthroughs of the Digital Twin and RL training environment. The source notebooks remain in `bluebird-dt/notebooks` and `bluebird-gymnasium/examples` if you want to run or edit them locally.
-
 ## References
 
 - **A Probabilistic Digital Twin of UK Airspace**, AIAA SciTech Forum (2026):  https://doi.org/10.48550/arXiv.2601.03113

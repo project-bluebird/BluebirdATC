@@ -25,19 +25,3 @@ For more details, please see the Getting started section below.
 ## Getting started
 
 Start with the `Examples` tab in these docs for rendered notebook walkthroughs of the use of the `bluebird_gymnasium`, setting up environments and using a sample agent. The source notebooks remain in bluebird-gymnasium/examples if you want to run or edit them locally.
-
-## Running tests
-
-Run the `bluebird-gymnasium` test suite from the package directory:
-
-```bash
-cd bluebird-gymnasium
-uv run pytest tests/ -p no:warnings
-```
-
-To use parallel workers:
-
-```bash
-cd bluebird-gymnasium
-uv run pytest -n auto tests/ -p no:warnings
-```

@@ -1,5 +1,5 @@
-site_name: bluebird
-site_url: https://project-bluebird.github.io/bluebird-atc/
+site_name: Project Bluebird documentation
+site_url: https://docs.projectbluebird.ai
 repo_url: https://github.com/project-bluebird/BluebirdATC
 repo_name: project-bluebird/BluebirdATC
 docs_dir: src
@@ -22,18 +22,21 @@ extra_css:
 
 theme:
   name: material
+  logo: assets/logo.png
   palette:
-    primary: 'indigo'
+    primary: 'blue'
     accent: 'indigo'
   features:
     - navigation.instant
-    - toc.integrate
     - content.code.copy
     - content.tabs.link
     - content.action.edit
     - content.code.copy
     - search.suggest
     - search.highlight
+    - navigation.indexes
+    - navigation.sections
+
 
 markdown_extensions:
   - attr_list
@@ -62,22 +65,19 @@ validation:
     not_found: ignore
 
 nav:
-  - Home:
-      - Project overview: ./#project-overview
-      - Package documentation: ./#package-documentation
-      - General ATC introduction and definition of terms: ./#general-atc-introduction-and-definition-of-terms
-      - Getting started: ./#getting-started
-      - Running tests: ./#running-tests
-      - References: ./#references
+  - Project Bluebird: index.md
 
-  - ATC Introduction and Glossary:
-      - Overview: atc-introduction-and-glossary.md
-      - ATC Instructions: atc-introduction-and-glossary.md#atc-instructions
-      - Glossary: atc-introduction-and-glossary.md#glossary
-      - Airspace: atc-introduction-and-glossary.md#airspace
-      - Instruction: atc-introduction-and-glossary.md#instruction
-      - Aircraft: atc-introduction-and-glossary.md#aircraft
-      - Miscellaneous: atc-introduction-and-glossary.md#miscellaneous
+  - User guide:
+    - Getting started: getting-started.md
+
+    - ATC concepts:
+        - Overview: atc-introduction-and-glossary.md
+        - ATC Instructions: atc-introduction-and-glossary.md#atc-instructions
+        - Glossary: atc-introduction-and-glossary.md#glossary
+        - Airspace: atc-introduction-and-glossary.md#airspace
+        - Instruction: atc-introduction-and-glossary.md#instruction
+        - Aircraft: atc-introduction-and-glossary.md#aircraft
+        - Miscellaneous: atc-introduction-and-glossary.md#miscellaneous
 
   - bluebird-dt: "!include ../bluebird-dt/mkdocs.yml"
 
@@ -87,25 +87,11 @@ nav:
 
   - bluebird-hmi: "!include ../bluebird-hmi/mkdocs.yml"
 
-  - Examples:
-      - bluebird-dt:
-          - Simulation example: examples/bluebird-dt/Intro-Part-1.ipynb
-          - Simulation example: examples/bluebird-dt/Intro-Part-2.ipynb
-          - Simulation example: examples/bluebird-dt/Intro-Part-3.ipynb
-          - Simulation example: examples/bluebird-dt/Intro-Part-4.ipynb
-          - Simulation example: examples/bluebird-dt/NonPythonAgents.ipynb
-          - Radar visualisation: examples/bluebird-dt/render/radar.ipynb
-      - bluebird-gymnasium:
-          - Agent demo: examples/bluebird-gymnasium/agent_demo.ipynb
-          - Radar actions display demo: examples/bluebird-gymnasium/radar_actions_display_demo.ipynb
-          - Radar scales demo: examples/bluebird-gymnasium/radar_scales_demo.ipynb
-          - Simple demo: examples/bluebird-gymnasium/simple_demo.ipynb
-
-  - How to change these docs:
+  - Development:
+    - How to contribute: how-to-contribute.md
+    - Docs:
       - Intro: mkdocs-guide/#intro
       - Serve the docs locally: mkdocs-guide/#serve-the-docs-locally
       - Build the docs for production: mkdocs-guide/#build-the-docs-for-production
       - File hierarchy: mkdocs-guide/#file-hierarchy
       - Example edit-serve-build workflow: mkdocs-guide/#example-edit-serve-build-workflow
-
-  - How to contribute: how-to-contribute.md

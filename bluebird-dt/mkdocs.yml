@@ -5,37 +5,32 @@ plugins:
        modules: [docs.get_version]
 
 nav:
-  - Source code: ./#source-code
-  - ATC concepts and terminology:
-      - Overview: ./#atc-concepts-and-terminology
-      - Aircraft: ./#aircraft
-      - Sector: ./#sector
-      - Fix: ./#fix
-      - Route: ./#route
-      - Airspace: ./#airspace
-      - Action: ./#action
-  - Provided airspace:
-      - Overview: ./#provided-airspace
+  - Getting started with bluebird-dt: getting-started.md
+  - Available airspace:
+      - airspace.md
       - Sectors:
-          - I-sector: ./#i-sector
-          - Y-sector: ./#y-sector
-          - X-sector: ./#x-sector
-          - Xplus-sector: ./#xplus-sector
-          - Springfield: ./#springfield
-  - Scenarios:
-      - Overview: ./#scenarios
-      - Two Aircraft: ./#two-aircraft
-      - Regular: ./#regular
-      - Custom: ./#custom
-      - Infinite: ./#infinite
-  - Design of the digital twin:
-      - Overview: ./#design-of-the-digital-twin
-      - Core classes: ./#core-classes
-      - Scenario and airspace generators: ./#scenario-and-airspace-generators
-      - Simulation and event management: ./#simulation-and-event-management
-      - Predictors: ./#predictors
-      - Utility functions: ./#utility-functions
-  - Installing the software: ./#installing-the-software
-  - Running tests: ./#running-tests
-  - Versioning: ./#versioning
-  - Source code reference: source.md
+          - I-sector: ./airspace.md#i-sector
+          - Y-sector: ./airspace.md#y-sector
+          - X-sector: ./airspace.md#x-sector
+          - Xplus-sector: ./airspace.md#xplus-sector
+          - Springfield: ./airspace.md#springfield
+  - Available scenarios:
+      - scenarios.md
+      - Two Aircraft: ./scenarios.md#two-aircraft
+      - Regular: ./scenarios.md#regular
+      - Custom: ./scenarios.md#custom
+      - Infinite: ./scenarios.md#infinite
+  - Digital twin concepts:
+      - design.md
+      - Core classes: ./design.md#core-classes
+      - Scenario and airspace generators: ./design.md#scenario-and-airspace-generators
+      - Simulation and event management: ./desing.md#simulation-and-event-management
+      - Predictors: ./design.md#predictors
+      - Utility functions: ./design.md#utility-functions
+  - Examples with bluebird-dt:
+    - Simulation example: examples/Intro-Part-1.ipynb
+    - Simulation example: examples/Intro-Part-2.ipynb
+    - Simulation example: examples/Intro-Part-3.ipynb
+    - Simulation example: examples/Intro-Part-4.ipynb
+    - Radar visualisation: examples/render/radar.ipynb
+  - API reference: source.md
