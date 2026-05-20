@@ -8,10 +8,10 @@ description = "A REST API for the Project Bluebird Digital Twin"
 name = "bluebird-api"
 license = "AGPL-3.0-or-later"
 readme = "README.md"
-version = "0.1.4"
+version = "0.2.0"
 requires-python = ">=3.10,<3.15"
 dependencies = [
-  "bluebird-dt==0.1.0",
+  "bluebird-dt==0.2.0",
   "fastapi>=0.136.1,<0.137",
   "lxml-html-clean>=0.4.4",
   "uvicorn>=0.46.0,<0.47",
