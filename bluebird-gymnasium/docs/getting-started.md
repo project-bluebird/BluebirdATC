@@ -51,4 +51,4 @@ while not done:
 
 ## Additional examples
 
-Additional examples are available as rendered jupyter notebooks.
+Additional examples are available as [rendered jupyter notebooks](../examples/simple_demo).

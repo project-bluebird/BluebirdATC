@@ -3,9 +3,9 @@
 
 ## Project Overview
 
-BluebirdATC is a Digital Twin and Agent Training Environment for Air Traffic Control.
+Project Bluebird is a £13.7m EPSRC Prosperity Partnership between NATS, The University of Exeter and The Alan Turing Institute to augment and optimise air-traffic control using multi-agent systems. Our ambition is to deliver the world’s first AI system to control a section of airspace in live shadow trials, working with Air Traffic Controllers to help manage the complexities of their role.
 
-The project is a collaboration between NATS, The University of Exeter, and the Alan Turing Institute.  The goals of the project include:
+The project has three research themes:
 
 - Building a Digital Twin of UK airspace.
 - Developing AI agents that can perform Air Traffic Control (ATC) within this digital twin environment.
@@ -40,6 +40,14 @@ The BluebirdATC repo is made up of four packages, `bluebird-dt`, `bluebird-api`,
   [Getting started →](bluebird-hmi/getting-started.md)
 
 </div>
+
+### Versioning
+
+Development of the BluebirdATC Digital Twin is still in early stages, with new features and bug fixes causing breaking changes.
+This is why the current versions are still '0.x.x', reflecting that each 'MINOR' version could potentially have breaking changes, following the [semantic versioning](https://semver.org/#spec-item-5) conventions.
+On the other hand, 'PATCH' versions are used for bug fixes and non-breaking changes, although they may subtly change the behaviour of the models.
+
+Release notes available on Github will include a list of changes, specifying if any are breaking changes.
 
 ## References
 
