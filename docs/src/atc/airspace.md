@@ -1,18 +1,41 @@
-## Airspace
+# Airspace
 
-### Sectors
+The airspace above is made up of different concepts to provide structure to the task of air traffic control.
 
-Refers to a collection of volumes. In ATC, each human ATCO is assigned a sector to monitor and control air traffic.
+The Bluebird digital twin encapsulates only those concepts relevant for upper airspace, frequently above FL195, intentionally avoiding concepts only relevant to approach to airports.
 
-Volumes are a pre-defined three-dimensional polyhedron. It can be thought of as an area alongside additional information that defines its height using minimum and maximum altitude values.
+## Controlled airspace
 
-### Controlled airspace
+Controlled airspace is that which requires pilots to obtain ATC clearance to enter, maintain two-way communication and comply with ATC instructions.
 
 ### Uncontrolled airspace
 
+Uncontrolled airspace is any airspace that is not controlled airspace.
 
-#### Terminal Control (TC)
-Refers to the task of ATC focused on aircraft within a terminal/airport vicinity, either planning to take off or land. ATCOs in TC are referred to as terminal controllers, and they are tasked with sequencing multiple aircraft for safe landing or taking off.
+## Sectors
 
-#### Area Control (AC)
-Refers to the task of ATC focused on aircraft at higher altitudes (after take-off and before landing). ATCOs in AC are referred to as area controllers and they are tasked with monitoring and ensuring safe separation of aircraft while ensuring that they fly to their correct destinations as they transition between sectors.
+Refers to a collection of volumes, pre-defined three-dimensional polyhedron, they are responsible for.
+The sectors in the Bluebird digital twin are all assumed to be controlled airspace, and therefore aircraft must followed all the instructions issued by air traffic control.
+
+## Waypoint
+
+Refers to a specific geographical location (defined using latitude and longitude) used as a "landmark" in an airspace.
+An aircraft's route will be made up of these
+Air traffic controllers may issue clearances for aircraft to fly to a waypoint in their route.
+
+### Fix
+
+A fix represents exact geographical coordinates (latitude and longitude) in space.
+
+### VOR
+
+A VOR (VHF Omnidirectional range) emits 360 radials radiating outward like spokes on a bicycle wheel.
+By turning to a VOR, a pilot can see exactly what radial they are on and fly directly towards or away from the station.
+
+In the context of the Bluebird digital twin, no difference is made between a VOR and a FIX.
+
+### NDB
+
+A NDV (Non-Directional Beacon) is a low frequency radio transmitter that sends signals in all directions such that an aircraft system's can point the aircraft directly to the beacon.
+
+In the context of the Bluebird digital twin, no difference is made between a VOR and a FIX.

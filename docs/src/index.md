@@ -49,5 +49,5 @@ The BluebirdATC repo is made up of four packages, `bluebird-dt`, `bluebird-api`,
 - **Fast Surrogate Models for Adaptive Aircraft Trajectory Prediction in En route Airspace**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.03075)
 - **Online Action-Stacking Improves Reinforcement Learning Performance for Air Traffic Control**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.04287)
 - **Conditioning Aircraft Trajectory Prediction on Meteorological Data with a Physics-Informed Machine Learning Approach**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.03152)
-- **A Future Capabilities Agent for Tactical Air Traffic Control**, AIAA SciTech Forum (2026): https://arxiv.org/abs/2601.04285
-- **Towards Transparent AI Agents for Air Traffic Control**, AIAA SciTech Forum (2026): http://dx.doi.org/10.2139/ssrn.6042354
+- **A Future Capabilities Agent for Tactical Air Traffic Control**, AIAA SciTech Forum (2026): [paper](https://arxiv.org/abs/2601.04285)
+- **Towards Transparent AI Agents for Air Traffic Control**, AIAA SciTech Forum (2026): [paper](http://dx.doi.org/10.2139/ssrn.6042354)

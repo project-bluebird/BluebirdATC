@@ -51,7 +51,12 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
 
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 plugins:
   - search
@@ -74,16 +79,15 @@ validation:
 
 nav:
   - Project Bluebird: index.md
-
+  - Neurips competition: competition.md
   - User guide:
     - Getting started: getting-started.md
 
     - ATC concepts:
         - atc/index.md
-        - Clearances: atc/clearances.md
         - Airspace: atc/airspace.md
         - Aircraft: atc/aircraft.md
-        - Waypoints: atc/waypoints.md
+        - Clearances: atc/clearances.md
 
   - bluebird-dt: "!include ../bluebird-dt/mkdocs.yml"
 
