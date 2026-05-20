@@ -1,12 +1,12 @@
 [project]
 name = "bluebird-dt-docs"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.10"
 
 dependencies = [
-    "bluebird-dt==0.1.0",
-    "bluebird-api==0.1.0",
-    "bluebird-gymnasium==0.0.0",
+    "bluebird-dt==0.2.0",
+    "bluebird-api==0.2.0",
+    "bluebird-gymnasium==0.2.0",
     "mkdocs==1.6.1",
     "mkdocs-jupyter==0.26.1",
     "mkdocs-material==9.7.6",
