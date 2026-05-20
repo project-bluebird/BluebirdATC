@@ -3,6 +3,19 @@
   display: none;
 }
 
+:root  > * {
+  --md-primary-fg-color: #173C4F;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-typeset-a-color: #41DCF5;
+  --md-default-bg-color: #081721;
+}
+
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #1C3D4E;
+}
+
 /* Material's generic copy button is unreliable on mkdocs-jupyter markdown code fences.
    Notebook code cells already render their own clipboard control, so hide the Material one
    within notebook pages to avoid showing a broken icon. */
