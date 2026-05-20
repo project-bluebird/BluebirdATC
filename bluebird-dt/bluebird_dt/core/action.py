@@ -50,7 +50,7 @@ class Action(Comparison):
             The Aircraft callsign.
         kind: str
             Action type. All supported actions are found in the SUPPORTED_ACTIONS dictionary in the utility folder.
-            
+
             - `route_direct_to`: go directly to named Fix(es) on Route (and set to route following)
             - `change_heading_to`: change heading to the specified degrees
             - `change_heading_to_by_direction`: change heading to the specified degrees by turning in a specific
