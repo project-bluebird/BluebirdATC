@@ -44,6 +44,14 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
 
 plugins:
   - search
@@ -71,13 +79,11 @@ nav:
     - Getting started: getting-started.md
 
     - ATC concepts:
-        - Overview: atc-introduction-and-glossary.md
-        - ATC Instructions: atc-introduction-and-glossary.md#atc-instructions
-        - Glossary: atc-introduction-and-glossary.md#glossary
-        - Airspace: atc-introduction-and-glossary.md#airspace
-        - Instruction: atc-introduction-and-glossary.md#instruction
-        - Aircraft: atc-introduction-and-glossary.md#aircraft
-        - Miscellaneous: atc-introduction-and-glossary.md#miscellaneous
+        - atc/index.md
+        - Clearances: atc/clearances.md
+        - Airspace: atc/airspace.md
+        - Aircraft: atc/aircraft.md
+        - Waypoints: atc/waypoints.md
 
   - bluebird-dt: "!include ../bluebird-dt/mkdocs.yml"
 

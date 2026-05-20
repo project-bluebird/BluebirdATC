@@ -8,10 +8,6 @@ It supports either single agent or multi-agents scenarios.
 
 ## Installation
 
-The default installation instructions are based on the use of `uv`, a package and dependency manager. However, if you want to perform a `conda` based installation, please visit the [alternate installation instructions](./ALTERNATE_INSTALLATION.md#instructions) which contains installation and steps and how to use the package. 
-
-### Default Installation Instructions
-
 `bluebird-gymnasium` is available on pypi, therefore it can be installed using
 
 ```

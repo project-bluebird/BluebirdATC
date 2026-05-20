@@ -147,6 +147,7 @@ venv.bak/
 /site
 /bluebird-api/docs/examples/**/*.ipynb
 /bluebird-dt/docs/examples/**/*.ipynb
+/bluebird-dt/docs/examples/**/*.gif
 /bluebird-gymnasium/docs/examples/**/*.ipynb
 
 # mypy

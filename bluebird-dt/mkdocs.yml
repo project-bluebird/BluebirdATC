@@ -7,26 +7,25 @@ plugins:
 nav:
   - Getting started with bluebird-dt: getting-started.md
   - Available airspace:
-      - airspace.md
-      - Sectors:
-          - I-sector: ./airspace.md#i-sector
-          - Y-sector: ./airspace.md#y-sector
-          - X-sector: ./airspace.md#x-sector
-          - Xplus-sector: ./airspace.md#xplus-sector
-          - Springfield: ./airspace.md#springfield
+      - airspace/index.md
+      - I-sector: airspace#i-sector
+      - Y-sector: airspace#y-sector
+      - X-sector: airspace#x-sector
+      - Xplus-sector: airspace#xplus-sector
+      - Springfield: airspace#springfield
   - Available scenarios:
-      - scenarios.md
-      - Two Aircraft: ./scenarios.md#two-aircraft
-      - Regular: ./scenarios.md#regular
-      - Custom: ./scenarios.md#custom
-      - Infinite: ./scenarios.md#infinite
+      - scenarios/index.md
+      - Two Aircraft: scenarios#two-aircraft
+      - Regular: scenarios#regular
+      - Custom: scenarios#custom
+      - Infinite: scenarios#infinite
   - Digital twin concepts:
-      - design.md
-      - Core classes: ./design.md#core-classes
-      - Scenario and airspace generators: ./design.md#scenario-and-airspace-generators
-      - Simulation and event management: ./desing.md#simulation-and-event-management
-      - Predictors: ./design.md#predictors
-      - Utility functions: ./design.md#utility-functions
+      - design/index.md
+      - Core classes: design#core-classes
+      - Scenario and airspace generators: design#scenario-and-airspace-generators
+      - Simulation and event management: desing#simulation-and-event-management
+      - Predictors: design#predictors
+      - Utility functions: design#utility-functions
   - Examples with bluebird-dt:
     - Simulation example: examples/Intro-Part-1.ipynb
     - Simulation example: examples/Intro-Part-2.ipynb
