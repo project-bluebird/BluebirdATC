@@ -8,7 +8,7 @@ This repository contains the following packages:
  * `bluebird-hmi` - an optional web-based visualisation package.  See [here](bluebird-hmi/README.md) for details.
   
 ## (AI)r traffic controller challenge
-Information relating to the (AI)r traffic controller challenge can be found in the `competition` folder. See the `Competition-Intro.ipynb` notebook to get started with the competition specific setup. Detailed introduction and guide will be added close to the completion date.
+Information relating to the (AI)r traffic controller challenge can be found [here](https://docs.projectbluebird.ai/examples/competition/Competition-Intro/) to get started with the competition specific setup.
 
 ## Running the digital twin
 

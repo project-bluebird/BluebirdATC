@@ -12,6 +12,10 @@ This site will open a radar HMI, initially with no scenario loaded.
 To load a scenario, the top left of the window select `Load new scenario`.
 A window will appear in the middle of the screen, select `Artificial`, then `I-Sector Two Aircraft` and finally, `Load`.
 
+<div style="text-align: center;">
+<img src="../images/i-sector-radar.png" width="600" position="center">
+</div>
+
 With the scenario loaded, the aircraft and sector should now be visible in the radar. Clicking the play icon in the top left of the screen will make the simulation evolve making the aircraft move.
 
 ## Quick start for developing agents

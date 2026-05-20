@@ -79,7 +79,7 @@ validation:
 
 nav:
   - Project Bluebird: index.md
-  - Neurips competition: competition.md
+  - Neurips competition: examples/competition/Competition-Intro.ipynb
   - User guide:
     - Getting started: getting-started.md
 
@@ -88,6 +88,7 @@ nav:
         - Airspace: atc/airspace.md
         - Aircraft: atc/aircraft.md
         - Clearances: atc/clearances.md
+        - Coordinations: atc/coordinations.md
 
   - bluebird-dt: "!include ../bluebird-dt/mkdocs.yml"
 

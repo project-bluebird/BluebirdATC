@@ -149,6 +149,7 @@ venv.bak/
 /bluebird-dt/docs/examples/**/*.ipynb
 /bluebird-dt/docs/examples/**/*.gif
 /bluebird-gymnasium/docs/examples/**/*.ipynb
+/docs/src/examples/**/*.ipynb
 
 # mypy
 .mypy_cache/

@@ -12,6 +12,7 @@ def reset_examples_root() -> None:
     shutil.rmtree(REPO_ROOT / "bluebird-dt" / "docs" / "examples", ignore_errors=True)
     shutil.rmtree(REPO_ROOT / "bluebird-gymnasium" / "docs" / "examples", ignore_errors=True)
     shutil.rmtree(REPO_ROOT / "bluebird-api" / "docs" / "examples", ignore_errors=True)
+    shutil.rmtree(DOCS_EXAMPLES_ROOT, ignore_errors = True)
     DOCS_EXAMPLES_ROOT.mkdir(parents=True, exist_ok=True)
 
 
@@ -24,6 +25,7 @@ def main() -> None:
     copy_tree(REPO_ROOT / "bluebird-dt" / "examples", REPO_ROOT / "bluebird-dt" / "docs" / "examples" )
     copy_tree(REPO_ROOT / "bluebird-gymnasium" / "examples", REPO_ROOT / "bluebird-gymnasium" / "docs" / "examples")
     copy_tree(REPO_ROOT / "bluebird-api" / "examples", REPO_ROOT / "bluebird-api" / "docs" / "examples")
+    copy_tree(REPO_ROOT / "competition", DOCS_EXAMPLES_ROOT / "competition")
 
 
 if __name__ == "__main__":

@@ -12,9 +12,11 @@ Controlled airspace is that which requires pilots to obtain ATC clearance to ent
 
 Uncontrolled airspace is any airspace that is not controlled airspace.
 
-## Sectors
+## Sector
 
-Refers to a collection of volumes, pre-defined three-dimensional polyhedron, they are responsible for.
+Refers to a collection of volumes, pre-defined three-dimensional polyhedron, managed by one controller.
+Aircraft must stay within their sector before their exit co-ordination is reached.
+
 The sectors in the Bluebird digital twin are all assumed to be controlled airspace, and therefore aircraft must followed all the instructions issued by air traffic control.
 
 ## Waypoint
