@@ -36,11 +36,11 @@ The next script is an example of an agent in python, which requires bluebird-dt 
 pip install bluebird-dt requests
 ```
 
-It tells all aircraft, on incomm, to fly to their exit fix and climb directly to their exit flight level without ensuring safety or garanteeing that aircraft will leave the sector.
+It tells all aircraft, on incomm, to fly to their exit fix and climb directly to their exit flight level without ensuring safety or guaranteeing that aircraft will leave the sector.
 
 ```python
 from bluebird_dt.core import Environment, Action
-import time, requests, json
+import time, requests
 
 callsigns_done = []
 
@@ -48,7 +48,7 @@ while True:
     response = requests.get("http://localhost:8000/environment")
     environment = Environment.from_json(response.text)
 
-    actions_to_issue: list[Action] = []
+    actions_to_issue = []
 
     for aircraft in environment.aircraft.values():
 
@@ -82,7 +82,7 @@ while True:
     if len(actions_to_issue) > 0:
         response = requests.post(
                 "http://localhost:8000/actions",
-                data=json.dumps(actions_to_issue)
+                json=actions_to_issue
                 )
     
     # Wait for the next tick

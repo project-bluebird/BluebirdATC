@@ -52,7 +52,7 @@ This example is very simple, various examples of using the `bluebird_dt` package
 
 ## Documentation
 
-The online documentation for the `bluebird_dt` package can be found by in [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai)
+The online documentation for the `bluebird_dt` package can be found at in [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai)
 
 ### Running the digital twin as a server.
 

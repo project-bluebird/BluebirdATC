@@ -30,7 +30,7 @@ It tells all aircraft, on incomm, to fly to their exit fix and climb directly to
 
 ```python
 from bluebird_dt.core import Environment, Action
-import time, requests, json
+import time, requests
 
 callsigns_done = []
 
@@ -39,7 +39,7 @@ while True:
     response = requests.get("http://localhost:8000/environment")
     environment = Environment.from_json(response.text)
 
-    actions_to_issue: list[Action] = []
+    actions_to_issue = []
 
     # Iterate through all the aircraft in the airspace
     for aircraft in environment.aircraft.values():
@@ -80,7 +80,7 @@ while True:
     if len(actions_to_issue) > 0:
         response = requests.post(
                 "http://localhost:8000/actions",
-                data=json.dumps(actions_to_issue)
+                json=actions_to_issue
                 )
     
     # Wait for the next tick
@@ -101,4 +101,4 @@ A json format of this API is also available in [http://localhost:8000/openapi.js
 
 ### Julia example
 
-A more complete example of how to use the API is available in [NonPythonAgents.ipynb](examples/bluebird-dt/NonPythonAgents/)
+A more complete example of how to use the API is available in [NonPythonAgents.ipynb](../examples/NonPythonAgents)

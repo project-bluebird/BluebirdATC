@@ -25,19 +25,19 @@ The BluebirdATC repo is made up of four packages, `bluebird-dt`, `bluebird-api`,
 
 - :material-cube-outline: **bluebird-dt**
   Core digital twin package.
-  [Open docs →](bluebird-dt/index.md)
+  [Getting started →](bluebird-dt/getting-started.md)
 
 - :material-api: **bluebird-api**
   HTTP interface for the twin.
-  [Open docs →](bluebird-api/index.md)
+  [Getting started →](bluebird-api/getting-started.md)
 
 - :material-robot: **bluebird-gymnasium**
   Gym wrapper for training agents.
-  [Open docs →](bluebird-gymnasium/index.md)
+  [Getting started →](bluebird-gymnasium/getting-started.md)
 
 - :material-monitor: **bluebird-hmi**
   React UI for visualization.
-  [Open docs →](bluebird-hmi/index.md)
+  [Getting started →](bluebird-hmi/getting-started.md)
 
 </div>
 
