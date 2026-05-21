@@ -12,13 +12,13 @@ def test_init_exception(gym_env, knn):
     num_actions_per_aircraft = action_parser.get_num_actions_per_aircraft(
         exclude_noop_action=False
     )
-    _ = DrlanRepresentation(
+    DrlanRepresentation(
         knn=knn,
         num_forward_fixes=3,
         use_filed_route=True,
         num_actions=num_actions_per_aircraft,
     )
-    _ = DrlanRepresentationRaw(
+    DrlanRepresentationRaw(
         knn=knn,
         num_forward_fixes=3,
         use_filed_route=True,

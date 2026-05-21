@@ -11,8 +11,8 @@ from bluebird_gymnasium.state_repr.extraminimal import (
 
 @pytest.mark.parametrize("knn", [0, 2, 4])
 def test_init_exception(gym_env, knn):
-    _ = ExtraMinimalRepresentation(knn=knn)
-    _ = ExtraMinimalRepresentationRaw(knn=knn)
+    ExtraMinimalRepresentation(knn=knn)
+    ExtraMinimalRepresentationRaw(knn=knn)
 
 
 @pytest.mark.parametrize("knn", [0, 2, 4])

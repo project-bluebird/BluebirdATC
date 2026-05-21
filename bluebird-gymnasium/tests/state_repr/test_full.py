@@ -7,8 +7,8 @@ from bluebird_gymnasium.state_repr.full import FullRepresentationRaw
 
 @pytest.mark.parametrize("knn", [0, 2, 4])
 def test_init_exception(gym_env, knn):
-    _ = FullRepresentation(knn=knn)
-    _ = FullRepresentationRaw(knn=knn)
+    FullRepresentation(knn=knn)
+    FullRepresentationRaw(knn=knn)
 
 
 @pytest.mark.parametrize("knn", [0, 2, 4])

@@ -7,8 +7,8 @@ from bluebird_gymnasium.state_repr.vanilla import VanillaRepresentationRaw
 
 @pytest.mark.parametrize("knn", [0, 2, 4])
 def test_init_exception(gym_env, knn):
-    _ = VanillaRepresentation(knn=knn)
-    _ = VanillaRepresentationRaw(knn=knn)
+    VanillaRepresentation(knn=knn)
+    VanillaRepresentationRaw(knn=knn)
 
 
 @pytest.mark.parametrize("knn", [0, 2, 4])

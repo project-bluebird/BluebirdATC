@@ -7,8 +7,8 @@ from bluebird_gymnasium.state_repr.relative import RelativeRepresentationRaw
 
 @pytest.mark.parametrize("knn", [0, 2, 4])
 def test_init_exception(gym_env, knn):
-    _ = RelativeRepresentation(knn=knn)
-    _ = RelativeRepresentationRaw(knn=knn)
+    RelativeRepresentation(knn=knn)
+    RelativeRepresentationRaw(knn=knn)
 
 
 @pytest.mark.parametrize("knn", [0, 2, 4])

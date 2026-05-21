@@ -5,6 +5,7 @@ import pytest
 from bluebird_gymnasium.envs import ViewType
 from bluebird_gymnasium.envs.sector_i import SectorIEnv
 from bluebird_gymnasium.utils.types import PositionStatus, ACPositionInfo
+from tests.rewards.conftest import gym_env
 
 VIEW_TYPES = list(ViewType)
 
@@ -24,7 +25,7 @@ def test_init_exceptions(view_type: ViewType):
             or DECENTRALIZED (multi agent) representations.
     """
 
-    _ = _get_env_instance(view_type)
+    _get_env_instance(view_type)
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
@@ -115,7 +116,7 @@ def test_pos_information(view_type: ViewType):
         action = {}  # no action on any aircraft
 
     gym_env = _get_env_instance(view_type)
-    _ = gym_env.reset()
+    gym_env.reset()
 
     # forward the simulation to the time when at least one aircraft is being
     # tracked

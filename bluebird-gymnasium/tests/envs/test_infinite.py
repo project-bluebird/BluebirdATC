@@ -57,7 +57,7 @@ def test_init_exceptions(view_type: ViewType, env_cls: EnvCls):
         env_cls: defines the gymnasium environment class to use.
     """
 
-    _ = _get_env_instance(view_type, env_cls)
+    _get_env_instance(view_type, env_cls)
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
@@ -178,7 +178,7 @@ def test_pos_information(view_type: ViewType, env_cls: EnvCls):
         action = {}  # no action on any aircraft
 
     gym_env = _get_env_instance(view_type, env_cls)
-    _ = gym_env.reset()
+    gym_env.reset()
 
     # forward the simulation to the time when at least one aircraft is being
     # tracked
