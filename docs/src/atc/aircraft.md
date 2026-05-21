@@ -72,11 +72,21 @@ For simplicity, the digital twin does not work with full ICAO flight plans, only
 
 #### Unexpanded route
 
+The unexpanded route is the aircraft's route description using standard ICAO abbreviations, waypoint and airways.
+This is what would be filed as part of Item 15 of an ICAO flight plan.
+
 #### Origin
+
+The ICAO code of the departure airport the aircraft is flying from.
 
 #### Destination
 
+The ICAO code of the destination airport the aircraft is flying to.
+
 #### Requested flight level
+
+The requested cruise flight level the aircraft wants to climb to.
+The digital twin currently only supports a single requested flight level to the entire flight, ignoring flight planned requestes to change level.
 
 #### Route
 Refers to a series of fixes that an aircraft is required to fly through.
