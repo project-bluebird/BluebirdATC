@@ -43,9 +43,7 @@ class SectorIEnv(BaseEnv):
             environment and the underlying simulator.
     """
 
-    scenario_seed_mode = (
-        ScenarioGenSeedMode.LEGACY_MODULE_RNGS
-    )
+    scenario_seed_mode = ScenarioGenSeedMode.LEGACY_MODULE_RNGS
 
     def __init__(
         self,

@@ -146,7 +146,7 @@ class ExtraMinimalRepresentationRaw(BaseRepresentation):
         """
 
         tracked_data = gym_env.get_tracked_aircraft_data()
-        
+
         ####### utils: get useful information for computing base features
         # centreline distance
         ac_centre_dist, turn_dir, _ = tracked_data[callsign].centreline_info_fr

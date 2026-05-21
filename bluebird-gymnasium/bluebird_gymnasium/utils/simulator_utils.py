@@ -868,7 +868,9 @@ def east_north_ground_speed(
             latitude=aircraft.lat,
             longitude=aircraft.lon,
         )
-        horizontal_tas_kts = horizontal_tas(aircraft.speed_tas, aircraft.vertical_speed)
+        horizontal_tas_kts = horizontal_tas(
+            aircraft.speed_tas, aircraft.vertical_speed
+        )
         # copied from bluebird_dt.utility.convert.ground_speed_from_tas
         east_ground_speed = (
             wind_vector.u_comp * MPS_TO_KT

@@ -14,7 +14,11 @@ from bluebird_gymnasium.utils.types import PositionStatus
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.environment import Environment as SimulatorEnv
     from bluebird_gymnasium.envs.base import BaseEnv
-    from bluebird_gymnasium.utils.types import ACStateTracker, InteractionInfo, Number
+    from bluebird_gymnasium.utils.types import (
+        ACStateTracker,
+        InteractionInfo,
+        Number,
+    )
 
 
 def get_overlap_coeff(

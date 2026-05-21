@@ -11,7 +11,7 @@ DEFAULT_ROUTE_PARALLEL = 1
 DEFAULT_INTERVAL_FL = 10
 DEFAULT_INTERVAL_HEADING = 5
 
-from bluebird_gymnasium.utils.module_registry import ModuleRegistry # noqa: E402
+from bluebird_gymnasium.utils.module_registry import ModuleRegistry  # noqa: E402
 
 registry_actions = ModuleRegistry()
 base_pkg = "bluebird_gymnasium.actions"

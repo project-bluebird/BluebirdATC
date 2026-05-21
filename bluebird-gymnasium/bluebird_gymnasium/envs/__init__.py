@@ -42,8 +42,8 @@ ActionType: TypeAlias = typing.Union[int, dict[str, int]]
 
 
 ## enums
-from enum import IntEnum # noqa: E402
-from bluebird_gymnasium.utils.types import MetaEnum, StrEnum # noqa: E402
+from enum import IntEnum  # noqa: E402
+from bluebird_gymnasium.utils.types import MetaEnum, StrEnum  # noqa: E402
 
 
 class SuccessMetric(IntEnum, metaclass=MetaEnum):
@@ -153,8 +153,8 @@ class EnvConfig:
 
 
 # aircraft scenario generator class(es)
-from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager # noqa: E402
-from bluebird_dt.scenario_manager import ( # noqa: E402
+from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager  # noqa: E402
+from bluebird_dt.scenario_manager import (  # noqa: E402
     Regular,
     Tactical,
     TwoAircraft,
@@ -168,13 +168,13 @@ SCENARIO_CLS: dict[str, ScenarioManager] = {
 
 
 # now envs module imports
-from bluebird_gymnasium.envs.base import BaseEnv # noqa: E402
-from bluebird_gymnasium.envs.infinite import CustomInfiniteEnv, InfiniteEnv # noqa: E402
-from bluebird_gymnasium.envs.sector_i import SectorIEnv # noqa: E402
-from bluebird_gymnasium.envs.sector_x import SectorXEnv # noqa: E402
-from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv # noqa: E402
-from bluebird_gymnasium.envs.sector_y import SectorYEnv # noqa: E402
-from bluebird_gymnasium.envs.springfield import SpringfieldEnv # noqa: E402
+from bluebird_gymnasium.envs.base import BaseEnv  # noqa: E402
+from bluebird_gymnasium.envs.infinite import CustomInfiniteEnv, InfiniteEnv  # noqa: E402
+from bluebird_gymnasium.envs.sector_i import SectorIEnv  # noqa: E402
+from bluebird_gymnasium.envs.sector_x import SectorXEnv  # noqa: E402
+from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv  # noqa: E402
+from bluebird_gymnasium.envs.sector_y import SectorYEnv  # noqa: E402
+from bluebird_gymnasium.envs.springfield import SpringfieldEnv  # noqa: E402
 
 registry_env: dict[str, BaseEnv] = {
     "base": BaseEnv,
