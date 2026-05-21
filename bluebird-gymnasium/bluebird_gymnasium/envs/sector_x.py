@@ -63,9 +63,7 @@ class SectorXEnv(BaseEnv):
         # if the `exit_window_width` value was originally None, override the
         # default set in the parent class with a new default here (based on
         # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get(
-            "exit_window_width", None
-        )
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
         if exit_window_width is None:
             self.exit_window_width = self.config.airspace_config["width"] // 2
         else:
@@ -139,9 +137,7 @@ class SectorXEnv(BaseEnv):
         return sim
 
     @classmethod
-    def get_default_env_config(
-        cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED
-    ) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.

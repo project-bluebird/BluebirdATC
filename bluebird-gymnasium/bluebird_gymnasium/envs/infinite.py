@@ -90,9 +90,7 @@ class InfiniteEnv(BaseEnv):
         # if the `exit_window_width` value was originally None, override the
         # default set in the parent class with a new default here (based on
         # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get(
-            "exit_window_width", None
-        )
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
         if exit_window_width is None:
             self.exit_window_width = 10
 
@@ -137,9 +135,7 @@ class InfiniteEnv(BaseEnv):
         return sim
 
     @classmethod
-    def get_default_env_config(
-        cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED
-    ) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
@@ -217,9 +213,7 @@ class InfiniteEnv(BaseEnv):
                 ],
                 "coeffs": [1.0, 1.0],
             },
-            "scenario_config": {
-                "scenario_name": ScenarioName.sector_xplus.value
-            },
+            "scenario_config": {"scenario_name": ScenarioName.sector_xplus.value},
             "simulation_log_config": {
                 "save_simulation": False,
                 "log_suffix": "",
@@ -284,9 +278,7 @@ class CustomInfiniteEnv(BaseEnv):
         # if the `exit_window_width` value was originally None, override the
         # default set in the parent class with a new default here (based on
         # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get(
-            "exit_window_width", None
-        )
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
         if exit_window_width is None:
             self.exit_window_width = 10
 
@@ -321,26 +313,14 @@ class CustomInfiniteEnv(BaseEnv):
         sim = Infinite.setup(
             scenario_name=self.config.scenario_config["scenario_name"],
             random_seed=(
-                self._reset_seed
-                if self._reset_seed is not None
-                else self.config.scenario_config["random_seed"]
+                self._reset_seed if self._reset_seed is not None else self.config.scenario_config["random_seed"]
             ),
-            num_starter_aircraft=self.config.scenario_config[
-                "num_starter_aircraft"
-            ],
-            initial_spawn_rate=self.config.scenario_config[
-                "initial_spawn_rate"
-            ],
-            spawn_rate_increment=self.config.scenario_config[
-                "spawn_rate_increment"
-            ],
-            spawn_rate_increase_interval=self.config.scenario_config[
-                "spawn_rate_increase_interval"
-            ],
+            num_starter_aircraft=self.config.scenario_config["num_starter_aircraft"],
+            initial_spawn_rate=self.config.scenario_config["initial_spawn_rate"],
+            spawn_rate_increment=self.config.scenario_config["spawn_rate_increment"],
+            spawn_rate_increase_interval=self.config.scenario_config["spawn_rate_increase_interval"],
             max_spawn_rate=self.config.scenario_config["max_spawn_rate"],
-            spawn_distance_threshold=self.config.scenario_config[
-                "spawn_distance_threshold"
-            ],
+            spawn_distance_threshold=self.config.scenario_config["spawn_distance_threshold"],
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
             autosave=False,
@@ -353,9 +333,7 @@ class CustomInfiniteEnv(BaseEnv):
         return sim
 
     @classmethod
-    def get_default_env_config(
-        cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED
-    ) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.

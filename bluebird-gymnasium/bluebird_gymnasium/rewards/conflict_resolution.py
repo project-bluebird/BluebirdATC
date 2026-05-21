@@ -111,9 +111,7 @@ def get_overlap_coeff(
             # before intersection point. if yes lateral deconfliction is not
             # required. otherwise, it is required.
 
-            _intersection = main_or_proxy_intersection_location(
-                callsign, interaction
-            )
+            _intersection = main_or_proxy_intersection_location(callsign, interaction)
             ac_status = top_of_ascent_before_intersection(
                 callsign,
                 simulator_env,
@@ -136,9 +134,7 @@ def get_overlap_coeff(
 
     elif (ac_fl > ac_exit_fl) and (other_ac_fl > other_ac_exit_fl):
         # both aircraft need to descend to reach their exit flight levels.
-        _location = (
-            main_or_proxy_intersection_location(callsign, interaction)
-        ).location
+        _location = (main_or_proxy_intersection_location(callsign, interaction)).location
 
         ac_status = top_of_descent_after_intersection(
             simulator_env.aircraft[callsign],
@@ -164,9 +160,7 @@ def get_overlap_coeff(
 
     elif (ac_fl > ac_exit_fl) and (other_ac_fl == other_ac_exit_fl):
         # aircraft: descend, other aircraft: overfly
-        _location = (
-            main_or_proxy_intersection_location(callsign, interaction)
-        ).location
+        _location = (main_or_proxy_intersection_location(callsign, interaction)).location
 
         ac_status = top_of_descent_after_intersection(
             simulator_env.aircraft[callsign],
@@ -182,9 +176,7 @@ def get_overlap_coeff(
 
     elif (ac_fl == ac_exit_fl) and (other_ac_fl > other_ac_exit_fl):
         # aircraft: overfly, other aircraft: descend
-        _location = (
-            main_or_proxy_intersection_location(callsign, interaction)
-        ).location
+        _location = (main_or_proxy_intersection_location(callsign, interaction)).location
 
         other_ac_status = top_of_descent_after_intersection(
             simulator_env.aircraft[other_callsign],
@@ -200,9 +192,7 @@ def get_overlap_coeff(
 
     elif (ac_fl < ac_exit_fl) and (other_ac_fl == other_ac_exit_fl):
         # aircraft: climb, other aircraft: overfly
-        _intersection = main_or_proxy_intersection_location(
-            callsign, interaction
-        )
+        _intersection = main_or_proxy_intersection_location(callsign, interaction)
 
         ac_status = top_of_ascent_before_intersection(
             callsign,
@@ -217,9 +207,7 @@ def get_overlap_coeff(
 
     elif (ac_fl == ac_exit_fl) and (other_ac_fl < other_ac_exit_fl):
         # aircraft: overfly, other aircraft: climb
-        _intersection = main_or_proxy_intersection_location(
-            callsign, interaction
-        )
+        _intersection = main_or_proxy_intersection_location(callsign, interaction)
 
         other_ac_status = top_of_ascent_before_intersection(
             other_callsign,
@@ -234,9 +222,7 @@ def get_overlap_coeff(
 
     elif (ac_fl < ac_exit_fl) and (other_ac_fl > other_ac_exit_fl):
         # aircraft: climb, other aircraft: descend
-        _location = (
-            main_or_proxy_intersection_location(callsign, interaction)
-        ).location
+        _location = (main_or_proxy_intersection_location(callsign, interaction)).location
 
         other_ac_status = top_of_descent_after_intersection(
             simulator_env.aircraft[other_callsign],
@@ -252,9 +238,7 @@ def get_overlap_coeff(
 
     elif (ac_fl > ac_exit_fl) and (other_ac_fl < other_ac_exit_fl):
         # aircraft: descend, other aircraft: climb
-        _location = (
-            main_or_proxy_intersection_location(callsign, interaction)
-        ).location
+        _location = (main_or_proxy_intersection_location(callsign, interaction)).location
 
         ac_status = top_of_descent_after_intersection(
             simulator_env.aircraft[callsign],
@@ -276,9 +260,7 @@ def get_overlap_coeff(
     return coeff
 
 
-def conflict_resolution_tanh(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def conflict_resolution_tanh(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for resolving conflict through heading deconfliction strategy.
 
     Note: when there are no conflict to resolve, a 0.0 reward is returned.
@@ -313,10 +295,7 @@ def conflict_resolution_tanh(
             # aircraft is not in the sector).
             # the penalty reduces from -1.0 to 0.0
             pair_distance = interaction.centreline_dist_diff_cr
-            if (
-                tracked_data[other_callsign].pos_status
-                == PositionStatus.IN_SECTOR
-            ):
+            if tracked_data[other_callsign].pos_status == PositionStatus.IN_SECTOR:
                 _diff = pair_distance - 2.5
             else:
                 # pair_distance only increases as the subject aircraft moves
@@ -359,9 +338,7 @@ def conflict_resolution_tanh(
     return 0.0 if len(_rewards) == 0 else float(np.sum(_rewards))
 
 
-def conflict_resolution_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def conflict_resolution_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for resolving conflict through heading deconfliction strategy.
 
     Note: when there are no conflict to resolve, a 0.0 reward is returned.
@@ -393,10 +370,7 @@ def conflict_resolution_exp(
             # lateral separation penalty: as aircraft become laterally
             # separated up to 5.0nm, the penalty reduces from -1.0 to 0.0
             pair_distance = interaction.centreline_dist_diff_cr
-            if (
-                tracked_data[other_callsign].pos_status
-                == PositionStatus.IN_SECTOR
-            ):
+            if tracked_data[other_callsign].pos_status == PositionStatus.IN_SECTOR:
                 _diff = pair_distance
             else:
                 # pair_distance only increases as the subject aircraft moves

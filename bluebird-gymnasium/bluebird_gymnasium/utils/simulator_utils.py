@@ -301,9 +301,7 @@ def predict_trajectory(
     trajectory = predictor.predict_trajectory(aircraft, duration, curr_time)
 
     if trajectory is None:
-        raise ValueError(
-            "No control points to return. Fix: increase `duration` parameter."
-        )
+        raise ValueError("No control points to return. Fix: increase `duration` parameter.")
 
     if isinstance(trajectory, list):
         return trajectory
@@ -338,17 +336,13 @@ def aircraft_entry_coordination(
 
     if sector_name is None:
         sectors = set(airspace.sectors.keys())
-        ac_coords = [
-            simulator_env.entry_coordination(sector_name, callsign)
-            for sector_name in sectors
-        ]
+        ac_coords = [simulator_env.entry_coordination(sector_name, callsign) for sector_name in sectors]
         return ac_coords
 
     else:
         if sector_name not in airspace.sectors.keys():
             raise ValueError(
-                f"Sector '{sector_name}' does not exist in airspace with "
-                f"sectors list: {list(airspace.sectors.keys())}"
+                f"Sector '{sector_name}' does not exist in airspace with sectors list: {list(airspace.sectors.keys())}"
             )
         # the method below could return None
         return simulator_env.entry_coordination(sector_name, callsign)
@@ -381,24 +375,18 @@ def aircraft_exit_coordination(
 
     if sector_name is None:
         sectors = set(airspace.sectors.keys())
-        ac_coords = [
-            simulator_env.exit_coordination(sector_name, callsign)
-            for sector_name in sectors
-        ]
+        ac_coords = [simulator_env.exit_coordination(sector_name, callsign) for sector_name in sectors]
         return ac_coords
     else:
         if sector_name not in airspace.sectors.keys():
             raise ValueError(
-                f"Sector '{sector_name}' does not exist in airspace with "
-                f"sectors list: {list(airspace.sectors.keys())}"
+                f"Sector '{sector_name}' does not exist in airspace with sectors list: {list(airspace.sectors.keys())}"
             )
         # the method below could return None
         return simulator_env.exit_coordination(sector_name, callsign)
 
 
-def top_of_ascent(
-    aircraft: Aircraft, target_fl: Number, wind: Number = 0
-) -> tuple[float, float]:
+def top_of_ascent(aircraft: Aircraft, target_fl: Number, wind: Number = 0) -> tuple[float, float]:
     """Computes the distance for an aircraft to climb to a target flight level.
 
     Computes the travel distance (in nautical miles) required for an aircraft
@@ -446,9 +434,7 @@ def top_of_ascent(
     return distance, time_mins
 
 
-def top_of_descent(
-    aircraft: Aircraft, target_fl: Number, wind: Number = 0
-) -> tuple[float, float]:
+def top_of_descent(aircraft: Aircraft, target_fl: Number, wind: Number = 0) -> tuple[float, float]:
     """Computes the distance for an aircraft to reach a target flight level.
 
     Computes the travel distance (in nautical miles) required for an aircraft
@@ -516,9 +502,7 @@ def top_of_descent(
     return distance, time_mins
 
 
-def distance_time_to_target_fl(
-    aircraft: Aircraft, target_fl: Number, wind: Number = 0
-) -> tuple[float, float]:
+def distance_time_to_target_fl(aircraft: Aircraft, target_fl: Number, wind: Number = 0) -> tuple[float, float]:
     """Computes the distance for an aircraft to reach a target flight level.
 
     Computes the travel distance (in nautical miles) required for an aircraft
@@ -589,15 +573,11 @@ def distance_to_target_pos_along_route(
 
     # calculate the track distance of the aircraft along its route (i.e.,
     # from the start of the route to the current aircraft position)
-    _, _, ac_track_distance = get_centreline_distance(
-        start_pos, route, airspace, route_start_position
-    )
+    _, _, ac_track_distance = get_centreline_distance(start_pos, route, airspace, route_start_position)
 
     # get the track distance to the target location
     # (i.e., from the start of the route)
-    _, _, target_track_distance = get_centreline_distance(
-        target_pos, route, airspace, route_start_position
-    )
+    _, _, target_track_distance = get_centreline_distance(target_pos, route, airspace, route_start_position)
 
     # approximate aircraft distance to target
     lateral_distance = target_track_distance - ac_track_distance
@@ -785,9 +765,7 @@ def get_aircraft_selected_flight_level(aircraft: Aircraft) -> Number:
         return aircraft.fl
 
 
-def infer_aircraft_speed(
-    aircraft: Aircraft, rollout_predictor: Predictor
-) -> tuple[float, float]:
+def infer_aircraft_speed(aircraft: Aircraft, rollout_predictor: Predictor) -> tuple[float, float]:
     """Infer aircraft true airspeed and groundspeed using a trajectory predictor
 
     Args:
@@ -801,9 +779,7 @@ def infer_aircraft_speed(
         - the inferred ground speed of the aircraft (in knots).
     """
 
-    predicted_aircraft = rollout_predictor.predict_aircraft(
-        aircraft, delta_t=12, deepcopy_aircraft=True
-    )
+    predicted_aircraft = rollout_predictor.predict_aircraft(aircraft, delta_t=12, deepcopy_aircraft=True)
     return predicted_aircraft.speed_tas, predicted_aircraft.ground_speed
 
 
@@ -837,9 +813,7 @@ def get_aircraft_selected_cas(aircraft: Aircraft) -> Number:
     return current_cas
 
 
-def east_north_ground_speed(
-    callsign: str, simulator_env: SimulatorEnv
-) -> tuple[float, float]:
+def east_north_ground_speed(callsign: str, simulator_env: SimulatorEnv) -> tuple[float, float]:
     """Get the east ground speed and north ground speed.
 
     The east and north ground speed are computed only if wind information
@@ -868,25 +842,19 @@ def east_north_ground_speed(
             latitude=aircraft.lat,
             longitude=aircraft.lon,
         )
-        horizontal_tas_kts = horizontal_tas(
-            aircraft.speed_tas, aircraft.vertical_speed
-        )
+        horizontal_tas_kts = horizontal_tas(aircraft.speed_tas, aircraft.vertical_speed)
         # copied from bluebird_dt.utility.convert.ground_speed_from_tas
-        east_ground_speed = (
-            wind_vector.u_comp * MPS_TO_KT
-            + horizontal_tas_kts * math.sin(math.radians(aircraft.heading))
+        east_ground_speed = wind_vector.u_comp * MPS_TO_KT + horizontal_tas_kts * math.sin(
+            math.radians(aircraft.heading)
         )
-        north_ground_speed = (
-            wind_vector.v_comp * MPS_TO_KT
-            + horizontal_tas_kts * math.cos(math.radians(aircraft.heading))
+        north_ground_speed = wind_vector.v_comp * MPS_TO_KT + horizontal_tas_kts * math.cos(
+            math.radians(aircraft.heading)
         )
 
     return east_ground_speed, north_ground_speed
 
 
-def get_n_forward_fixes(
-    route: list[str], start_from: str, n: int
-) -> list[str | None]:
+def get_n_forward_fixes(route: list[str], start_from: str, n: int) -> list[str | None]:
     """Get the next forward N fixes in a route.
 
     If `N` is greater than the available forward fixes in the route, then

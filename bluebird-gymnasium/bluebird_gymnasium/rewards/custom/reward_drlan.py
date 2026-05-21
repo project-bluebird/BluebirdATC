@@ -26,9 +26,7 @@ DEFAULT_LAMBDA = 1e-2
 DEFAULT_OMEGA = 1e-3
 
 
-def reward_drlan(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def reward_drlan(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward function implementation for IASA_DRLAN.
 
     Improving Autonomous Separation Assurance through Distributed Reinforcement
@@ -70,19 +68,11 @@ def reward_drlan(
         distance_aircraft_other_aircraft = closest_interaction.dist_ac_other
         fl_diff_aircraft_other_aircraft = closest_interaction.fl_diff_ac_other
 
-        if (
-            distance_aircraft_other_aircraft < DEFAULT_DX_NMAC
-            and fl_diff_aircraft_other_aircraft < DEFAULT_DZ_NMAC
-        ):
+        if distance_aircraft_other_aircraft < DEFAULT_DX_NMAC and fl_diff_aircraft_other_aircraft < DEFAULT_DZ_NMAC:
             r_st_ht = -1.0
 
-        elif (
-            distance_aircraft_other_aircraft >= DEFAULT_DX_NMAC
-            and distance_aircraft_other_aircraft < DEFAULT_D_MAX
-        ):
-            r_st_ht = -coeff_chi + (
-                coeff_delta * distance_aircraft_other_aircraft
-            )
+        elif distance_aircraft_other_aircraft >= DEFAULT_DX_NMAC and distance_aircraft_other_aircraft < DEFAULT_D_MAX:
+            r_st_ht = -coeff_chi + (coeff_delta * distance_aircraft_other_aircraft)
 
         else:
             r_st_ht = 0.0
@@ -96,10 +86,7 @@ def reward_drlan(
     elif action in action_parser.get_relative_fl_actions():
         r_at = -coeff_lambda
     else:
-        msg = (
-            "`iasa_drlan` only support set up where relative speed,"
-            "relative flight level actions/clearances are used."
-        )
+        msg = "`iasa_drlan` only support set up where relative speed,relative flight level actions/clearances are used."
         raise ValueError(msg)
 
     return r_st_ht + r_at - coeff_omega

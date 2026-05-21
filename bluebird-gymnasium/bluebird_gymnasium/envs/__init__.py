@@ -29,15 +29,11 @@ Config: TypeAlias = typing.Union[
     ViewConfig,
 ]
 
-ObsType: TypeAlias = typing.Union[
-    NDArray[numpy.float32], dict[str, NDArray[numpy.float32]]
-]
+ObsType: TypeAlias = typing.Union[NDArray[numpy.float32], dict[str, NDArray[numpy.float32]]]
 RewardType: TypeAlias = typing.Union[float, dict[str, float]]
 DoneType: TypeAlias = typing.Union[bool, dict[str, bool]]
 TruncatedType: TypeAlias = typing.Union[bool, dict[str, bool]]
-InfoType: TypeAlias = typing.Union[
-    dict[str, typing.Any], dict[str, dict[str, typing.Any]]
-]
+InfoType: TypeAlias = typing.Union[dict[str, typing.Any], dict[str, dict[str, typing.Any]]]
 ActionType: TypeAlias = typing.Union[int, dict[str, int]]
 
 

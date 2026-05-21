@@ -89,9 +89,7 @@ class MinimalRepresentationRaw(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(MinimalRepresentationRaw, self).__init__(
-            knn, num_forward_fixes, use_filed_route, num_actions
-        )
+        super(MinimalRepresentationRaw, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [0.0, -np.inf]
@@ -172,9 +170,7 @@ class MinimalRepresentationRaw(BaseRepresentation):
         feats_list = [base_feats] + fixes_feats + neighbours_feats
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -203,14 +199,8 @@ class MinimalRepresentationRaw(BaseRepresentation):
         prev_fix_pos = simulator_env.airspace.fixes.places[prev_fix]
 
         _next_fix = tracked_data[callsign].next_fix_fr
-        fixes = get_n_forward_fixes(
-            route, start_from=_next_fix, n=self.num_forward_fixes
-        )
-        next_fixes_pos = [
-            simulator_env.airspace.fixes.places[fix]
-            for fix in fixes
-            if fix is not None
-        ]
+        fixes = get_n_forward_fixes(route, start_from=_next_fix, n=self.num_forward_fixes)
+        next_fixes_pos = [simulator_env.airspace.fixes.places[fix] for fix in fixes if fix is not None]
         num_none_fixes = self.num_forward_fixes - len(next_fixes_pos)
 
         ac_pos = aircraft.pos2d()
@@ -250,9 +240,7 @@ class MinimalRepresentationRaw(BaseRepresentation):
 
         return fixes_feats
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -288,11 +276,7 @@ class MinimalRepresentationRaw(BaseRepresentation):
 
             tmp = np.asarray(
                 [
-                    (
-                        angle_diff_ac_other
-                        * convert.DEG_TO_RAD
-                        * turn_dir_ac_other
-                    ),
+                    (angle_diff_ac_other * convert.DEG_TO_RAD * turn_dir_ac_other),
                     dist_ac_other,
                 ],
                 dtype=np.float32,
@@ -371,9 +355,7 @@ class MinimalRepresentation(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(MinimalRepresentation, self).__init__(
-            knn, num_forward_fixes, use_filed_route, num_actions
-        )
+        super(MinimalRepresentation, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [-np.pi, -3.0]
@@ -452,9 +434,7 @@ class MinimalRepresentation(BaseRepresentation):
         feats_list = [base_feats] + fixes_feats + neighbours_feats
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -483,14 +463,8 @@ class MinimalRepresentation(BaseRepresentation):
         prev_fix_pos = simulator_env.airspace.fixes.places[prev_fix]
 
         _next_fix = tracked_data[callsign].next_fix_fr
-        fixes = get_n_forward_fixes(
-            route, start_from=_next_fix, n=self.num_forward_fixes
-        )
-        next_fixes_pos = [
-            simulator_env.airspace.fixes.places[fix]
-            for fix in fixes
-            if fix is not None
-        ]
+        fixes = get_n_forward_fixes(route, start_from=_next_fix, n=self.num_forward_fixes)
+        next_fixes_pos = [simulator_env.airspace.fixes.places[fix] for fix in fixes if fix is not None]
         num_none_fixes = self.num_forward_fixes - len(next_fixes_pos)
 
         ac_pos = aircraft.pos2d()
@@ -530,9 +504,7 @@ class MinimalRepresentation(BaseRepresentation):
 
         return fixes_feats
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -569,11 +541,7 @@ class MinimalRepresentation(BaseRepresentation):
             _dist = np.clip(dist_ac_other, 0.0, SRC.CLIP_DIST)
             tmp = np.asarray(
                 [
-                    (
-                        angle_diff_ac_other
-                        * convert.DEG_TO_RAD
-                        * turn_dir_ac_other
-                    ),
+                    (angle_diff_ac_other * convert.DEG_TO_RAD * turn_dir_ac_other),
                     _dist / SRS.SCALER_AC_OTHER_DIST,
                 ],
                 dtype=np.float32,

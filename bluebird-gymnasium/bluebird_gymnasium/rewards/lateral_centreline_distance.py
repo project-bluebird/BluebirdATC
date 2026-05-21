@@ -13,9 +13,7 @@ from bluebird_gymnasium.utils.simulator_utils import (
 from bluebird_gymnasium.utils.types import TurnDirection
 
 
-def lateral_centreline_distance_linear(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def lateral_centreline_distance_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for staying close to the aircraft's filed route centreline.
 
     Computed based on the linear distance of an aircraft from its route's
@@ -43,9 +41,7 @@ def lateral_centreline_distance_linear(
     ac = simulator_env.aircraft[callsign]
 
     if ac_tracked_state is None or ac_tracked_state.centreline_info_fr is None:
-        centre_dist, _, _ = get_centreline_distance(
-            ac.pos2d(), ac.flight_plan.route.filed, simulator_env.airspace
-        )
+        centre_dist, _, _ = get_centreline_distance(ac.pos2d(), ac.flight_plan.route.filed, simulator_env.airspace)
     else:
         centre_dist, _, _ = ac_tracked_state.centreline_info_fr
 
@@ -56,9 +52,7 @@ def lateral_centreline_distance_linear(
     return -1.0 * reward
 
 
-def lateral_centreline_distance_quad(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def lateral_centreline_distance_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for staying close to the aircraft's filed route centreline.
 
     Computed based on the aircraft's distance from the centreline, formulated
@@ -79,9 +73,7 @@ def lateral_centreline_distance_quad(
     ac = simulator_env.aircraft[callsign]
 
     if ac_tracked_state is None or ac_tracked_state.centreline_info_fr is None:
-        centre_dist, _, _ = get_centreline_distance(
-            ac.pos2d(), ac.flight_plan.route.filed, simulator_env.airspace
-        )
+        centre_dist, _, _ = get_centreline_distance(ac.pos2d(), ac.flight_plan.route.filed, simulator_env.airspace)
     else:
         centre_dist, _, _ = ac_tracked_state.centreline_info_fr
 
@@ -93,9 +85,7 @@ def lateral_centreline_distance_quad(
     return (-1.0 * (centre_dist**2 / 10)) + 2.5
 
 
-def lateral_centreline_distance_special(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def lateral_centreline_distance_special(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for staying close to the aircraft's filed route centreline.
 
         Uses a shaped function to incentivise staying within a 20nm wide airway.
@@ -112,17 +102,13 @@ def lateral_centreline_distance_special(
     simulator_env = gym_env.get_simulator_env()
     ac = simulator_env.aircraft[callsign]
 
-    centre_dist, _, _ = get_centreline_distance(
-        ac.pos2d(), ac.flight_plan.route.filed, simulator_env.airspace
-    )
+    centre_dist, _, _ = get_centreline_distance(ac.pos2d(), ac.flight_plan.route.filed, simulator_env.airspace)
     reward = -1.0 * (1 - np.exp(-((centre_dist / 6) ** 2)))
 
     return reward
 
 
-def lateral_centreline_distance_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def lateral_centreline_distance_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for staying close to the aircraft's filed route centreline.
 
     Computed based on the negative exponent of the aircraft's distance from
@@ -144,9 +130,7 @@ def lateral_centreline_distance_exp(
     ac = simulator_env.aircraft[callsign]
 
     if ac_tracked_state is None or ac_tracked_state.centreline_info_fr is None:
-        centre_dist, _, _ = get_centreline_distance(
-            ac.pos2d(), ac.flight_plan.route.filed, simulator_env.airspace
-        )
+        centre_dist, _, _ = get_centreline_distance(ac.pos2d(), ac.flight_plan.route.filed, simulator_env.airspace)
     else:
         centre_dist, _, _ = ac_tracked_state.centreline_info_fr
 
@@ -158,9 +142,7 @@ def lateral_centreline_distance_exp(
     return reward
 
 
-def lateral_centreline_distance_shaped(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def lateral_centreline_distance_shaped(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Shaped Reward for staying close to route's centreline
 
     Penalize for taking lateral actions away from the route's centre and
@@ -227,9 +209,7 @@ def lateral_centreline_distance_shaped(
             #
             # if scenario 1, then penalize agent, otherwise, reward agent.
 
-            future_pos = predict_trajectory_simple(
-                ac.pos2d(), ac.heading, distance=1.0, num_control_points=1
-            )[1]
+            future_pos = predict_trajectory_simple(ac.pos2d(), ac.heading, distance=1.0, num_control_points=1)[1]
             future_centre_dist, _, _ = get_centreline_distance(
                 future_pos, ac.flight_plan.route.filed, simulator_env.airspace
             )
@@ -259,45 +239,27 @@ def lateral_centreline_distance_shaped(
                 # aircraft is approaching a (next) fix where a turn action
                 # is required even though its on the route's centreline
 
-                if (
-                    nf_turn_dir == TurnDirection.LEFT
-                    and action in actions_decr_hd
-                ):
+                if nf_turn_dir == TurnDirection.LEFT and action in actions_decr_hd:
                     reward = 1.0
-                elif (
-                    nf_turn_dir == TurnDirection.RIGHT
-                    and action in actions_incr_hd
-                ):
+                elif nf_turn_dir == TurnDirection.RIGHT and action in actions_incr_hd:
                     reward = 1.0
                 else:
                     reward = -1.0
             else:
                 # penalize: agent made an unneccessary turn action for the
                 # aircraft even though it's approximately at the route centre
-                if (
-                    nf_turn_dir == TurnDirection.LEFT
-                    and action in actions_decr_hd
-                ):
+                if nf_turn_dir == TurnDirection.LEFT and action in actions_decr_hd:
                     reward = np.exp(-centre_dist)
-                elif (
-                    nf_turn_dir == TurnDirection.RIGHT
-                    and action in actions_incr_hd
-                ):
+                elif nf_turn_dir == TurnDirection.RIGHT and action in actions_incr_hd:
                     reward = np.exp(-centre_dist)
                 else:
                     reward = -1.0
 
         else:  # aircraft away from centreline
-            if (
-                centre_turn_dir == TurnDirection.LEFT
-                and action in actions_decr_hd
-            ):
+            if centre_turn_dir == TurnDirection.LEFT and action in actions_decr_hd:
                 # left direction and left action (heading left)
                 reward = 1.0
-            elif (
-                centre_turn_dir == TurnDirection.RIGHT
-                and action in actions_incr_hd
-            ):
+            elif centre_turn_dir == TurnDirection.RIGHT and action in actions_incr_hd:
                 # right direction and right action (heading left)
                 reward = 1.0
             else:

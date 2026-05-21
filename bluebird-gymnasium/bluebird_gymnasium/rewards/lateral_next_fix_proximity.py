@@ -8,9 +8,7 @@ from bluebird_gymnasium.utils.geo_utils import angle_diff
 from bluebird_gymnasium.utils.simulator_utils import prev_next_fixes
 
 
-def lateral_next_fix_proximity_bpfnf(
-    gym_env: BaseEnv, callsign: str, action: int, next_fix_idx: int, **kwargs
-):
+def lateral_next_fix_proximity_bpfnf(gym_env: BaseEnv, callsign: str, action: int, next_fix_idx: int, **kwargs):
     """Reward for aircraft's proximity to next fix.
 
     Computed based on the aircraft's lateral distance from the next fix.
@@ -31,12 +29,8 @@ def lateral_next_fix_proximity_bpfnf(
 
     reward = 0
     ac = simulator_env.aircraft[callsign]
-    fix0 = simulator_env.airspace.fixes.places[
-        ac.flight_plan.route.filed[next_fix_idx - 1]
-    ]
-    fix1 = simulator_env.airspace.fixes.places[
-        ac.flight_plan.route.filed[next_fix_idx]
-    ]
+    fix0 = simulator_env.airspace.fixes.places[ac.flight_plan.route.filed[next_fix_idx - 1]]
+    fix1 = simulator_env.airspace.fixes.places[ac.flight_plan.route.filed[next_fix_idx]]
     fix_parallel_heading = fix0.bearing_to(fix1)
     ac_next_angle = angle_diff(fix_parallel_heading, ac.heading)
     if ac_next_angle > 5:
@@ -44,9 +38,7 @@ def lateral_next_fix_proximity_bpfnf(
     return -1.0 * reward
 
 
-def lateral_next_fix_proximity_bacnf(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-):
+def lateral_next_fix_proximity_bacnf(gym_env: BaseEnv, callsign: str, action: int, **kwargs):
     """Reward for aircraft's proximity to next fix.
 
     Computed based on the aircraft's lateral distance from the next fix.
@@ -66,9 +58,7 @@ def lateral_next_fix_proximity_bacnf(
 
     reward = 0
     ac = simulator_env.aircraft[callsign]
-    str_next_fix = simulator_env.airspace.closest_forward_fix(
-        ac, distance_threshold_NMI=10.0
-    )
+    str_next_fix = simulator_env.airspace.closest_forward_fix(ac, distance_threshold_NMI=10.0)
     if str_next_fix is None:
         # assume that aircraft has gotten to the end of its planned
         # route in its flight plan. raise a warning for now and
@@ -86,21 +76,15 @@ def lateral_next_fix_proximity_bacnf(
     ac_next_range = ac.pos2d().distance(ac_next_fix)
     ac_next_angle = angle_diff(ac_next_fix_bearing, ac.heading)
     if ac_next_angle < 90:
-        ac_fix_proximity = (
-            abs(np.sin(ac_next_angle * convert.DEG_TO_RAD)) * ac_next_range
-        )
+        ac_fix_proximity = abs(np.sin(ac_next_angle * convert.DEG_TO_RAD)) * ac_next_range
     else:
-        ac_fix_proximity = ac.pos2d().distance(ac_next_fix) * (
-            ac_next_angle / 90
-        )
+        ac_fix_proximity = ac.pos2d().distance(ac_next_fix) * (ac_next_angle / 90)
     if ac_fix_proximity > 5:
         reward = ac_fix_proximity
     return -1.0 * reward
 
 
-def lateral_next_fix_proximity_dist_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-):
+def lateral_next_fix_proximity_dist_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs):
     """Reward for aircraft's proximity to next fix.
 
     Computed based on the aircraft's lateral distance from the next fix.
@@ -123,9 +107,7 @@ def lateral_next_fix_proximity_dist_exp(
 
     places = simulator_env.airspace.fixes.places
     if ac_tracked_state is None:
-        prev_fix, next_fix = prev_next_fixes(
-            callsign, simulator_env, use_filed_route=True
-        )
+        prev_fix, next_fix = prev_next_fixes(callsign, simulator_env, use_filed_route=True)
     else:
         prev_fix = ac_tracked_state.previous_fix_fr
         next_fix = ac_tracked_state.next_fix_fr

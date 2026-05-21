@@ -153,13 +153,9 @@ class DrlanRepresentationRaw(BaseRepresentation):
         num_actions: int | None = None,
     ):
         if num_actions is None or num_actions < 1:
-            raise ValueError(
-                "`num_actions` argument must be set to an integer value >= 1."
-            )
+            raise ValueError("`num_actions` argument must be set to an integer value >= 1.")
 
-        super(DrlanRepresentationRaw, self).__init__(
-            knn, num_forward_fixes, use_filed_route, num_actions
-        )
+        super(DrlanRepresentationRaw, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         # range for previous action feature vector
         low_prev_action = [
@@ -272,14 +268,10 @@ class DrlanRepresentationRaw(BaseRepresentation):
 
         ####### utils: get useful information for computing base features
         # horizontal airspeed
-        horizontal_airspeed = convert.horizontal_tas(
-            aircraft.speed_tas, aircraft.vertical_speed
-        )
+        horizontal_airspeed = convert.horizontal_tas(aircraft.speed_tas, aircraft.vertical_speed)
 
         # ground speed: east and north ground speed
-        east_ground_speed, north_ground_speed = east_north_ground_speed(
-            callsign, simulator_env
-        )
+        east_ground_speed, north_ground_speed = east_north_ground_speed(callsign, simulator_env)
 
         # time of day
         time_of_day = simulator_env.datetime.hour
@@ -320,9 +312,7 @@ class DrlanRepresentationRaw(BaseRepresentation):
         ] + neighbours_feats
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -370,20 +360,14 @@ class DrlanRepresentationRaw(BaseRepresentation):
             fl_diff_ac_other = interactions[i].fl_diff_ac_other
 
             # horizontal airspeed
-            other_horizontal_airspeed = convert.horizontal_tas(
-                aircraft.speed_tas, aircraft.vertical_speed
-            )
+            other_horizontal_airspeed = convert.horizontal_tas(aircraft.speed_tas, aircraft.vertical_speed)
 
             # ground speed: east and north ground speed
-            other_east_ground_speed, other_north_ground_speed = (
-                east_north_ground_speed(callsign, simulator_env)
-            )
+            other_east_ground_speed, other_north_ground_speed = east_north_ground_speed(callsign, simulator_env)
 
             # previous step action
             _action_int = tracked_data[callsign_other].action
-            other_previous_step_action = np.zeros(
-                self.num_actions, dtype=np.float32
-            )
+            other_previous_step_action = np.zeros(self.num_actions, dtype=np.float32)
             other_previous_step_action[_action_int] = 1.0
 
             # difference between aircraft position (lat/lon) and the position
@@ -397,11 +381,7 @@ class DrlanRepresentationRaw(BaseRepresentation):
 
             tmp = np.asarray(
                 [
-                    (
-                        angle_diff_ac_other
-                        * convert.DEG_TO_RAD
-                        * turn_dir_ac_other
-                    ),
+                    (angle_diff_ac_other * convert.DEG_TO_RAD * turn_dir_ac_other),
                     fl_diff_ac_other,
                     other_horizontal_airspeed,
                     other_aircraft.vertical_speed,
@@ -530,9 +510,7 @@ class DrlanRepresentation(BaseRepresentation):
         if num_actions is None:
             raise ValueError("`num_actions` argument must be set.")
 
-        super(DrlanRepresentation, self).__init__(
-            knn, num_forward_fixes, use_filed_route, num_actions
-        )
+        super(DrlanRepresentation, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         # range for previous action feature vector
         low_prev_action = [
@@ -645,14 +623,10 @@ class DrlanRepresentation(BaseRepresentation):
 
         ####### utils: get useful information for computing base features
         # horizontal airspeed
-        horizontal_airspeed = convert.horizontal_tas(
-            aircraft.speed_tas, aircraft.vertical_speed
-        )
+        horizontal_airspeed = convert.horizontal_tas(aircraft.speed_tas, aircraft.vertical_speed)
 
         # ground speed: east and north ground speed
-        east_ground_speed, north_ground_speed = east_north_ground_speed(
-            callsign, simulator_env
-        )
+        east_ground_speed, north_ground_speed = east_north_ground_speed(callsign, simulator_env)
 
         # time of day
         time_of_day = simulator_env.datetime.hour
@@ -674,18 +648,15 @@ class DrlanRepresentation(BaseRepresentation):
             [
                 (aircraft.heading * convert.DEG_TO_RAD) - np.pi,
                 np.clip(aircraft.fl, 0.0, SRC.CLIP_FL) / SRS.SCALER_FL,
-                np.clip(horizontal_airspeed, 0.0, SRC.CLIP_SPEED)
-                / SRS.SCALER_SPEED,
+                np.clip(horizontal_airspeed, 0.0, SRC.CLIP_SPEED) / SRS.SCALER_SPEED,
                 np.clip(
                     aircraft.vertical_speed,
                     -SRC.CLIP_VERTICAL_SPEED,
                     SRC.CLIP_VERTICAL_SPEED,
                 )
                 / SRS.SCALER_VERTICAL_SPEED,
-                np.clip(east_ground_speed, 0.0, SRC.CLIP_SPEED)
-                / SRS.SCALER_SPEED,
-                np.clip(north_ground_speed, 0.0, SRC.CLIP_SPEED)
-                / SRS.SCALER_SPEED,
+                np.clip(east_ground_speed, 0.0, SRC.CLIP_SPEED) / SRS.SCALER_SPEED,
+                np.clip(north_ground_speed, 0.0, SRC.CLIP_SPEED) / SRS.SCALER_SPEED,
                 time_of_day,
                 *previous_step_action,  # unroll one-hot vector
                 *lon_differences,  # unroll vector already in radians
@@ -702,9 +673,7 @@ class DrlanRepresentation(BaseRepresentation):
         ] + neighbours_feats
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -752,20 +721,14 @@ class DrlanRepresentation(BaseRepresentation):
             fl_diff_ac_other = interactions[i].fl_diff_ac_other
 
             # horizontal airspeed
-            other_horizontal_airspeed = convert.horizontal_tas(
-                aircraft.speed_tas, aircraft.vertical_speed
-            )
+            other_horizontal_airspeed = convert.horizontal_tas(aircraft.speed_tas, aircraft.vertical_speed)
 
             # ground speed: east and north ground speed
-            other_east_ground_speed, other_north_ground_speed = (
-                east_north_ground_speed(callsign, simulator_env)
-            )
+            other_east_ground_speed, other_north_ground_speed = east_north_ground_speed(callsign, simulator_env)
 
             # previous step action
             _action_int = tracked_data[callsign_other].action
-            other_previous_step_action = np.zeros(
-                self.num_actions, dtype=np.float32
-            )
+            other_previous_step_action = np.zeros(self.num_actions, dtype=np.float32)
             other_previous_step_action[_action_int] = 1.0
 
             # difference between aircraft position (lat/lon) and the position
@@ -779,32 +742,24 @@ class DrlanRepresentation(BaseRepresentation):
 
             tmp = np.asarray(
                 [
-                    (
-                        angle_diff_ac_other
-                        * convert.DEG_TO_RAD
-                        * turn_dir_ac_other
-                    ),
+                    (angle_diff_ac_other * convert.DEG_TO_RAD * turn_dir_ac_other),
                     np.clip(
                         fl_diff_ac_other,
                         -SRC.CLIP_FL_DIFF,
                         SRC.CLIP_FL_DIFF,
                     )
                     / SRS.SCALER_FL_DIFF,
-                    np.clip(other_horizontal_airspeed, 0.0, SRC.CLIP_SPEED)
-                    / SRS.SCALER_SPEED,
+                    np.clip(other_horizontal_airspeed, 0.0, SRC.CLIP_SPEED) / SRS.SCALER_SPEED,
                     np.clip(
                         other_aircraft.vertical_speed,
                         -SRC.CLIP_VERTICAL_SPEED,
                         SRC.CLIP_VERTICAL_SPEED,
                     )
                     / SRS.SCALER_VERTICAL_SPEED,
-                    np.clip(other_east_ground_speed, 0.0, SRC.CLIP_SPEED)
-                    / SRS.SCALER_SPEED,
-                    np.clip(other_north_ground_speed, 0.0, SRC.CLIP_SPEED)
-                    / SRS.SCALER_SPEED,
+                    np.clip(other_east_ground_speed, 0.0, SRC.CLIP_SPEED) / SRS.SCALER_SPEED,
+                    np.clip(other_north_ground_speed, 0.0, SRC.CLIP_SPEED) / SRS.SCALER_SPEED,
                     (bearing_ac_other * convert.DEG_TO_RAD) - np.pi,
-                    np.clip(dist_ac_other, 0.0, SRC.CLIP_DIST)
-                    / SRS.SCALER_AC_OTHER_DIST,
+                    np.clip(dist_ac_other, 0.0, SRC.CLIP_DIST) / SRS.SCALER_AC_OTHER_DIST,
                     *other_previous_step_action,  # unroll one-hot vector
                     *other_lon_differences,  # unroll vector already in radians
                     *other_lat_differences,  # unroll vector already in radians

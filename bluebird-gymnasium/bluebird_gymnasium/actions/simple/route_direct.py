@@ -59,10 +59,7 @@ def route_direct(
     forward_fixes_info = gym_env.get_forward_fixes_info()
     if value not in range(1, forward_fixes_info.num_fixes + 1):
         raise ValueError(
-            (
-                f"`value` {value} should be set no higher than "
-                f"{forward_fixes_info.max_num_fixes} and no less than 1"
-            )
+            (f"`value` {value} should be set no higher than {forward_fixes_info.max_num_fixes} and no less than 1")
         )
 
     simulator_env = gym_env.get_simulator_env()
@@ -100,9 +97,7 @@ def route_direct(
 
         # route_ff: route, forward fixes (ff)
         if next_fix in route_trunc:
-            route_ff = get_n_forward_fixes(
-                route_trunc, start_from=next_fix, n=value
-            )
+            route_ff = get_n_forward_fixes(route_trunc, start_from=next_fix, n=value)
             route_ff = [fix for fix in route_ff if fix is not None]
 
         else:

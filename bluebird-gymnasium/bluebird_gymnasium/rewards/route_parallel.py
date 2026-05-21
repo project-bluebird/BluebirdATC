@@ -12,9 +12,7 @@ if typing.TYPE_CHECKING:
 EPSILON = 0.5
 
 
-def route_parallel_const(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def route_parallel_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for flying parallel to the aircraft's current route.
 
     Apply a constant penalty of -1.0 when the aircraft is not flying parallel
@@ -64,9 +62,7 @@ def route_parallel_const(
         return -1.0
 
 
-def route_parallel_linear(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def route_parallel_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for flying parallel to the aircraft's current route.
 
     Linearly penalize the aircraft for not flying parallel to its
@@ -114,9 +110,7 @@ def route_parallel_linear(
     return -1.0 * diff
 
 
-def route_parallel_quad(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def route_parallel_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for flying parallel to the aircraft's current route.
 
     Quadratically penalize the aircraft for not flying parallel to its
@@ -164,9 +158,7 @@ def route_parallel_quad(
     return -1.0 * diff**2
 
 
-def route_parallel_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def route_parallel_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for flying parallel to the aircraft's current route.
 
     Exponentially reward the aircraft for flying parallel to its

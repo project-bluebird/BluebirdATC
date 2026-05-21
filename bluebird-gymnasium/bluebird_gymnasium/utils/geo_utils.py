@@ -121,12 +121,10 @@ def segment_in_sector_intersect(
     start_pos = segment[0]
     end_pos = segment[1]
 
-    if sector_obj.contains_laterally(
-        start_pos, epsilon=epsilon
-    ) and sector_obj.contains_laterally(end_pos, epsilon=epsilon):
-        intersections = find_all_boundary_intersections(
-            start_pos.location, end_pos.location, sector_obj
-        )
+    if sector_obj.contains_laterally(start_pos, epsilon=epsilon) and sector_obj.contains_laterally(
+        end_pos, epsilon=epsilon
+    ):
+        intersections = find_all_boundary_intersections(start_pos.location, end_pos.location, sector_obj)
 
         if len(intersections) == 0:
             status = True
@@ -275,9 +273,7 @@ def get_route_segments_in_sector(
         try:
             stop_idx = route.index(stop_at)
         except ValueError:
-            raise ValueError(
-                f"stop fix {stop_at} is not in the route: {route}."
-            )
+            raise ValueError(f"stop fix {stop_at} is not in the route: {route}.")
 
         route = route[: stop_idx + 1]
         route_positions = route_positions[: stop_idx + 1]
@@ -289,9 +285,7 @@ def get_route_segments_in_sector(
         try:
             stop_idx = route.index(fix_before_end_pos)
         except ValueError:
-            raise ValueError(
-                f"stop fix {fix_before_end_pos} is not in the route: {route}."
-            )
+            raise ValueError(f"stop fix {fix_before_end_pos} is not in the route: {route}.")
 
         route = route[: stop_idx + 1]
         route_positions = route_positions[: stop_idx + 1]
@@ -363,12 +357,8 @@ def get_route_segments_in_sector(
         next_fix_name = route[i + 1]
         next_fix_loc = route_positions[i + 1]
 
-        if sector_obj.contains_laterally(
-            fix_loc
-        ) or sector_obj.contains_laterally(next_fix_loc):
-            segments.append(
-                NamedLine((fix_loc, next_fix_loc), (fix_name, next_fix_name))
-            )
+        if sector_obj.contains_laterally(fix_loc) or sector_obj.contains_laterally(next_fix_loc):
+            segments.append(NamedLine((fix_loc, next_fix_loc), (fix_name, next_fix_name)))
 
     return segments
 
@@ -442,9 +432,7 @@ def get_route_segments(
         try:
             stop_idx = route.index(fix_before_end_pos)
         except ValueError:
-            raise ValueError(
-                f"stop fix {fix_before_end_pos} is not in the route."
-            )
+            raise ValueError(f"stop fix {fix_before_end_pos} is not in the route.")
 
         route = route[: stop_idx + 1]
         route_positions = route_positions[: stop_idx + 1]
@@ -469,8 +457,7 @@ def get_route_segments(
             idx = route.index(start_from)
         except ValueError:
             raise ValueError(
-                f"start fix {start_from} is either not in the route "
-                "or appears after the fix defined in `stop_at`."
+                f"start fix {start_from} is either not in the route or appears after the fix defined in `stop_at`."
             )
 
         route = route[idx:]
@@ -514,9 +501,7 @@ def get_route_segments(
         next_fix_name = route[i + 1]
         next_fix_loc = route_positions[i + 1]
 
-        segments.append(
-            NamedLine((fix_loc, next_fix_loc), (fix_name, next_fix_name))
-        )
+        segments.append(NamedLine((fix_loc, next_fix_loc), (fix_name, next_fix_name)))
 
     return segments
 
@@ -569,9 +554,7 @@ def get_centreline_distance(
 
 
 # helper function.
-def _get_centreline_distance(
-    position: Pos2D, segments: list[Line]
-) -> tuple[float, int, float]:
+def _get_centreline_distance(position: Pos2D, segments: list[Line]) -> tuple[float, int, float]:
     """Compute a position's distance from the nearest point on a route.
 
     Args:
@@ -619,13 +602,7 @@ def _get_centreline_distance(
             along_seg_dist.append(0)
 
         else:
-            dxt = (
-                np.arcsin(
-                    np.sin(p1.distance(p3) / R)
-                    * np.sin(bearing_p1_p3 - bearing_p1_p2)
-                )
-                * R
-            )
+            dxt = np.arcsin(np.sin(p1.distance(p3) / R) * np.sin(bearing_p1_p3 - bearing_p1_p2)) * R
             dist_p1_p2 = p1.distance(p2)
             dist_p1_p4 = np.arccos(np.cos(dist_p1_p3 / R) / np.cos(dxt / R)) * R
             p4 = p1.forward(dist_p1_p4, bearing_p1_p2)  # noqa: F841
@@ -733,9 +710,7 @@ def angle_in_range(angle_deg: float, range_deg: tuple[float, float]) -> bool:
         else:
             return False
     elif range_deg[0] > range_deg[1]:
-        if (angle_deg >= range_deg[0] and angle_deg <= 360.0) or (
-            angle_deg >= 0.0 and angle_deg <= range_deg[1]
-        ):
+        if (angle_deg >= range_deg[0] and angle_deg <= 360.0) or (angle_deg >= 0.0 and angle_deg <= range_deg[1]):
             return True
         else:
             return False
@@ -778,9 +753,7 @@ def project_x_from_range_to_range(
         projected_x = c + (((x - a) * (d - c)) / (b - a))
 
     else:
-        raise ValueError(
-            f"Number {x} is not in the source range: {source_range}"
-        )
+        raise ValueError(f"Number {x} is not in the source range: {source_range}")
 
     return projected_x
 
@@ -831,9 +804,7 @@ def at_exit_window(
             return False
 
 
-def nearest_360_boundary_position(
-    aircraft: Aircraft, sector: Sector
-) -> tuple[Pos2D, float, float]:
+def nearest_360_boundary_position(aircraft: Aircraft, sector: Sector) -> tuple[Pos2D, float, float]:
     """Find the point on a sector boundary nearest to an aircraft.
 
     Looking 360 degrees around an aircraft's current position, find the
@@ -859,16 +830,10 @@ def nearest_360_boundary_position(
     aircraft_position = aircraft.pos2d()
     exterior = sector_lateral_boundary.boundary.exterior
 
-    dist_euclid = exterior.project(
-        Point(aircraft_position.lon, aircraft_position.lat)
-    )
-    nearest_point = sector_lateral_boundary.boundary.exterior.interpolate(
-        dist_euclid
-    )
+    dist_euclid = exterior.project(Point(aircraft_position.lon, aircraft_position.lat))
+    nearest_point = sector_lateral_boundary.boundary.exterior.interpolate(dist_euclid)
 
-    nearest_point_latlon = np.array(
-        [nearest_point.y, nearest_point.x]
-    )  # format: (lat, lon)
+    nearest_point_latlon = np.array([nearest_point.y, nearest_point.x])  # format: (lat, lon)
     nearest_point_pos2d = Pos2D.from_array(nearest_point_latlon)
 
     _distance = aircraft_position.distance(nearest_point_pos2d)
@@ -950,9 +915,7 @@ def nearest_forward_boundary_position(
             dist = route_distance_to_exit_fix
 
     else:
-        future_pos = ac_pos.forward(
-            dist=on_heading_forward_distance, heading=aircraft.heading
-        )
+        future_pos = ac_pos.forward(dist=on_heading_forward_distance, heading=aircraft.heading)
         trajectory = [ac_pos, future_pos]
 
         pos, dist = nearest_traj_boundary_position(trajectory, sector)
@@ -986,22 +949,16 @@ def nearest_traj_boundary_position(
     ret, _ = sector_lateral_boundary.intersection(trajectory)
 
     if isinstance(ret, Point):
-        intersections = np.concatenate(
-            [arr.tolist() for arr in ret.xy]
-        ).reshape(1, -1)
+        intersections = np.concatenate([arr.tolist() for arr in ret.xy]).reshape(1, -1)
 
     elif isinstance(ret, MultiPoint):
-        intersections = np.stack(
-            [np.concatenate([arr.tolist() for arr in p.xy]) for p in ret.geoms]
-        )
+        intersections = np.stack([np.concatenate([arr.tolist() for arr in p.xy]) for p in ret.geoms])
 
     elif isinstance(ret, LineString):
         intersections = np.stack([arr.tolist() for arr in ret.xy]).T
 
     else:
-        raise ValueError(
-            f"Intersection output of type: {type(ret)} is not supported."
-        )
+        raise ValueError(f"Intersection output of type: {type(ret)} is not supported.")
 
     if intersections.shape[0] == 0:
         # no intersections
@@ -1021,20 +978,14 @@ def nearest_traj_boundary_position(
     else:
         # more than one intersection.
         intersection_locations = [
-            Pos2D(lat=intersections[i, 1], lon=intersections[i, 0])
-            for i in range(intersections.shape[0])
+            Pos2D(lat=intersections[i, 1], lon=intersections[i, 0]) for i in range(intersections.shape[0])
         ]
 
         # get the intersection location closest to the starting location
         # of the trajectory
         source_location = trajectory[0]
 
-        distances = np.asarray(
-            [
-                source_location.distance(_location)
-                for _location in intersection_locations
-            ]
-        )
+        distances = np.asarray([source_location.distance(_location) for _location in intersection_locations])
 
         dist = distances.min().item()
         idx = distances.argmin().item()
@@ -1083,9 +1034,7 @@ def quadrant_range(angle: float) -> tuple[float, float]:
     return QuadrantBound[get_quadrant(angle)]
 
 
-def passed_location(
-    aircraft: Aircraft, location: Pos2D, aircraft_cps: list[Pos4D]
-) -> bool:
+def passed_location(aircraft: Aircraft, location: Pos2D, aircraft_cps: list[Pos4D]) -> bool:
     """Determine whether an aircraft has passed a given location/position.
 
     Args:
@@ -1129,11 +1078,7 @@ def filter_positions_in_sector(
     """
 
     sector_obj = airspace.sectors[sector_name]
-    return [
-        p
-        for p in positions
-        if sector_obj.contains_laterally(p, epsilon=epsilon)
-    ]
+    return [p for p in positions if sector_obj.contains_laterally(p, epsilon=epsilon)]
 
 
 def positions_in_sector(
@@ -1157,9 +1102,7 @@ def positions_in_sector(
     """
 
     sector_obj = airspace.sectors[sector_name]
-    return [
-        sector_obj.contains_laterally(p, epsilon=epsilon) for p in positions
-    ]
+    return [sector_obj.contains_laterally(p, epsilon=epsilon) for p in positions]
 
 
 def filter_fixes_in_sector(
@@ -1220,9 +1163,7 @@ def fixes_in_sector(
     positions = [places[fix] for fix in fixes]
     sector_obj = airspace.sectors[sector_name]
 
-    return [
-        sector_obj.contains_laterally(p, epsilon=epsilon) for p in positions
-    ]
+    return [sector_obj.contains_laterally(p, epsilon=epsilon) for p in positions]
 
 
 def filter_route_fixes_in_sector_by_coordination(
@@ -1257,9 +1198,7 @@ def filter_route_fixes_in_sector_by_coordination(
 
 
 ############ line and path intersections
-def line_intersection(
-    line_1: Line | NamedLine, line_2: Line | NamedLine
-) -> tuple[LineIntersection, Pos2D | None]:
+def line_intersection(line_1: Line | NamedLine, line_2: Line | NamedLine) -> tuple[LineIntersection, Pos2D | None]:
     """Determine whether two lines/segments intersect and the location.
 
     Note that potential future intersection (if the lines are extended) is
@@ -1310,9 +1249,7 @@ def line_intersection(
     return (ret, location)
 
 
-def line_intersection_any(
-    target_line: Line | NamedLine, other_lines: list[Line | NamedLine]
-) -> bool:
+def line_intersection_any(target_line: Line | NamedLine, other_lines: list[Line | NamedLine]) -> bool:
     """Determine whether a line intersect with any line in a list of lines.
 
     Args:
@@ -1406,9 +1343,7 @@ def path_intersection(
 
 
 ############ line parallel, colinearity and overlap.
-def line_parallel(
-    line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2
-) -> bool:
+def line_parallel(line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2) -> bool:
     """Determine whether two lines/segments are parallel.
 
     Determines the parallelism by
@@ -1450,9 +1385,7 @@ def line_parallel(
     return parallel_status
 
 
-def line_colinear(
-    line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2
-) -> bool:
+def line_colinear(line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2) -> bool:
     """Determine whether two lines/segments are colinear.
 
     Determines the colinearity by:
@@ -1492,10 +1425,7 @@ def line_colinear(
 
         forward_reference = line_1_angle
         reverse_reference = (forward_reference + 180) % 360
-        colinear_status = (
-            abs(bearing - forward_reference) <= epsilon
-            or abs(bearing - reverse_reference) <= epsilon
-        )
+        colinear_status = abs(bearing - forward_reference) <= epsilon or abs(bearing - reverse_reference) <= epsilon
 
     else:
         colinear_status = False
@@ -1503,9 +1433,7 @@ def line_colinear(
     return colinear_status
 
 
-def line_overlap(
-    line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2
-) -> bool:
+def line_overlap(line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2) -> bool:
     """Determine whether two colinear lines/segments are directly overlapping.
 
     Args:
@@ -1551,16 +1479,8 @@ def line_overlap(
     r_l1_start_l2_end = abs(angle_l1_start_l2_end - rev_ref) <= epsilon
     r_l1_end_l2_end = abs(angle_l1_end_l2_end - rev_ref) <= epsilon
 
-    no_overlap = (
-        f_l1_start_l2_start
-        and f_l1_end_l2_start
-        and f_l1_start_l2_end
-        and f_l1_end_l2_end
-    ) or (
-        r_l1_start_l2_start
-        and r_l1_end_l2_start
-        and r_l1_start_l2_end
-        and r_l1_end_l2_end
+    no_overlap = (f_l1_start_l2_start and f_l1_end_l2_start and f_l1_start_l2_end and f_l1_end_l2_end) or (
+        r_l1_start_l2_start and r_l1_end_l2_start and r_l1_start_l2_end and r_l1_end_l2_end
     )
 
     return not no_overlap

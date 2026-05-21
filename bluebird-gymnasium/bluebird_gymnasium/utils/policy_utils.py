@@ -23,9 +23,7 @@ def _get_relevant_data(
     """Get the exit flight level and next sector of an aircraft."""
 
     if ac_tracked_state is None:
-        exit_coord = aircraft_exit_coordination(
-            callsign, simulator_env, airspace_sector
-        )
+        exit_coord = aircraft_exit_coordination(callsign, simulator_env, airspace_sector)
         exit_fl = exit_coord.fl
         next_sector = exit_coord.to_sector
 
@@ -175,9 +173,7 @@ def default_outcomm_policy_simple(
         pf_nf_bearing = prev_fix_pos.bearing_to(next_fix_pos)
 
         # condition 1
-        cond_1_1 = (
-            ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
-        )
+        cond_1_1 = ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
         cond_1_2 = aircraft.selected_fl == exit_fl
         cond_1_3 = abs(aircraft.heading - pf_nf_bearing) < angle_threshold
 
@@ -220,16 +216,12 @@ def default_outcomm_policy_simple(
         # condition 4
         # checks the minmum allowable flight level
         cond_4_1 = aircraft.selected_fl < min_fl
-        cond_4_2 = (
-            abs(aircraft.fl - min_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
-        )
+        cond_4_2 = abs(aircraft.fl - min_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
 
         # condition 5
         # checks the maximum allowable flight level
         cond_5_1 = aircraft.selected_fl > max_fl
-        cond_5_2 = (
-            abs(aircraft.fl - max_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
-        )
+        cond_5_2 = abs(aircraft.fl - max_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
 
         if cond_1_1 and cond_1_2 and cond_1_3:
             # issue an outcomm clearance
@@ -432,9 +424,7 @@ def default_outcomm_policy_lenient(
         pf_nf_bearing = prev_fix_pos.bearing_to(next_fix_pos)
 
         # condition 1
-        cond_1_1 = (
-            ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
-        )
+        cond_1_1 = ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
         cond_1_2 = aircraft.selected_fl == exit_fl
         cond_1_3 = abs(aircraft.heading - pf_nf_bearing) < angle_threshold
         # cond_1_4 implicitly assumed as the only valid position status at
@@ -444,10 +434,7 @@ def default_outcomm_policy_lenient(
         # final threshold to outcomm aircraft if exit flight levels haven't
         # been met before the aircraft exits through its correct exit window.
         FINAL_EXIT_DISTANCE_THRESHOLD = 3.0
-        cond_2_1 = (
-            ac_tracked_data.track_dist_to_exit_cr
-            < FINAL_EXIT_DISTANCE_THRESHOLD
-        )
+        cond_2_1 = ac_tracked_data.track_dist_to_exit_cr < FINAL_EXIT_DISTANCE_THRESHOLD
         # cond_2_4 implicitly assumed as the only valid position status at
         # this point is: IN_SECTOR
 
@@ -458,10 +445,7 @@ def default_outcomm_policy_lenient(
         # sector boundary)
         INCORRECT_SECTOR_EXIT_DISTANCE_THRESHOLD = 1.0
         cond_3_1 = ac_tracked_data.pos_status == PositionStatus.IN_SECTOR
-        cond_3_2 = (
-            ac_tracked_data.nearest_360_boundary_dist
-            < INCORRECT_SECTOR_EXIT_DISTANCE_THRESHOLD
-        )
+        cond_3_2 = ac_tracked_data.nearest_360_boundary_dist < INCORRECT_SECTOR_EXIT_DISTANCE_THRESHOLD
         angle_diff_ac_nb = angle_diff(
             aircraft.heading,
             ac_tracked_data.nearest_360_boundary_bear,
@@ -494,16 +478,12 @@ def default_outcomm_policy_lenient(
         # condition 4
         # checks the minmum allowable flight level
         cond_4_1 = aircraft.selected_fl < min_fl
-        cond_4_2 = (
-            abs(aircraft.fl - min_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
-        )
+        cond_4_2 = abs(aircraft.fl - min_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
 
         # condition 5
         # checks the maximum allowable flight level
         cond_5_1 = aircraft.selected_fl > max_fl
-        cond_5_2 = (
-            abs(aircraft.fl - max_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
-        )
+        cond_5_2 = abs(aircraft.fl - max_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
 
         if cond_1_1 and cond_1_2 and cond_1_3:
             # issue an outcomm clearance
@@ -519,9 +499,7 @@ def default_outcomm_policy_lenient(
             # check if external agent has issued a heading action to resolve
             # the issue (to avoid incorrectly exiting sector lateral boundary).
             ext_action = external_agent_actions.get(callsign, ACTION_NOOP)
-            turn_dir = left_right_check(
-                aircraft.heading, ac_tracked_data.nearest_360_boundary_bear
-            )
+            turn_dir = left_right_check(aircraft.heading, ac_tracked_data.nearest_360_boundary_bear)
 
             # get categories of heading actions
             action_parser = gym_env.get_action_parser()
@@ -529,13 +507,9 @@ def default_outcomm_policy_lenient(
             actions_incr_hd = action_parser.get_heading_right_actions()
             actions_set_hd = action_parser.get_absolute_heading_actions()
 
-            if turn_dir == TurnDirection.LEFT and ext_action in (
-                actions_incr_hd + actions_set_hd
-            ):
+            if turn_dir == TurnDirection.LEFT and ext_action in (actions_incr_hd + actions_set_hd):
                 pass
-            elif turn_dir == TurnDirection.RIGHT and ext_action in (
-                actions_decr_hd + actions_set_hd
-            ):
+            elif turn_dir == TurnDirection.RIGHT and ext_action in (actions_decr_hd + actions_set_hd):
                 pass
             elif turn_dir == TurnDirection.NO_TURN and ext_action in (
                 actions_decr_hd + actions_incr_hd + actions_set_hd
@@ -757,9 +731,7 @@ def default_outcomm_policy(
         pf_nf_bearing = prev_fix_pos.bearing_to(next_fix_pos)
 
         # condition 1
-        cond_1_1 = (
-            ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
-        )
+        cond_1_1 = ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
         cond_1_2 = aircraft.selected_fl == exit_fl
         cond_1_3 = abs(aircraft.heading - pf_nf_bearing) < angle_threshold
 
@@ -767,10 +739,7 @@ def default_outcomm_policy(
         # final threshold to outcomm aircraft if exit flight level haven't
         # been met before the aircraft exits through its correct exit window.
         FINAL_EXIT_DISTANCE_THRESHOLD = 3.0
-        cond_2_1 = (
-            ac_tracked_data.track_dist_to_exit_cr
-            < FINAL_EXIT_DISTANCE_THRESHOLD
-        )
+        cond_2_1 = ac_tracked_data.track_dist_to_exit_cr < FINAL_EXIT_DISTANCE_THRESHOLD
         cond_2_2 = ac_tracked_data.pos_status == PositionStatus.IN_SECTOR
 
         if cond_1_1 and cond_1_2 and cond_1_3:

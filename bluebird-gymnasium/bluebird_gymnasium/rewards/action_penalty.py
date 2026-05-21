@@ -3,9 +3,7 @@ from bluebird_gymnasium.utils.constants import STEPS_SINCE_ACTION_MAX
 from bluebird_gymnasium.utils.geo_utils import get_centreline_distance
 
 
-def action_penalty_memory(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def action_penalty_memory(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Penalize taking actions. Linear decay has the effect of minimising delay
     between necessary actions.
 
@@ -32,9 +30,7 @@ def action_penalty_memory(
     return reward
 
 
-def action_penalty_const(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def action_penalty_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Penalize taking action when it is not necessary.
 
     Penalty computed as a constant (`const`) cost per RL time step.
@@ -56,9 +52,7 @@ def action_penalty_const(
     return reward
 
 
-def action_penalty_thresh(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def action_penalty_thresh(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Penalize taking action when it is not necessary.
 
     Penalty computed based on the aircraft's distance from the aircraft's
@@ -86,10 +80,7 @@ def action_penalty_thresh(
         # if aircraft is away from centreline (thresholded by some epsilon),
         # then don't penalise action taken
         ac = simulator_env.aircraft[callsign]
-        if (
-            ac_tracked_state is None
-            or ac_tracked_state.centreline_info_fr is None
-        ):
+        if ac_tracked_state is None or ac_tracked_state.centreline_info_fr is None:
             centre_dist, _, _ = get_centreline_distance(
                 ac.pos2d(), ac.flight_plan.route.current, simulator_env.airspace
             )

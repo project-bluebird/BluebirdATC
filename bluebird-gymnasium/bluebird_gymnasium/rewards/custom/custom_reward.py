@@ -1,9 +1,7 @@
 from bluebird_gymnasium.envs.base import BaseEnv
 
 
-def custom_reward_fn(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def custom_reward_fn(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Template reward function. Implement your code here.
 
     Args:

@@ -20,9 +20,7 @@ if sys.platform == "darwin":
     matplotlib.use("macOSX")  # backend TKAgg also works
 
 
-def visualize_airspace(
-    env: BaseEnv, render_mode: str = "rgb_array", clean_up: bool = True
-):
+def visualize_airspace(env: BaseEnv, render_mode: str = "rgb_array", clean_up: bool = True):
     """Visualize the airspace of an environment
 
     This is useful to give a pictorial view of an airspace without
@@ -41,19 +39,12 @@ def visualize_airspace(
             argument is ignored regardless of its set value.
     """
     if render_mode == "file" and clean_up is True:
-        gym.logger.warn(
-            "When `render_mode` is set to 'file', `clean_up` is ignored "
-            "even when set to True."
-        )
+        gym.logger.warn("When `render_mode` is set to 'file', `clean_up` is ignored even when set to True.")
 
     # set up env if necessary
     if isinstance(env, str):
         if env not in registry_env.keys():
-            raise ValueError(
-                "{0} not found. Specify one of the following: {1}".format(
-                    env, list(registry_env.keys())
-                )
-            )
+            raise ValueError("{0} not found. Specify one of the following: {1}".format(env, list(registry_env.keys())))
         env = registry_env.get(env)(render_mode=render_mode)
         prev_mode = None
     else:

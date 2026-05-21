@@ -5,9 +5,7 @@ from bluebird_gymnasium.utils.constants import MAX_SPEED_TAS
 DIFF_THRESHOLD = 1.0  # nautical miles (nmi)
 
 
-def expeditious_const(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def expeditious_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward or penalize for being navigating efficiently or inefficiently.
 
     Reward or penalty is computed as a constant.
@@ -34,10 +32,7 @@ def expeditious_const(
         # its expeditious behaviour. it can be assessed from the next step.
         reward = 0.0
 
-    if (
-        ac_tracked_state.track_dist_to_exit_cr
-        < prev_ac_tracked_state.track_dist_to_exit_cr
-    ):
+    if ac_tracked_state.track_dist_to_exit_cr < prev_ac_tracked_state.track_dist_to_exit_cr:
         reward = 1.0
     else:
         reward = -1.0
@@ -45,9 +40,7 @@ def expeditious_const(
     return reward
 
 
-def expeditious_linear(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def expeditious_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward or penalize for being navigating efficiently or inefficiently.
 
     Reward is computed using an linear function.
@@ -108,9 +101,7 @@ def expeditious_linear(
     return float(reward)
 
 
-def expeditious_quad(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def expeditious_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward or penalize for being navigating efficiently or inefficiently.
 
     Reward is computed using a quadratic function.
@@ -173,9 +164,7 @@ def expeditious_quad(
     return float(reward)
 
 
-def expeditious_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def expeditious_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward or penalize for being navigating efficiently or inefficiently.
 
     Reward is computed using an exponeniated function or a constant value of

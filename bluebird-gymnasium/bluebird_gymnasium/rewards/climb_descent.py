@@ -63,12 +63,8 @@ def _get_relevant_data(
     airspace_sector: str,
 ) -> tuple[float, float, Pos2D]:
     if ac_tracked_state is None:
-        entry_fl = aircraft_entry_coordination(
-            callsign, simulator_env, airspace_sector
-        ).fl
-        exit_fl = aircraft_exit_coordination(
-            callsign, simulator_env, airspace_sector
-        ).fl
+        entry_fl = aircraft_entry_coordination(callsign, simulator_env, airspace_sector).fl
+        exit_fl = aircraft_exit_coordination(callsign, simulator_env, airspace_sector).fl
 
         aircraft = simulator_env.aircraft[callsign]
         exit_pos2d = simulator_env.airspace.get_exit_point(aircraft)
@@ -81,9 +77,7 @@ def _get_relevant_data(
     return entry_fl, exit_fl, exit_pos2d
 
 
-def overflier_const(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def overflier_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Constant function.
@@ -116,9 +110,7 @@ def overflier_const(
         return 0.0
 
 
-def overflier_linear(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def overflier_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Linear function.
@@ -154,9 +146,7 @@ def overflier_linear(
     return float(reward)
 
 
-def overflier_quad(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def overflier_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Quadratic function.
@@ -192,9 +182,7 @@ def overflier_quad(
     return float(reward)
 
 
-def overflier_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def overflier_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Exponential function.
@@ -238,9 +226,7 @@ def overflier_exp(
     return float(reward)
 
 
-def climb_target_linear(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def climb_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for the aircraft ascending to the correct exit flight level.
 
     Note: Linear function
@@ -274,9 +260,7 @@ def climb_target_linear(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -303,9 +287,7 @@ def climb_target_linear(
     return float(reward)
 
 
-def descent_target_linear(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def descent_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Linear function
@@ -339,9 +321,7 @@ def descent_target_linear(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -377,9 +357,7 @@ def descent_target_linear(
     return float(reward)
 
 
-def descent_target_linear_shaped(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def descent_target_linear_shaped(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Linear function
@@ -413,9 +391,7 @@ def descent_target_linear_shaped(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -463,9 +439,7 @@ def descent_target_linear_shaped(
     return float(reward)
 
 
-def climb_target_quad(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def climb_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for the aircraft ascending to the correct exit flight level.
 
     Note: Quadratic function
@@ -499,9 +473,7 @@ def climb_target_quad(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -523,9 +495,7 @@ def climb_target_quad(
     return float(reward)
 
 
-def descent_target_quad(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def descent_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Quadratic function
@@ -559,9 +529,7 @@ def descent_target_quad(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -602,9 +570,7 @@ def descent_target_quad(
     return float(reward)
 
 
-def climb_target_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def climb_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for the aircraft ascending to the correct exit flight level.
 
     Note: Exponential function
@@ -639,9 +605,7 @@ def climb_target_exp(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -696,9 +660,7 @@ def climb_target_exp(
     return float(reward)
 
 
-def descent_target_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def descent_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Exponential function
@@ -733,9 +695,7 @@ def descent_target_exp(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (

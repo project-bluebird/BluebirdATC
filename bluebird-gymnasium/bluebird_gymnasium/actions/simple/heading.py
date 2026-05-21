@@ -82,8 +82,7 @@ def get_forward_segment_angle(
 
     if segment_idx < 1:
         raise ValueError(
-            "`segment_idx should be set to value greater or equal to 1. "
-            "See the docstring for more information."
+            "`segment_idx should be set to value greater or equal to 1. See the docstring for more information."
         )
 
     if use_filed_route:
@@ -146,9 +145,7 @@ def heading_left(
     if value <= 0:
         raise ValueError("`value` should be a positive integer")
     elif value % DEFAULT_INTERVAL_HEADING != 0:
-        raise ValueError(
-            f"`value` should be in intervals of {DEFAULT_INTERVAL_HEADING}"
-        )
+        raise ValueError(f"`value` should be in intervals of {DEFAULT_INTERVAL_HEADING}")
 
     aircraft = gym_env.get_simulator_env().aircraft[callsign]
     if aircraft.selected_instructions.heading is not None:
@@ -187,9 +184,7 @@ def heading_right(
     if value <= 0:
         raise ValueError("`value` should be a positive integer")
     elif value % DEFAULT_INTERVAL_HEADING != 0:
-        raise ValueError(
-            f"`value` should be in intervals of {DEFAULT_INTERVAL_HEADING}"
-        )
+        raise ValueError(f"`value` should be in intervals of {DEFAULT_INTERVAL_HEADING}")
 
     aircraft = gym_env.get_simulator_env().aircraft[callsign]
     if aircraft.selected_instructions.heading is not None:
@@ -252,10 +247,7 @@ def heading_route_parallel(
     possible_options = list(range(1, forward_fixes_info.num_fixes + 1))
 
     if value not in possible_options:
-        raise ValueError(
-            f"`value` {value} should be set to one of the following values"
-            f"{possible_options}."
-        )
+        raise ValueError(f"`value` {value} should be set to one of the following values{possible_options}.")
 
     simulator_env = gym_env.get_simulator_env()
     value = get_forward_segment_angle(

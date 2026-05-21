@@ -20,32 +20,22 @@ base_pkg = "bluebird_gymnasium.actions"
 mod_name = f"{base_pkg}.simple.heading"
 registry_actions.register("simple_heading_left", f"{mod_name}:heading_left")
 registry_actions.register("simple_heading_right", f"{mod_name}:heading_right")
-registry_actions.register(
-    "simple_heading_route_parallel", f"{mod_name}:heading_route_parallel"
-)
-registry_actions.register(
-    "simple_heading_maintain_current", f"{mod_name}:heading_maintain_current"
-)
+registry_actions.register("simple_heading_route_parallel", f"{mod_name}:heading_route_parallel")
+registry_actions.register("simple_heading_maintain_current", f"{mod_name}:heading_maintain_current")
 
 # simple: climb/descent
 mod_name = f"{base_pkg}.simple.climb_descent"
 registry_actions.register("simple_fl_climb", f"{mod_name}:fl_climb")
 registry_actions.register("simple_fl_descent", f"{mod_name}:fl_descent")
-registry_actions.register(
-    "simple_fl_intermediate", f"{mod_name}:fl_intermediate"
-)
+registry_actions.register("simple_fl_intermediate", f"{mod_name}:fl_intermediate")
 registry_actions.register("simple_fl_exit", f"{mod_name}:fl_exit")
 
 # simple: speed
 mod_name = f"{base_pkg}.simple.speed"
 registry_actions.register("simple_speed_increase", f"{mod_name}:speed_increase")
 registry_actions.register("simple_speed_decrease", f"{mod_name}:speed_decrease")
-registry_actions.register(
-    "simple_speed_maintain_current", f"{mod_name}:speed_maintain_current"
-)
-registry_actions.register(
-    "simple_speed_choose_own", f"{mod_name}:speed_choose_own"
-)
+registry_actions.register("simple_speed_maintain_current", f"{mod_name}:speed_maintain_current")
+registry_actions.register("simple_speed_choose_own", f"{mod_name}:speed_choose_own")
 
 # simple: route direct
 mod_name = f"{base_pkg}.simple.route_direct"
@@ -57,6 +47,4 @@ registry_actions.register("simple_outcomm", f"{mod_name}:outcomm")
 
 # compound: heading, fly parallel
 mod_name = f"{base_pkg}.compound.fly_parallel"
-registry_actions.register(
-    "compound_heading_fly_parallel", f"{mod_name}:compound_heading_fly_parallel"
-)
+registry_actions.register("compound_heading_fly_parallel", f"{mod_name}:compound_heading_fly_parallel")

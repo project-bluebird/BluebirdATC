@@ -61,9 +61,7 @@ class SectorXPlusEnv(BaseEnv):
         # if the `exit_window_width` value was originally None, override the
         # default set in the parent class with a new default here (based on
         # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get(
-            "exit_window_width", None
-        )
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
         if exit_window_width is None:
             # TODO: fix hardcode using airspace config. either
             # W or half_width_nmi
@@ -90,12 +88,8 @@ class SectorXPlusEnv(BaseEnv):
             W=self.config.airspace_config["W"],
             D=self.config.airspace_config["D"],
             F=self.config.airspace_config["F"],
-            southern_leg_rotation_deg=self.config.airspace_config[
-                "southern_leg_rotation_deg"
-            ],
-            max_turn_angle_deg=self.config.airspace_config[
-                "max_turn_angle_deg"
-            ],
+            southern_leg_rotation_deg=self.config.airspace_config["southern_leg_rotation_deg"],
+            max_turn_angle_deg=self.config.airspace_config["max_turn_angle_deg"],
         ).generate_airspace()
         airspace.geo_helper = GeoHelper(self.config.airspace_config["origin"])
 
@@ -150,9 +144,7 @@ class SectorXPlusEnv(BaseEnv):
         return sim
 
     @classmethod
-    def get_default_env_config(
-        cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED
-    ) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.

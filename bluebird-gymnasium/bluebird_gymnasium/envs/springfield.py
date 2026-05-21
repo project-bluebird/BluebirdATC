@@ -69,9 +69,7 @@ class SpringfieldEnv(BaseEnv):
         # if the `exit_window_width` value was originally None, override the
         # default set in the parent class with a new default here (based on
         # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get(
-            "exit_window_width", None
-        )
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
         if exit_window_width is None:
             # the width of each springfield exit boundary is 10 nautical miles
             self.exit_window_width = 10 // 2
@@ -103,10 +101,7 @@ class SpringfieldEnv(BaseEnv):
 
         ####### active airspace sector
         airspace_sectors = list(airspace.sectors.keys())
-        if (
-            len(airspace_sectors) >= 1
-            and SPRINGFIELD_SECTOR_NAME in airspace_sectors
-        ):
+        if len(airspace_sectors) >= 1 and SPRINGFIELD_SECTOR_NAME in airspace_sectors:
             self.active_airspace_sector = SPRINGFIELD_SECTOR_NAME
         else:
             raise ValueError("Could not initialise sector")
@@ -139,9 +134,7 @@ class SpringfieldEnv(BaseEnv):
         )
         return sim
 
-    def step(
-        self, action: ActionType
-    ) -> tuple[ObsType, RewardType, DoneType, TruncatedType, InfoType]:
+    def step(self, action: ActionType) -> tuple[ObsType, RewardType, DoneType, TruncatedType, InfoType]:
         obs, reward, done, truncated, info = super().step(action)
 
         # Springfield can start before any aircraft is controllable; keep an
@@ -158,9 +151,7 @@ class SpringfieldEnv(BaseEnv):
         return obs, reward, done, truncated, info
 
     @classmethod
-    def get_default_env_config(
-        cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED
-    ) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.

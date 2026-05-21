@@ -119,9 +119,7 @@ class FullRepresentationRaw(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(FullRepresentationRaw, self).__init__(
-            knn, num_forward_fixes, use_filed_route, num_actions
-        )
+        super(FullRepresentationRaw, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [
@@ -278,9 +276,7 @@ class FullRepresentationRaw(BaseRepresentation):
             ### have previously ascertained that the aircraft is in the sector
             found_idx = -1
             airspace = simulator_env.airspace
-            for i, volume in enumerate(
-                airspace.sectors[airspace_sector].volumes
-            ):
+            for i, volume in enumerate(airspace.sectors[airspace_sector].volumes):
                 if volume.contains(aircraft):
                     found_idx = i
                     break
@@ -331,9 +327,7 @@ class FullRepresentationRaw(BaseRepresentation):
         feats_list = [base_feats] + fixes_feats + neighbours_feats
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -362,14 +356,8 @@ class FullRepresentationRaw(BaseRepresentation):
         prev_fix_pos = simulator_env.airspace.fixes.places[prev_fix]
 
         _next_fix = tracked_data[callsign].next_fix_fr
-        fixes = get_n_forward_fixes(
-            route, start_from=_next_fix, n=self.num_forward_fixes
-        )
-        next_fixes_pos = [
-            simulator_env.airspace.fixes.places[fix]
-            for fix in fixes
-            if fix is not None
-        ]
+        fixes = get_n_forward_fixes(route, start_from=_next_fix, n=self.num_forward_fixes)
+        next_fixes_pos = [simulator_env.airspace.fixes.places[fix] for fix in fixes if fix is not None]
         num_none_fixes = self.num_forward_fixes - len(next_fixes_pos)
 
         ac_pos = aircraft.pos2d()
@@ -405,9 +393,7 @@ class FullRepresentationRaw(BaseRepresentation):
 
         return fixes_feats
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -591,9 +577,7 @@ class FullRepresentation(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(FullRepresentation, self).__init__(
-            knn, num_forward_fixes, use_filed_route, num_actions
-        )
+        super(FullRepresentation, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [
@@ -751,9 +735,7 @@ class FullRepresentation(BaseRepresentation):
             ### have previously ascertained that the aircraft is in the sector
             found_idx = -1
             airspace = simulator_env.airspace
-            for i, volume in enumerate(
-                airspace.sectors[airspace_sector].volumes
-            ):
+            for i, volume in enumerate(airspace.sectors[airspace_sector].volumes):
                 if volume.contains(aircraft):
                     found_idx = i
                     break
@@ -782,8 +764,7 @@ class FullRepresentation(BaseRepresentation):
                 np.clip(exit_fl, 0.0, SRC.CLIP_FL) / SRS.SCALER_FL,
                 np.clip(aircraft.fl, 0.0, SRC.CLIP_FL) / SRS.SCALER_FL,
                 np.clip(aircraft.selected_fl, 0.0, SRC.CLIP_FL) / SRS.SCALER_FL,
-                np.clip(aircraft.speed_tas, 0.0, SRC.CLIP_SPEED)
-                / SRS.SCALER_SPEED,
+                np.clip(aircraft.speed_tas, 0.0, SRC.CLIP_SPEED) / SRS.SCALER_SPEED,
                 ac_centre_dist / SRS.SCALER_CENTRELINE_DIST,  # already clipped
                 route_ff_status,  # no need for clip/scale
                 pos2d_ac_nb.lat * convert.DEG_TO_RAD,
@@ -805,9 +786,7 @@ class FullRepresentation(BaseRepresentation):
         feats_list = [base_feats] + fixes_feats + neighbours_feats
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -836,14 +815,8 @@ class FullRepresentation(BaseRepresentation):
         prev_fix_pos = simulator_env.airspace.fixes.places[prev_fix]
 
         _next_fix = tracked_data[callsign].next_fix_fr
-        fixes = get_n_forward_fixes(
-            route, start_from=_next_fix, n=self.num_forward_fixes
-        )
-        next_fixes_pos = [
-            simulator_env.airspace.fixes.places[fix]
-            for fix in fixes
-            if fix is not None
-        ]
+        fixes = get_n_forward_fixes(route, start_from=_next_fix, n=self.num_forward_fixes)
+        next_fixes_pos = [simulator_env.airspace.fixes.places[fix] for fix in fixes if fix is not None]
         num_none_fixes = self.num_forward_fixes - len(next_fixes_pos)
 
         ac_pos = aircraft.pos2d()
@@ -879,9 +852,7 @@ class FullRepresentation(BaseRepresentation):
 
         return fixes_feats
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
