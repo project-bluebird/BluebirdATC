@@ -38,23 +38,23 @@ Refers to the [flight level](./index.md#flight-levels) that the pilot has instru
 Refers to a state in which the aircraft is being controlled by its pilot to navigate based on the list of defined fixes in its route. The aircraft is expected to fly from one fix to the next until it stops. Only when a [cleared heading](#cleared-heading) instruction is issued does the aircraft stop following its route. In such a scenario, the pilot is expected to fly the aircraft at the angle that was issued in the cleared heading instruction.
 
 #### Indicated Airspeed
-Indicated Airspeed (IAS) refers to the raw speed read directly from the aircraft's cockpit instruments, measured in [knots](#knots).
+Indicated Airspeed (IAS) refers to the raw speed read directly from the aircraft's cockpit instruments, measured in [knots](index.md#knots).
 
 #### Calibrated Airspeed
-Calibrated Airspeed (CAS) refers to IAS readings corrected for instrumentation and positioning errors. Hence, relative to IAS, CAS is a more accurate measure of an aircraft's speed. It is measured in [knots](#knots).
+Calibrated Airspeed (CAS) refers to IAS readings corrected for instrumentation and positioning errors. Hence, relative to IAS, CAS is a more accurate measure of an aircraft's speed. It is measured in [knots](index.md#knots).
 
 #### Selected Calibrated Airspeed
-Refers to the CAS that the pilot of an aircraft chooses to fly after being issued a cleared CAS instruction by an ATCO. This should be the same as the cleared CAS. However, in the real world, there may be reasons for a pilot to choose a different CAS (e.g., weather conditions, pilot error, etc.). It is measured in [knots](#knots).
+Refers to the CAS that the pilot of an aircraft chooses to fly after being issued a cleared CAS instruction by an ATCO. This should be the same as the cleared CAS. However, in the real world, there may be reasons for a pilot to choose a different CAS (e.g., weather conditions, pilot error, etc.). It is measured in [knots](index.md#knots).
 
 Note that in reality, aircraft will not report their selected calibrated airspeed, rather reporting their selected indicated airspeeds, but this is a simplification which has been made in the Digital Twin.
 
 #### True Airspeed
-True Airspeed (TAS) refers to the speed of an aircraft relative to the air mass that it is flying through measured in [knots](./index.md#knots). 
+True Airspeed (TAS) refers to the speed of an aircraft relative to the air mass that it is flying through measured in [knots](index.md#knots). 
 Compared to calibrated air speed, TAS accounts for the effects of air compressibility.
 For a constant CAS, as air density decreases with increasing altitude, the TAS increases.
 
 #### Ground Speed
-Ground speed refers to the speed of an aircraft relative to the ground. It can be viewed as the correction of TAS accounting for wind, measured in [knots](#knots).
+Ground speed refers to the speed of an aircraft relative to the ground. It can be viewed as the correction of TAS accounting for wind, measured in [knots](index.md#knots).
 
 $$\overrightarrow{GS} = \overrightarrow{TAS} + \overrightarrow{wind}$$
 
@@ -95,7 +95,7 @@ Refers to the route that the aircraft is currently flying at a given time. It is
 Refers to the flight level (altitude) that an aircraft has been instructed by an ATCO to fly at.
 
 #### Cleared Calibrated Airspeed
-Refers to the CAS that an aircraft has been instructed by an ATCO to fly. It is measured in [knots](#knots).
+Refers to the CAS that an aircraft has been instructed by an ATCO to fly. It is measured in [knots](index.md#knots).
 
 #### Cleared Mach
 Refers to the Mach that an aircraft has been instructed by an ATCO to fly.

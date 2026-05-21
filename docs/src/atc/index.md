@@ -4,7 +4,7 @@ Air Traffic Control (ATC) is a service provided to direct and organise the flow 
 
 ## Separatioon minima
 
-The minimum safety standard in ATC is judged using lateral and vertical distances. The lateral distance is measured in nautical miles (NM), while the vertical distance is in feet or [flight levels](<index#Flight levels>).
+The minimum safety standard in ATC is judged using lateral and vertical distances. The lateral distance is measured in nautical miles (NM), while the vertical distance is in feet or [flight levels](#flight-levels).
 The separation minima is defined as the separation of aircraft by at least `5NM` laterally or `1000 feet (10 flight level)` vertically at any given time.
 Any aircraft that does not meet the defined requirement at a given time is regarded to have lost separation.
 

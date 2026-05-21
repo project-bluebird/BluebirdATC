@@ -37,7 +37,7 @@ The BluebirdATC repo is made up of four packages, `bluebird-dt`, `bluebird-api`,
 
 - :material-monitor: **bluebird-hmi**
   React UI for visualization.
-  [Getting started →](bluebird-hmi/getting-started.md)
+  [Getting started →](bluebird-hmi/developer.md)
 
 </div>
 

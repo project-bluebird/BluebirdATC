@@ -21,7 +21,7 @@ airspace, routes = SectorI(
 <img src="../images/sector_i.png" width="200" position="center">
 </div>
 
-The API reference for the SectorI constructor is available [in the source reference](../source/#bluebird_dt.airspace_generator.SectorI)
+The API reference for the SectorI constructor is available [in the source reference](../source.md#bluebird_dt.airspace_generator.SectorI)
 
 ### Y-sector
 
@@ -41,7 +41,7 @@ airspace, routes = SectorY(
 <img src="../images/sector_y.png" width="400" position="center">
 </div>
 
-The API reference for the SectorY constructor is available [in the source reference](../source/#bluebird_dt.airspace_generator.SectorY)
+The API reference for the SectorY constructor is available [in the source reference](../source.md#bluebird_dt.airspace_generator.SectorY)
 
 ### X-sector
 
@@ -62,7 +62,7 @@ airspace, routes = SectorX(
 </div>
 
 
-The API reference for the SectorX constructor is available [in the source reference](../source/#bluebird_dt.airspace_generator.SectorX)
+The API reference for the SectorX constructor is available [in the source reference](../source.md#bluebird_dt.airspace_generator.SectorX)
 
 ### Xplus-sector
 
@@ -77,7 +77,7 @@ airspace, routes = SectorXPlus().generate_airspace()
 <img src="../images/sector_xplus.png" width="500" position="center">
 </div>
 
-The API reference for the SectorXPlus constructor is available [in the source reference](../source/#bluebird_dt.airspace_generator.SectorXPlus)
+The API reference for the SectorXPlus constructor is available [in the source reference](../source.md#bluebird_dt.airspace_generator.SectorXPlus)
 
 ### Springfield 
 
@@ -87,4 +87,4 @@ The Springfield sector, with its surrounding sectors, is a synthetic airspace th
     <img src="../images/sector_springfield.png" width="600" position="center">
 </div>
 
-The sprigfield airspace is initialised using the Springfield scenario manager descrbed [here](../scenarios/#infinite) 
+The sprigfield airspace is initialised using the Springfield scenario manager descrbed [here](bluebird-dt/scenarios.md#infinite) 

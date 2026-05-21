@@ -1,17 +1,15 @@
-#### Entry Coordination
-Refers to a term used to describe a group of information that describes the entry agreement of an aircraft into a sector.
+Coordinations describe the agreement between adjecent sectors of the entry/exit level and fix an aircraft will be transfered juristiction from one sector to another.
 
-##### Entry Fix
-Refers to the fix at which an aircraft should enter a sector. This is a predetermined agreement contained in the entry coordination of the aircraft.
+For an aircraft travelling through sectors A, B and C, there will be a coordination:
 
-##### Entry Flight Level
-Refers to the flight level (altitude) of the aircraft that needs to be at when it enters a sector in the airspace. This is a predetermined agreement contained in the entry coordination of the aircraft.
+- from background to A,
+- from A to B,
+- from B to C,
+- from C back to background.
 
-#### Exit Coordination
-Refers to a term used to describe a group of information that describes the exit agreement of an aircraft out of a sector.
 
-##### Exit Fix
-Refers to the fix at which an aircraft should enter a sector. This is a predetermined agreement contained in the exit coordination of the aircraft.
+#### Coordination fix
 
-##### Exit Flight Level
-Refers to the flight level (altitude) of the aircraft that needs to be at when it leaves a sector in the airspace. This is a predetermined agreement contained in the exit coordination of the aircraft.
+
+
+#### Coordination flight level
