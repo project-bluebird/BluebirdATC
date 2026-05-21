@@ -89,6 +89,10 @@ while True:
     time.sleep(4)
 ```
 
+## Documentation
+
+The documentation of the latest release is available at [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai).
+
 ## OpenAPI
 
 Documentation of the endpoints of the API is available by running 

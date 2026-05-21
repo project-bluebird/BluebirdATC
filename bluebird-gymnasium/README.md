@@ -51,3 +51,6 @@ while not done:
     obs, reward, done, truncated, info = env.step(action)
 ```
 
+## Documentation
+
+The documentation of the latest release is available at [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai).
