@@ -2,7 +2,7 @@
 Default scenarios are available by the simulator class constructor
 
 ```python
-from bluebird_dt.core import Simulator
+from bluebird_dt.simulator import Simulator
 
 sim = Simulator.from_category("Artificial", "I-Sector Two Aircraft")
 ```
@@ -15,7 +15,7 @@ This scenario has two aircraft approaching one another from opposite sides of th
 
 It can easily be initialised using
 ```python
-from bluebird_dt.core import Simulator
+from bluebird_dt.simulator import Simulator
 
 sim = Simulator.from_category("Artificial", "I-Sector Two Aircraft")
 ```
@@ -49,7 +49,7 @@ Unlike the other scenario generators that run for a specified length of time, th
 
 It can easily be initialised using
 ```python
-from bluebird_dt.core import Simulator
+from bluebird_dt.simulator import Simulator
 
 sim = Simulator.from_category("Infinite", "X-Sector")
 ```
@@ -73,7 +73,7 @@ sim = Infinite(
             initial_spawn_rate = 0.005,
             max_spawn_rate = 0.2,
             spawn_rate_increment = 0.005,
-            spawn_rate_increment_interval = 60
+            spawn_rate_increase_interval = 60
         )
 ```
 
@@ -86,7 +86,7 @@ Springfield does not provide additional configuration for the scenarios therefor
 
 ```python
 from bluebird_dt.scenario_manager import SpringfieldScenarioManager
-from bluebird_dt.core import Simulator
+from bluebird_dt.simulator import Simulator
 import random
 
 scenario_name = random.choice(SpringfieldScenarioManager.list_scenarios())
