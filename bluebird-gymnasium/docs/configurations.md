@@ -50,17 +50,12 @@ with open("env_config.json", "w") as fp:
 The sample code snippet below loads a configuration from disk.
 ```python
 import json
-from pathlib import Path
 
 from bluebird_gymnasium.envs import EnvConfig
 
-config_path = Path("env_config.json")
-
-with config_path.open("r") as fp:
+with open("env_config.json", "r") as fp:
     env_config_dict = json.load(fp)
     env_config = EnvConfig(**env_config_dict)
-
-config_path.unlink(missing_ok=True)
 ```
 
 ## Configuration Components
