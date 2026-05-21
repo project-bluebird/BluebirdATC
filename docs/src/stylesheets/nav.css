@@ -5,6 +5,11 @@
 
 :root  > * {
   --md-primary-fg-color: #173C4F;
+  --md-default-fg-color--lightest: #173C4F;
+  --md-accent-fg-color:#173C4F;
+  --md-default-fg-color--light: #FFFFFF;
+  --md-primary-fg-color--dark: #173C4F;
+  --md-primary-fg-color--light: #173C4F;
 }
 
 [data-md-color-scheme="slate"] {
