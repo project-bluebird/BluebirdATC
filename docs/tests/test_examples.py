@@ -15,3 +15,10 @@ def test_docs_examples(fpath):
 )
 def test_docs_examples_bluebird_dt(fpath):
     check_md_file(fpath=fpath)
+
+
+@pytest.mark.parametrize(
+    "fpath", pathlib.Path("bluebird-gym/docs").glob("**/*.md"), ids=str
+)
+def test_docs_examples_bluebird_gym(fpath):
+    check_md_file(fpath=fpath)
