@@ -92,6 +92,11 @@ if typing.TYPE_CHECKING:
         TruncatedType,
     )
 
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
+
 
 class ScenarioGenSeedMode(Enum):
     """How `reset(seed=...)` is applied during scenario generation.
@@ -862,11 +867,11 @@ class BaseEnv(gym.Env):
 
         Returns:
             success metric value defined as a tenary integer:
-             1 => PASS: if the aircraft correctly exited the sector
+            1  => PASS: if the aircraft correctly exited the sector
             -1 => FAIL: if the aircraft incorrectly exited the sector:
-                  either via an excursion (incorrect exit position) or
-                  the correct exit position but at a wrong flight level.
-             0 => PENDING: if the aircraft is still in the sector
+                    either via an excursion (incorrect exit position) or
+                    the correct exit position but at a wrong flight level.
+            0  => PENDING: if the aircraft is still in the sector
         """
 
         # aircraft has been deleted from the simulator
@@ -926,7 +931,7 @@ class BaseEnv(gym.Env):
         Returns
             three-element tuple:
             - gym action as `int` for centralized setup and `dict` for
-              decentralized setup.
+                decentralized setup.
             - the reformatted action specific to each aircraft.
             - the action information specific to each aircraft.
         """
@@ -967,10 +972,10 @@ class BaseEnv(gym.Env):
         Returns
             two-element tuple:
             - `dict` with each key-value pair representing a callsign and the
-              corresponding action (using the integer representation of
-              actions per aircraft).
+                corresponding action (using the integer representation of
+                actions per aircraft).
             - `dict` with each key-value pair that represents callsign and a
-              corresponding simulator action.
+                corresponding simulator action.
         """
 
         action_p = self.action_p
@@ -1704,7 +1709,7 @@ class BaseEnv(gym.Env):
             two-element tuple:
             - the final state representation for the current time step.
             - the list of selected aircraft callsigns that was used to
-              generate the final state representation.
+                generate the final state representation.
         """
 
         # concatenate states from all aircraft into a single vector
@@ -2246,7 +2251,7 @@ class BaseEnv(gym.Env):
             two-element tuple:
             - the final state representation for the current time step.
             - the list of selected aircraft callsigns that was used to
-              generate the final state representation.
+                generate the final state representation.
         """
         return _state, list(_state.keys())
 
@@ -2738,21 +2743,20 @@ class BaseEnv(gym.Env):
             - position status
             - incomm status
             - outcomm status
-            - distance to sector entry (> 0 pre-incomm, set to 0.0 afterwards)
-            - distance away from sector exit (> 0 only after exiting the
-              sector via the correct exit position on its route. set to 0.0
-              otherwise.).
+            - distance to sector entry (> 0 pre-incomm, 0.0 afterwards)
+            - distance away from sector exit (> 0 only after exiting the sector
+                via the correct exit position on its route. 0.0 otherwise).
             - distance away from incorrect sector exit (> 0 only after exiting
-              the sector via an incorrect position on the sector
-              boundary (not defined on its route). set to 0.0 otherwise.).
+                the sector via an incorrect position on the sector boundary
+                (not defined on its route). 0.0 otherwise).
             - incorrect exit position: only updated once, which happens when
-              an aircraft that was in sector at the previous time step
-              navigates out of the sector (at the current time step) through
-              an incorrect 'exit position' (the sector boundary). at other
-              times, it maintains what was set in the previous step, i.e.,
-              `None` (if there was previously no incorrect sector exit) or
-              a position in the sector (if there was an incorrect sector exit
-              at an earlier time step).
+                an aircraft that was in sector at the previous time step
+                navigates out of the sector (at the current time step) through
+                an incorrect 'exit position' (the sector boundary). at other
+                times, it maintains what was set in the previous step, i.e.,
+                `None` (if there was previously no incorrect sector exit) or
+                a position in the sector (if there was an incorrect sector exit
+                at an earlier time step).
         """
 
         ac = self.simulator_env.aircraft[callsign]
@@ -3487,7 +3491,7 @@ class BaseEnv(gym.Env):
 
     @classmethod
     def get_default_env_config(
-        cls, view_type: ViewType | str = ViewType.CENTRALIZED
+        cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED
     ) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 

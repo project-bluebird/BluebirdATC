@@ -53,6 +53,11 @@ if typing.TYPE_CHECKING:
     from bluebird_gymnasium.envs.base import BaseEnv
     from bluebird_gymnasium.utils.types import ACStateTracker, Number
 
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
+
 
 ############ constants below
 # used to determine if the relevance of a cross-track interaction when an
@@ -3183,7 +3188,7 @@ class TrafficMonitor:
 
     @classmethod
     def get_aircraft_interaction_info(
-        cls, callsign: str, gym_env: BaseEnv
+        cls: type[Self], callsign: str, gym_env: BaseEnv
     ) -> list[InteractionInfo]:
         tracked_data = gym_env.get_tracked_aircraft_data()
         simulator_env = gym_env.get_simulator_env()

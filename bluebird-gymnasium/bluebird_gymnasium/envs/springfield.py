@@ -29,6 +29,11 @@ if typing.TYPE_CHECKING:
         TruncatedType,
     )
 
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
+
 
 SPRINGFIELD_SECTOR_NAME = "SPRINGFIELD"
 
@@ -154,7 +159,7 @@ class SpringfieldEnv(BaseEnv):
 
     @classmethod
     def get_default_env_config(
-        cls, view_type: ViewType | str = ViewType.CENTRALIZED
+        cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED
     ) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 

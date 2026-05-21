@@ -25,6 +25,11 @@ from bluebird_gymnasium.utils.constants import (
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator import Simulator
 
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
+
 
 class SectorXPlusEnv(BaseEnv):
     """gymnasium environment for the X-plus sector airspace.
@@ -146,7 +151,7 @@ class SectorXPlusEnv(BaseEnv):
 
     @classmethod
     def get_default_env_config(
-        cls, view_type: ViewType | str = ViewType.CENTRALIZED
+        cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED
     ) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
