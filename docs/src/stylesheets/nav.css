@@ -13,7 +13,7 @@
 }
 
 [data-md-color-scheme="default"] {
-  --md-typeset-a-color: #1C3D4E;
+  --md-typeset-a-color: #0AC8E3;
 }
 
 /* Material's generic copy button is unreliable on mkdocs-jupyter markdown code fences.
@@ -25,17 +25,34 @@
   display: none !important;
 }
 
-.md-typeset .admonition.note,
-.md-typeset details.note {
-  border-color: #0AC8E3;
-
+[data-md-color-scheme="default"] .md-typeset .admonition.note,
+[data-md-color-scheme="default"] .md-typeset details.note {
+  border-color: #173C4F;
 }
 
-.md-typeset .note > .admonition-title,
-.md-typeset details.note > summary {
+[data-md-color-scheme="default"] .md-typeset .note > .admonition-title,
+[data-md-color-scheme="default"] .md-typeset details.note > summary {
+  background-color: #173C4F;
+  color: #FFFFFF;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .admonition.note,
+[data-md-color-scheme="slate"] .md-typeset details.note {
+  border-color: #173C4F;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .note > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset details.note > summary {
   background-color: #173C4F;
 }
 
-.md-typeset .note>.admonition-title:before, .md-typeset .note>summary:before {
-    background-color: #0AC8E3;
+[data-md-color-scheme="default"] .md-typeset .note > .admonition-title::before,
+[data-md-color-scheme="default"] .md-typeset details.note > summary::before {
+  background-color: #0AC8E3;
 }
+
+[data-md-color-scheme="slate"] .md-typeset .note > .admonition-title::before,
+[data-md-color-scheme="slate"] .md-typeset details.note > summary::before {
+  background-color: #0AC8E3; /* or a different colour for dark */
+}
+
