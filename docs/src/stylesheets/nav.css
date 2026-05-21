@@ -24,3 +24,18 @@
 .jupyter-wrapper .md-clipboard {
   display: none !important;
 }
+
+.md-typeset .admonition.note,
+.md-typeset details.note {
+  border-color: #0AC8E3;
+
+}
+
+.md-typeset .note > .admonition-title,
+.md-typeset details.note > summary {
+  background-color: #173C4F;
+}
+
+.md-typeset .note>.admonition-title:before, .md-typeset .note>summary:before {
+    background-color: #0AC8E3;
+}
