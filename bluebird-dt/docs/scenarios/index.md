@@ -1,4 +1,4 @@
-## Scenarios 
+# Scenarios 
 Default scenarios are available by the simulator class constructor
 
 ```python

@@ -1,4 +1,4 @@
-## Provided Airspace
+# Provided Airspace
 
 Users can choose between various simulated *Scenarios*, many of which can take place in a chosen *Airspace*.   
 
@@ -87,4 +87,4 @@ The Springfield sector, with its surrounding sectors, is a synthetic airspace th
     <img src="../images/sector_springfield.png" width="600" position="center">
 </div>
 
-The sprigfield airspace is initialised using the Springfield scenario manager descrbed [here](bluebird-dt/scenarios.md#infinite) 
+The sprigfield airspace is initialised using the Springfield scenario manager described [here](../scenarios/index.md#sprigfield) 

@@ -26,7 +26,7 @@ The next script is an example of an agent in python, which requires bluebird-dt 
 pip install bluebird-dt requests
 ```
 
-It tells all aircraft, on incomm, to fly to their exit fix and climb directly to their exit flight level without ensuring safety or garanteeing that aircraft will leave the sector.
+It tells all aircraft, on incomm, to fly to their exit fix and climb directly to their exit flight level without ensuring safety or guaranteeing that aircraft will leave the sector.
 
 ```python
 from bluebird_dt.core import Environment, Action
@@ -101,4 +101,5 @@ A json format of this API is also available in [http://localhost:8000/openapi.js
 
 ### Julia example
 
-A more complete example of how to use the API is available in [NonPythonAgents.ipynb](bluebird-api/examples/NonPythonAgents)
+A more complete example of how to use the API is available in [NonPythonAgents.ipynb](../examples/NonPythonAgents)
+

@@ -23,15 +23,14 @@ uv add bluebird-gymnasium
 To instantiate an environment in the suite, for example, the X sector environment, enter the commands below (after the installation and activation of the virtual environment).
 
 ```python
-$ python
->>> import gymnasium as gym
->>> import bluebird_gymnasium
->>> env = gym.make("SectorXEnv-v0")
+import gymnasium as gym
+import bluebird_gymnasium
+env = gym.make("SectorXEnv-v0")
 ```
 
 For more details, please see the Getting started section below.
 
-### Sample RL Agents
+### Sample agent
 
 Below, an example agent that takes random actions.
 

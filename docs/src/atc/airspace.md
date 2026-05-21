@@ -38,6 +38,6 @@ In the context of the Bluebird digital twin, no difference is made between a VOR
 
 ### NDB
 
-A NDV (Non-Directional Beacon) is a low frequency radio transmitter that sends signals in all directions such that an aircraft system's can point the aircraft directly to the beacon.
+A NDB (Non-Directional Beacon) is a low frequency radio transmitter that sends signals in all directions such that an aircraft system's can point the aircraft directly to the beacon.
 
-In the context of the Bluebird digital twin, no difference is made between a VOR and a FIX.
+In the context of the Bluebird digital twin, no difference is made between a NDB and a FIX.

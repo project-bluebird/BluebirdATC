@@ -15,15 +15,15 @@ nav:
       - Springfield: airspace#springfield
   - Available scenarios:
       - scenarios/index.md
+      - Infinite: scenarios#infinite
+      - Springfield: scenarios#springfield
       - Two Aircraft: scenarios#two-aircraft
       - Regular: scenarios#regular
-      - Custom: scenarios#custom
-      - Infinite: scenarios#infinite
   - Digital twin concepts:
       - design/index.md
       - Core classes: design#core-classes
       - Scenario and airspace generators: design#scenario-and-airspace-generators
-      - Simulation and event management: desing#simulation-and-event-management
+      - Simulation and event management: design#simulation-and-event-management
       - Predictors: design#predictors
       - Utility functions: design#utility-functions
   - Examples with bluebird-dt:

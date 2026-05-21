@@ -1,5 +1,4 @@
-
-## Design of the digital twin
+# Design of the digital twin
 
 The digital twin code consists of:
 

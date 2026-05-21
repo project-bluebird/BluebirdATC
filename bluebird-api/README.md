@@ -107,4 +107,4 @@ The app also serves the frontend visualization (more details on that can be foun
 
 ## Julia example
 
-A more complete example of how to use the API is available in [NonPythonAgents.ipynb](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-dt/examples/NonPythonAgents.ipynb)
+A more complete example of how to use the API is available in [NonPythonAgents.ipynb](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-api/examples/NonPythonAgents.ipynb)

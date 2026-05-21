@@ -6,10 +6,10 @@ For quick start, please make sure uv is installed [(installation guide)](https:/
 uvx bluebird-api@latest
 ```
 
-then navigate to [http://localhost:8000/hmi/](http://localhost:8000/hmi/).
+then navigate to [http://localhost:8000/hmi/](http://localhost:8000/hmi/) on a browser.
 
-This site will open a radar HMI, initially with no scenario loaded.
-To load a scenario, the top left of the window select `Load new scenario`.
+This will open a radar HMI, initially with no scenario loaded.
+To load a scenario, select `Load new scenario` at the top left of the window.
 A window will appear in the middle of the screen, select `Artificial`, then `I-Sector Two Aircraft` and finally, `Load`.
 
 <div style="text-align: center;">
@@ -28,4 +28,4 @@ Instructions for interfacing with the digital twin to make agents are available:
 
 ## ATC concepts
 
-The ATM industry is niche and therefore we have provided an introduction to key concepts neccessariy to understand the problem [here](atc/index.md).
+The ATM industry is niche and therefore we have provided an introduction to key concepts necessariy to understand the problem [here](atc/index.md).

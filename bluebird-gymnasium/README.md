@@ -21,25 +21,24 @@ uv add bluebird-gymnasium
 
 ## Getting started
 
-### Basic Usage
+### Basic usage
 
 bluebird-gymnasium currently supports the following environments/airspace:
 X sector, Y sector, I sector, Xplus sector and Springfield sector.
 
 To instantiate a X sector environment with the default config, run:
 
-```bash
-python
->>> import gymnasium as gym
->>> import bluebird_gymnasium
->>> env = gym.make("SectorXEnv-v0")
+```python
+import gymnasium as gym
+import bluebird_gymnasium
+env = gym.make("SectorXEnv-v0")
 ```
 
-### Sample RL Agents
+### Sample agents
 
 Below, an example agent that takes random actions.
 
-```bash
+```python
 import gymnasium as gym
 import bluebird_gymnasium
 

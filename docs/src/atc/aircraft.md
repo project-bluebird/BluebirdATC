@@ -15,10 +15,10 @@ Refers to the current position of an aircraft defined using the Geographic Coord
 
 #### Aircraft type
 
-The aircraft type is the manufacturer's designator for the model. A list of aircraft type designators is available [in the ICAO website](https://www.icao.int/operational-safety/doc-8643-aircraft-type-designators/search)
+The aircraft type is the manufacturer's designator for the model. A list of aircraft type designators is available [in the ICAO website](https://www.icao.int/operational-safety/doc-8643-aircraft-type-designators/search).
 
 #### Current Heading
-The direction in which the longitudinal axis of an aircraft is pointed, usually expressed in degrees from North
+The direction in which the longitudinal axis of an aircraft is pointed, expressed in degrees from North.
 
 #### Selected Heading
 Refers to the heading that the pilot of an aircraft has instructed the aircraft's flight computer to fly. In the digital twin this will be driven by instructions from the agent. However, in the real world, due to pilot error or different flight modes, this may not always be correct or available.
@@ -115,6 +115,7 @@ Rate of turn (or turn rate) refers to the speed at which an aircraft changes its
 
 Turns can stem from an aircraft requiring a turn when navigating to its next fix during [route following](#route-following) or when a heading instruction is issued by an ATCO where the new heading is different from the aircraft's current heading.
 
+The digital twin assumes all turns are fly-by turns, meaning the aircraft begins turning before reaching the waypoint, crating a smoth, arced path to the next route segment.
 
 #### Top Of Descent
 The top of descent (TOD) for an aircraft descending to a flight level before exiting a sector (current flight level > exit flight level) is the location in its flight trajectory where an instruction to descend to the exit flight level needs to be issued. It can be calculated by first determining the distance from the exit location where the descent should begin, and then projecting backwards from the exit location to the TOD location based on this distance.
