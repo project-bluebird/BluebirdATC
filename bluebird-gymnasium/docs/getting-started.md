@@ -7,37 +7,47 @@ In addition to the environment specification, the package also contains a set of
 
 ## Installation
 
-For installation instructions, please see the [README.md](https://github.com/project-bluebird/BluebirdATC/tree/main/bluebird-gymnasium){ target="_blank" rel="noopener" } in the project's repository.
+`bluebird-gymnasium` is available on pypi, therefore it can be installed using
+
+```
+pip install bluebird-gymnasium
+```
+
+or, if using [UV](https://docs.astral.sh/uv/), you can add it to your environment using
+```
+uv add bluebird-gymnasium
+```
 
 ## Simple usage
 
 To instantiate an environment in the suite, for example, the X sector environment, enter the commands below (after the installation and activation of the virtual environment).
 
 ```python
-$ python
->>> import gymnasium as gym
->>> import bluebird_dt
->>> env = gym.make("SectorXEnv-v0")
+import gymnasium as gym
+import bluebird_gymnasium
+env = gym.make("SectorXEnv-v0")
 ```
 
 For more details, please see the Getting started section below.
 
-## Getting started
+### Sample agent
 
-Start with the `Examples` tab in these docs for rendered notebook walkthroughs of the use of the `bluebird_gymnasium`, setting up environments and using a sample agent. The source notebooks remain in bluebird-gymnasium/examples if you want to run or edit them locally.
+Below, an example agent that takes random actions.
 
-## Running tests
+```python
+import gymnasium as gym
+import bluebird_gymnasium
 
-Run the `bluebird-gymnasium` test suite from the package directory:
+env = gym.make("SectorXEnv-v0")
+obs, info = env.reset()
+done = False
 
-```bash
-cd bluebird-gymnasium
-uv run pytest tests/ -p no:warnings
+while not done:
+    action = env.action_space.sample()
+    obs, reward, done, truncated, info = env.step(action)
 ```
 
-To use parallel workers:
 
-```bash
-cd bluebird-gymnasium
-uv run pytest -n auto tests/ -p no:warnings
-```
+## Additional examples
+
+Additional examples are available as [rendered jupyter notebooks](examples/simple_demo.ipynb).

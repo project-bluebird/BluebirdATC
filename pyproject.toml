@@ -11,4 +11,5 @@ testpaths = [
   "bluebird-api/tests",
   "bluebird-dt/tests",
   "bluebird-gymnasium/tests",
+  "docs/tests"
 ]

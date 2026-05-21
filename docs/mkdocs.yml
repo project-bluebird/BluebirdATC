@@ -1,5 +1,5 @@
-site_name: bluebird
-site_url: https://project-bluebird.github.io/bluebird-atc/
+site_name: Project Bluebird documentation
+site_url: https://docs.projectbluebird.ai
 repo_url: https://github.com/project-bluebird/BluebirdATC
 repo_name: project-bluebird/BluebirdATC
 docs_dir: src
@@ -22,18 +22,34 @@ extra_css:
 
 theme:
   name: material
+  custom_dir: overrides
+  logo: assets/logo.png
   palette:
-    primary: 'indigo'
-    accent: 'indigo'
+      # Palette toggle for light mode
+      - media: "(prefers-color-scheme: light)"
+        scheme: default
+        primary: custom
+        toggle:
+            icon: material/brightness-7
+            name: Switch to dark mode
+      # Palette toggle for dark mode
+      - media: "(prefers-color-scheme: dark)"
+        scheme: slate
+        primary: custom
+        toggle:
+            icon: material/brightness-4
+            name: Switch to light mode
   features:
     - navigation.instant
-    - toc.integrate
     - content.code.copy
     - content.tabs.link
     - content.action.edit
     - content.code.copy
     - search.suggest
     - search.highlight
+    - navigation.indexes
+    - navigation.sections
+
 
 markdown_extensions:
   - attr_list
@@ -41,6 +57,19 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 plugins:
   - search
@@ -62,22 +91,17 @@ validation:
     not_found: ignore
 
 nav:
-  - Home:
-      - Project overview: ./#project-overview
-      - Package documentation: ./#package-documentation
-      - General ATC introduction and definition of terms: ./#general-atc-introduction-and-definition-of-terms
-      - Getting started: ./#getting-started
-      - Running tests: ./#running-tests
-      - References: ./#references
+  - Project Bluebird: index.md
+  - Neurips competition: examples/competition/Competition-Intro.ipynb
+  - User guide:
+    - Getting started: getting-started.md
 
-  - ATC Introduction and Glossary:
-      - Overview: atc-introduction-and-glossary.md
-      - ATC Instructions: atc-introduction-and-glossary.md#atc-instructions
-      - Glossary: atc-introduction-and-glossary.md#glossary
-      - Airspace: atc-introduction-and-glossary.md#airspace
-      - Instruction: atc-introduction-and-glossary.md#instruction
-      - Aircraft: atc-introduction-and-glossary.md#aircraft
-      - Miscellaneous: atc-introduction-and-glossary.md#miscellaneous
+    - ATC concepts:
+        - atc/index.md
+        - Airspace: atc/airspace.md
+        - Aircraft: atc/aircraft.md
+        - Clearances: atc/clearances.md
+        - Coordinations: atc/coordinations.md
 
   - bluebird-dt: "!include ../bluebird-dt/mkdocs.yml"
 
@@ -87,25 +111,11 @@ nav:
 
   - bluebird-hmi: "!include ../bluebird-hmi/mkdocs.yml"
 
-  - Examples:
-      - bluebird-dt:
-          - Simulation example: examples/bluebird-dt/Intro-Part-1.ipynb
-          - Simulation example: examples/bluebird-dt/Intro-Part-2.ipynb
-          - Simulation example: examples/bluebird-dt/Intro-Part-3.ipynb
-          - Simulation example: examples/bluebird-dt/Intro-Part-4.ipynb
-          - Simulation example: examples/bluebird-dt/NonPythonAgents.ipynb
-          - Radar visualisation: examples/bluebird-dt/render/radar.ipynb
-      - bluebird-gymnasium:
-          - Agent demo: examples/bluebird-gymnasium/agent_demo.ipynb
-          - Radar actions display demo: examples/bluebird-gymnasium/radar_actions_display_demo.ipynb
-          - Radar scales demo: examples/bluebird-gymnasium/radar_scales_demo.ipynb
-          - Simple demo: examples/bluebird-gymnasium/simple_demo.ipynb
-
-  - How to change these docs:
+  - Development:
+    - How to contribute: how-to-contribute.md
+    - Docs:
       - Intro: mkdocs-guide/#intro
       - Serve the docs locally: mkdocs-guide/#serve-the-docs-locally
       - Build the docs for production: mkdocs-guide/#build-the-docs-for-production
       - File hierarchy: mkdocs-guide/#file-hierarchy
       - Example edit-serve-build workflow: mkdocs-guide/#example-edit-serve-build-workflow
-
-  - How to contribute: how-to-contribute.md

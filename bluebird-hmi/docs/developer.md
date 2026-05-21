@@ -11,7 +11,7 @@ In this context, **HMI** means the web-based **GUI** ("Human Machine Interface")
 
 The built (minified) HMI code is distributed in the BluebirdATC repository, so users can run it without installing Node.js or frontend dependencies.
 
-1. Start the `bluebird-api` service (see documentation [here](../bluebird-api/index.md)).
+1. Start the `bluebird-api` service (see documentation [here](../bluebird-api/getting-started.md)).
 2. Confirm the API is running locally on port `8000`.
 3. Open the HMI in your browser at [http://localhost:8000/hmi](http://localhost:8000/hmi).
 

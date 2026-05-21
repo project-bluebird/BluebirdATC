@@ -3,6 +3,24 @@
   display: none;
 }
 
+:root  > * {
+  --md-primary-fg-color: #173C4F;
+  --md-default-fg-color--lightest: #173C4F;
+  --md-accent-fg-color:#173C4F;
+  --md-default-fg-color--light: #FFFFFF;
+  --md-primary-fg-color--dark: #173C4F;
+  --md-primary-fg-color--light: #173C4F;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-typeset-a-color: #41DCF5;
+  --md-default-bg-color: #081721;
+}
+
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #0AC8E3;
+}
+
 /* Material's generic copy button is unreliable on mkdocs-jupyter markdown code fences.
    Notebook code cells already render their own clipboard control, so hide the Material one
    within notebook pages to avoid showing a broken icon. */
@@ -11,3 +29,35 @@
 .jupyter-wrapper .md-clipboard {
   display: none !important;
 }
+
+[data-md-color-scheme="default"] .md-typeset .admonition.note,
+[data-md-color-scheme="default"] .md-typeset details.note {
+  border-color: #173C4F;
+}
+
+[data-md-color-scheme="default"] .md-typeset .note > .admonition-title,
+[data-md-color-scheme="default"] .md-typeset details.note > summary {
+  background-color: #173C4F;
+  color: #FFFFFF;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .admonition.note,
+[data-md-color-scheme="slate"] .md-typeset details.note {
+  border-color: #173C4F;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .note > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset details.note > summary {
+  background-color: #173C4F;
+}
+
+[data-md-color-scheme="default"] .md-typeset .note > .admonition-title::before,
+[data-md-color-scheme="default"] .md-typeset details.note > summary::before {
+  background-color: #0AC8E3;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .note > .admonition-title::before,
+[data-md-color-scheme="slate"] .md-typeset details.note > summary::before {
+  background-color: #0AC8E3; /* or a different colour for dark */
+}
+
