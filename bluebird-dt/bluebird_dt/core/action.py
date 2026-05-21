@@ -93,12 +93,12 @@ class Action(Comparison):
             Optional string indicating who sent the Action. In the case of having multiple
             agents interacting with the simulation, this can be used to filter who was
             responsible for what Action.
-        clearance: str, optional
-            Optional string reserved for the clearance to be issues to the pilot
+        text_representation: ClearanceAndResponse, optional
+            Optional text representation of the clearance, including clearance and pilot response
             - the clearance depends on the environment at the time that its
             generated, so creation is handled elsewhere.
-        pilot_response: str, optional
-            Optional string reserved for a pilot's response to the clearance.
+        voice_representation: ClearanceAndResponse, optional
+            Optional voice representation of the clearance, including clearance and pilot response
         sector: list of str, optional
             List of the individual sector frequency this action was sent from/to. Its value is optional for
             backwards compatibility, with `None` values either being replaced by the name of the sector frequency the
