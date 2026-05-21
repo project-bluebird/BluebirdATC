@@ -50,4 +50,4 @@ while not done:
 
 ## Additional examples
 
-Additional examples are available as [rendered jupyter notebooks](../examples/simple_demo).
+Additional examples are available as [rendered jupyter notebooks](examples/simple_demo.ipynb).

@@ -101,5 +101,4 @@ A json format of this API is also available in [http://localhost:8000/openapi.js
 
 ### Julia example
 
-A more complete example of how to use the API is available in [NonPythonAgents.ipynb](../examples/NonPythonAgents)
-
+A more complete example of how to use the API is available in [NonPythonAgents.ipynb](examples/NonPythonAgents.ipynb)

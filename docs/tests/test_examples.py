@@ -18,7 +18,7 @@ def test_docs_examples_bluebird_dt(fpath):
 
 
 @pytest.mark.parametrize(
-    "fpath", pathlib.Path("bluebird-gym/docs").glob("**/*.md"), ids=str
+    "fpath", pathlib.Path("bluebird-gymnasium/docs").glob("**/*.md"), ids=str
 )
 def test_docs_examples_bluebird_gym(fpath):
     check_md_file(fpath=fpath)

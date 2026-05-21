@@ -87,4 +87,4 @@ The Springfield sector, with its surrounding sectors, is a synthetic airspace th
     <img src="../images/sector_springfield.png" width="600" position="center">
 </div>
 
-The Sprigfield airspace is initialised using the Springfield scenario manager described [here](../scenarios/index.md#sprigfield) 
+The Springfield airspace is initialised using the Springfield scenario manager described [here](../scenarios/index.md#springfield)
