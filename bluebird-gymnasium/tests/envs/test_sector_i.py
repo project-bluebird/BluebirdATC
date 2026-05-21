@@ -123,10 +123,20 @@ def test_pos_information(view_type: ViewType):
     radar_df = gym_env.get_manager().event_handler.radar_df
     start_time = radar_df.index.min().replace(tzinfo=timezone.utc).timestamp()
     start_step = int(start_time // gym_env.scenario_sec_per_step)
+
     for _ in range(start_step):
         gym_env.step(action)
 
     callsign = list(simulator_env.aircraft.keys())[0]
+    # If this aircraft is initially being ignored (because it spawns too far
+    # from entry fix), fast forward until it is no longer ignored, or 100 steps,
+    # just in case it never happens
+    for _ in range(100):
+        ignored, _ = gym_env._ignore_aircraft(callsign)
+        if ignored == False:
+            break
+        gym_env.step(action)
+
     ret: ACPositionInfo = gym_env.check_pos_information(
         callsign, PositionStatus.BEFORE_ENTRY, False, False, None
     )

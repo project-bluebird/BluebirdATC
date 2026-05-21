@@ -126,6 +126,14 @@ def test_pos_information(view_type: ViewType):
         gym_env.step(action)
 
     callsign = list(simulator_env.aircraft.keys())[0]
+    # If this aircraft is initially being ignored (because it spawns too far
+    # from entry fix), fast forward until it is no longer ignored, or 100 steps,
+    # just in case it never happens
+    for _ in range(100):
+        ignored, _ = gym_env._ignore_aircraft(callsign)
+        if ignored == False:
+            break
+        gym_env.step(action)
     ret: ACPositionInfo = gym_env.check_pos_information(
         callsign, PositionStatus.BEFORE_ENTRY, False, False, None
     )

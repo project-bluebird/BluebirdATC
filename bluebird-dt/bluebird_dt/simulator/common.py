@@ -9,7 +9,7 @@ def list_sim_scenario_categories() -> list[str]:
     List the available scenario categories.
     """
 
-    return ["Artificial", "Springfield", "Infinite", "Flight School"]
+    return ["Two Aircraft", "Regular", "Custom", "Infinite", "Springfield", "Flight School"]
 
 
 def list_sim_scenarios(category: str) -> list[str]:
@@ -23,21 +23,8 @@ def list_sim_scenarios(category: str) -> list[str]:
     if category == "Springfield":
         return SpringfieldScenarioManager.list_scenarios()
 
-    if category == "Artificial":
-        return [
-            "I-Sector Two Aircraft",
-            "X-Sector Two Aircraft",
-            "Y-Sector Two Aircraft",
-        ]
-
-    if category == "Infinite":
-        return [
-            "X-Sector",
-            "Xplus-Sector",
-            "Y-Sector",
-            "I-Sector",
-            "Two Sector",
-        ]
+    if category in ["Two Aircraft", "Regular", "Custom", "Infinite"]:
+        return ["I-Sector", "X-Sector", "Xplus-Sector", "Y-Sector", "Two Sector", "Springfield"]
 
     if category == "Flight School":
         return ["Xplus-Sector"]

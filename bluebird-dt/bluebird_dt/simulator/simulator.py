@@ -18,10 +18,10 @@ from bluebird_dt.utility.convert import timestamp_to_string
 from bluebird_dt.utility.paths import LOG_DIR
 
 if typing.TYPE_CHECKING:
-    from bluebird_dt.scenario_manager.infinite import Infinite
+    from bluebird_dt.scenario_manager.custom import Custom, CustomScenarioManagerConfig
+    from bluebird_dt.scenario_manager.infinite import Infinite, InfiniteScenarioManagerConfig
     from bluebird_dt.scenario_manager.regular import Regular, RegularScenarioManagerConfig
     from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
-    from bluebird_dt.scenario_manager.tactical import Tactical, TacticalScenarioManagerConfig
     from bluebird_dt.scenario_manager.two_aircraft import TwoAircraft, TwoAircraftScenarioManagerConfig
 
 
@@ -49,7 +49,7 @@ class Simulator:
 
     def __init__(
         self,
-        scenario_manager: SpringfieldScenarioManager | Infinite | TwoAircraft | Tactical | Regular,
+        scenario_manager: SpringfieldScenarioManager | Infinite | TwoAircraft | Custom | Regular,
         env_manager: EnvironmentManager,
         projection_centre: tuple[float, float] | None = None,
         category: str | None = None,
@@ -69,7 +69,7 @@ class Simulator:
 
         Parameters
         ----------
-        scenario_manager : SpringfieldScenarioManager | Infinite | TwoAircraft | Tactical | Regular
+        scenario_manager : SpringfieldScenarioManager | Infinite | TwoAircraft | Custom | Regular
             The scenario manager instance to use for this simulator.
         env_manager : EnvironmentManager
             The environment manager instance to use for this simulator.
@@ -211,16 +211,47 @@ class Simulator:
         -------
         Simulator
         """
+        from bluebird_dt.scenario_manager.custom import Custom
         from bluebird_dt.scenario_manager.infinite import Infinite
+        from bluebird_dt.scenario_manager.regular import Regular
         from bluebird_dt.scenario_manager.springfield import (
             SpringfieldScenarioManager,
         )
         from bluebird_dt.scenario_manager.two_aircraft import TwoAircraft
 
         match category:
-            # lots of additional steps for the artificial airspace
-            case "Artificial":
+            case "Two Aircraft":
                 return TwoAircraft.setup(
+                    scenario_name=scenario_name,
+                    log_filename=log_filename,
+                    predictor=predictor,
+                    use_wind=use_wind,
+                    use_forecast=use_forecast,
+                    autosave=autosave,
+                    attach_context_to_logger=attach_context_to_logger,
+                    save_log_to_file=save_log_to_file,
+                    simulated_sectors=simulated_sectors,
+                )
+            case "Regular":
+                return Regular.setup(
+                    total_time=1000.0,
+                    num_aircraft=10,
+                    scenario_name=scenario_name,
+                    log_filename=log_filename,
+                    predictor=predictor,
+                    use_wind=use_wind,
+                    use_forecast=use_forecast,
+                    autosave=autosave,
+                    attach_context_to_logger=attach_context_to_logger,
+                    save_log_to_file=save_log_to_file,
+                    simulated_sectors=simulated_sectors,
+                )
+            case "Custom":
+                return Custom.setup(
+                    num_aircraft=2,
+                    aircraft_on_route=False,
+                    lateral_offset=[0.0, 10.0],
+                    speed_range=[350.0, 450.0],
                     scenario_name=scenario_name,
                     log_filename=log_filename,
                     predictor=predictor,
@@ -743,7 +774,7 @@ class Simulator:
         self,
     ) -> SaveConfig[
         RegularScenarioManagerConfig
-        | TacticalScenarioManagerConfig
+        | CustomScenarioManagerConfig
         | SpringfieldScenarioManagerConfig
         | TwoAircraftScenarioManagerConfig
         | InfiniteScenarioManagerConfig
@@ -755,7 +786,7 @@ class Simulator:
         -------
         SaveConfig[
             RegularScenarioManagerConfig
-            | TacticalScenarioManagerConfig
+            | CustomScenarioManagerConfig
             | SpringfieldScenarioManagerConfig
             | TwoAircraftScenarioManagerConfig
             | InfiniteScenarioManagerConfig

@@ -8,7 +8,8 @@ import pytest
 from bluebird_dt.airspace_generator import SectorI
 from bluebird_dt.core import Action, Aircraft, Airspace, Area, Environment, Fixes, FlightPlan, Pos2D, Route, Sector, Volume
 from bluebird_dt.core.airway import Airway
-from bluebird_dt.scenario_manager import Tactical
+from bluebird_dt.scenario_manager import Custom
+
 from bluebird_dt.utility.geometry import centre
 
 
@@ -815,7 +816,7 @@ def test_closest_forward_fix(airspace_routes, request):
 
     # set up
     airspace, routes = request.getfixturevalue(airspace_routes)
-    env = Tactical(1, airspace=airspace, routes=routes).create_env_manager().environment
+    env = Custom(1, airspace=airspace, routes=routes).create_env_manager().environment
     aircraft = env.aircraft["AIR0"]
 
     # 1. test from different positions on Route (exactly between Fixes)
@@ -864,7 +865,7 @@ def generate_i_air0_south(generate_i) -> tuple[Airspace, Aircraft]:
     """Generate Sector I airspace with aircraft AIR0 travelling south"""
     # Build I scenario
     airspace, routes = generate_i
-    env = Tactical(1, airspace=airspace, routes=routes).create_env_manager().environment
+    env = Custom(1, airspace=airspace, routes=routes, aircraft_on_route=True).create_env_manager().environment
 
     # Designate a test aircraft AIR0
     air0 = env.aircraft["AIR0"]
@@ -909,7 +910,7 @@ def test_closest_forward_fix_close_to_fix(generate_i_air0_south):
 def test_closest_forward_fix_before_first_leg(generate_i):
     """Test forward_fix identifies being before the first leg"""
     airspace, routes = generate_i
-    em = Tactical(2, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(2, airspace=airspace, routes=routes).create_env_manager()
 
     aircraft = em.environment.aircraft["AIR0"]
     spirit = airspace.fixes.places["SPIRIT"]
@@ -960,7 +961,7 @@ def test_closest_forward_fix_near_last_fix(generate_i_air0_south):
 def test_closest_forward_fix_looping_bug(generate_thunderdome):
     """Demonstrate fixed bug in closest_forward_fix when a route looped back on itself"""
     airspace, routes = generate_thunderdome
-    env = Tactical(1, airspace=airspace, routes=routes).create_env_manager().environment
+    env = Custom(1, airspace=airspace, routes=routes).create_env_manager().environment
 
     # Create a route which loops back on itself, with the aircraft currently at
     # BOND3.
@@ -1233,7 +1234,7 @@ def test_progression_route_directs(generate_i_air0_south, initial_state, route_d
 def test_airway_generation(generate_i):
     airspace, routes = generate_i
 
-    env = Tactical(1, airspace=airspace, routes=routes).create_env_manager().environment
+    env = Custom(1, airspace=airspace, routes=routes).create_env_manager().environment
     sector = env.airspace.sectors["sector_i"]
 
     fixes_in_sector = [val for key, val in env.airspace.fixes.places.items() if key in ["AIR", "WATER", "EARTH"]]
