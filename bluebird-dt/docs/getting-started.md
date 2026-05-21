@@ -44,3 +44,4 @@ sim.manager.receive_actions(
 ```
 
 This example is very simple, various examples of using the `bluebird_dt` package can be found in Jupyter notebooks, that can be viewed or downloaded via the *Examples* tab.
+We recommend startin with the [introduction to the digital twin](../examples/Intro-Part-1/)
