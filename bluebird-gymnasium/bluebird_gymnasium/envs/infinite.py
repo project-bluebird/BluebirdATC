@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import typing
 
+from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.predictor import LinearPredictor
 
 # simulator package
@@ -32,7 +33,7 @@ class ScenarioName(StrEnum):
 def _configure_airspace_metadata(env: BaseEnv) -> None:
     """Set airspace-derived metadata needed before scenario reset."""
 
-    airspace, _routes = Infinite.create_airspace(
+    airspace, _routes, _sector_name = AirspaceLoader.load(
         env.config.scenario_config["scenario_name"],
     )
 

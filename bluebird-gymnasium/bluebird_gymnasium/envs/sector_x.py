@@ -222,7 +222,7 @@ class SectorXEnv(BaseEnv):
                 "coeffs": [1.0, 1.0],
             },
             "scenario_config": {
-                "cls": "tactical",
+                "cls": "custom",
                 "args": {
                     "num_aircraft": 1,
                     "vertical_buffer_distance": 100,

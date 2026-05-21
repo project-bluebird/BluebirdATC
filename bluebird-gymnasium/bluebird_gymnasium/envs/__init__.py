@@ -155,14 +155,14 @@ class EnvConfig:
 # aircraft scenario generator class(es)
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.scenario_manager import (
+    Custom,
     Regular,
-    Tactical,
     TwoAircraft,
 )
 
 SCENARIO_CLS: dict[str, ScenarioManager] = {
+    "custom": Custom,
     "regular": Regular,
-    "tactical": Tactical,
     "twoaircraft": TwoAircraft,
 }
 
