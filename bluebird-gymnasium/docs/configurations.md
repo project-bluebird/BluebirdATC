@@ -36,19 +36,31 @@ The configuration can be saved to and loaded from a disk as a JSON file.
 
 The sample code snippet below saves a configuration to disk.
 ```python
-# assuming env_config was previously defined
 import json
+from dataclasses import asdict
+
+from bluebird_gymnasium.envs import SectorXPlusEnv
+
+env_config = SectorXPlusEnv.get_default_env_config()
+
 with open("env_config.json", "w") as fp:
-    json.dump(vars(args), fp, indent=4)
+    json.dump(asdict(env_config), fp, indent=4)
 ```
 
 The sample code snippet below loads a configuration from disk.
 ```python
 import json
+from pathlib import Path
+
 from bluebird_gymnasium.envs import EnvConfig
-with open("env_config.json", "r") as fp:
+
+config_path = Path("env_config.json")
+
+with config_path.open("r") as fp:
     env_config_dict = json.load(fp)
     env_config = EnvConfig(**env_config_dict)
+
+config_path.unlink(missing_ok=True)
 ```
 
 ## Configuration Components
