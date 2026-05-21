@@ -21,7 +21,7 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.core.environment import Environment as SimulatorEnv
     from bluebird_dt.core.pos2d import Pos2D
     from bluebird_gymnasium.envs.base import BaseEnv
-    from bluebird_gymnasium.utils.types import Number, ACStateTracker
+    from bluebird_gymnasium.utils.types import ACStateTracker, InteractionInfo, Number
 
 
 def get_overlap_coeff(
@@ -429,6 +429,7 @@ def conflict_resolution_exp(
         ac_centre_dist_cr = _centre_info[0] * _centre_info[1]
 
         for interaction in interactions:
+            other_callsign = interaction.other_callsign
             # lateral separation penalty: as aircraft become laterally
             # separated up to 5.0nm, the penalty reduces from -1.0 to 0.0
             pair_distance = interaction.centreline_dist_diff_cr

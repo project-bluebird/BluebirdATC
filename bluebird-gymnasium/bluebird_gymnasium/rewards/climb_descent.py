@@ -16,8 +16,8 @@ from bluebird_gymnasium.utils.interaction_utils import (
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.pos2d import Pos2D
-    from bluebird_gymnasium.utis.types import ACStateTracker, InteractionInfo
-    from bluebird_dt.core.environemnt import Environment as SimulatorEnv
+    from bluebird_gymnasium.utils.types import ACStateTracker, Number
+    from bluebird_dt.core.environment import Environment as SimulatorEnv
 
 
 # useful constants

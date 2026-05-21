@@ -211,13 +211,13 @@ class NamedLine:
     def start_position(self) -> Pos2D:
         return self.line[0]
 
-    def end_position(end) -> Pos2D:
+    def end_position(self, end) -> Pos2D:
         return self.line[1]
 
     def start_position_name(self) -> str | None:
         return self.name[0]
 
-    def end_position_name(end) -> str | None:
+    def end_position_name(self, end) -> str | None:
         return self.name[1]
 
     def get_line(self) -> Line:

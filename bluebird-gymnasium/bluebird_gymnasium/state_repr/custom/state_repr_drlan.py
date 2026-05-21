@@ -13,6 +13,7 @@ from bluebird_gymnasium.utils.simulator_utils import east_north_ground_speed
 import typing
 
 if typing.TYPE_CHECKING:
+    import numpy.typing as npt
     from bluebird_dt.core import Environment as SimulatorEnv
     from bluebird_gymnasium.envs.base import BaseEnv
     from bluebird_gymnasium.utils.types import ACStateTracker

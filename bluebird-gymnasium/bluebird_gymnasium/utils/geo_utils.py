@@ -8,6 +8,7 @@ from shapely.geometry import Point
 
 # simulation package
 from bluebird_dt.core.pos2d import Pos2D
+from bluebird_dt.core.pos3d import Pos3D
 from bluebird_dt.core.pos4d import Pos4D
 from bluebird_dt.core.sector import Sector
 from bluebird_dt.utility import convert
@@ -37,9 +38,9 @@ from bluebird_gymnasium.utils.types import (
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.aircraft import Aircraft
-    from bluebird_dt.core.airpsace import Airspace
+    from bluebird_dt.core.airspace import Airspace
     from bluebird_dt.core.area import Area
-    from bluebird_gymnasium.utils.types import Line
+    from bluebird_gymnasium.utils.types import Line, Number
 
 
 def left_right_check(reference: float, target: float) -> int:

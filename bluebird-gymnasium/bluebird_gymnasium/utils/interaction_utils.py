@@ -48,12 +48,12 @@ from bluebird_gymnasium.utils.types import (
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.aircraft import Aircraft
-    from bluebird_dt.core.airpsace import Airspace
+    from bluebird_dt.core.airspace import Airspace
     from bluebird_dt.core.environment import Environment as SimulatorEnv
     from bluebird_dt.predictor import Predictor
     from bluebird_dt.core.pos4d import Pos4D
     from bluebird_gymnasium.envs.base import BaseEnv
-    from bluebird_gymnasium.utils.types import ACStateTracker
+    from bluebird_gymnasium.utils.types import ACStateTracker, Number
 
 
 ############ constants below
@@ -723,7 +723,7 @@ def get_continuous_track_info(
     aircraft_2: Aircraft,
     aircraft_1_cps: list[Pos4D],
     aircraft_2_cps: list[Pos4D],
-) -> typle[float, int, float, int, InteractionDistance]:
+) -> tuple[float, int, float, int, InteractionDistance]:
     """Compute the interaction type between two aircraft.
 
     Compute the interaction type between two aircraft in a
@@ -1827,7 +1827,7 @@ def filter_interactions_by_distance(
     callsign: str,
     tracked_data: dict[str, ACStateTracker],
     simulator_env: SimulatorEnv,
-    rollout_predictor: predictor,
+    rollout_predictor: Predictor,
     distance_threshold: float,
 ) -> tuple[list[InteractionInfo], list[int], list[float]]:
     """

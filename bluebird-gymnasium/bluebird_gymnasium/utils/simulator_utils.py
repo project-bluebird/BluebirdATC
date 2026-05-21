@@ -6,11 +6,13 @@ import typing
 
 import numpy as np
 from bluebird_dt.core.pos2d import Pos2D
+from bluebird_dt.core.pos4d import Pos4D
 
 from bluebird_dt.utility.convert import (
     FL_TO_FT,  # flight level (FL) to feet (FT) converter
     KT_TO_MPS,  # nautical miles per second (knots) to metre per second
     MPS_TO_KT,  # metre per second to nautical miles per second (knots)
+    horizontal_tas,
     tas_to_cas,  # true airspeed to calibrated airspeed
 )
 
@@ -21,7 +23,7 @@ from bluebird_gymnasium.utils.geo_utils import (
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.aircraft import Aircraft
-    from bluebird_dt.core.airpsace import Airspace
+    from bluebird_dt.core.airspace import Airspace
     from bluebird_dt.core.coordination import Coordination
     from bluebird_dt.core.environment import Environment as SimulatorEnv
     from bluebird_dt.predictor import Predictor
@@ -864,19 +866,20 @@ def east_north_ground_speed(
         north_ground_speed = aircraft.ground_speed
     else:
         # compute wind vector based on aircraft flight level and position
-        wind_vector = wind_field.get_wind_vector(
+        wind_vector = simulator_env.wind_field.get_wind_vector(
             flight_level=aircraft.fl,
             latitude=aircraft.lat,
             longitude=aircraft.lon,
         )
+        horizontal_tas_kts = horizontal_tas(aircraft.speed_tas, aircraft.vertical_speed)
         # copied from bluebird_dt.utility.convert.ground_speed_from_tas
         east_ground_speed = (
             wind_vector.u_comp * MPS_TO_KT
-            + horizontal_tas * math.sin(math.radians(heading))
+            + horizontal_tas_kts * math.sin(math.radians(aircraft.heading))
         )
         north_ground_speed = (
             wind_vector.v_comp * MPS_TO_KT
-            + horizontal_tas * math.cos(math.radians(heading))
+            + horizontal_tas_kts * math.cos(math.radians(aircraft.heading))
         )
 
     return east_ground_speed, north_ground_speed

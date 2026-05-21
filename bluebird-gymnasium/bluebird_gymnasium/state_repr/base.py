@@ -7,9 +7,8 @@ import typing
 if typing.TYPE_CHECKING:
     import numpy.typing as npt
 
-    from bluebird_dt.core import Environment as SimulatorEnv
     from bluebird_gymnasium.envs.base import BaseEnv
-    from bluebird_gymnasium.utils.types import ACStateTracker, InteractionInfo
+    from bluebird_gymnasium.utils.types import InteractionInfo
 
 
 class BaseRepresentation:
@@ -67,7 +66,7 @@ class BaseRepresentation:
         self.low = None
         self.high = None
 
-    def repr(self, gym_env: baseEnv, callsign: str) -> np.ndarray:
+    def repr(self, gym_env: BaseEnv, callsign: str) -> np.ndarray:
         """Generate a vectorised representation of an aircraft's state.
 
         Args:

@@ -29,6 +29,8 @@ from bluebird_gymnasium.utils.types import PositionStatus
 if typing.TYPE_CHECKING:
     import numpy.typing as npt
 
+    from bluebird_gymnasium.utils.types import Line
+
 
 class RelativeRepresentationRaw(BaseRepresentation):
     """Representation of aircraft state in the simulator.

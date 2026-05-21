@@ -1046,4 +1046,4 @@ class ActionParser:
         # do nothing.
         # decentralized setup does not use action formatting.
         # see `._action_formatter_decentralized(...)`
-        return actions_int
+        return actions_dict

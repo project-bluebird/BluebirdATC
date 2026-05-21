@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.core import Aircraft
     from bluebird_dt.core import Airspace
     from bluebird_gymnasium.envs.base import BaseEnv
-    from bluebird_gymnasium.utils.types import Number
+    from bluebird_gymnasium.utils.types import ACStateTracker, Number
 
 DEGREES_MIN = 0
 DEGREES_MAX = 360

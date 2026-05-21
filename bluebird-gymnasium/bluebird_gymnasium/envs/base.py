@@ -78,8 +78,8 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.core.action import Action as SimAction
     from bluebird_dt.core.coordination import Coordination
     from bluebird_dt.core.environment import Environment as SimulatorEnv
-    from bluebird_dt.core.predictors import Predictor
     from bluebird_dt.manager import EnvironmentManager as SimulatorEnvManager
+    from bluebird_dt.predictor import Predictor
     from bluebird_dt.simulator import Simulator
     from numpy.typing import NDArray
 
