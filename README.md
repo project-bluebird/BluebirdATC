@@ -3,7 +3,7 @@ A Digital Twin for use in ATC simulations, and a training environment for AI age
 
 This repository contains the following packages:
  * [![PyPI version](https://img.shields.io/pypi/v/bluebird-dt?logo=pypi&logoColor=white&label=bluebird-dt)](https://pypi.org/project/bluebird-dt/) - the digital twin.  See [here](bluebird-dt/README.md) for more information.
- * `bluebird-api` [![PyPI version](https://img.shields.io/pypi/v/bluebird-api.svg?logo=pypi&label=bluebird-api)](https://pypi.org/project/bluebird-api/) - A REST API for the digital twin.  See [here](bluebird-api/README.md) for more information.
+ * [![PyPI version](https://img.shields.io/pypi/v/bluebird-api.svg?logo=pypi&logoColor=white&label=bluebird-api)](https://pypi.org/project/bluebird-api/) - A REST API for the digital twin.  See [here](bluebird-api/README.md) for more information.
  * [![PyPI version](https://img.shields.io/pypi/v/bluebird-gymnasium.svg?logo=pypi&logoColor=white&label=bluebird-gymnasium)](https://pypi.org/project/bluebird-gymnasium/) - a gym environment for AI agents.  See [here](bluebird-gymnasium/README.md) for more details. 
  * `bluebird-hmi` - an optional web-based visualisation package.  See [here](bluebird-hmi/README.md) for details.
   
