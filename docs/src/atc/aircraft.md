@@ -11,7 +11,7 @@ A callsign, sometimes referred to as aircraft identification, is an string ident
 The field usually consists of the aircraft registration or the company designator operating the aircraft followed by a flight number.
 
 #### Position
-Refers to the current position of an aircraft defined using the Geographic Coordinate System (GCS) made of latitude and longitude.
+Refers to the current position of an aircraft defined using the Geographic Coordinate System (GCS), expressed as made of latitude and longitude coordinates.
 
 #### Aircraft type
 

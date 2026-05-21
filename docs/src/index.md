@@ -41,6 +41,8 @@ The BluebirdATC repo is made up of four packages, `bluebird-dt`, `bluebird-api`,
 
 </div>
 
+If you are unfamiliar with ATC concepts, an introduction is available [here](atc/index.md).
+
 ### Versioning
 
 Development of the BluebirdATC Digital Twin is still in early stages, with new features and bug fixes causing breaking changes.

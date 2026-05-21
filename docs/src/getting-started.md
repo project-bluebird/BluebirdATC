@@ -28,4 +28,4 @@ Instructions for interfacing with the digital twin to make agents are available:
 
 ## ATC concepts
 
-The ATM industry is niche and therefore we have provided an introduction to key concepts necessariy to understand the problem [here](atc/index.md).
+The ATM industry is niche and therefore we have provided an introduction to key concepts necessary to understand the problem [here](atc/index.md).
