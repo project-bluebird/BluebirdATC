@@ -13,6 +13,7 @@ def test_conflict_resolution_exp(gym_env):
     action = 0
     assert -1.0 <= conflict_resolution_exp(gym_env, callsign, action) <= 0.0
 
+
 def test_conflict_resolution_tanh(gym_env):
     """Test `conflict_resolution_tanh` reward function."""
 

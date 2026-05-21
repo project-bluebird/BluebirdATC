@@ -7,8 +7,9 @@ from bluebird_gymnasium.state_repr.full import FullRepresentationRaw
 
 @pytest.mark.parametrize("knn", [0, 2, 4])
 def test_init_exception(gym_env, knn):
-    state_repr = FullRepresentation(knn=knn)
-    state_repr = FullRepresentationRaw(knn=knn)
+    _ = FullRepresentation(knn=knn)
+    _ = FullRepresentationRaw(knn=knn)
+
 
 @pytest.mark.parametrize("knn", [0, 2, 4])
 def test_full_repr(gym_env, knn):
@@ -22,6 +23,7 @@ def test_full_repr(gym_env, knn):
     assert state.shape == state_repr.low.shape
     assert np.all(state >= state_repr.low)
     assert np.all(state <= state_repr.high)
+
 
 @pytest.mark.parametrize("knn", [0, 2, 4])
 def test_full_repr_raw(gym_env, knn):

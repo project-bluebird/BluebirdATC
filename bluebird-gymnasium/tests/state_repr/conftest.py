@@ -18,7 +18,7 @@ def gym_env():
 
     # simulate a few steps forward before return
     # action 0 denotes no action taken to alter aircraft trajectory
-    action = 0  
+    action = 0
     num_steps = 20
     for _ in range(num_steps):
         env.step(action)

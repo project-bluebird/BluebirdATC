@@ -39,11 +39,7 @@ def test_climb_target_exp(gym_env):
     callsign = list(tracked_aircraft.keys())[0]
 
     action = 0
-    assert (
-        -5.0
-        <= climb_target_exp(gym_env, callsign, action)
-        <= 1.0
-    )
+    assert -5.0 <= climb_target_exp(gym_env, callsign, action) <= 1.0
 
 
 def test_descent_target_linear(gym_env):
@@ -73,11 +69,7 @@ def test_descent_target_exp(gym_env):
     callsign = list(tracked_aircraft.keys())[0]
 
     action = 0
-    assert (
-        -5.0
-        <= descent_target_exp(gym_env, callsign, action)
-        <= 1.0
-    )
+    assert -5.0 <= descent_target_exp(gym_env, callsign, action) <= 1.0
 
 
 def test_overflier_const(gym_env):
@@ -87,11 +79,7 @@ def test_overflier_const(gym_env):
     callsign = list(tracked_aircraft.keys())[0]
 
     action = 0
-    assert (
-        0.0
-        <= overflier_const(gym_env, callsign, action)
-        <= 1.0
-    )
+    assert 0.0 <= overflier_const(gym_env, callsign, action) <= 1.0
 
 
 def test_overflier_linear(gym_env):
@@ -121,8 +109,4 @@ def test_overflier_exp(gym_env):
     callsign = list(tracked_aircraft.keys())[0]
 
     action = 0
-    assert (
-        -5.0
-        <= overflier_exp(gym_env, callsign, action)
-        <= 1.0
-    )
+    assert -5.0 <= overflier_exp(gym_env, callsign, action) <= 1.0

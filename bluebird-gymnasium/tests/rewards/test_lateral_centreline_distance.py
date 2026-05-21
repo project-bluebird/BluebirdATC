@@ -13,9 +13,7 @@ def test_lateral_centreline_distance_linear(gym_env):
     callsign = list(tracked_aircraft.keys())[0]
 
     action = 0
-    assert lateral_centreline_distance_linear(
-        gym_env, callsign, action
-    ) <= 0.0
+    assert lateral_centreline_distance_linear(gym_env, callsign, action) <= 0.0
 
 
 def test_lateral_centreline_distance_quad(gym_env):
@@ -25,9 +23,7 @@ def test_lateral_centreline_distance_quad(gym_env):
     callsign = list(tracked_aircraft.keys())[0]
 
     action = 0
-    assert lateral_centreline_distance_quad(
-        gym_env, callsign, action
-    ) <= 2.5
+    assert lateral_centreline_distance_quad(gym_env, callsign, action) <= 2.5
 
 
 def test_lateral_centreline_distance_exp(gym_env):
@@ -38,9 +34,7 @@ def test_lateral_centreline_distance_exp(gym_env):
 
     action = 0
     assert (
-        0.0
-        <= lateral_centreline_distance_exp(gym_env, callsign, action)
-        <= 1.0
+        0.0 <= lateral_centreline_distance_exp(gym_env, callsign, action) <= 1.0
     )
 
 
@@ -51,18 +45,11 @@ def test_lateral_centreline_distance_shaped(gym_env):
     callsign = list(tracked_aircraft.keys())[0]
 
     action = 0
-    assert (
-        lateral_centreline_distance_shaped(
-            gym_env, callsign, action
-        )
-        == 1.0
-    )
+    assert lateral_centreline_distance_shaped(gym_env, callsign, action) == 1.0
 
     action = 1
     assert (
         -1.0
-        <= lateral_centreline_distance_shaped(
-            gym_env, callsign, action
-        )
+        <= lateral_centreline_distance_shaped(gym_env, callsign, action)
         <= 1.0
     )

@@ -15,8 +15,12 @@ def gym_env():
 
     # set actions
     config.action_config = {
-        "simple_heading_left": [10,],
-        "simple_heading_right": [10,],
+        "simple_heading_left": [
+            10,
+        ],
+        "simple_heading_right": [
+            10,
+        ],
         "simple_heading_route_parallel": True,
         "simple_fl_descent": True,
         "simple_fl_climb": True,

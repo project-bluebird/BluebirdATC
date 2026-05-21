@@ -15,6 +15,7 @@ def test_expeditious_const(gym_env):
     action = 0
     assert -1.0 <= expeditious_const(gym_env, callsign, action) <= 1.0
 
+
 def test_expeditious_linear(gym_env):
     """Test `expeditious_linear` reward function."""
 
@@ -24,6 +25,7 @@ def test_expeditious_linear(gym_env):
     action = 0
     assert -1.0 <= expeditious_linear(gym_env, callsign, action) <= 1.0
 
+
 def test_expeditious_quad(gym_env):
     """Test `expeditious_quad` reward function."""
 
@@ -32,6 +34,7 @@ def test_expeditious_quad(gym_env):
 
     action = 0
     assert -1.5 <= expeditious_quad(gym_env, callsign, action) <= 1.5
+
 
 def test_expeditious_exp(gym_env):
     """Test `expeditious_exp` reward function."""

@@ -3,6 +3,7 @@ import pytest
 from bluebird_dt.core import Action
 from bluebird_gymnasium.actions.simple.route_direct import route_direct
 
+
 def test_route_direct(gym_env):
     """Test `route_direct` action function."""
 
@@ -55,6 +56,4 @@ def test_route_direct_to_previous_fix_raises(gym_env):
     action = Action(callsign, "route_direct_to", previous_fix)
 
     with pytest.raises(AssertionError, match="should be a future fix"):
-        gym_env.action_p.convert_simulator_action_to_gym_action(
-            action, gym_env
-        )
+        gym_env.action_p.convert_simulator_action_to_gym_action(action, gym_env)

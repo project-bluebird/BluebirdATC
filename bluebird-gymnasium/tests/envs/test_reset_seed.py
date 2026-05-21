@@ -86,9 +86,7 @@ def _initial_aircraft_signature(gym_env):
                 )
             ),
         )
-        for callsign, aircraft in sorted(
-            simulator_env.aircraft.items()
-        )
+        for callsign, aircraft in sorted(simulator_env.aircraft.items())
     )
 
 
@@ -103,7 +101,9 @@ def _initial_aircraft_signature(gym_env):
         (ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE, 42, False),
         (ScenarioGenSeedMode.LEGACY_MODULE_RNGS, None, True),
     ],
-    ids=lambda param: param.name if isinstance(param, ScenarioGenSeedMode) else None,
+    ids=lambda param: (
+        param.name if isinstance(param, ScenarioGenSeedMode) else None
+    ),
 )
 def test_reset_seed_context_applies_seed_mode(
     seed_mode,
@@ -159,9 +159,7 @@ def test_legacy_rng_seed_uses_full_reset_seed(monkeypatch):
     """Test that legacy RNG seeding uses the full reset seed."""
 
     gym_env = object.__new__(BaseEnv)
-    gym_env.scenario_seed_mode = (
-        ScenarioGenSeedMode.LEGACY_MODULE_RNGS
-    )
+    gym_env.scenario_seed_mode = ScenarioGenSeedMode.LEGACY_MODULE_RNGS
     gym_env._reset_seed = None
 
     numpy_seeds = []
@@ -180,9 +178,7 @@ def test_reset_seed_context_clears_seed_after_error():
     """Test that the reset seed context cleans up after exceptions."""
 
     gym_env = object.__new__(BaseEnv)
-    gym_env.scenario_seed_mode = (
-        ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE
-    )
+    gym_env.scenario_seed_mode = ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE
     gym_env._reset_seed = None
 
     random_state = random.getstate()

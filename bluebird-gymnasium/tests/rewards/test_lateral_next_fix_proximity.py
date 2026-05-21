@@ -14,9 +14,7 @@ def test_lateral_next_fix_proximity_dist_exp(gym_env):
     action = 0
     assert (
         0.0
-        <= lateral_next_fix_proximity_dist_exp(
-            gym_env, callsign, action
-        )
+        <= lateral_next_fix_proximity_dist_exp(gym_env, callsign, action)
         <= 1.0
     )
 
@@ -44,6 +42,4 @@ def test_lateral_next_fix_proximity_bacnf(gym_env):
     callsign = list(tracked_aircraft.keys())[0]
 
     action = 0
-    assert lateral_next_fix_proximity_bacnf(
-        gym_env, callsign, action
-    ) <= 0.0
+    assert lateral_next_fix_proximity_bacnf(gym_env, callsign, action) <= 0.0

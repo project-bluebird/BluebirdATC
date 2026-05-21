@@ -7,8 +7,9 @@ from bluebird_gymnasium.state_repr.vanilla import VanillaRepresentationRaw
 
 @pytest.mark.parametrize("knn", [0, 2, 4])
 def test_init_exception(gym_env, knn):
-    state_repr = VanillaRepresentation(knn=knn)
-    state_repr = VanillaRepresentationRaw(knn=knn)
+    _ = VanillaRepresentation(knn=knn)
+    _ = VanillaRepresentationRaw(knn=knn)
+
 
 @pytest.mark.parametrize("knn", [0, 2, 4])
 def test_vanilla_repr(gym_env, knn):
@@ -23,6 +24,7 @@ def test_vanilla_repr(gym_env, knn):
     assert np.all(state >= state_repr.low)
     assert np.all(state <= state_repr.high)
 
+
 @pytest.mark.parametrize("knn", [0, 2, 4])
 def test_vanilla_repr_raw(gym_env, knn):
     state_repr = VanillaRepresentationRaw(knn=knn)
@@ -35,4 +37,3 @@ def test_vanilla_repr_raw(gym_env, knn):
     assert state.shape == state_repr.low.shape
     assert np.all(state >= state_repr.low)
     assert np.all(state <= state_repr.high)
-

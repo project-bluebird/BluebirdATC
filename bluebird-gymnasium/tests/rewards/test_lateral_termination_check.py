@@ -33,7 +33,7 @@ def test_lateral_termination_check_mac(gym_env):
             action,
             gym_env.timestep,
             gym_env.maxstep,
-            transferred=False
+            transferred=False,
         )
         <= 0.0
     )

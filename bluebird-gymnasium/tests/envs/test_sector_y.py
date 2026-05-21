@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from datetime import timezone
 
 from bluebird_gymnasium.envs import ViewType
 from bluebird_gymnasium.envs.sector_y import SectorYEnv
@@ -9,7 +8,8 @@ from bluebird_gymnasium.utils.types import PositionStatus, ACPositionInfo
 
 VIEW_TYPES = list(ViewType)
 
-def _get_env_instance(view_type: ViewType=ViewType.CENTRALIZED):
+
+def _get_env_instance(view_type: ViewType = ViewType.CENTRALIZED):
     config = SectorYEnv.get_default_env_config(view_type)
     gym_env = SectorYEnv(config=config)
     return gym_env
@@ -24,7 +24,7 @@ def test_init_exceptions(view_type: ViewType):
             or DECENTRALIZED (multi agent) representations.
     """
 
-    gym_env = _get_env_instance(view_type)
+    _ = _get_env_instance(view_type)
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
@@ -115,8 +115,7 @@ def test_pos_information(view_type: ViewType):
         action = {}  # no action on any aircraft
 
     gym_env = _get_env_instance(view_type)
-    obs, info = gym_env.reset()
-    simulator_env = gym_env.get_simulator_env()
+    _ = gym_env.reset()
 
     # forward the simulation to the time when at least one aircraft is being
     # tracked
@@ -130,7 +129,9 @@ def test_pos_information(view_type: ViewType):
         gym_env.step(action)
 
     else:
-        pytest.fail(f"No aircraft were tracked within the step limit of {max_steps}.")
+        pytest.fail(
+            f"No aircraft were tracked within the step limit of {max_steps}."
+        )
 
     callsign = next(iter(tracked_data))
     ret: ACPositionInfo = gym_env.check_pos_information(

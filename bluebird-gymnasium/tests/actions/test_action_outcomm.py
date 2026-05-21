@@ -1,5 +1,6 @@
 from bluebird_gymnasium.actions.simple.outcomm import outcomm
 
+
 def test_outcomm(gym_env):
     """Test `outcomm` action function."""
 

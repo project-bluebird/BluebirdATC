@@ -1,7 +1,11 @@
 from bluebird_gymnasium.actions import DEFAULT_RELATIVE_HEADING
 from bluebird_gymnasium.actions.simple.heading import (
-    heading_left, heading_right, heading_route_parallel, heading_maintain_current,
+    heading_left,
+    heading_right,
+    heading_route_parallel,
+    heading_maintain_current,
 )
+
 
 def test_heading_left(gym_env):
     """Test `heading_left` action function."""
@@ -16,17 +20,15 @@ def test_heading_left(gym_env):
 
     action = heading_left(callsign, gym_env)
     assert action.kind == "change_heading_to"
-    selected_heading = int(
-        round(prev_selected_heading - DEFAULT_RELATIVE_HEADING, 0)
-    ) % 360
+    selected_heading = (
+        int(round(prev_selected_heading - DEFAULT_RELATIVE_HEADING, 0)) % 360
+    )
     assert action.value == selected_heading
 
     value = 15
     action = heading_left(callsign, gym_env, value=value)
     assert action.kind == "change_heading_to"
-    selected_heading = int(
-        round(prev_selected_heading - value, 0)
-    ) % 360
+    selected_heading = int(round(prev_selected_heading - value, 0)) % 360
     assert action.value == selected_heading
 
 
@@ -43,17 +45,15 @@ def test_heading_right(gym_env):
 
     action = heading_right(callsign, gym_env)
     assert action.kind == "change_heading_to"
-    selected_heading = int(
-        round(prev_selected_heading + DEFAULT_RELATIVE_HEADING, 0)
-    ) % 360
+    selected_heading = (
+        int(round(prev_selected_heading + DEFAULT_RELATIVE_HEADING, 0)) % 360
+    )
     assert action.value == selected_heading
 
     value = 15
     action = heading_right(callsign, gym_env, value=value)
     assert action.kind == "change_heading_to"
-    selected_heading = int(
-        round(prev_selected_heading + value, 0)
-    ) % 360
+    selected_heading = int(round(prev_selected_heading + value, 0)) % 360
     assert action.value == selected_heading
 
 
@@ -67,6 +67,7 @@ def test_heading_route_parallel(gym_env):
     assert action.kind == "change_heading_to"
     assert 0 <= action.value <= 360
 
+
 def test_heading_maintain_current(gym_env):
     """Test `heading_maintain_current` action function."""
 
@@ -75,4 +76,3 @@ def test_heading_maintain_current(gym_env):
 
     action = heading_maintain_current(callsign, gym_env)
     assert action.kind == "maintain_current_heading"
-
