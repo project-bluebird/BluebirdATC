@@ -85,8 +85,8 @@ The ICAO code of the destination airport the aircraft is flying to.
 
 #### Requested flight level
 
-The requested cruise flight level the aircraft wants to climb to.
-The digital twin currently only supports a single requested flight level to the entire flight, ignoring flight planned requestes to change level.
+The requested cruise flight level the aircraft wants to climb to initially.
+The digital twin currently only supports a single requested flight level for each flight plan, restricting flight planned requestes to change level.
 
 #### Route
 Refers to a series of fixes that an aircraft is required to fly through.
@@ -98,6 +98,9 @@ Refers to the predetermined flight path (collection of fixes) of the aircraft, b
 Refers to the route that the aircraft is currently flying at a given time. It is usually the same as the filed route or a subset of it if the aircraft had previously gone off route (e.g., due to a cleared heading instruction) and a route direct instruction was issued to return the aircraft back to its route.
 
 #### Filed true air speed
+
+The requested true airspeed the aircraft wants to fly initially upon reaching their cruise altitude.
+The digital twin currently only supports a single requested flight level for each flight plan, restricting flight planned requestes to change true airspeed.
 
 ## ATC information
 
