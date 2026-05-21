@@ -9,7 +9,6 @@ from bluebird_gymnasium.state_repr import (
     StateReprScaler as SRS,
 )
 from bluebird_gymnasium.state_repr.base import BaseRepresentation
-from bluebird_gymnasium.utils.constants import STEPS_SINCE_ACTION_MAX
 from bluebird_gymnasium.utils.geo_utils import angle_diff, left_right_check
 from bluebird_gymnasium.utils.simulator_utils import get_n_forward_fixes
 
@@ -146,11 +145,8 @@ class ExtraMinimalRepresentationRaw(BaseRepresentation):
             a vector.
         """
 
-        simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
-        aircraft = simulator_env.aircraft[callsign]
-
+        
         ####### utils: get useful information for computing base features
         # centreline distance
         ac_centre_dist, turn_dir, _ = tracked_data[callsign].centreline_info_fr
@@ -200,7 +196,6 @@ class ExtraMinimalRepresentationRaw(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing fixes features
@@ -268,11 +263,6 @@ class ExtraMinimalRepresentationRaw(BaseRepresentation):
 
         if self.knn == 0:
             return []
-
-        simulator_env = gym_env.get_simulator_env()
-        tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -434,10 +424,7 @@ class ExtraMinimalRepresentation(BaseRepresentation):
             a vector.
         """
 
-        simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing base features
         # centreline distance
@@ -489,7 +476,6 @@ class ExtraMinimalRepresentation(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing fixes features
@@ -557,11 +543,6 @@ class ExtraMinimalRepresentation(BaseRepresentation):
 
         if self.knn == 0:
             return []
-
-        simulator_env = gym_env.get_simulator_env()
-        tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft

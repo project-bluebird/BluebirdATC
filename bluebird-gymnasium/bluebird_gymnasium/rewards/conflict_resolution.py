@@ -5,21 +5,14 @@ import typing
 
 from bluebird_gymnasium.utils.geo_utils import project_x_from_range_to_range
 from bluebird_gymnasium.utils.interaction_utils import (
-    get_previous_next_fixes_from_position,
     main_or_proxy_intersection_location,
     top_of_ascent_before_intersection,
     top_of_descent_after_intersection,
 )
-from bluebird_gymnasium.utils.types import (
-    InteractionCategory,
-    InteractionRelevance,
-    PositionStatus,
-)
+from bluebird_gymnasium.utils.types import PositionStatus
 
 if typing.TYPE_CHECKING:
-    from bluebird_dt.core.airspace import Airspace
     from bluebird_dt.core.environment import Environment as SimulatorEnv
-    from bluebird_dt.core.pos2d import Pos2D
     from bluebird_gymnasium.envs.base import BaseEnv
     from bluebird_gymnasium.utils.types import ACStateTracker, InteractionInfo, Number
 
@@ -296,10 +289,8 @@ def conflict_resolution_tanh(
     """
 
     simulator_env = gym_env.get_simulator_env()
-    rollout_predictor = gym_env.get_rollout_predictor()
     sector = gym_env.get_active_airspace_sector()
     tracked_data = gym_env.get_tracked_aircraft_data(copy_data=False)
-    ac = simulator_env.aircraft[callsign]
 
     # get the aircraft's interactions with other active aircraft being tracked
     interactions = gym_env.get_traffic_monitor().get_relevant_traffic(callsign)
@@ -357,39 +348,6 @@ def conflict_resolution_tanh(
                 interaction,
             )
 
-            ## get intersection coefficient
-            ## note, if the distance to the location is greater than the
-            ## CLIP_DIST threshold, then the coefficient is set to 1.
-            ## otherwise, it quadratically increases and caps at 5.
-            ## range: [1.0, 5.0]
-            # CLIP_DIST = 50
-            # SCALE_DIST = 10
-            # _location = (
-            #    main_or_proxy_intersection_location(callsign, interaction)
-            # ).location
-            # distance = ac.pos2d().distance(_location)
-            ## clip and scale distance: range is [0, 5.0]
-            # distance = np.clip(distance, 0.0, CLIP_DIST) / SCALE_DIST
-            ## distance and the coeff value are inversely proportional
-            # coeff_2 = float(-0.16 * (distance**2) + 5)
-
-            # get intersection coefficient
-            # note, if the distance to the location is greater than the
-            # CLIP_DIST threshold, then the coefficient is set to 1.
-            # otherwise, it quadratically increases and caps at 5.
-            # range: [1.0, 2.0]
-            CLIP_DIST = 40
-            SCALE_DIST = 10
-            _location = (
-                main_or_proxy_intersection_location(callsign, interaction)
-            ).location
-            distance = ac.pos2d().distance(_location)
-            # clip and scale distance: range is [0, 4.0]
-            distance = np.clip(distance, 0.0, CLIP_DIST) / SCALE_DIST
-            # distance and the coeff value are inversely proportional
-            coeff_2 = float(-0.0625 * (distance**2) + 5)
-
-            # reward = (penalty_1 * coeff_1 * coeff_2) + (penalty_2 * coeff_1)
             reward = (penalty_1 * coeff_1) + (penalty_2 * coeff_1)
 
             _rewards.append(float(reward / 2.0))
@@ -414,10 +372,8 @@ def conflict_resolution_exp(
     """
 
     simulator_env = gym_env.get_simulator_env()
-    rollout_predictor = gym_env.get_rollout_predictor()
     sector = gym_env.get_active_airspace_sector()
     tracked_data = gym_env.get_tracked_aircraft_data(copy_data=False)
-    ac = simulator_env.aircraft[callsign]
 
     # get the aircraft's interactions with other active aircraft being tracked
     interactions = gym_env.get_traffic_monitor().get_relevant_traffic(callsign)
@@ -466,24 +422,7 @@ def conflict_resolution_exp(
                 interaction,
             )
 
-            # get intersection coefficient
-            # note, if the distance to the location is greater than the
-            # CLIP_DIST threshold, then the coefficient is set to 1.
-            # otherwise, it quadratically increases and caps at 5.
-            CLIP_DIST = 50
-            SCALE_DIST = 10
-            _location = (
-                main_or_proxy_intersection_location(callsign, interaction)
-            ).location
-            distance = ac.pos2d().distance(_location)
-
-            # clip and scale distance: range is [0, 5.0]
-            distance = np.clip(distance, 0.0, CLIP_DIST) / SCALE_DIST
-            # coeff within the range [1.0, 5.0]
-            # distance and the coeff value are inversely proportional
-            coeff_2 = -0.16 * (distance**2) + 5
-
-            reward = (penalty_1 * coeff_1 * coeff_2) + (penalty_2 * coeff_1)
+            reward = (penalty_1 * coeff_1) + (penalty_2 * coeff_1)
             _rewards.append(float(reward / 2.0))
 
     return 0.0 if len(_rewards) == 0 else float(np.sum(_rewards))

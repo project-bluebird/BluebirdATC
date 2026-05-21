@@ -20,10 +20,7 @@ def action_penalty_memory(
         float, the computed reward (range: -1.0 to 0.0).
     """
 
-    simulator_env = gym_env.get_simulator_env()
     ac_tracked_state = gym_env.get_tracked_aircraft_data(callsign)
-
-    ac = simulator_env.aircraft[callsign]
 
     if ac_tracked_state is None or ac_tracked_state.steps_since_action is None:
         steps_since_action = STEPS_SINCE_ACTION_MAX

@@ -268,7 +268,6 @@ class DrlanRepresentationRaw(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing base features
@@ -340,7 +339,6 @@ class DrlanRepresentationRaw(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
@@ -643,7 +641,6 @@ class DrlanRepresentation(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing base features
@@ -724,7 +721,6 @@ class DrlanRepresentation(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features

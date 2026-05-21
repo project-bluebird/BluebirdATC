@@ -6,7 +6,6 @@ from bluebird_dt.core import Action
 
 if typing.TYPE_CHECKING:
     from bluebird_gymnasium.envs.base import BaseEnv
-    from bluebird_gymnasium.utils.types import Number
 
 
 def outcomm(

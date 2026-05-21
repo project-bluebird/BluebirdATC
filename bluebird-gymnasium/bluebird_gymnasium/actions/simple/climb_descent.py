@@ -128,7 +128,6 @@ def fl_intermediate(
 
     tracked_aircraft = gym_env.get_tracked_aircraft_data()
     ac_exit_fl = tracked_aircraft[callsign].exit_coords[_sector].fl
-    ac_exit_fix = tracked_aircraft[callsign].exit_coords[_sector].fix
     ac_selected_fl = simulator_env.aircraft[callsign].selected_fl
 
     if value is not None:
@@ -163,6 +162,7 @@ def fl_intermediate(
         # fix. e.g., instead assume that the chosen fix is the one the
         # before the exit fix.
         # kind = "descend_now,level_by_fix"
+        # ac_exit_fix = tracked_aircraft[callsign].exit_coords[_sector].fix
         # _value = (int(chosen_fl), ac_exit_fix)
 
         # option 2: stick to regular change_flight_level_to for intermediate

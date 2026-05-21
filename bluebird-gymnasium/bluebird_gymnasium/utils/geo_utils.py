@@ -21,7 +21,7 @@ try:
     from bluebird_dt.utility.constants import (
         R_E_WGS84 as EARTH_RADIUS_IN_METERS,
     )
-except:
+except ImportError:
     from bluebird_dt.utility.constants import R_E as EARTH_RADIUS_IN_METERS
 
 from bluebird_gymnasium.utils.constants import (
@@ -628,7 +628,7 @@ def _get_centreline_distance(
             )
             dist_p1_p2 = p1.distance(p2)
             dist_p1_p4 = np.arccos(np.cos(dist_p1_p3 / R) / np.cos(dxt / R)) * R
-            p4 = p1.forward(dist_p1_p4, bearing_p1_p2)
+            p4 = p1.forward(dist_p1_p4, bearing_p1_p2) # noqa: F841
             if dist_p1_p4 > dist_p1_p2:
                 # the position ahead of (has passed) this segment
                 dxa = p2.distance(p3)

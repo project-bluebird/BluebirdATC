@@ -67,9 +67,6 @@ def reward_drlan(
     else:
         # get information of the closest aircraft to the current aircraft
         closest_interaction = interactions[0]
-        simulator_env = gym_env.get_simulator_env()
-        other_callsign = closest_interaction.other_callsign
-        other_aircraft = simulator_env.aircraft[other_callsign]
         distance_aircraft_other_aircraft = closest_interaction.dist_ac_other
         fl_diff_aircraft_other_aircraft = closest_interaction.fl_diff_ac_other
 

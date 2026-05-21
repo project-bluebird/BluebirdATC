@@ -7,11 +7,10 @@ from bluebird_gymnasium.actions import ACTION_NOOP
 from bluebird_gymnasium.utils.types import PositionStatus
 from bluebird_gymnasium.utils.geo_utils import angle_diff, left_right_check
 from bluebird_gymnasium.utils.simulator_utils import aircraft_exit_coordination
-from bluebird_gymnasium.utils.types import TurnDirection, Number
+from bluebird_gymnasium.utils.types import TurnDirection
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.environment import Environment as SimulatorEnv
-    from bluebird_dt.core.coordination import Coordination
     from bluebird_gymnasium.envs.base import BaseEnv
 
 
@@ -688,14 +687,12 @@ def default_outcomm_policy(
     OUTCOMM_PRIORTY_LOW = 1
     OUTCOMM_PRIORITY_MEDIUM = 2
     OUTCOMM_PRIORITY_HIGH = 3
-    OUTCOMM_PRIORITY_VERY_HIGH = 4
 
     # get the simulator_env
     simulator_env = gym_env.get_simulator_env()
 
     # get the tracked data for all active aircraft
     all_tracked_aircraft = gym_env.get_tracked_aircraft_data()
-    all_tracked_aircraft_prev = gym_env.get_tracked_aircraft_data_previous()
 
     # get active airspace sector
     airspace_sector = gym_env.get_active_airspace_sector()

@@ -353,7 +353,6 @@ class FullRepresentationRaw(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing fixes features
@@ -425,8 +424,6 @@ class FullRepresentationRaw(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -456,7 +453,6 @@ class FullRepresentationRaw(BaseRepresentation):
             else:
                 ret = prev_next_fixes(other_callsign, simulator_env)
                 _prev_fix, _next_fix = ret
-            other_prev_fix_pos = simulator_env.airspace.fixes.places[_prev_fix]
             other_next_fix_pos = simulator_env.airspace.fixes.places[_next_fix]
 
             controllable = None
@@ -831,7 +827,6 @@ class FullRepresentation(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing fixes features
@@ -903,8 +898,6 @@ class FullRepresentation(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -934,7 +927,6 @@ class FullRepresentation(BaseRepresentation):
             else:
                 ret = prev_next_fixes(other_callsign, simulator_env)
                 _prev_fix, _next_fix = ret
-            other_prev_fix_pos = simulator_env.airspace.fixes.places[_prev_fix]
             other_next_fix_pos = simulator_env.airspace.fixes.places[_next_fix]
 
             controllable = None

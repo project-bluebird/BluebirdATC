@@ -1,5 +1,3 @@
-import copy
-
 import numpy as np
 
 from bluebird_gymnasium.envs.base import BaseEnv
@@ -112,7 +110,6 @@ def lateral_centreline_distance_special(
     """
 
     simulator_env = gym_env.get_simulator_env()
-    ac_tracked_state = gym_env.get_tracked_aircraft_data(callsign)
     ac = simulator_env.aircraft[callsign]
 
     centre_dist, _, _ = get_centreline_distance(

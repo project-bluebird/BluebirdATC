@@ -18,7 +18,6 @@ from bluebird_gymnasium.utils.constants import (
 from bluebird_gymnasium.utils.geo_utils import (
     angle_diff,
     angle_in_range,
-    filter_fixes_in_sector,
     filter_route_fixes_in_sector_by_coordination,
     get_centreline_distance,
     get_route_segments,
@@ -27,7 +26,6 @@ from bluebird_gymnasium.utils.geo_utils import (
     passed_location as _passed_location,
     path_intersection,
     path_overlap,
-    positions_in_sector,
 )
 from bluebird_gymnasium.utils.simulator_utils import (
     aircraft_prev_next_fixes,
@@ -1221,7 +1219,6 @@ def filter_interactions_by_filed_route(
           an intersection is captured as a tuple (fix_name, fix_position).
     """
 
-    airspace = simulator_env.airspace
     places = simulator_env.airspace.fixes.places
     aircraft = simulator_env.aircraft[callsign]
 
@@ -1618,18 +1615,9 @@ def filter_interactions_by_route_or_heading(
           an intersection information contains the fix name and position.
     """
 
-    # define some threshold/constants
-    future_distance = 100  # nautical miles
-
-    airspace = simulator_env.airspace
-
     # aircraft variables.
     aircraft = simulator_env.aircraft[callsign]
     ac_route_ff = aircraft.on_route
-    ac_current_pos = aircraft.pos2d()
-    ac_future_pos_on_heading = ac_current_pos.forward(
-        dist=future_distance, heading=aircraft.heading
-    )
 
     filtered_interactions = []
     indexes = []
@@ -2408,7 +2396,6 @@ def get_optimal_unblocked_flight_level(
     # typecast to regular float
     ac_fl = float(simulator_env.aircraft[callsign].fl)
     ac_exit_fl = float(tracked_data[callsign].exit_coords[sector].fl)
-    range_ac = (ac_fl, ac_exit_fl)
 
     # get interactions relevant to the current aircraft
     if interactions is None:
@@ -2481,7 +2468,7 @@ def get_optimal_unblocked_flight_level(
             other_ac_exit_fl = (
                 tracked_data[other_callsign].exit_coords[sector].fl
             )
-        except:
+        except KeyError:
             # this means that aircraft was removed from the tracked data in
             # the previous step, likely due to incorrect sector exit and has
             # been tracked for a number of timestep after the incorrect exit.

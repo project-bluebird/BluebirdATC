@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from bluebird_dt.core import Action, Pos4D
+from bluebird_dt.core import Action
 
 from bluebird_gymnasium.actions import (
     ACTION_NOOP,
@@ -475,10 +475,6 @@ class ActionParser:
             the simulator action.
         """
 
-        ac_tracker = gym_env.get_tracked_aircraft_data()
-        active_airspace_sector = gym_env.get_active_airspace_sector()
-        simulator_env = gym_env.get_simulator_env()
-
         if action_int == ACTION_NOOP:
             # no action taken
             a = None
@@ -652,7 +648,6 @@ class ActionParser:
             callsign, copy_data=True
         )
         simulator_env = gym_env.get_simulator_env()
-        manager = gym_env.get_manager()
         active_airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 

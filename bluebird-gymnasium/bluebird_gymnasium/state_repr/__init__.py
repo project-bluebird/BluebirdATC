@@ -39,7 +39,6 @@ class StateReprClipper:
     CLIP_SPEED: int = 600  # nautical miles per hour (knots)
     CLIP_SPEED_DIFF: int = 180  # nautical miles per hour (knots)
     CLIP_VERTICAL_SPEED: int = 3000  # feet per minute
-    CLIP_VERTICAL_SPEED: int = 3000  # feet per minute
     CLIP_CENTRELINE_DIST_DIFF: int = 12  # nautical miles
 
 

@@ -18,8 +18,6 @@ from bluebird_gymnasium.utils.geo_utils import (
     segment_in_sector_interp,
 )
 from bluebird_gymnasium.utils.simulator_utils import (
-    aircraft_entry_coordination,
-    aircraft_exit_coordination,
     distance_to_target_pos_along_route,
     get_n_forward_fixes,
     get_aircraft_selected_heading as _selected_heading,
@@ -372,7 +370,6 @@ class RelativeRepresentationRaw(BaseRepresentation):
         airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
         airspace = simulator_env.airspace
-        obs = []
 
         ####### utils: get useful information for computing base features
         # get entry and exit flight levels from coordination data
@@ -760,9 +757,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
         if self.knn == 0:
             return []
 
-        simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -1166,7 +1161,6 @@ class RelativeRepresentation(BaseRepresentation):
         airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
         airspace = simulator_env.airspace
-        obs = []
 
         ####### utils: get useful information for computing base features
         # get entry and exit flight levels from coordination data
@@ -1607,9 +1601,7 @@ class RelativeRepresentation(BaseRepresentation):
         if self.knn == 0:
             return []
 
-        simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft

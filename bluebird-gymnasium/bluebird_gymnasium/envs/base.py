@@ -1105,7 +1105,7 @@ class BaseEnv(gym.Env):
             entry_pos = airspace.get_entry_point(
                 aircraft, self.active_airspace_sector
             )
-        except:
+        except ValueError:
             entry_fix = entry_coords[self.active_airspace_sector].fix
             entry_pos = airspace.fixes.places[entry_fix]
 
@@ -1113,7 +1113,7 @@ class BaseEnv(gym.Env):
             exit_pos = airspace.get_exit_point(
                 aircraft, self.active_airspace_sector
             )
-        except:
+        except ValueError:
             exit_fix = exit_coords[self.active_airspace_sector].fix
             exit_pos = airspace.fixes.places[exit_fix]
 
@@ -2756,7 +2756,6 @@ class BaseEnv(gym.Env):
         """
 
         ac = self.simulator_env.aircraft[callsign]
-        airspace = self.simulator_env.airspace
 
         # note, using only the set sector for the env instance.
         # i.e., `self.active_airspace_sector`
@@ -2922,7 +2921,7 @@ class BaseEnv(gym.Env):
                 try:
                     assert prev_incorrect_exit_position is None
                     incorrect_exit_position = prev_incorrect_exit_position
-                except:
+                except AssertionError:
                     incorrect_exit_position = None
 
             elif exit_reached is True and prev_incomm_status is True:
@@ -2947,7 +2946,7 @@ class BaseEnv(gym.Env):
                 try:
                     assert prev_incorrect_exit_position is None
                     incorrect_exit_position = prev_incorrect_exit_position
-                except:
+                except AssertionError:
                     incorrect_exit_position = None
 
             elif prev_position_status == PositionStatus.EXIT_REACHED:
@@ -2969,7 +2968,7 @@ class BaseEnv(gym.Env):
                 try:
                     assert prev_incorrect_exit_position is None
                     incorrect_exit_position = prev_incorrect_exit_position
-                except:
+                except AssertionError:
                     incorrect_exit_position = None
 
             elif prev_position_status == PositionStatus.IN_SECTOR:
@@ -2994,7 +2993,7 @@ class BaseEnv(gym.Env):
                 try:
                     assert prev_incorrect_exit_position is None
                     incorrect_exit_position = prev_incorrect_exit_position
-                except:
+                except AssertionError:
                     incorrect_exit_position = None
 
             elif prev_position_status == PositionStatus.OUT_SECTOR:
@@ -3458,7 +3457,7 @@ class BaseEnv(gym.Env):
         """
         try:
             aircraft_idx = self.selected_aircraft.index(callsign)
-        except:
+        except ValueError:
             return None
 
         if self.config.view_config["type"] == ViewType.CENTRALIZED:

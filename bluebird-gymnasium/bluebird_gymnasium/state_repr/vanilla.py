@@ -144,7 +144,6 @@ class VanillaRepresentationRaw(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing base features
@@ -192,7 +191,6 @@ class VanillaRepresentationRaw(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing fixes features
@@ -212,7 +210,6 @@ class VanillaRepresentationRaw(BaseRepresentation):
         ]
         num_none_fixes = self.num_forward_fixes - len(next_fixes_pos)
 
-        ac_pos = aircraft.pos2d()
         bearings_pf_nf = []
         prev_pos = prev_fix_pos  # initialise prev_pos
         for fix_pos in next_fixes_pos:
@@ -254,11 +251,6 @@ class VanillaRepresentationRaw(BaseRepresentation):
 
         if self.knn == 0:
             return []
-
-        simulator_env = gym_env.get_simulator_env()
-        tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -423,7 +415,6 @@ class VanillaRepresentation(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing base features
@@ -472,7 +463,6 @@ class VanillaRepresentation(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing fixes features
@@ -492,7 +482,6 @@ class VanillaRepresentation(BaseRepresentation):
         ]
         num_none_fixes = self.num_forward_fixes - len(next_fixes_pos)
 
-        ac_pos = aircraft.pos2d()
         bearings_pf_nf = []
         prev_pos = prev_fix_pos  # initialise prev_pos
         for fix_pos in next_fixes_pos:
@@ -534,11 +523,6 @@ class VanillaRepresentation(BaseRepresentation):
 
         if self.knn == 0:
             return []
-
-        simulator_env = gym_env.get_simulator_env()
-        tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft

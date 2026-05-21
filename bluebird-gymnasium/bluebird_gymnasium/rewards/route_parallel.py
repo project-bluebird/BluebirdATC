@@ -38,11 +38,9 @@ def route_parallel_const(
         return 0.0
 
     if forward_fixes_info.use_filed_route:
-        route = aircraft.flight_plan.route.filed
         prev_fix = tracked_data.previous_fix_fr
         next_fix = tracked_data.next_fix_fr
     else:
-        route = aircraft.flight_plan.route.current
         prev_fix = tracked_data.previous_fix_cr
         next_fix = tracked_data.next_fix_cr
 
@@ -92,11 +90,9 @@ def route_parallel_linear(
         return 0.0
 
     if forward_fixes_info.use_filed_route:
-        route = aircraft.flight_plan.route.filed
         prev_fix = tracked_data.previous_fix_fr
         next_fix = tracked_data.next_fix_fr
     else:
-        route = aircraft.flight_plan.route.current
         prev_fix = tracked_data.previous_fix_cr
         next_fix = tracked_data.next_fix_cr
 
@@ -144,11 +140,9 @@ def route_parallel_quad(
         return 0.0
 
     if forward_fixes_info.use_filed_route:
-        route = aircraft.flight_plan.route.filed
         prev_fix = tracked_data.previous_fix_fr
         next_fix = tracked_data.next_fix_fr
     else:
-        route = aircraft.flight_plan.route.current
         prev_fix = tracked_data.previous_fix_cr
         next_fix = tracked_data.next_fix_cr
 
@@ -196,11 +190,9 @@ def route_parallel_exp(
         return 1.0
 
     if forward_fixes_info.use_filed_route:
-        route = aircraft.flight_plan.route.filed
         prev_fix = tracked_data.previous_fix_fr
         next_fix = tracked_data.next_fix_fr
     else:
-        route = aircraft.flight_plan.route.current
         prev_fix = tracked_data.previous_fix_cr
         next_fix = tracked_data.next_fix_cr
 

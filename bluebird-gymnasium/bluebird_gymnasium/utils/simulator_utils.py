@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import math
 import typing
 
@@ -335,7 +334,6 @@ def aircraft_entry_coordination(
             sector in the airspace.
     """
 
-    aircraft = simulator_env.aircraft[callsign]
     airspace = simulator_env.airspace
 
     if sector_name is None:
@@ -379,7 +377,6 @@ def aircraft_exit_coordination(
             sector in the airspace.
     """
 
-    aircraft = simulator_env.aircraft[callsign]
     airspace = simulator_env.airspace
 
     if sector_name is None:
