@@ -1,5 +1,5 @@
 # Scenarios 
-Default scenarios are available by the simulator class constructor
+Default scenarios are available via the Simulator class constructor:
 
 ```python
 from bluebird_dt.simulator import Simulator
@@ -74,15 +74,15 @@ sim = Infinite(
             max_spawn_rate = 0.2,
             spawn_rate_increment = 0.005,
             spawn_rate_increase_interval = 60
-        )
+        ).to_simulator()
 ```
 
 See the [source code reference](../source.md#bluebird_dt.scenario_manager.Infinite) for documentation on all the parameters which could be passed in.
 
 ### Springfield
 
-It is a realistic (though fictional) sector with a more complex route structure than X-Plus.
-Springfield does not provide additional configuration for the scenarios therefore it is simplest to start it directly from the simulator.
+Springfield is a realistic (though fictional) sector with a more complex route structure than X-Plus.
+The Springfield scenario manager does not provide additional configuration options, therefore it is simplest to start it directly from the simulator.
 
 ```python
 from bluebird_dt.scenario_manager import SpringfieldScenarioManager

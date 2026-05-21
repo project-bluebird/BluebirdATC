@@ -4,4 +4,4 @@ nav:
   - Getting started with bluebird-api: getting-started.md
   - Examples with bluebird-api:
     - Using bluebird-api with a non-python agent: examples/NonPythonAgents.ipynb
-  - API reference: source.md
+  - Source reference: source.md

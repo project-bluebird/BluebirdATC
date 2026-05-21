@@ -24,7 +24,7 @@ The direction in which the longitudinal axis of an aircraft is pointed, expresse
 Refers to the heading that the pilot of an aircraft has instructed the aircraft's flight computer to fly. In the digital twin this will be driven by instructions from the agent. However, in the real world, due to pilot error or different flight modes, this may not always be correct or available.
 
 #### Track 
-The projection on the earth’s surface of the path of an aircraft, the direction of which path at any point is usually expressed in degrees from North.
+The projection on the Earth’s surface of the path of an aircraft, the direction of which path at any point is usually expressed in degrees from North.
 
 The heading of an aircraft may be different than its track due to the wind. This difference is called drift.
 
@@ -79,7 +79,7 @@ For simplicity, the digital twin does not work with full ICAO flight plans, only
 #### Requested flight level
 
 #### Route
-Refers to a collection of fixes that an aircraft is required to fly through.
+Refers to a series of fixes that an aircraft is required to fly through.
 
 ##### Filed Route
 Refers to the predetermined flight path (collection of fixes) of the aircraft, based on the pilot's original request. This is usually part of the aircraft's flight plan information.

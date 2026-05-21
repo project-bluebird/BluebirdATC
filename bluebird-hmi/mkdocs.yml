@@ -2,4 +2,4 @@ site_name: bluebird-hmi
 
 nav:
   - Developer Guide: developer.md
-  - Source code reference: source.md
+  - Source reference: source.md

@@ -17,4 +17,4 @@ nav:
       - Radar actions display demo: examples/radar_actions_display_demo.ipynb
       - Radar scales demo: examples/radar_scales_demo.ipynb
       - Agent demo: examples/agent_demo.ipynb
-  - Source code reference: source.md
+  - Source reference: source.md
