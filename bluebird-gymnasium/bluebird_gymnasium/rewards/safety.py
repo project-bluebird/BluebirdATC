@@ -48,7 +48,7 @@ def _ensured_lateral_separation(aircraft_1_cps: list[Pos4D], aircraft_2_cps: lis
     return ensured_separation, cp_dist_buffer
 
 
-def safety_simple_avoidance_nvl(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def safety_simple_avoidance_nvl(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for avoidance of aircraft loss of separation.
 
     Note: safety violation is not logged, hence the `nvl` suffix (no violation
@@ -85,7 +85,7 @@ def safety_simple_avoidance_nvl(gym_env: BaseEnv, callsign: str, action: int, **
     return reward
 
 
-def safety_simple_avoidance_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def safety_simple_avoidance_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for avoidance of aircraft loss of separation.
 
     This includes a forward rollout check into the future for loss of

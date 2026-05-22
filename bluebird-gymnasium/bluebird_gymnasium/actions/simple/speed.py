@@ -85,7 +85,7 @@ def speed_decrease(
 def speed_maintain_current(
     callsign: str,
     gym_env: BaseEnv,
-    value: Number | None = None, # noqa: ARG001
+    value: Number | None = None,  # noqa: ARG001
     agent: str = "Agent",
 ) -> Action:
     """Generate a simulator action to maintain an aircraft current speed.
@@ -115,8 +115,8 @@ def speed_maintain_current(
 
 def speed_choose_own(
     callsign: str,
-    gym_env: BaseEnv, # noqa: ARG001
-    value: Number | None = None, # noqa: ARG001
+    gym_env: BaseEnv,  # noqa: ARG001
+    value: Number | None = None,  # noqa: ARG001
     agent: str = "Agent",
 ) -> Action:
     """Generate a simulator action to instruct an aircraft to choose own speed.

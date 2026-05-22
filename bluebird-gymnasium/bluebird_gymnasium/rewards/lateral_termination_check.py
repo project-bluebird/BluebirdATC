@@ -1,13 +1,13 @@
 from bluebird_gymnasium.envs.base import BaseEnv
 
 
-def lateral_termination_check_sac( # noqa: ARG001, ANN003
+def lateral_termination_check_sac(  # noqa: ARG001, ANN003
     gym_env: BaseEnv,
     callsign: str,
-    action: int, # noqa: ARG001
+    action: int,  # noqa: ARG001
     timestep: int,
     maxstep: int,
-    **kwargs, # noqa: ARG001, ANN003
+    **kwargs,  # noqa: ARG001, ANN003
 ) -> float:
     """Reward for aircraft's termination from the sector
 
@@ -41,11 +41,11 @@ def lateral_termination_check_sac( # noqa: ARG001, ANN003
 def lateral_termination_check_mac(
     gym_env: BaseEnv,
     callsign: str,
-    action: int, # noqa: ARG001
+    action: int,  # noqa: ARG001
     timestep: int,
     maxstep: int,
     transferred: bool,
-    **kwargs, # noqa: ARG001, ANN003
+    **kwargs,  # noqa: ARG001, ANN003
 ) -> float:
     """Reward for aircraft termination from the sector.
 

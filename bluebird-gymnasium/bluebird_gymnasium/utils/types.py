@@ -25,7 +25,7 @@ class MetaEnum(EnumMeta):
 class StrEnum(str, Enum):
     # support for python < 3.11
     @staticmethod
-    def _generate_next_value_(name: str, start: int, count: int, last_values: list) -> str: # noqa: ARG004
+    def _generate_next_value_(name: str, start: int, count: int, last_values: list) -> str:  # noqa: ARG004
         return name.lower()
 
     def __str__(self) -> str:

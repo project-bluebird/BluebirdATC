@@ -85,7 +85,7 @@ class BaseRepresentation:
         self,
         callsign: str,
         gym_env: BaseEnv,
-        relevant_interactions_only: bool=True,
+        relevant_interactions_only: bool = True,
     ) -> list[InteractionInfo]:
         """Gets statistics about relevant aircraft interaction with others."""
 

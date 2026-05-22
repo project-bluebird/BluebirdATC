@@ -262,7 +262,7 @@ def get_overlap_coeff(
     return coeff
 
 
-def conflict_resolution_tanh(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def conflict_resolution_tanh(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for resolving conflict through heading deconfliction strategy.
 
     Note: when there are no conflict to resolve, a 0.0 reward is returned.
@@ -340,7 +340,7 @@ def conflict_resolution_tanh(gym_env: BaseEnv, callsign: str, action: int, **kwa
     return 0.0 if len(_rewards) == 0 else float(np.sum(_rewards))
 
 
-def conflict_resolution_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def conflict_resolution_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for resolving conflict through heading deconfliction strategy.
 
     Note: when there are no conflict to resolve, a 0.0 reward is returned.

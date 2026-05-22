@@ -5,7 +5,7 @@ from bluebird_gymnasium.envs.base import BaseEnv
 
 
 class TrajectoryOverlayWrapper(gym.Wrapper):
-    def __init__(self, env: BaseEnv, *args, **kwargs): # noqa: ANN002, ANN003, ARG002
+    def __init__(self, env: BaseEnv, *args, **kwargs):  # noqa: ANN002, ANN003, ARG002
         super().__init__(env)
         self.traj_dict = None
 

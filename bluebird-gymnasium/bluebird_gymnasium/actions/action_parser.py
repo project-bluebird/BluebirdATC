@@ -379,7 +379,9 @@ class ActionParser:
         return {callsign_chosen: action_rf}
 
     def _action_formatter_decentralized(
-        self, action: dict[str, int], sampled_aircraft: None | list[str] = None  # noqa: ARG002
+        self,
+        action: dict[str, int],
+        sampled_aircraft: None | list[str] = None,  # noqa: ARG002
     ) -> dict[str, int]:
         """Helper method for action formatting.
 
@@ -906,7 +908,7 @@ class ActionParser:
     def _action_formatter_decentralized_reversed(
         self,
         actions_dict: dict[str, int],
-        sampled_aircraft: list[str] | None = None, # noqa: ARG002
+        sampled_aircraft: list[str] | None = None,  # noqa: ARG002
     ) -> dict[str, int]:
         """Reverse of the `_action_formatter_decentralized(...)` method
 

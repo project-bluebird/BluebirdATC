@@ -26,7 +26,7 @@ DEFAULT_LAMBDA = 1e-2
 DEFAULT_OMEGA = 1e-3
 
 
-def reward_drlan(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def reward_drlan(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward function implementation for IASA_DRLAN.
 
     Improving Autonomous Separation Assurance through Distributed Reinforcement

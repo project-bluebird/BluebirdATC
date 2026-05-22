@@ -265,8 +265,8 @@ def heading_route_parallel(
 
 def heading_maintain_current(
     callsign: str,
-    gym_env: BaseEnv, # noqa: ARG001
-    value: Number | None = None, # noqa: ARG001
+    gym_env: BaseEnv,  # noqa: ARG001
+    value: Number | None = None,  # noqa: ARG001
     agent: str = "Agent",
 ) -> Action:
     """Generate a simulator action to maintain an aircraft's current heading.

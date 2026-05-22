@@ -11,7 +11,7 @@ if typing.TYPE_CHECKING:
 def outcomm(
     callsign: str,
     gym_env: BaseEnv,
-    value: str | None = None, # noqa: ARG001
+    value: str | None = None,  # noqa: ARG001
     agent: str = "Agent",
 ) -> Action:
     """Generate a simulator action to outcomm an aircraft.

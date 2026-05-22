@@ -374,7 +374,7 @@ def aircraft_exit_coordination(
     return simulator_env.exit_coordination(sector_name, callsign)
 
 
-def top_of_ascent(aircraft: Aircraft, target_fl: Number, wind: Number = 0) -> tuple[float, float]: # noqa: ARG001
+def top_of_ascent(aircraft: Aircraft, target_fl: Number, wind: Number = 0) -> tuple[float, float]:  # noqa: ARG001
     """Computes the distance for an aircraft to climb to a target flight level.
 
     Computes the travel distance (in nautical miles) required for an aircraft

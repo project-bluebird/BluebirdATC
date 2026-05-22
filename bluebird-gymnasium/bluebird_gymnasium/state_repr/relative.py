@@ -604,16 +604,10 @@ class RelativeRepresentationRaw(BaseRepresentation):
         # *current route* (cr)
         _next_fix_idx = route.index(_next_fix)
         if _next_fix_idx == 0:
-            prev_fixes_pos = [
-                tracked_data[callsign].pos_at_last_route_direct,
-                *next_fixes_pos[:-1]
-            ]
+            prev_fixes_pos = [tracked_data[callsign].pos_at_last_route_direct, *next_fixes_pos[:-1]]
         else:
             _prev_fix = route[_next_fix_idx - 1]
-            prev_fixes_pos = [
-                simulator_env.airspace.fixes.places[_prev_fix],
-                *next_fixes_pos[:-1]
-            ]
+            prev_fixes_pos = [simulator_env.airspace.fixes.places[_prev_fix], *next_fixes_pos[:-1]]
 
         # generate the features for each forward fix
         curr_route_start_pos = tracked_data[callsign].pos_at_last_route_direct
@@ -1385,16 +1379,10 @@ class RelativeRepresentation(BaseRepresentation):
         # *current route* (cr)
         _next_fix_idx = route.index(_next_fix)
         if _next_fix_idx == 0:
-            prev_fixes_pos = [
-                tracked_data[callsign].pos_at_last_route_direct,
-                *next_fixes_pos[:-1]
-            ]
+            prev_fixes_pos = [tracked_data[callsign].pos_at_last_route_direct, *next_fixes_pos[:-1]]
         else:
             _prev_fix = route[_next_fix_idx - 1]
-            prev_fixes_pos = [
-                simulator_env.airspace.fixes.places[_prev_fix],
-                *next_fixes_pos[:-1]
-            ]
+            prev_fixes_pos = [simulator_env.airspace.fixes.places[_prev_fix], *next_fixes_pos[:-1]]
 
         # generate the features for each forward fix
         curr_route_start_pos = tracked_data[callsign].pos_at_last_route_direct

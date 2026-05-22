@@ -27,7 +27,7 @@ _FL_SCALER = 10.0
 _MAX_PENALTY = 10
 
 
-def normalized_exponential(x: Number, k: int = 2, reverse: bool=True) -> float:
+def normalized_exponential(x: Number, k: int = 2, reverse: bool = True) -> float:
     """Compute a scaled exponential value normalized between 0 and 1.
 
     if reverse=False:
@@ -48,7 +48,7 @@ def normalized_exponential(x: Number, k: int = 2, reverse: bool=True) -> float:
         raise ValueError("k should be in range [1, 10]")
 
     denominator = 1 - np.exp(-k)
-    if reverse: # noqa: SIM108
+    if reverse:  # noqa: SIM108
         # range [0, 1] -> reward [1, 0]
         output = (np.exp(-k * x) - np.exp(-k)) / denominator
     else:
@@ -79,7 +79,7 @@ def _get_relevant_data(
     return entry_fl, exit_fl, exit_pos2d
 
 
-def overflier_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def overflier_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Constant function.
@@ -110,7 +110,7 @@ def overflier_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> f
     return 0.0
 
 
-def overflier_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def overflier_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Linear function.
@@ -146,7 +146,7 @@ def overflier_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> 
     return float(reward)
 
 
-def overflier_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def overflier_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Quadratic function.
@@ -182,7 +182,7 @@ def overflier_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> fl
     return float(reward)
 
 
-def overflier_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def overflier_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Exponential function.
@@ -223,7 +223,7 @@ def overflier_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> flo
     return float(reward)
 
 
-def climb_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def climb_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft ascending to the correct exit flight level.
 
     Note: Linear function
@@ -269,7 +269,7 @@ def climb_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) 
         if distance_to_exit < distance_to_level:
             # penalize: aircraft will not make the exit flight level in time.
 
-            if ac.selected_fl == exit_fl: # noqa: SIM108
+            if ac.selected_fl == exit_fl:  # noqa: SIM108
                 # soft penalty as correct exit flight level choosen
                 reward = min(abs(ac.fl - exit_fl), _MAX_PENALTY)
             else:
@@ -284,7 +284,7 @@ def climb_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) 
     return float(reward)
 
 
-def descent_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def descent_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Linear function
@@ -330,7 +330,7 @@ def descent_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs
         if distance_to_exit < distance_to_level:
             # penalize: aircraft will not make the exit flight level in time.
 
-            if ac.selected_fl == exit_fl: # noqa: SIM108
+            if ac.selected_fl == exit_fl:  # noqa: SIM108
                 # soft penalty as correct exit flight level choosen
                 reward = min(abs(ac.fl - exit_fl) / _FL_SCALER, _MAX_PENALTY)
             else:
@@ -354,7 +354,7 @@ def descent_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs
     return float(reward)
 
 
-def descent_target_linear_shaped(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def descent_target_linear_shaped(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Linear function
@@ -400,7 +400,7 @@ def descent_target_linear_shaped(gym_env: BaseEnv, callsign: str, action: int, *
         if distance_to_exit < distance_to_level:
             # penalize: aircraft will not make the exit flight level in time.
 
-            if ac.selected_fl == exit_fl: # noqa: SIM108
+            if ac.selected_fl == exit_fl:  # noqa: SIM108
                 # soft penalty as correct exit flight level choosen
                 reward = min(abs(ac.fl - exit_fl), _MAX_PENALTY)
             else:
@@ -431,7 +431,7 @@ def descent_target_linear_shaped(gym_env: BaseEnv, callsign: str, action: int, *
     return float(reward)
 
 
-def climb_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def climb_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft ascending to the correct exit flight level.
 
     Note: Quadratic function
@@ -487,7 +487,7 @@ def climb_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) ->
     return float(reward)
 
 
-def descent_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def descent_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Quadratic function
@@ -562,7 +562,7 @@ def descent_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) 
     return float(reward)
 
 
-def climb_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def climb_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft ascending to the correct exit flight level.
 
     Note: Exponential function
@@ -652,7 +652,7 @@ def climb_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> 
     return float(reward)
 
 
-def descent_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def descent_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Exponential function
@@ -747,7 +747,7 @@ def descent_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -
                     gym_env.get_rollout_predictor(),
                     traffic_monitor.get_relevant_traffic(callsign),
                 )
-                if intermediate_fl > exit_fl: # noqa: SIM108
+                if intermediate_fl > exit_fl:  # noqa: SIM108
                     # exit fl is not available due to conflict.
                     penalty_1 = -1.0  # small penalty
                 else:

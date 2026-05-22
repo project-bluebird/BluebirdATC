@@ -688,10 +688,10 @@ def angle_in_range(angle_deg: float, range_deg: tuple[float, float]) -> bool:
             "elements in `range_deg` cannot be the same",
         )
     if range_deg[0] < range_deg[1]:
-        return (angle_deg >= range_deg[0] and angle_deg <= range_deg[1])
+        return angle_deg >= range_deg[0] and angle_deg <= range_deg[1]
 
     # range_deg[0] > range_deg[1]
-    return ((angle_deg >= range_deg[0] and angle_deg <= 360.0) or (angle_deg >= 0.0 and angle_deg <= range_deg[1]))
+    return (angle_deg >= range_deg[0] and angle_deg <= 360.0) or (angle_deg >= 0.0 and angle_deg <= range_deg[1])
 
 
 def project_x_from_range_to_range(
@@ -769,6 +769,7 @@ def at_exit_window(
         aircraft_position.distance(position_1) < full_exit_width
         and aircraft_position.distance(position_2) < full_exit_width
     )
+
 
 def nearest_360_boundary_position(aircraft: Aircraft, sector: Sector) -> tuple[Pos2D, float, float]:
     """Find the point on a sector boundary nearest to an aircraft.
@@ -1250,7 +1251,6 @@ def line_intersection_batch(
         list of intersection status, one per line in `other_line`. each
         intersection status defined in the return type of `line_intersection`
     """
-
 
     return [line_intersection(target_line, other_line) for other_line in other_lines]
 

@@ -131,7 +131,7 @@ def lateral_centreline_distance_exp(gym_env: BaseEnv, callsign: str, action: int
         centre_dist, _, _ = ac_tracked_state.centreline_info_fr
 
     # reward = centre_dist + (centre_dist ** 2) / 10
-    if centre_dist <= 5.0: # noqa: SIM108
+    if centre_dist <= 5.0:  # noqa: SIM108
         reward = 1.0
     else:
         reward = float(np.exp(-centre_dist / scale_factor))

@@ -9,7 +9,11 @@ from bluebird_gymnasium.utils.simulator_utils import prev_next_fixes
 
 
 def lateral_next_fix_proximity_bpfnf(
-    gym_env: BaseEnv, callsign: str, action: int, next_fix_idx: int, **kwargs # noqa: ARG001, ANN003
+    gym_env: BaseEnv,
+    callsign: str,
+    action: int,
+    next_fix_idx: int,
+    **kwargs,  # noqa: ARG001, ANN003
 ) -> float:
     """Reward for aircraft's proximity to next fix.
 

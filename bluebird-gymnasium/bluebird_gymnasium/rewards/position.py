@@ -2,7 +2,7 @@ from bluebird_gymnasium.envs.base import BaseEnv
 from bluebird_gymnasium.utils.types import PositionStatus
 
 
-def position_status_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
+def position_status_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Computes the reward for an aircraft's current position status.
 
     Args:

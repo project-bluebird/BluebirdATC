@@ -214,7 +214,7 @@ class BaseEnv(gym.Env):
 
         # diagnostics
         if self.config.diagnostics_level is None:
-            self._diagnostics = lambda callsign: {} # noqa: ARG005
+            self._diagnostics = lambda callsign: {}  # noqa: ARG005
         elif self.config.diagnostics_level == Diagnostics.MINIMAL:
             self._diagnostics = self._minimal_diagnostics
         elif self.config.diagnostics_level == Diagnostics.FULL:
@@ -396,7 +396,7 @@ class BaseEnv(gym.Env):
 
                 self.maybe_concat_action = _concat_state_action
             else:
-                self.maybe_concat_action = lambda state, act, num_acts: state # noqa: ARG005
+                self.maybe_concat_action = lambda state, act, num_acts: state  # noqa: ARG005
 
             self.observation_space = spaces.Box(
                 low=_low,
@@ -453,7 +453,7 @@ class BaseEnv(gym.Env):
 
                 self.maybe_concat_action = _concat_state_action
             else:
-                self.maybe_concat_action = lambda state, act, num_acts: state # noqa: ARG005
+                self.maybe_concat_action = lambda state, act, num_acts: state  # noqa: ARG005
 
             self.observation_space = spaces.Box(
                 low=_low,
@@ -541,7 +541,7 @@ class BaseEnv(gym.Env):
         """
 
         airspace_sectors = list(self.simulator_env.airspace.sectors.keys())
-        if len(airspace_sectors) == 1: # noqa: SIM108
+        if len(airspace_sectors) == 1:  # noqa: SIM108
             _sectors = [
                 self.active_airspace_sector,
                 SECTOR_BACKGROUND,
@@ -611,7 +611,7 @@ class BaseEnv(gym.Env):
 
         return ignore_aircraft, bkgnd
 
-    def _is_background_traffic(self, callsign: str, entry_coord: None | Coordination) -> bool: # noqa: ARG002
+    def _is_background_traffic(self, callsign: str, entry_coord: None | Coordination) -> bool:  # noqa: ARG002
         """Check if an aircraft is a background traffic."""
 
         # False by default, as is the case for artificial sectors

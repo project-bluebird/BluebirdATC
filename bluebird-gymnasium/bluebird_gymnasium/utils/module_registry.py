@@ -10,7 +10,7 @@ class ModuleRegistry:
         self._registry = {}
         self._loaded = {}
 
-    def register(self, name: str, module_path: str, factory: Callable | None=None):
+    def register(self, name: str, module_path: str, factory: Callable | None = None):
         """
         Register a module for lazy loading.
 
@@ -21,7 +21,7 @@ class ModuleRegistry:
         """
         self._registry[name] = {"path": module_path, "factory": factory}
 
-    def get(self, name: str): # noqa: ANN201
+    def get(self, name: str):  # noqa: ANN201
         """Load and return the module/object if not already loaded."""
         if name in self._loaded:
             return self._loaded[name]
@@ -37,7 +37,7 @@ class ModuleRegistry:
         self._loaded[name] = obj
         return obj
 
-    def _import_from_path(self, path: str): # noqa: ANN202
+    def _import_from_path(self, path: str):  # noqa: ANN202
         """Import object from a string path like 'package.module:ClassName'."""
         if ":" in path:
             module_path, obj_name = path.rsplit(":", 1)
@@ -49,7 +49,7 @@ class ModuleRegistry:
         module = importlib.import_module(module_path)
         return getattr(module, obj_name)
 
-    def __getitem__(self, name: str): # noqa: ANN204
+    def __getitem__(self, name: str):  # noqa: ANN204
         """Allow dict-like access."""
         return self.get(name)
 
