@@ -1,18 +1,16 @@
 import numpy as np
 import pytest
 
-
 from bluebird_gymnasium.envs import ViewType
 from bluebird_gymnasium.envs.springfield import SpringfieldEnv
-from bluebird_gymnasium.utils.types import PositionStatus, ACPositionInfo
+from bluebird_gymnasium.utils.types import ACPositionInfo, PositionStatus
 
 VIEW_TYPES = list(ViewType)
 
 
-def _get_env_instance(view_type: ViewType = ViewType.CENTRALIZED):
+def _get_env_instance(view_type: ViewType = ViewType.CENTRALIZED) -> SpringfieldEnv:
     config = SpringfieldEnv.get_default_env_config(view_type)
-    gym_env = SpringfieldEnv(config=config)
-    return gym_env
+    return SpringfieldEnv(config=config)
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
@@ -47,7 +45,7 @@ def test_reset(view_type: ViewType):
         assert isinstance(obs, dict)
         assert isinstance(info, dict)
         if len(obs) > 0:
-            callsign = list(obs.keys())[0]
+            callsign = next(iter(obs.keys()))
             assert obs[callsign].shape == gym_env.observation_space.shape
 
 
@@ -89,7 +87,7 @@ def test_step(view_type: ViewType):
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after
         if len(obs) > 0:
-            callsign = list(obs.keys())[0]
+            callsign = next(iter(obs.keys()))
             assert obs[callsign].shape == gym_env.observation_space.shape
 
 
@@ -97,11 +95,11 @@ def test_decentralized_step_does_not_stop_before_controllable_aircraft():
     """Test the initial Springfield decentralized empty-agent warm-up."""
 
     gym_env = _get_env_instance(ViewType.DECENTRALIZED)
-    obs, info = gym_env.reset(seed=100)
+    obs, _ = gym_env.reset(seed=100)
 
     assert obs == {}
 
-    obs, reward, done, truncated, info = gym_env.step({})
+    obs, _, done, truncated, _ = gym_env.step({})
 
     assert done == {"__all__": False}
     assert truncated == {"__all__": False}
@@ -110,7 +108,7 @@ def test_decentralized_step_does_not_stop_before_controllable_aircraft():
     for _ in range(25):
         if len(obs) > 0:
             break
-        obs, reward, done, truncated, info = gym_env.step({})
+        obs, _, done, truncated, _ = gym_env.step({})
 
     assert len(obs) > 0
     assert "__all__" not in done
@@ -135,10 +133,7 @@ def test_pos_information(view_type: ViewType):
             or DECENTRALIZED (multi agent) representations.
     """
 
-    if view_type == ViewType.CENTRALIZED:
-        action = 0
-    else:  # decentralized
-        action = {}  # no action on any aircraft
+    action = 0 if view_type == ViewType.CENTRALIZED else {}  # no action on any aircraft
 
     gym_env = _get_env_instance(view_type)
     gym_env.reset()
@@ -155,18 +150,14 @@ def test_pos_information(view_type: ViewType):
         gym_env.step(action)
 
     else:
-        pytest.fail(
-            f"No aircraft were tracked within the step limit of {max_steps}."
-        )
+        pytest.fail(f"No aircraft were tracked within the step limit of {max_steps}.")
 
     callsign = next(iter(tracked_data))
     # assume that aircraft is currently position before the sector entry.
     # this is not always the case as aircraft are sometimes spawned in
     # within the sector in lms/lus. the method call below will check
     # and return the correct information (status and distances).
-    ret: ACPositionInfo = gym_env.check_pos_information(
-        callsign, PositionStatus.BEFORE_ENTRY, False, False, None
-    )
+    ret: ACPositionInfo = gym_env.check_pos_information(callsign, PositionStatus.BEFORE_ENTRY, False, False, None)
 
     if ret.position_status == PositionStatus.BEFORE_ENTRY:
         assert ret.incomm_status is False
@@ -183,4 +174,4 @@ def test_pos_information(view_type: ViewType):
         assert ret.dist_away_from_incorrect_sector_exit == 0.0
         assert ret.incorrect_exit_position is None
     else:
-        assert False
+        pytest.fail(f"Unexpected position status {ret.position_status} for callsign {callsign}.")

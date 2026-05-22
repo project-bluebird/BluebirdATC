@@ -4,7 +4,7 @@ from bluebird_gymnasium.envs import SectorXEnv
 
 
 @pytest.fixture
-def gym_env():
+def gym_env() -> SectorXEnv:
     """Sample environment instantiator for testing."""
 
     # default env config

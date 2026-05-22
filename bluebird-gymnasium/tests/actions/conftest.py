@@ -5,7 +5,7 @@ from bluebird_gymnasium.utils.types import PositionStatus
 
 
 @pytest.fixture
-def gym_env():
+def gym_env() -> SectorXEnv:
     """Sample environment instantiator for testing."""
 
     # default env config
@@ -51,7 +51,7 @@ def gym_env():
         env.step(action)
 
         tracked_aircraft = env.get_tracked_aircraft_data()
-        for callsign, ac_data in tracked_aircraft.items():
+        for ac_data in tracked_aircraft.values():
             if ac_data.pos_status == PositionStatus.IN_SECTOR:
                 at_least_one_ac_in_sector = True
                 break

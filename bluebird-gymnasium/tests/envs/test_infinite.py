@@ -1,7 +1,9 @@
-import numpy as np
-import pytest
+from __future__ import annotations
+
 import typing
 
+import numpy as np
+import pytest
 
 from bluebird_gymnasium.envs import ViewType
 from bluebird_gymnasium.envs.infinite import (
@@ -9,7 +11,7 @@ from bluebird_gymnasium.envs.infinite import (
     InfiniteEnv,
     ScenarioName,
 )
-from bluebird_gymnasium.utils.types import PositionStatus, ACPositionInfo
+from bluebird_gymnasium.utils.types import ACPositionInfo, PositionStatus
 
 EnvCls: typing.TypeAlias = type[InfiniteEnv] | type[CustomInfiniteEnv]
 
@@ -22,11 +24,10 @@ def _get_env_instance(
     view_type: ViewType,
     env_cls: EnvCls,
     scenario_name: ScenarioName = ScenarioName.sector_xplus,
-):
+) -> EnvCls:
     config = env_cls.get_default_env_config(view_type)
     config.scenario_config["scenario_name"] = scenario_name.value
-    gym_env = env_cls(config=config)
-    return gym_env
+    return env_cls(config=config)
 
 
 @pytest.mark.parametrize("scenario_name", SCENARIO_NAMES)
@@ -82,7 +83,7 @@ def test_reset(view_type: ViewType, env_cls: EnvCls):
         assert isinstance(obs, dict)
         assert isinstance(info, dict)
         if len(obs) > 0:
-            callsign = list(obs.keys())[0]
+            callsign = next(iter(obs.keys()))
             assert obs[callsign].shape == gym_env.observation_space.shape
 
 
@@ -126,7 +127,7 @@ def test_step(view_type: ViewType, env_cls: EnvCls):
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after
         if len(obs) > 0:
-            callsign = list(obs.keys())[0]
+            callsign = next(iter(obs.keys()))
             assert obs[callsign].shape == gym_env.observation_space.shape
 
 
@@ -172,10 +173,7 @@ def test_pos_information(view_type: ViewType, env_cls: EnvCls):
         env_cls: defines the gymnasium environment class to use.
     """
 
-    if view_type == ViewType.CENTRALIZED:
-        action = 0
-    else:  # decentralized
-        action = {}  # no action on any aircraft
+    action = 0 if view_type == ViewType.CENTRALIZED else {}
 
     gym_env = _get_env_instance(view_type, env_cls)
     gym_env.reset()
@@ -192,14 +190,10 @@ def test_pos_information(view_type: ViewType, env_cls: EnvCls):
         gym_env.step(action)
 
     else:
-        pytest.fail(
-            f"No aircraft were tracked within the step limit of {max_steps}."
-        )
+        pytest.fail(f"No aircraft were tracked within the step limit of {max_steps}.")
 
     callsign = next(iter(tracked_data))
-    ret: ACPositionInfo = gym_env.check_pos_information(
-        callsign, PositionStatus.BEFORE_ENTRY, False, False, None
-    )
+    ret: ACPositionInfo = gym_env.check_pos_information(callsign, PositionStatus.BEFORE_ENTRY, False, False, None)
 
     # in artificial airspace, we can expect that the first aircraft
     # at start of the scenario is yet to enter the airspace/sector.
