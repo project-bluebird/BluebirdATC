@@ -5,7 +5,7 @@ It is written in the [React](https://react.dev/) framework.
 
 ## Terminology
 
-In this context, **HMI** means the web-based **GUI** ("Human Machine Interface") used to view and interact with a running Bluebird simulation.
+In this context, **HMI** ("Human Machine Interface") means the web-based **GUI** used to view and interact with a running Bluebird simulation.
 
 ## Using the pre-built HMI
 

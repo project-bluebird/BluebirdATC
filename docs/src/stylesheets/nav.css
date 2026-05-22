@@ -7,7 +7,6 @@
   --md-primary-fg-color: #173C4F;
   --md-default-fg-color--lightest: #173C4F;
   --md-accent-fg-color:#173C4F;
-  --md-default-fg-color--light: #FFFFFF;
   --md-primary-fg-color--dark: #173C4F;
   --md-primary-fg-color--light: #173C4F;
 }
@@ -61,3 +60,6 @@
   background-color: #0AC8E3; /* or a different colour for dark */
 }
 
+[data-md-color-scheme="default"] .md-nav--primary .md-nav__title {
+  color: #FFFFFF;
+}
