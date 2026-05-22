@@ -15,13 +15,31 @@ jobs:
         run: |
           head_ref="${{ github.head_ref }}"
           base_ref="${{ github.base_ref }}"
+          is_fork="${{ github.event.pull_request.head.repo.full_name != github.repository }}"
 
-          # Only enforce when targeting main
           if [[ "$base_ref" == "main" ]]; then
-            # Allow dev OR hotfix/*
-            if [[ "$head_ref" != "dev" && "$head_ref" != hotfix/* ]]; then
-              echo "Merge requests to main branch are only allowed from dev or hotfix/*."
-              echo "This PR is from: $head_ref -> $base_ref"
-              exit 1
+            # Allow hotfix/* from anywhere (including forks)
+            if [[ "$head_ref" == hotfix/* ]]; then
+              echo "Allowed: hotfix branch ($head_ref) into main (fork=$is_fork)."
+              exit 0
             fi
+
+            # Allow dev only when NOT from a fork
+            if [[ "$head_ref" == "dev" ]]; then
+              if [[ "$is_fork" == "true" ]]; then
+                echo "Denied: dev branch PRs into main cannot come from forks."
+                echo "This PR is from fork repo: ${{ github.event.pull_request.head.repo.full_name }}"
+                echo "Branch: $head_ref -> $base_ref"
+                exit 1
+              fi
+
+              echo "Allowed: dev branch ($head_ref) into main from same repo."
+              exit 0
+            fi
+
+            # Otherwise deny
+            echo "Denied: Merge requests to main are only allowed from dev (same repo only) or hotfix/* (forks allowed)."
+            echo "This PR is from: $head_ref -> $base_ref"
+            echo "Fork PR: $is_fork"
+            exit 1
           fi
