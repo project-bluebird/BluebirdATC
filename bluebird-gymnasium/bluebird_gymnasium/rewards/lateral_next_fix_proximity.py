@@ -11,7 +11,7 @@ from bluebird_gymnasium.utils.simulator_utils import prev_next_fixes
 def lateral_next_fix_proximity_bpfnf(
     gym_env: BaseEnv,
     callsign: str,
-    action: int,
+    action: int,  # noqa: ARG001
     next_fix_idx: int,
     **kwargs,  # noqa: ARG001, ANN003
 ) -> float:
