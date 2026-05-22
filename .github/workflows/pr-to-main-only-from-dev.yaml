@@ -5,6 +5,7 @@ on:
       - opened
       - reopened
       - synchronize
+      - edited
 
 jobs:
   check-main-only-from-dev:
