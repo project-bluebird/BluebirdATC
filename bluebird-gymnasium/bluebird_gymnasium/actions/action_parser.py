@@ -930,8 +930,7 @@ class ActionParser:
             selected_fix = action_st.value
             selected_fix_idx = route.index(selected_fix)
 
-            assert (
-                selected_fix_idx >= next_fix_idx,
+            assert selected_fix_idx >= next_fix_idx, (
                 f"route_direct_to: {action_st.value} should be a future fix"
                 f" and not a previous fix for aircraft {action_st.callsign}",
             )

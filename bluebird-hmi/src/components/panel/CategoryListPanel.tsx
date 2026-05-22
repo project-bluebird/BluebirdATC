@@ -5,30 +5,34 @@ import PanelButton from "components/panel/items/PanelButton";
 import PanelProgress from "components/panel/items/PanelProgress";
 
 interface CategoryListPanelProps {
-    handleSelectCategory: (string) => void;
+  handleSelectCategory: (string) => void;
 }
 
 export default function CategoryListPanel(props: CategoryListPanelProps) {
+  const { handleSelectCategory } = props;
+  const { data, isError, isLoading } = useListScenarioCategoriesQuery();
 
-    const { handleSelectCategory } = props;
-    const { data, isError, isLoading } = useListScenarioCategoriesQuery();
-
-    if (isError) {
-        return <MenuList>An error occurred fetching scenario category data.</MenuList>;
-    }
-    if (isLoading) {
-        return <PanelProgress text={"Loading category data"} />;
-    }
-    if (data) {
-        return (
-            <MenuList>
-                {data.map((category: string) => (
-                    <PanelButton
-                        key={category} text={category} icon={<SourceIcon />} onClick={()=>handleSelectCategory(category)}
-                    />
-                ))}
-            </MenuList>
-        );
-    }
-    return <>No data.</>;
+  if (isError) {
+    return (
+      <MenuList>An error occurred fetching scenario category data.</MenuList>
+    );
+  }
+  if (isLoading) {
+    return <PanelProgress text={"Loading category data"} />;
+  }
+  if (data) {
+    return (
+      <MenuList>
+        {data.map((category: string) => (
+          <PanelButton
+            key={category}
+            text={category}
+            icon={<SourceIcon />}
+            onClick={() => handleSelectCategory(category)}
+          />
+        ))}
+      </MenuList>
+    );
+  }
+  return <>No data.</>;
 }

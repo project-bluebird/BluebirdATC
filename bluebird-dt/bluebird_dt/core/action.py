@@ -50,25 +50,28 @@ class Action(Comparison):
             The Aircraft callsign.
         kind: str
             Action type. All supported actions are found in the SUPPORTED_ACTIONS dictionary in the utility folder.
-                - `route_direct_to`: go directly to named Fix(es) on Route (and set to route following)
-                - `change_heading_to`: change heading to the specified degrees
-                - `change_heading_to_by_direction`: change heading to the specified degrees by turning in a specific
-                direction
-                - `change_heading_by`: change heading by given degrees
-                - `maintain_current_heading`: follow the current heading (useful if was following route)
-                - `change_flight_level_to`: go to the specified flight level
-                - `change_flight_level_by`: descend/ascend by specified flight levels
-                - `descend_when_ready,level_by_fix`: descend when ready to the specified flight level by the named Fix
-                - `descend_now,level_by_fix`: descend to the specified flight level by the named Fix, starting to
-                   descend immediately
-                - `change_cas_to`: change horizontal fly speed to the specified knots
-                - `change_mach_to`: change horizontal fly speed to the specified mach
-                - `change_vertical_speed_to`: ascend/descend with the specified vertical speed (in feet/min)
-                - `outcomm`: hand control over to the named sector or next coordinated sector if no name given
-                - `using_speed_limit`: set whether aircraft needs to obey TMA speed limit (for basic training only)
-                - 'message': pass a text string (primarily to display on the HMI)
+
+            - `route_direct_to`: go directly to named Fix(es) on Route (and set to route following)
+            - `change_heading_to`: change heading to the specified degrees
+            - `change_heading_to_by_direction`: change heading to the specified degrees by turning in a specific
+            direction
+            - `change_heading_by`: change heading by given degrees
+            - `maintain_current_heading`: follow the current heading (useful if was following route)
+            - `change_flight_level_to`: go to the specified flight level
+            - `change_flight_level_by`: descend/ascend by specified flight levels
+            - `descend_when_ready,level_by_fix`: descend when ready to the specified flight level by the named Fix
+            - `descend_now,level_by_fix`: descend to the specified flight level by the named Fix, starting to
+                descend immediately
+            - `change_cas_to`: change horizontal fly speed to the specified knots
+            - `change_mach_to`: change horizontal fly speed to the specified mach
+            - `change_vertical_speed_to`: ascend/descend with the specified vertical speed (in feet/min)
+            - `outcomm`: hand control over to the named sector or next coordinated sector if no name given
+            - `using_speed_limit`: set whether aircraft needs to obey TMA speed limit (for basic training only)
+            - `message`: pass a text string (primarily to display on the HMI)
+
         value: Union[int, float, str]
             Allowed values for each Action kind differs:
+
             - `route_direct_to`: str or list[str]
             - `change_heading_to`: int
             - `change_heading_to_by_direction`: tuple[int, Literal['left', 'right', 'shortest']]
@@ -84,17 +87,18 @@ class Action(Comparison):
             - `change_vertical_speed_to`: float
             - `outcomm`: str
             - `using_speed_limit`: bool
-            - 'message': str
+            - `message`: str
+
         agent: str, optional
             Optional string indicating who sent the Action. In the case of having multiple
             agents interacting with the simulation, this can be used to filter who was
             responsible for what Action.
-        clearance: str, optional
-            Optional string reserved for the clearance to be issues to the pilot
+        text_representation: ClearanceAndResponse, optional
+            Optional text representation of the clearance, including clearance and pilot response
             - the clearance depends on the environment at the time that its
             generated, so creation is handled elsewhere.
-        pilot_response: str, optional
-            Optional string reserved for a pilot's response to the clearance.
+        voice_representation: ClearanceAndResponse, optional
+            Optional voice representation of the clearance, including clearance and pilot response
         sector: list of str, optional
             List of the individual sector frequency this action was sent from/to. Its value is optional for
             backwards compatibility, with `None` values either being replaced by the name of the sector frequency the

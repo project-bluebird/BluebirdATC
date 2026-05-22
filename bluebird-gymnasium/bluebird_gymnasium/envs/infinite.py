@@ -3,24 +3,20 @@ from __future__ import annotations
 import datetime
 import typing
 
-from enum import StrEnum
+from bluebird_dt.predictor import LinearPredictor
 
 # simulator package
 from bluebird_dt.scenario_manager.infinite import Infinite
-from bluebird_dt.predictor import LinearPredictor
 
 # simulator gymnasium wrapper
-from bluebird_gymnasium.envs import (
-    CentralizedSampler,
-    EnvConfig,
-    ViewType,
-)
-from bluebird_gymnasium.envs.base import BaseEnv
+from bluebird_gymnasium.envs import CentralizedSampler, EnvConfig, ViewType
+from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
 
 # constants
 from bluebird_gymnasium.utils.constants import (
     DEFAULT_RENDER_DIR,
 )
+from bluebird_gymnasium.utils.types import StrEnum
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator import Simulator
@@ -74,6 +70,8 @@ class InfiniteEnv(BaseEnv):
             environment and the underlying simulator.
     """
 
+    scenario_seed_mode = ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE
+
     def __init__(
         self,
         render_mode: str | None = None,
@@ -123,6 +121,7 @@ class InfiniteEnv(BaseEnv):
         # set up simulator manager
         sim = Infinite.setup(
             scenario_name=self.config.scenario_config["scenario_name"],
+            random_seed=self._reset_seed,
             autosave=False,
             save_log_to_file=False,
             log_filename=log_filename,
@@ -251,6 +250,11 @@ class CustomInfiniteEnv(BaseEnv):
     parameters in the simulator such as the aircraft spawn rate. For the
     standard scenario, use the `InfiniteEnv` class above.
 
+    When `.reset(seed=...)` is called with a seed, that seed overrides
+    `config.scenario_config["random_seed"]` for the generated scenario.
+    Calling `.reset()` or `.reset(seed=None)` preserves the configured
+    scenario seed.
+
     Args:
         render_mode: the mode to visualize (render) the simulator. It can
             only be set to None or one of the following:
@@ -259,6 +263,8 @@ class CustomInfiniteEnv(BaseEnv):
         config: defines the configuration parameters for the gymnasium
             environment and the underlying simulator.
     """
+
+    scenario_seed_mode = ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE
 
     def __init__(
         self,
@@ -309,7 +315,11 @@ class CustomInfiniteEnv(BaseEnv):
         # set up simulator manager
         sim = Infinite.setup(
             scenario_name=self.config.scenario_config["scenario_name"],
-            random_seed=self.config.scenario_config["random_seed"],
+            random_seed=(
+                self._reset_seed
+                if self._reset_seed is not None
+                else self.config.scenario_config["random_seed"]
+            ),
             num_starter_aircraft=self.config.scenario_config[
                 "num_starter_aircraft"
             ],
