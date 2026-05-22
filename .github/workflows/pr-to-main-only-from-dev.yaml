@@ -1,0 +1,27 @@
+name: Check pull request source branch into main is only from dev or hotfix/*
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+jobs:
+  check-main-only-from-dev:
+    runs-on: ubuntu-slim
+    steps:
+      - name: Check branches
+        shell: bash
+        run: |
+          head_ref="${{ github.head_ref }}"
+          base_ref="${{ github.base_ref }}"
+
+          # Only enforce when targeting main
+          if [[ "$base_ref" == "main" ]]; then
+            # Allow dev OR hotfix/*
+            if [[ "$head_ref" != "dev" && "$head_ref" != hotfix/* ]]; then
+              echo "Merge requests to main branch are only allowed from dev or hotfix/*."
+              echo "This PR is from: $head_ref -> $base_ref"
+              exit 1
+            fi
+          fi
