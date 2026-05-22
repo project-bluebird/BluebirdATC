@@ -1,6 +1,6 @@
 name: Check pull request source branch into main is only from dev or hotfix/*
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - reopened
