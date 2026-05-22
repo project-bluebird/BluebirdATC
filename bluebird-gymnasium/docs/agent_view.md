@@ -34,7 +34,7 @@ In the multi-agent (decentralized) set up, where a single aircraft is controlled
 
 To set up an environment instance as a single agent view, see sample configuration snippet below.
 
-```
+```json
 {
     ...
     "view_config": {
@@ -50,7 +50,7 @@ To set up an environment instance as a single agent view, see sample configurati
 
 To set up an environment instance as a multi-agent view, see sample configuration snippet below.
 
-```
+```json
 {
     ...
     "view_config": {

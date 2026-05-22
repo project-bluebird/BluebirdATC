@@ -42,8 +42,8 @@ ActionType: TypeAlias = typing.Union[int, dict[str, int]]
 
 
 ## enums
-from enum import IntEnum, StrEnum
-from bluebird_gymnasium.utils.types import MetaEnum
+from enum import IntEnum
+from bluebird_gymnasium.utils.types import MetaEnum, StrEnum
 
 
 class SuccessMetric(IntEnum, metaclass=MetaEnum):

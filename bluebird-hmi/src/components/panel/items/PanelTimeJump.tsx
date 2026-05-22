@@ -3,14 +3,19 @@ import { useEvolveMutation } from "api/api";
 import { useAppSelector } from "app/hooks";
 import PanelButton from "components/panel/items/PanelButton";
 
-
 interface PanelTimeJumpProps {
-    text: string;
-    timeDelta: number;
+  text: string;
+  timeDelta: number;
 }
 
 export default function PanelTimeJump({ text, timeDelta }: PanelTimeJumpProps) {
-    const [evolve] = useEvolveMutation();
+  const [evolve] = useEvolveMutation();
 
-    return <PanelButton text={text} icon={<HistoryToggleOffIcon />} onClick={() => evolve({ timeDelta })} />;
+  return (
+    <PanelButton
+      text={text}
+      icon={<HistoryToggleOffIcon />}
+      onClick={() => evolve({ timeDelta })}
+    />
+  );
 }

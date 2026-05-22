@@ -145,8 +145,11 @@ venv.bak/
 
 # mkdocs documentation
 /site
+/bluebird-api/docs/examples/**/*.ipynb
+/bluebird-dt/docs/examples/**/*.ipynb
+/bluebird-dt/docs/examples/**/*.gif
+/bluebird-gymnasium/docs/examples/**/*.ipynb
 /docs/src/examples/**/*.ipynb
-/docs/src/examples/**/*.gif
 
 # mypy
 .mypy_cache/

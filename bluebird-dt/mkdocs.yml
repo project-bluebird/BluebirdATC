@@ -5,37 +5,31 @@ plugins:
        modules: [docs.get_version]
 
 nav:
-  - Source code: ./#source-code
-  - ATC concepts and terminology:
-      - Overview: ./#atc-concepts-and-terminology
-      - Aircraft: ./#aircraft
-      - Sector: ./#sector
-      - Fix: ./#fix
-      - Route: ./#route
-      - Airspace: ./#airspace
-      - Action: ./#action
-  - Provided airspace:
-      - Overview: ./#provided-airspace
-      - Sectors:
-          - I-sector: ./#i-sector
-          - Y-sector: ./#y-sector
-          - X-sector: ./#x-sector
-          - Xplus-sector: ./#xplus-sector
-          - Springfield: ./#springfield
-  - Scenarios:
-      - Overview: ./#scenarios
-      - Two Aircraft: ./#two-aircraft
-      - Regular: ./#regular
-      - Custom: ./#custom
-      - Infinite: ./#infinite
-  - Design of the digital twin:
-      - Overview: ./#design-of-the-digital-twin
-      - Core classes: ./#core-classes
-      - Scenario and airspace generators: ./#scenario-and-airspace-generators
-      - Simulation and event management: ./#simulation-and-event-management
-      - Predictors: ./#predictors
-      - Utility functions: ./#utility-functions
-  - Installing the software: ./#installing-the-software
-  - Running tests: ./#running-tests
-  - Versioning: ./#versioning
-  - Source code reference: source.md
+  - Getting started with bluebird-dt: getting-started.md
+  - Available airspace:
+      - airspace/index.md
+      - I-sector: airspace#i-sector
+      - Y-sector: airspace#y-sector
+      - X-sector: airspace#x-sector
+      - Xplus-sector: airspace#xplus-sector
+      - Springfield: airspace#springfield
+  - Available scenarios:
+      - scenarios/index.md
+      - Infinite: scenarios#infinite
+      - Springfield: scenarios#springfield
+      - Two Aircraft: scenarios#two-aircraft
+      - Regular: scenarios#regular
+  - Digital twin concepts:
+      - design/index.md
+      - Core classes: design#core-classes
+      - Scenario and airspace generators: design#scenario-and-airspace-generators
+      - Simulation and event management: design#simulation-and-event-management
+      - Predictors: design#predictors
+      - Utility functions: design#utility-functions
+  - Examples with bluebird-dt:
+    - Simulation example: examples/Intro-Part-1.ipynb
+    - Simulation example: examples/Intro-Part-2.ipynb
+    - Simulation example: examples/Intro-Part-3.ipynb
+    - Simulation example: examples/Intro-Part-4.ipynb
+    - Radar visualisation: examples/render/radar.ipynb
+  - Source reference: source.md

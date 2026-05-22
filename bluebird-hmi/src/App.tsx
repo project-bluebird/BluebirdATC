@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RadarPage from "pages/RadarPage";
 
 function App() {
-  
   const basename = import.meta.env.PROD ? "/hmi" : "/";
   return (
     <BrowserRouter basename={basename}>
@@ -11,6 +10,5 @@ function App() {
       </Routes>
     </BrowserRouter>
   );
-  
 }
-export default App
+export default App;

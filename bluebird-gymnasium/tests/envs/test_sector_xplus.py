@@ -118,14 +118,21 @@ def test_pos_information(view_type: ViewType):
     obs, info = gym_env.reset()
     simulator_env = gym_env.get_simulator_env()
 
-    # check what time the first aircraft is spawned in the environment
-    radar_df = gym_env.get_manager().event_handler.radar_df
-    start_time = radar_df.index.min().replace(tzinfo=timezone.utc).timestamp()
-    start_step = int(start_time // gym_env.scenario_sec_per_step)
-    for _ in range(start_step):
+    # forward the simulation to the time when at least one aircraft is being
+    # tracked
+    tracked_data = {}
+    max_steps = 100
+    for _ in range(max_steps):
+        tracked_data = gym_env.get_tracked_aircraft_data()
+        if tracked_data:
+            break
+
         gym_env.step(action)
 
-    callsign = list(simulator_env.aircraft.keys())[0]
+    else:
+        pytest.fail(f"No aircraft were tracked within the step limit of {max_steps}.")
+
+    callsign = next(iter(tracked_data))
     ret: ACPositionInfo = gym_env.check_pos_information(
         callsign, PositionStatus.BEFORE_ENTRY, False, False, None
     )

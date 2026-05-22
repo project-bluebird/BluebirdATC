@@ -22,11 +22,10 @@ export const defaultLonLatOffset = [-40, 0];
 export const TTSPlaybackRate = 1.5;
 
 export enum InfoBlockOptions {
-    ShowBlock = "Show block",
-    HideBlock = "Hide block",
-    HideGroundSpeed = "Hide ground speed",
-    SimplifiedBlock = "Simplified block",
+  ShowBlock = "Show block",
+  HideBlock = "Hide block",
+  HideGroundSpeed = "Hide ground speed",
+  SimplifiedBlock = "Simplified block",
 }
 
 export const defaultInfoBlockState = InfoBlockOptions.ShowBlock;
-

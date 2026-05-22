@@ -20,6 +20,15 @@ from bluebird_gymnasium.utils.constants import (
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator import Simulator
 
+    from bluebird_gymnasium.envs import (
+        ActionType,
+        DoneType,
+        InfoType,
+        ObsType,
+        RewardType,
+        TruncatedType,
+    )
+
 
 SPRINGFIELD_SECTOR_NAME = "SPRINGFIELD"
 
@@ -125,6 +134,24 @@ class SpringfieldEnv(BaseEnv):
         )
         return sim
 
+    def step(
+        self, action: ActionType
+    ) -> tuple[ObsType, RewardType, DoneType, TruncatedType, InfoType]:
+        obs, reward, done, truncated, info = super().step(action)
+
+        # Springfield can start before any aircraft is controllable; keep an
+        # empty decentralized done dict from ending loops that call all(...).
+        if (
+            self.config.view_config["type"] == ViewType.DECENTRALIZED
+            and isinstance(done, dict)
+            and not done
+            and self.timestep < self.maxstep
+        ):
+            done = {"__all__": False}
+            truncated = {"__all__": False}
+
+        return obs, reward, done, truncated, info
+
     @classmethod
     def get_default_env_config(
         cls, view_type: ViewType | str = ViewType.CENTRALIZED
@@ -199,7 +226,6 @@ class SpringfieldEnv(BaseEnv):
                     "BERTY",
                     "GARRY",
                     "SPOUT",
-                    "BALDI",
                     "SIMPS",
                     "FIYFE",
                     "JIMMI",

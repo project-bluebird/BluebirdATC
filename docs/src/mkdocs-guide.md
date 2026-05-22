@@ -43,7 +43,7 @@ The docs setup is split across root docs files and package docs files.
 Main locations:
 
 - `docs/pyproject.toml`: docs-specific uv project and dependencies
-- `docs/uv.lock`: docs-specific lockfile
+- `uv.lock`: workspace lockfile
 - `docs/mkdocs.yml`: docs project MkDocs config and top-level site nav
 - `docs/src/`: root docs content and shared assets
 - `docs/src/index.md`: homepage content

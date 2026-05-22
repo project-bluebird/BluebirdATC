@@ -1,0 +1,175 @@
+name: Bluebird-hmi CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+defaults:
+  run:
+    working-directory: bluebird-hmi
+
+jobs:
+  changes:
+    name: Detect relevant changes
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.filter.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            should_run:
+              - 'bluebird-hmi/**'
+              - '.github/workflows/lint-format-check-hmi.yml'
+
+  hmi-typecheck:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.should_run == 'true' }}
+    strategy:
+      matrix:
+        node-version: [24.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: bluebird-hmi/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+
+  hmi-prettier:
+    runs-on: ubuntu-latest
+    needs: [changes, hmi-typecheck]
+    if: ${{ needs.changes.outputs.should_run == 'true' }}
+    strategy:
+      matrix:
+        node-version: [24.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: bluebird-hmi/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Prettier check
+        run: npx prettier --check "src/**/*.{ts,tsx}"
+
+  hmi-ensure-built-artifacts:
+    name: Ensure built artefacts are up-to-date
+    runs-on: ubuntu-latest
+    needs: [changes, hmi-typecheck]
+    if: ${{ needs.changes.outputs.should_run == 'true' }}
+    strategy:
+      matrix:
+        node-version: [24.x]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: bluebird-hmi/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build / generate artefacts
+        run: npm run build
+
+      - name: Show diff and instruct contributor
+        run: |
+          if ! git diff --quiet; then
+            echo "❌ Built artefacts are out of date."
+            echo "Run the generator locally and commit the changes:"
+            echo "  cd bluebird-hmi"
+            echo "  npm ci"
+            echo "  npm run build"
+            echo "  git add ../bluebird-api/bluebird_api/hmi/*"
+            echo "  git commit -m \"update HMI build\""
+            echo "  git push"
+            echo ""
+            echo "Changed files:"
+            git diff --name-only
+            echo ""
+            echo "Diff:"
+            git diff
+            exit 1
+          fi   
+
+  hmi-ci-gate:
+    runs-on: ubuntu-latest
+    needs:
+      - changes
+      - hmi-typecheck
+      - hmi-prettier
+      - hmi-ensure-built-artifacts
+    if: ${{ always() }}
+    steps:
+      - name: Gate conditional jobs
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SHOULD_RUN_HMI="${{ needs.changes.outputs.should_run_hmi }}"
+
+          TYPECHECK_RESULT="${{ needs.hmi-typecheck.result }}"
+          PRETTIER_RESULT="${{ needs.hmi-prettier.result }}"
+          ARTIFACTS_RESULT="${{ needs.hmi-ensure-built-artifacts.result }}"
+
+          echo "should_run_hmi=$SHOULD_RUN_HMI"
+          echo "hmi-typecheck.result=$TYPECHECK_RESULT"
+          echo "hmi-prettier.result=$PRETTIER_RESULT"
+          echo "hmi-ensure-built-artifacts.result=$ARTIFACTS_RESULT"
+
+          if [[ "$SHOULD_RUN_HMI" != "true" ]]; then
+            echo "HMI not required for this PR; gate passes."
+            exit 0
+          fi
+
+          fail=0
+
+          check () {
+            local name="$1"
+            local result="$2"
+            if [[ "$result" != "success" ]]; then
+              echo "::error::$name was required but did not succeed (result=$result)"
+              fail=1
+            fi
+          }
+
+          check "hmi-typecheck" "$TYPECHECK_RESULT"
+          check "hmi-prettier" "$PRETTIER_RESULT"
+          check "hmi-ensure-built-artifacts" "$ARTIFACTS_RESULT"
+
+          if [[ "$fail" -ne 0 ]]; then
+            echo "Gate failed."
+            exit 1
+          fi
+
+          echo "Gate passed."
+

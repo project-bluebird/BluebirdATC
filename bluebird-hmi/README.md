@@ -38,7 +38,7 @@ It is essentially a single page application, with the top-level page being defin
 
 ### Rebuilding
 
-To rebuild the minified version of the code in the `dist/` directory, run the command:
+To rebuild the minified version of the code in the `bluebird-api/bluebird_api/hmi/` directory, run the command:
 
 ```shell
 npm run build
@@ -52,18 +52,18 @@ If you then want to update the built application in Github, first see the CONTRI
 Changes not staged for commit:
   (use "git add/rm <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
-	deleted:    dist/assets/index-<some-random-string>.js
-	modified:   dist/index.html
+	deleted:    ../bluebird-api/bluebird_api/hmi/assets/index-<some-random-string>.js
+	modified:   ../bluebird-api/bluebird_api/hmi/index.html
 
 Untracked files:
   (use "git add <file>..." to include in what will be committed)
-	dist/assets/index-<another-random-string>.js
+	bluebird-api/bluebird_api/hmi/assets/index-<another-random-string>.js
 ```
 
 You can then do:
 
 ```shell
-git add dist/*
+git add ../bluebird-api/bluebird_api/hmi/*
 git commit -m "update HMI build"
 git push
 ```

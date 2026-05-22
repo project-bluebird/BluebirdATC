@@ -1,20 +1,24 @@
 from __future__ import annotations
 
+import contextlib
 import copy
 import os
+import random
 import typing
-
-import numpy
-import numpy as np
+from dataclasses import asdict
+from enum import Enum, auto
 
 import gymnasium as gym
-from gymnasium import spaces
-
-from dataclasses import asdict
+import numpy
+import numpy as np
 
 # simulator package
 from bluebird_dt.core import Pos2D, Pos3D, Pos4D
 from bluebird_dt.render.radar import Radar
+from gymnasium import spaces
+
+# constants
+from bluebird_gymnasium.actions import ACTION_NOOP
 
 # simulator gymnasium wrapper
 from bluebird_gymnasium.actions.action_parser import ActionParser
@@ -25,14 +29,12 @@ from bluebird_gymnasium.envs import (
     SuccessMetric,
     ViewType,
 )
-from bluebird_gymnasium.utils.types import (
-    ACPositionInfo,
-    ForwardFixesInfo,
-    PositionStatus,
+from bluebird_gymnasium.rewards import registry_reward_fn
+from bluebird_gymnasium.state_repr import registry_repr
+from bluebird_gymnasium.state_repr.custom.state_repr_drlan import (
+    DrlanRepresentation,
+    DrlanRepresentationRaw,
 )
-
-# constants
-from bluebird_gymnasium.actions import ACTION_NOOP
 from bluebird_gymnasium.utils.constants import (
     DEFAULT_RENDER_DIR,
     DISTANCE_AWAY_FROM_EXIT_THRESHOLD,
@@ -44,12 +46,6 @@ from bluebird_gymnasium.utils.constants import (
     FUTURE_TRAJ_DURATION,
     SECTOR_BACKGROUND,
     STEPS_SINCE_ACTION_MAX,
-)
-from bluebird_gymnasium.rewards import registry_reward_fn
-from bluebird_gymnasium.state_repr import registry_repr
-from bluebird_gymnasium.state_repr.custom.state_repr_drlan import (
-    DrlanRepresentation,
-    DrlanRepresentationRaw,
 )
 from bluebird_gymnasium.utils.geo_utils import (
     at_exit_window,
@@ -63,34 +59,56 @@ from bluebird_gymnasium.utils.simulator_utils import (
     aircraft_entry_coordination,
     aircraft_exit_coordination,
     basic_distances,
-    get_aircraft_selected_heading,
-    get_aircraft_selected_flight_level,
     get_aircraft_selected_cas,
+    get_aircraft_selected_flight_level,
+    get_aircraft_selected_heading,
     infer_aircraft_speed,
     predict_trajectory,
     prev_next_fixes,
 )
-from bluebird_gymnasium.utils.types import ACStateTracker
+from bluebird_gymnasium.utils.types import (
+    ACPositionInfo,
+    ACStateTracker,
+    ForwardFixesInfo,
+    PositionStatus,
+)
 
 if typing.TYPE_CHECKING:
     import matplotlib
-    from numpy.typing import NDArray
-
     from bluebird_dt.core.action import Action as SimAction
     from bluebird_dt.core.coordination import Coordination
-    from bluebird_dt.simulator import Simulator
     from bluebird_dt.core.environment import Environment as SimulatorEnv
-    from bluebird_dt.manager import EnvironmentManager as SimulatorEnvManager
     from bluebird_dt.core.predictors import Predictor
+    from bluebird_dt.manager import EnvironmentManager as SimulatorEnvManager
+    from bluebird_dt.simulator import Simulator
+    from numpy.typing import NDArray
 
     from bluebird_gymnasium.envs import (
+        ActionType,
+        DoneType,
+        InfoType,
         ObsType,
         RewardType,
-        DoneType,
         TruncatedType,
-        InfoType,
-        ActionType,
     )
+
+
+class ScenarioGenSeedMode(Enum):
+    """How `reset(seed=...)` is applied during scenario generation.
+
+    NONE: leave scenario generation untouched; fixed scenario files use this
+        so reset seeds do not change their aircraft.
+    RESET_SEED_ATTRIBUTE: store the reset seed on `self._reset_seed` while
+        `_generate_scenario()` runs, for scenario managers that accept an
+        explicit seed argument.
+    LEGACY_MODULE_RNGS: temporarily seed module-level `random` and
+        `np.random` while `_generate_scenario()` runs, for older scenario
+        managers that still read global RNG state.
+    """
+
+    NONE = auto()
+    RESET_SEED_ATTRIBUTE = auto()
+    LEGACY_MODULE_RNGS = auto()
 
 
 def _concat_state_action(state, action, num_actions):
@@ -121,6 +139,9 @@ class BaseEnv(gym.Env):
     metadata = {
         "render_modes": ["human", "rgb_array", "file"],
     }
+
+    # how `reset(seed=...)` is applied while generating a scenario
+    scenario_seed_mode = ScenarioGenSeedMode.NONE
 
     def __init__(
         self,
@@ -484,6 +505,7 @@ class BaseEnv(gym.Env):
         self.manager = None
         self.simulator = None
         self.simulator_env = None
+        self._reset_seed = None
 
         # used when `.render_mode` is set to 'human'
         self.screen = None
@@ -492,6 +514,49 @@ class BaseEnv(gym.Env):
         """Generate a scenario in the simulator."""
 
         raise NotImplementedError
+
+    @contextlib.contextmanager
+    def _use_reset_seed_for_scenario_generation(self, seed: int | None):
+        """Apply the reset seed while generating a scenario.
+
+        Args:
+            seed: seed passed to `.reset(...)`.
+        """
+
+        seed_attribute_mode = (
+            self.scenario_seed_mode == ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE
+        )
+        legacy_rng_mode = (
+            self.scenario_seed_mode == ScenarioGenSeedMode.LEGACY_MODULE_RNGS
+        )
+
+        # pass seed to scenario managers with explicit seed support
+        self._reset_seed = seed if seed_attribute_mode else None
+
+        # prepare seed for scenario managers using legacy module-level RNGs
+        legacy_seed = seed if legacy_rng_mode else None
+
+        random_state, numpy_random_state = None, None
+        try:
+            if legacy_seed is not None:
+                random_state = random.getstate()
+                numpy_random_state = np.random.get_state()
+
+                numpy_seed = np.random.default_rng(legacy_seed).integers(
+                    0, 2**32, dtype=np.uint32
+                )
+                random.seed(legacy_seed)
+                np.random.seed(numpy_seed)
+
+            yield
+
+        finally:
+            # restore global RNG state and clear the reset seed
+            if random_state is not None and numpy_random_state is not None:
+                random.setstate(random_state)
+                np.random.set_state(numpy_random_state)
+
+            self._reset_seed = None
 
     def _evolve_simulation(self, evolve_period: int | float) -> None:
         """Step forward in the simulation."""
@@ -1398,7 +1463,8 @@ class BaseEnv(gym.Env):
         self.traffic_monitor.reset()
 
         # generate the scenario and instantiate simulator
-        self.simulator = self._generate_scenario()
+        with self._use_reset_seed_for_scenario_generation(seed):
+            self.simulator = self._generate_scenario()
         self.manager = self.simulator.manager
         self.simulator_env = self.manager.environment
 
@@ -3122,6 +3188,7 @@ class BaseEnv(gym.Env):
 
         def _mpl_to_rgb_array(figure, image_format):
             import io
+
             from PIL import Image
 
             buffer = io.BytesIO()

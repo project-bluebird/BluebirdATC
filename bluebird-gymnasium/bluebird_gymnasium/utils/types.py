@@ -2,7 +2,7 @@ import numpy as np
 import typing
 from typing import TypeAlias
 from dataclasses import dataclass
-from enum import EnumMeta, IntEnum
+from enum import Enum, EnumMeta, IntEnum
 
 from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.core.pos4d import Pos4D
@@ -22,6 +22,16 @@ class MetaEnum(EnumMeta):
         except ValueError:
             return False
         return True
+
+
+class StrEnum(str, Enum):
+    # support for python < 3.11
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values) -> str:
+        return name.lower()
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class PositionStatus(IntEnum, metaclass=MetaEnum):
