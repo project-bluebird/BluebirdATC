@@ -9,7 +9,7 @@ from dataclasses import asdict
 from enum import Enum, auto
 
 import gymnasium as gym
-import numpy
+import numpy  # NOQA: ICN001
 import numpy as np
 
 # simulator package
@@ -74,13 +74,14 @@ from bluebird_gymnasium.utils.types import (
 )
 
 if typing.TYPE_CHECKING:
-    import matplotlib
+    import matplotlib  # noqa: ICN001
     from bluebird_dt.core.action import Action as SimAction
     from bluebird_dt.core.coordination import Coordination
     from bluebird_dt.core.environment import Environment as SimulatorEnv
     from bluebird_dt.manager import EnvironmentManager as SimulatorEnvManager
     from bluebird_dt.predictor import Predictor
     from bluebird_dt.simulator import Simulator
+    from matplotlib.figure import Figure
     from numpy.typing import NDArray
 
     from bluebird_gymnasium.envs import (
@@ -91,6 +92,7 @@ if typing.TYPE_CHECKING:
         RewardType,
         TruncatedType,
     )
+    from bluebird_gymnasium.utils.types import Number
 
     try:
         from typing import Self
@@ -116,7 +118,7 @@ class ScenarioGenSeedMode(Enum):
     LEGACY_MODULE_RNGS = auto()
 
 
-def _concat_state_action(state, action, num_actions):
+def _concat_state_action(state: NDArray[np.float32], action: int, num_actions: int) -> NDArray[np.float32]:
     assert isinstance(action, int)
     assert action < num_actions
 
@@ -141,7 +143,7 @@ class BaseEnv(gym.Env):
             environment and the underlying simulator.
     """
 
-    metadata = {
+    metadata: typing.ClassVar[dict[str, list[str]]] = {
         "render_modes": ["human", "rgb_array", "file"],
     }
 
@@ -153,7 +155,7 @@ class BaseEnv(gym.Env):
         render_mode: str | None = None,
         config: EnvConfig | None = None,
     ):
-        super(BaseEnv, self).__init__()
+        super().__init__()
 
         self.render_mode = render_mode
         self.radar = None
@@ -201,7 +203,7 @@ class BaseEnv(gym.Env):
             self.config.radar_config["render_dir"] = DEFAULT_RENDER_DIR
 
         # reward co-efficient(s)
-        if "coeffs" not in self.config.reward_config.keys():
+        if "coeffs" not in self.config.reward_config:
             # default: all reward functions/components are weighted equally
             self.config.reward_config["coeffs"] = [1 for _ in self.config.reward_config["fns"]]
 
@@ -212,14 +214,14 @@ class BaseEnv(gym.Env):
 
         # diagnostics
         if self.config.diagnostics_level is None:
-            self._diagnostics = lambda callsign: {}
+            self._diagnostics = lambda callsign: {} # noqa: ARG005
         elif self.config.diagnostics_level == Diagnostics.MINIMAL:
             self._diagnostics = self._minimal_diagnostics
         elif self.config.diagnostics_level == Diagnostics.FULL:
             self._diagnostics = self._full_diagnostics
         else:
             _msg = "diagnostics_level can only be set to one of the "
-            "following: {0}".format(list(Diagnostics))
+            f"following: {list(Diagnostics)}"
             raise ValueError(_msg)
 
         # exit window width
@@ -319,7 +321,7 @@ class BaseEnv(gym.Env):
             ## and set it to default if does not exist
             _vp_config = self.config.view_config.get("centralized_params", {})
             _vp_default = default_config.view_config["centralized_params"]
-            for k, v in _vp_default.items():
+            for k in _vp_default:
                 if _vp_config.get(k, None) is None:
                     _vp_config[k] = _vp_default[k]
             self.config.view_config["centralized_params"] = _vp_config
@@ -341,7 +343,7 @@ class BaseEnv(gym.Env):
             ## state encoder/representation per aircraft
             knn = self.config.state_repr_config["k_nearest_aircraft"]
             encoder_cls = registry_repr[self.config.state_repr_config["encoder_cls"]]
-            if isinstance(encoder_cls, DrlanRepresentation) or isinstance(encoder_cls, DrlanRepresentationRaw):
+            if isinstance(encoder_cls, (DrlanRepresentation, DrlanRepresentationRaw)):
                 self.state_encoder = encoder_cls(
                     knn=knn,
                     num_forward_fixes=self.forward_fixes_info.num_fixes,
@@ -376,11 +378,9 @@ class BaseEnv(gym.Env):
                 _high = self.state_encoder.high
             else:
                 raise ValueError(
-                    (
-                        "incorrect config `num_sampled_aircraft` in "
-                        "view_config['centralized_params']. the set value"
-                        "should be greater than 0"
-                    )
+                    "incorrect config `num_sampled_aircraft` in "
+                    "view_config['centralized_params']. the set value"
+                    "should be greater than 0"
                 )
 
             if self.config.view_config.get("concat_prev_action", False):
@@ -396,7 +396,7 @@ class BaseEnv(gym.Env):
 
                 self.maybe_concat_action = _concat_state_action
             else:
-                self.maybe_concat_action = lambda state, act, num_acts: state
+                self.maybe_concat_action = lambda state, act, num_acts: state # noqa: ARG005
 
             self.observation_space = spaces.Box(
                 low=_low,
@@ -418,7 +418,7 @@ class BaseEnv(gym.Env):
             ## state encoder/representation per aircraft
             knn = self.config.state_repr_config["k_nearest_aircraft"]
             encoder_cls = registry_repr[self.config.state_repr_config["encoder_cls"]]
-            if isinstance(encoder_cls, DrlanRepresentation) or isinstance(encoder_cls, DrlanRepresentationRaw):
+            if isinstance(encoder_cls, (DrlanRepresentation, DrlanRepresentationRaw)):
                 self.state_encoder = encoder_cls(
                     knn=knn,
                     num_forward_fixes=self.forward_fixes_info.num_fixes,
@@ -453,7 +453,7 @@ class BaseEnv(gym.Env):
 
                 self.maybe_concat_action = _concat_state_action
             else:
-                self.maybe_concat_action = lambda state, act, num_acts: state
+                self.maybe_concat_action = lambda state, act, num_acts: state # noqa: ARG005
 
             self.observation_space = spaces.Box(
                 low=_low,
@@ -541,7 +541,7 @@ class BaseEnv(gym.Env):
         """
 
         airspace_sectors = list(self.simulator_env.airspace.sectors.keys())
-        if len(airspace_sectors) == 1:
+        if len(airspace_sectors) == 1: # noqa: SIM108
             _sectors = [
                 self.active_airspace_sector,
                 SECTOR_BACKGROUND,
@@ -594,10 +594,7 @@ class BaseEnv(gym.Env):
                 entry_fix_pos = airspace.fixes.places[_entry_coord.fix]
                 aircraft_pos = simulator_env.aircraft[callsign].pos2d()
                 _dist = aircraft_pos.distance(entry_fix_pos)
-                if _dist > DISTANCE_TO_ENTRY_THRESHOLD:
-                    ignore_aircraft = True
-                else:
-                    ignore_aircraft = False
+                ignore_aircraft = _dist > DISTANCE_TO_ENTRY_THRESHOLD
 
             else:
                 # aircraft does not have entry coordination into the
@@ -614,7 +611,7 @@ class BaseEnv(gym.Env):
 
         return ignore_aircraft, bkgnd
 
-    def _is_background_traffic(self, callsign: str, entry_coord: None | Coordination) -> bool:
+    def _is_background_traffic(self, callsign: str, entry_coord: None | Coordination) -> bool: # noqa: ARG002
         """Check if an aircraft is a background traffic."""
 
         # False by default, as is the case for artificial sectors
@@ -655,7 +652,7 @@ class BaseEnv(gym.Env):
                 continue
 
             # ignore aircraft if it no longer exist in the simulator
-            if callsign not in self.simulator_env.aircraft.keys():
+            if callsign not in self.simulator_env.aircraft:
                 continue
 
             ac = self.simulator_env.aircraft[callsign]
@@ -756,10 +753,7 @@ class BaseEnv(gym.Env):
             tracked data for all aircraft is returned.
         """
 
-        if callsign is None:
-            ret = self.ac_tracker_prev_step
-        else:
-            ret = self.ac_tracker_prev_step.get(callsign, None)
+        ret = self.ac_tracker_prev_step if callsign is None else self.ac_tracker_prev_step.get(callsign, None)
 
         if copy_data and ret is not None:
             ret = copy.deepcopy(ret)
@@ -796,10 +790,7 @@ class BaseEnv(gym.Env):
             tracked data for all aircraft is returned.
         """
 
-        if callsign is None:
-            ret = self.ac_tracker
-        else:
-            ret = self.ac_tracker.get(callsign, None)
+        ret = self.ac_tracker if callsign is None else self.ac_tracker.get(callsign, None)
 
         if copy_data and ret is not None:
             ret = copy.deepcopy(ret)
@@ -824,13 +815,13 @@ class BaseEnv(gym.Env):
         """
 
         # aircraft has been deleted from the simulator
-        if callsign not in self.simulator_env.aircraft.keys():
+        if callsign not in self.simulator_env.aircraft:
             return previous_value
 
         # aircraft is no longer being tracked due to either its completed
         # navigation through the sector or incorrect sector exit where the
         # out_sector_control flag in config.airspace_config is set to `False`
-        if callsign not in self.ac_tracker.keys():
+        if callsign not in self.ac_tracker:
             return previous_value
 
         aircraft = self.simulator_env.aircraft[callsign]
@@ -843,10 +834,7 @@ class BaseEnv(gym.Env):
         if _state.pos_status == PositionStatus.EXIT_REACHED and _prev_state.pos_status == PositionStatus.IN_SECTOR:
             exit_coordination = _state.exit_coords[self.active_airspace_sector]
 
-            if aircraft.fl == exit_coordination.fl:
-                metric = SuccessMetric.PASS
-            else:
-                metric = SuccessMetric.FAIL
+            metric = SuccessMetric.PASS if aircraft.fl == exit_coordination.fl else SuccessMetric.FAIL
 
         elif _state.pos_status == PositionStatus.OUT_SECTOR and _prev_state.pos_status == PositionStatus.IN_SECTOR:
             # aircraft incorrectly exited the airspace (exercusion)
@@ -920,9 +908,7 @@ class BaseEnv(gym.Env):
 
         actions_st = {}
         for callsign, action_rf_int in actions_rf_int.items():
-            if callsign is None:  # NOOP action (action 0)
-                actions_st[callsign] = None
-            elif DUMMY_CALLSIGN_PREFIX in callsign:
+            if callsign is None or DUMMY_CALLSIGN_PREFIX in callsign:  # NOOP action (action 0)
                 actions_st[callsign] = None
             elif self.ac_tracker[callsign].pos_status == PositionStatus.BEFORE_ENTRY:
                 # aircraft are not controllable before incomm (when they
@@ -945,7 +931,6 @@ class BaseEnv(gym.Env):
 
     def update_ac_tracker_prev_step(
         self,
-        tracked_data: dict[str, ACStateTracker],
         exclude: list[str] | None = None,
     ) -> None:
         """Set previous step aircraft state tracker to the current data."""
@@ -965,7 +950,7 @@ class BaseEnv(gym.Env):
             for callsign in to_add:
                 self.ac_tracker_prev_step[callsign] = ACStateTracker()
 
-            callsign = list(keys_1)[0]
+            callsign = next(iter(keys_1))
             attributes = list(vars(self.ac_tracker[callsign]).keys())
             if exclude is not None:
                 for attribute in exclude:
@@ -1327,7 +1312,7 @@ class BaseEnv(gym.Env):
             there are no aircraft in the airspace at the initial state, the
             state and log dictionaries are empty.
         """
-        super(BaseEnv, self).reset(seed=seed, options=options)
+        super().reset(seed=seed, options=options)
 
         self.timestep = 0
 
@@ -1362,7 +1347,7 @@ class BaseEnv(gym.Env):
         # initial state(s) and info
         _state = {}
         info = {}
-        for callsign in self.simulator_env.aircraft.keys():
+        for callsign in self.simulator_env.aircraft:
             ignore_aircraft, _background = self._ignore_aircraft(callsign)
             if ignore_aircraft:
                 # before skipping, log aircraft if it is a background traffic
@@ -1409,7 +1394,7 @@ class BaseEnv(gym.Env):
         self.traffic_monitor.update(self)
 
         # now generate the state/obs after setting up `.ac_tracker`
-        for callsign in self.ac_tracker.keys():
+        for callsign in self.ac_tracker:
             # generate the new state(s)/observation(s)
             # only generate states for aircraft that are controllable
             # and are in the sector.
@@ -1473,7 +1458,7 @@ class BaseEnv(gym.Env):
         # simulator
         actions_rf_int, actions_st = self.actions_gym_to_simulator(action)
         to_send = []
-        for callsign in actions_st.keys():
+        for callsign in actions_st:
             if callsign is not None and DUMMY_CALLSIGN_PREFIX not in callsign and actions_st[callsign] is not None:
                 action_st = actions_st[callsign]
                 action_rf_int = actions_rf_int[callsign]
@@ -1511,7 +1496,6 @@ class BaseEnv(gym.Env):
         # (in `self.step_fn(...)`) after the simulation is evolved via a call
         # to evolve simulation (update implicity through `self.manager`)
         self.update_ac_tracker_prev_step(
-            self.ac_tracker,
             exclude=[
                 "future_trajectory",
                 "extra_future_trajectory",
@@ -1587,7 +1571,7 @@ class BaseEnv(gym.Env):
         # respective aircraft entered the airspace/sector.
         # note: when > 1 aircraft have the same entry timestep, such ties
         # need to be broken, use entry and exit flight levels and fixes
-        def lambda_fn(cs):
+        def lambda_fn(cs: str) -> tuple[int, Number, Number, str, str]:
             _sector = self.active_airspace_sector
             _en_coord = self.ac_tracker[cs].entry_coords[_sector]
             _ex_coord = self.ac_tracker[cs].exit_coords[_sector]
@@ -1641,7 +1625,7 @@ class BaseEnv(gym.Env):
             _ac_dummy = []
 
             for idx in range(n_ac - len(_callsigns)):
-                _callsigns_dummy.append("{0}{1}".format(DUMMY_CALLSIGN_PREFIX, idx))
+                _callsigns_dummy.append(f"{DUMMY_CALLSIGN_PREFIX}{idx}")
                 _ac_dummy.append(np.zeros(self.state_encoder.low.shape, dtype=np.float32))
         _state = [_state[cs] for cs in _callsigns] + _ac_dummy
         _callsigns += _callsigns_dummy
@@ -1677,9 +1661,9 @@ class BaseEnv(gym.Env):
 
         # a single element in the `actions_rf_int` and `actions_st`
         # dicts for the centralized set up
-        callsign_chosen = list(actions_st.keys())[0]
-        action_st = list(actions_st.values())[0]
-        action_rf = list(actions_rf_int.values())[0]
+        callsign_chosen = next(iter(actions_st.keys()))
+        action_st = next(iter(actions_st.values()))
+        action_rf = next(iter(actions_rf_int.values()))
         action = original_action
 
         # preparation for the block of code below
@@ -1752,7 +1736,7 @@ class BaseEnv(gym.Env):
         actions_in = {}  # action represented as `int` from the agent.
         actions_rf_in = {}  # action represented as `int` reformatted.
         actions_st = {}  # `int` action represented in `simulator` format.
-        for callsign in self.ac_tracker.keys():
+        for callsign in self.ac_tracker:
             actions_in[callsign] = ACTION_NOOP
             actions_rf_in[callsign] = ACTION_NOOP
             actions_st[callsign] = None
@@ -1763,7 +1747,7 @@ class BaseEnv(gym.Env):
             actions_st[callsign_chosen] = action_st
 
         # update aircraft tracker: dynamic data to continually track
-        for callsign in self.ac_tracker.keys():
+        for callsign in self.ac_tracker:
             self._update_dynamic_data(
                 callsign,
                 callsign_chosen=callsign_chosen,
@@ -1787,7 +1771,7 @@ class BaseEnv(gym.Env):
         self.traffic_monitor.update(self)
 
         # update the success metrics dictionary
-        for callsign in self.ac_success_metric.keys():
+        for callsign in self.ac_success_metric:
             prev_step_sm = self.ac_success_metric[callsign]
             self.ac_success_metric[callsign] = self.compute_success_metric(callsign, prev_step_sm)
 
@@ -1805,7 +1789,7 @@ class BaseEnv(gym.Env):
         ac_info = {}
         info = {}
 
-        for callsign in self.ac_tracker.keys():
+        for callsign in self.ac_tracker:
             ac_info[callsign] = {}
 
             # success metric
@@ -1819,7 +1803,7 @@ class BaseEnv(gym.Env):
             # rewards
             _rewards[callsign] = self.compute_reward(callsign, actions_rf_in[callsign])
 
-            if callsign in self.ac_tracker_prev_step.keys():
+            if callsign in self.ac_tracker_prev_step:
                 # previous step (p_) outcomm and position status
                 p_outcomm = self.ac_tracker_prev_step[callsign].outcomm_status
                 p_pos = self.ac_tracker_prev_step[callsign].pos_status
@@ -1846,7 +1830,7 @@ class BaseEnv(gym.Env):
                 # computation of rewards if the aircraft has not yet
                 # entered the controlled airspace. e.g., this if statement can
                 # be placed before a call to the reward function computation
-                for key in _rewards[callsign].keys():
+                for key in _rewards[callsign]:
                     _rewards[callsign][key] = 0.0
                 _final_reward_callsigns.append(callsign)
 
@@ -1866,7 +1850,7 @@ class BaseEnv(gym.Env):
                 if p_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
                     _final_reward_callsigns.append(callsign)
                 else:
-                    for key in _rewards[callsign].keys():
+                    for key in _rewards[callsign]:
                         _rewards[callsign][key] = 0.0
                     # do not include the aircraft in `_final_reward_callsigns`
 
@@ -1881,7 +1865,7 @@ class BaseEnv(gym.Env):
             # log action in info
             ac_info[callsign]["action_int"] = actions_in[callsign]
             ac_info[callsign]["action_reformat_int"] = actions_rf_in[callsign]
-            ac_info[callsign]["action_simulator"] = "{0}".format(actions_st[callsign])
+            ac_info[callsign]["action_simulator"] = f"{actions_st[callsign]}"
 
             # log diagnostics
             ac_info[callsign]["diagnostics"] = self._diagnostics(callsign)
@@ -1991,7 +1975,7 @@ class BaseEnv(gym.Env):
         #       actively tracked. Rather, keep aircraft in the active tracker.
 
         callsigns_to_move = []
-        for callsign in self.ac_tracker.keys():
+        for callsign in self.ac_tracker:
             # next/current (c_) outcomm and position status
             c_outcomm = self.ac_tracker[callsign].outcomm_status
             c_pos = self.ac_tracker[callsign].pos_status
@@ -2055,7 +2039,7 @@ class BaseEnv(gym.Env):
         self,
         actions_rf_int: dict[str, int],
         actions_st: dict[str, SimAction],
-        original_actions: dict[str, int],
+        original_actions: dict[str, int],  # noqa: ARG002
     ) -> tuple[
         dict[str, NDArray[numpy.float32]],
         dict[str, float],
@@ -2074,7 +2058,10 @@ class BaseEnv(gym.Env):
             actions_st: key specified the callsign of an aircraft and
                 value is the simulator action taken for the aircraft.
             original_actions: key specified the callsign of an aircraft and
-                value is the action taken for the aircraft.
+                value is the action taken for the aircraft. Added to maintain
+                the same function signature as `_step_centralized` even though
+                in the decentralized setup, the original action is already in
+                a dict format with callsign as key and action as value.
 
         Returns:
             A tuple, with elements next state, reward, done, truncated, and
@@ -2158,11 +2145,11 @@ class BaseEnv(gym.Env):
         callsigns_deleted = callsigns_to_move
 
         # update aircraft tracker: dynamic data to continually track
-        for callsign in self.ac_tracker.keys():
+        for callsign in self.ac_tracker:
             self._update_dynamic_data(
                 callsign,
                 aircraft_action=actions.get(callsign, ACTION_NOOP),
-                aircraft_sim_action=actions_st.get(callsign, None),
+                aircraft_sim_action=actions_st.get(callsign),
             )
 
         ###### useful note:
@@ -2181,7 +2168,7 @@ class BaseEnv(gym.Env):
         self.traffic_monitor.update(self)
 
         # update the success metrics dictionary
-        for callsign in self.ac_success_metric.keys():
+        for callsign in self.ac_success_metric:
             prev_step_sm = self.ac_success_metric[callsign]
             self.ac_success_metric[callsign] = self.compute_success_metric(callsign, prev_step_sm)
 
@@ -2199,7 +2186,7 @@ class BaseEnv(gym.Env):
         # callsigns that will be included in the done dict returned by env
         _final_dones = {}
 
-        for callsign in self.ac_tracker.keys():
+        for callsign in self.ac_tracker:
             info[callsign] = {}
 
             # success metric
@@ -2216,7 +2203,7 @@ class BaseEnv(gym.Env):
             act = actions.get(callsign, ACTION_NOOP)
             _rewards[callsign] = self.compute_reward(callsign, act)
 
-            if callsign in self.ac_tracker_prev_step.keys():
+            if callsign in self.ac_tracker_prev_step:
                 # previous step (p_) outcomm and position status
                 p_outcomm = self.ac_tracker_prev_step[callsign].outcomm_status
                 p_pos = self.ac_tracker_prev_step[callsign].pos_status
@@ -2243,7 +2230,7 @@ class BaseEnv(gym.Env):
                 # computation of rewards if aircraft has not entered
                 # the controlled airspace. e.g., this if system can
                 # be placed before a call to the reward function computation
-                for key in _rewards[callsign].keys():
+                for key in _rewards[callsign]:
                     _rewards[callsign][key] = 0.0
                 _final_reward_callsigns.append(callsign)
 
@@ -2263,7 +2250,7 @@ class BaseEnv(gym.Env):
                 if p_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
                     _final_reward_callsigns.append(callsign)
                 else:
-                    for key in _rewards[callsign].keys():
+                    for key in _rewards[callsign]:
                         _rewards[callsign][key] = 0.0
                     # do not include the aircraft in `_final_reward_callsigns`
 
@@ -2280,9 +2267,11 @@ class BaseEnv(gym.Env):
             if callsign in _final_reward_callsigns:
                 c_outcomm = self.ac_tracker[callsign].outcomm_status
                 c_pos = self.ac_tracker[callsign].pos_status
-                if c_pos == PositionStatus.EXIT_REACHED or c_outcomm is True:
-                    _final_dones[callsign] = True
-                elif c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is False:
+                if (
+                    c_pos == PositionStatus.EXIT_REACHED
+                    or c_outcomm is True
+                    or (c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is False)
+                ):
                     _final_dones[callsign] = True
                 else:
                     _final_dones[callsign] = False
@@ -2295,7 +2284,7 @@ class BaseEnv(gym.Env):
                 info[callsign]["action_simulator"] = None
             else:
                 info[callsign]["action_int"] = actions[callsign]
-                info[callsign]["action_simulator"] = "{0}".format(actions_st[callsign])
+                info[callsign]["action_simulator"] = f"{actions_st[callsign]}"
 
             # log diagnostics
             info[callsign]["diagnostics"] = self._diagnostics(callsign)
@@ -2374,11 +2363,11 @@ class BaseEnv(gym.Env):
 
         # check for done/truncated flag
         if self.timestep >= self.maxstep:
-            done = {callsign: True for callsign in _final_dones.keys()}
-            truncated = {callsign: True for callsign in _final_dones.keys()}
+            done = dict.fromkeys(_final_dones.keys(), True)
+            truncated = dict.fromkeys(_final_dones.keys(), True)
         else:
             done = _final_dones
-            truncated = {callsign: False for callsign in _final_dones.keys()}
+            truncated = dict.fromkeys(_final_dones.keys(), False)
 
         # mop up.
         # check for aircraft that the agent can no longer control.
@@ -2410,7 +2399,7 @@ class BaseEnv(gym.Env):
         #       actively tracked. Rather, keep aircraft in the active tracker.
 
         callsigns_to_move = []
-        for callsign in self.ac_tracker.keys():
+        for callsign in self.ac_tracker:
             # next/current (c_) outcomm and position status
             c_outcomm = self.ac_tracker[callsign].outcomm_status
             c_pos = self.ac_tracker[callsign].pos_status
@@ -2569,10 +2558,7 @@ class BaseEnv(gym.Env):
                 # outcomm status
                 # was an outcomm clearance issued (in the current time step),
                 # given that the aircraft is now out of sector?
-                if callsign in self._current_time_step_outcomm_buffer:
-                    outcomm_status = True
-                else:
-                    outcomm_status = prev_outcomm_status
+                outcomm_status = True if callsign in self._current_time_step_outcomm_buffer else prev_outcomm_status
                 distance_away_from_sector_exit = 0.0
 
                 # out of sector status (only active when the position status
@@ -2653,7 +2639,6 @@ class BaseEnv(gym.Env):
             exit_reached = at_exit_window(
                 ac,
                 self.ac_tracker[callsign].track_dist_to_exit_cr,  # filed route?
-                self.ac_tracker[callsign].sector_exit_pos,
                 self.ac_tracker[callsign].sector_exit_window,
             )
 
@@ -2693,10 +2678,7 @@ class BaseEnv(gym.Env):
                 distance_to_sector_entry = 0.0
 
                 # outcomm status
-                if callsign in self._current_time_step_outcomm_buffer:
-                    outcomm_status = True
-                else:
-                    outcomm_status = prev_outcomm_status
+                outcomm_status = True if callsign in self._current_time_step_outcomm_buffer else prev_outcomm_status
                 distance_away_from_sector_exit = 0.0
 
                 # out of sector status (only active when the position status
@@ -2740,10 +2722,7 @@ class BaseEnv(gym.Env):
                 distance_to_sector_entry = 0.0
 
                 # outcomm status
-                if callsign in self._current_time_step_outcomm_buffer:
-                    outcomm_status = True
-                else:
-                    outcomm_status = prev_outcomm_status
+                outcomm_status = True if callsign in self._current_time_step_outcomm_buffer else prev_outcomm_status
                 distance_away_from_sector_exit = 0.0
 
                 # out of sector status (only active when the position status
@@ -2829,8 +2808,7 @@ class BaseEnv(gym.Env):
         ac = simulator_env.aircraft[callsign]
         if ac.controllable:
             for str_fn, coeff in zip(
-                self.config.reward_config["fns"],
-                self.config.reward_config["coeffs"],
+                self.config.reward_config["fns"], self.config.reward_config["coeffs"], strict=True
             ):
                 fn = registry_reward_fn[str_fn]
                 rewards[str_fn] = coeff * fn(self, callsign, action)
@@ -2941,7 +2919,7 @@ class BaseEnv(gym.Env):
         the defined radar.
         """
 
-        def _mpl_to_rgb_array(figure, image_format):
+        def _mpl_to_rgb_array(figure: Figure, image_format: str = "png") -> NDArray[numpy.uint8]:
             import io
 
             from PIL import Image
@@ -2962,7 +2940,7 @@ class BaseEnv(gym.Env):
                 "(i.e., no render mode was specified). `render_mode` "
                 "can be specified as an argument at the initalization of "
                 "the environment. It can be set to one of the following: "
-                "{0}".format(self.metadata["render_modes"])
+                f"{self.metadata['render_modes']}"
             )
             return None
 
@@ -2978,35 +2956,35 @@ class BaseEnv(gym.Env):
         if self.render_mode == "file":
             filename = os.path.join(
                 self.config.radar_config["render_dir"],
-                "{0}_{1:03d}.png".format(self.config.radar_config["prefix"], self.timestep),
+                "{}_{:03d}.png".format(self.config.radar_config["prefix"], self.timestep),
             )
 
             self.radar.auto_display = False
 
             # draw frame
-            figure, ax = self.radar.draw(simulator_env, self._logged_actions)
+            figure, _ = self.radar.draw(simulator_env, self._logged_actions)
 
             # save the frame to disk.
             self.radar.save(filename)
 
             return None
 
-        elif self.render_mode == "human":
+        if self.render_mode == "human":
             self.radar.auto_display = True
 
             # draw frame
-            figure, ax = self.radar.draw(simulator_env, self._logged_actions)
+            figure, _ = self.radar.draw(simulator_env, self._logged_actions)
 
             # do nothing as the matplotlib handles drawing the radar
             # on screen when `self.radar.draw(...)` is called.
 
             return None
 
-        elif self.render_mode == "rgb_array":
+        if self.render_mode == "rgb_array":
             self.radar.auto_display = False
 
             # draw frame
-            figure, ax = self.radar.draw(simulator_env, self._logged_actions)
+            figure, _ = self.radar.draw(simulator_env, self._logged_actions)
 
             # save rgb image to buffer and return
             # shape: (height, width, channels)
@@ -3042,13 +3020,13 @@ class BaseEnv(gym.Env):
 
         filename = os.path.join(
             self.config.radar_config["render_dir"],
-            "{0}_{1:03d}.png".format(self.config.radar_config["prefix"], self.timestep),
+            "{}_{:03d}.png".format(self.config.radar_config["prefix"], self.timestep),
         )
 
         # rendered frame is saved to disk by default in the simulator
         self.radar.draw(simulator_env)
         if traj_dict is not None:
-            for callsign, trajectory in traj_dict.items():
+            for trajectory in traj_dict.values():
                 self.radar.draw_trajectory(trajectory)
 
         self.radar.save(os.path.splitext(filename)[0])
@@ -3123,7 +3101,7 @@ class BaseEnv(gym.Env):
             "next_fix_fr": self.ac_tracker[callsign].next_fix_fr,
             "previous_fix_cr": self.ac_tracker[callsign].previous_fix_cr,
             "next_fix_cr": self.ac_tracker[callsign].next_fix_cr,
-            "pos": "{0}".format(aircraft.pos3d()),
+            "pos": f"{aircraft.pos3d()}",
             "entry_fl": self.ac_tracker[callsign].entry_coords[self.active_airspace_sector].fl,
             "exit_fl": self.ac_tracker[callsign].exit_coords[self.active_airspace_sector].fl,
             "current_fl": aircraft.fl,
@@ -3208,7 +3186,7 @@ class BaseEnv(gym.Env):
 
             aircraft_action_map = {}
             for action_int, action_str in action_map.items():
-                if action_int == ACTION_NOOP:
+                if action_int == ACTION_NOOP:  # noqa: SIM108
                     # noop action stays the same in centralized setup
                     reformatted_action_int = action_int
                 else:

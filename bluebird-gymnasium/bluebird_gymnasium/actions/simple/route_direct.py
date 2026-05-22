@@ -59,7 +59,7 @@ def route_direct(
     forward_fixes_info = gym_env.get_forward_fixes_info()
     if value not in range(1, forward_fixes_info.num_fixes + 1):
         raise ValueError(
-            (f"`value` {value} should be set no higher than {forward_fixes_info.max_num_fixes} and no less than 1")
+            f"`value` {value} should be set no higher than {forward_fixes_info.max_num_fixes} and no less than 1"
         )
 
     simulator_env = gym_env.get_simulator_env()

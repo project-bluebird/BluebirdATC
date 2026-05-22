@@ -1,20 +1,23 @@
 from __future__ import annotations
 
+import typing
+
 import numpy as np
 from bluebird_dt.utility import convert
 
-from bluebird_gymnasium.envs.base import BaseEnv
 from bluebird_gymnasium.state_repr import (
     StateReprClipper as SRC,
+)
+from bluebird_gymnasium.state_repr import (
     StateReprScaler as SRS,
 )
 from bluebird_gymnasium.state_repr.base import BaseRepresentation
 from bluebird_gymnasium.utils.simulator_utils import get_n_forward_fixes
 
-import typing
-
 if typing.TYPE_CHECKING:
     import numpy.typing as npt
+
+    from bluebird_gymnasium.envs.base import BaseEnv
 
 
 class VanillaRepresentationRaw(BaseRepresentation):
@@ -88,7 +91,7 @@ class VanillaRepresentationRaw(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(VanillaRepresentationRaw, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
+        super().__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [-np.inf, 0.0]
@@ -164,10 +167,10 @@ class VanillaRepresentationRaw(BaseRepresentation):
         ####### neighbours features
         neighbours_feats = self.generate_neighbours_features(gym_env, callsign)
 
-        feats_list = [base_feats] + fixes_feats + neighbours_feats
+        feats_list = [base_feats, *fixes_feats, *neighbours_feats]
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -219,13 +222,13 @@ class VanillaRepresentationRaw(BaseRepresentation):
             fixes_feats.append(tmp)
 
         # zero padding
-        for idx in range(num_none_fixes):
+        for _ in range(num_none_fixes):
             tmp = np.zeros(self.num_features_per_fix, dtype=np.float32)
             fixes_feats.append(tmp)
 
         return fixes_feats
 
-    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -271,7 +274,7 @@ class VanillaRepresentationRaw(BaseRepresentation):
             interactions_features.append(tmp)
 
         # zero padding
-        for i in range(balance_count):
+        for _ in range(balance_count):
             tmp = np.zeros(self.num_features_per_neighbour, dtype=np.float32)
             interactions_features.append(tmp)
 
@@ -343,7 +346,7 @@ class VanillaRepresentation(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(VanillaRepresentation, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
+        super().__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [-3.0, -np.pi]
@@ -420,10 +423,10 @@ class VanillaRepresentation(BaseRepresentation):
         ####### neighbours features
         neighbours_feats = self.generate_neighbours_features(gym_env, callsign)
 
-        feats_list = [base_feats] + fixes_feats + neighbours_feats
+        feats_list = [base_feats, *fixes_feats, *neighbours_feats]
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -475,13 +478,13 @@ class VanillaRepresentation(BaseRepresentation):
             fixes_feats.append(tmp)
 
         # zero padding
-        for idx in range(num_none_fixes):
+        for _ in range(num_none_fixes):
             tmp = np.zeros(self.num_features_per_fix, dtype=np.float32)
             fixes_feats.append(tmp)
 
         return fixes_feats
 
-    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -528,7 +531,7 @@ class VanillaRepresentation(BaseRepresentation):
             interactions_features.append(tmp)
 
         # zero padding
-        for i in range(balance_count):
+        for _ in range(balance_count):
             tmp = np.zeros(self.num_features_per_neighbour, dtype=np.float32)
             interactions_features.append(tmp)
 

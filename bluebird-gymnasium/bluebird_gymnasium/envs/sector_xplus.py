@@ -53,7 +53,7 @@ class SectorXPlusEnv(BaseEnv):
         render_mode: str | None = None,
         config: EnvConfig | None = None,
     ):
-        super(SectorXPlusEnv, self).__init__(
+        super().__init__(
             render_mode,
             config,
         )
@@ -127,21 +127,17 @@ class SectorXPlusEnv(BaseEnv):
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
-        if suffix is None or suffix == "":
-            suffix = ""
-        else:
-            suffix = f"__{suffix}"
+        suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario}_{timestamp}{suffix}"
 
         ####### setup the sim env manager
-        sim = self.scenario_manager.to_simulator(
+        return self.scenario_manager.to_simulator(
             category=category,
             scenario_name=scenario,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,  # use the default in the scenario.
         )
-        return sim
 
     @classmethod
     def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
@@ -161,7 +157,7 @@ class SectorXPlusEnv(BaseEnv):
 
         if view_type not in ViewType:
             raise ValueError(f"{view_type} is not a valid value of {ViewType}")
-        elif isinstance(view_type, ViewType):
+        if isinstance(view_type, ViewType):
             view_type = view_type.value
 
         # airspace
@@ -292,7 +288,7 @@ if __name__ == "__main__":
         print(obs)
         pprint(info)
         for idx in range(20):
-            actions = {callsign: 0 for callsign in obs.keys()}
+            actions = dict.fromkeys(obs.keys(), 0)
             obs, reward, done, truncated, info = env.step(actions)
             print(idx, obs)
             pprint(info)

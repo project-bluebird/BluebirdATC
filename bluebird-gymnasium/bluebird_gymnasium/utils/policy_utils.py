@@ -1,16 +1,17 @@
 from __future__ import annotations
+
 import typing
 
 from bluebird_dt.core import Action
 
 from bluebird_gymnasium.actions import ACTION_NOOP
-from bluebird_gymnasium.utils.types import PositionStatus
 from bluebird_gymnasium.utils.geo_utils import angle_diff, left_right_check
 from bluebird_gymnasium.utils.simulator_utils import aircraft_exit_coordination
-from bluebird_gymnasium.utils.types import TurnDirection
+from bluebird_gymnasium.utils.types import PositionStatus, TurnDirection
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.environment import Environment as SimulatorEnv
+
     from bluebird_gymnasium.envs.base import BaseEnv
 
 
@@ -37,7 +38,7 @@ def _get_relevant_data(
 
 def default_outcomm_policy_simple(
     gym_env: BaseEnv,
-    external_agent_actions: dict[str, int],
+    external_agent_actions: dict[str, int],  # noqa: ARG001
     exit_distance_threshold: float = 10.0,
     angle_threshold: float = 5.0,
     single_action: bool = True,
@@ -160,7 +161,7 @@ def default_outcomm_policy_simple(
                 "policy should have outcommed aircraft in this status except "
                 "it is limited by a per step single action."
             )
-            assert False, _msg
+            raise AssertionError(_msg)
 
         # another sanity check
         assert ac_tracked_data.pos_status == PositionStatus.IN_SECTOR
@@ -231,17 +232,7 @@ def default_outcomm_policy_simple(
             # issue an outcomm clearance
             actions[callsign] = action
             outcomm_priorities[callsign] = OUTCOMM_PRIORITY_MEDIUM
-        elif cond_3_1 and cond_3_2 and cond_3_3:
-            if not gym_env.out_sector_control:
-                # issue an outcomm clearance
-                actions[callsign] = action
-                outcomm_priorities[callsign] = OUTCOMM_PRIORITY_HIGH
-        elif cond_4_1 and cond_4_2:
-            if not gym_env.out_sector_control:
-                # issue an outcomm clearance
-                actions[callsign] = action
-                outcomm_priorities[callsign] = OUTCOMM_PRIORITY_HIGH
-        elif cond_5_1 and cond_5_2:
+        elif (cond_3_1 and cond_3_2 and cond_3_3) or (cond_4_1 and cond_4_2) or (cond_5_1 and cond_5_2):
             if not gym_env.out_sector_control:
                 # issue an outcomm clearance
                 actions[callsign] = action
@@ -507,12 +498,13 @@ def default_outcomm_policy_lenient(
             actions_incr_hd = action_parser.get_heading_right_actions()
             actions_set_hd = action_parser.get_absolute_heading_actions()
 
-            if turn_dir == TurnDirection.LEFT and ext_action in (actions_incr_hd + actions_set_hd):
-                pass
-            elif turn_dir == TurnDirection.RIGHT and ext_action in (actions_decr_hd + actions_set_hd):
-                pass
-            elif turn_dir == TurnDirection.NO_TURN and ext_action in (
-                actions_decr_hd + actions_incr_hd + actions_set_hd
+            if (
+                (turn_dir == TurnDirection.LEFT and ext_action in (actions_incr_hd + actions_set_hd))
+                or (turn_dir == TurnDirection.RIGHT and ext_action in (actions_decr_hd + actions_set_hd))
+                or (
+                    turn_dir == TurnDirection.NO_TURN
+                    and ext_action in (actions_decr_hd + actions_incr_hd + actions_set_hd)
+                )
             ):
                 pass
             else:
@@ -586,7 +578,7 @@ def default_outcomm_policy_lenient(
 
 def default_outcomm_policy(
     gym_env: BaseEnv,
-    external_agent_actions: dict[str, int],
+    external_agent_actions: dict[str, int],  # noqa: ARG001
     exit_distance_threshold: float = 10.0,
     angle_threshold: float = 5.0,
     single_action: bool = True,

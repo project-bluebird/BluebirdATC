@@ -8,7 +8,9 @@ from bluebird_gymnasium.utils.geo_utils import angle_diff
 from bluebird_gymnasium.utils.simulator_utils import prev_next_fixes
 
 
-def lateral_next_fix_proximity_bpfnf(gym_env: BaseEnv, callsign: str, action: int, next_fix_idx: int, **kwargs):
+def lateral_next_fix_proximity_bpfnf(
+    gym_env: BaseEnv, callsign: str, action: int, next_fix_idx: int, **kwargs # noqa: ARG001, ANN003
+) -> float:
     """Reward for aircraft's proximity to next fix.
 
     Computed based on the aircraft's lateral distance from the next fix.
@@ -38,7 +40,7 @@ def lateral_next_fix_proximity_bpfnf(gym_env: BaseEnv, callsign: str, action: in
     return -1.0 * reward
 
 
-def lateral_next_fix_proximity_bacnf(gym_env: BaseEnv, callsign: str, action: int, **kwargs):
+def lateral_next_fix_proximity_bacnf(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for aircraft's proximity to next fix.
 
     Computed based on the aircraft's lateral distance from the next fix.
@@ -64,9 +66,9 @@ def lateral_next_fix_proximity_bacnf(gym_env: BaseEnv, callsign: str, action: in
         # route in its flight plan. raise a warning for now and
         # set the next fix as the last fix on its current route.
         warnings.warn(
-            "{0} has likely gotten to the end of its"
+            f"{callsign} has likely gotten to the end of its"
             " planned route. Therefore, there's no next fix. Assuming next"
-            " fix as the last fix on its planned route".format(callsign),
+            " fix as the last fix on its planned route",
             UserWarning,
             stacklevel=0,
         )
@@ -84,7 +86,7 @@ def lateral_next_fix_proximity_bacnf(gym_env: BaseEnv, callsign: str, action: in
     return -1.0 * reward
 
 
-def lateral_next_fix_proximity_dist_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs):
+def lateral_next_fix_proximity_dist_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for aircraft's proximity to next fix.
 
     Computed based on the aircraft's lateral distance from the next fix.

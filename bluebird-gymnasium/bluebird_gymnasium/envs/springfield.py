@@ -4,9 +4,10 @@ import datetime
 import string
 import typing
 
+from bluebird_dt.predictor import LinearPredictor
+
 # simulator package
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager
-from bluebird_dt.predictor import LinearPredictor
 
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import CentralizedSampler, EnvConfig, ViewType
@@ -61,7 +62,7 @@ class SpringfieldEnv(BaseEnv):
         render_mode: str | None = None,
         config: EnvConfig | None = None,
     ):
-        super(SpringfieldEnv, self).__init__(
+        super().__init__(
             render_mode,
             config,
         )
@@ -116,14 +117,11 @@ class SpringfieldEnv(BaseEnv):
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
-        if suffix is None or suffix == "":
-            suffix = ""
-        else:
-            suffix = f"__{suffix}"
+        suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario}_{timestamp}{suffix}"
 
         # set up simulator manager
-        sim = self.scenario_manager.to_simulator(
+        return self.scenario_manager.to_simulator(
             category=category,
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
@@ -132,7 +130,6 @@ class SpringfieldEnv(BaseEnv):
             log_filename=log_filename,
             predictor=None,  # use the default in the scenario
         )
-        return sim
 
     def step(self, action: ActionType) -> tuple[ObsType, RewardType, DoneType, TruncatedType, InfoType]:
         obs, reward, done, truncated, info = super().step(action)
@@ -168,7 +165,7 @@ class SpringfieldEnv(BaseEnv):
 
         if view_type not in ViewType:
             raise ValueError(f"{view_type} is not a valid value of {ViewType}")
-        elif isinstance(view_type, ViewType):
+        if isinstance(view_type, ViewType):
             view_type = view_type.value
 
         # airspace
@@ -308,7 +305,7 @@ if __name__ == "__main__":
         print(obs)
         pprint(info)
         for idx in range(50):
-            actions = {callsign: 0 for callsign in obs.keys()}
+            actions = dict.fromkeys(obs.keys(), 0)
             obs, reward, done, truncated, info = env.step(actions)
             print(idx, obs)
             pprint(info)

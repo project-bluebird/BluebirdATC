@@ -2,19 +2,19 @@ import typing
 from dataclasses import dataclass
 from enum import Enum, EnumMeta, IntEnum
 
+from bluebird_dt.core.coordination import Coordination
 from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.core.pos4d import Pos4D
-from bluebird_dt.core.coordination import Coordination
 
 # type alias
-Number: typing.TypeAlias = typing.Union[int, float]
+Number: typing.TypeAlias = int | float
 Line: typing.TypeAlias = tuple[Pos2D, Pos2D]
 
 
 ####### enums
 class MetaEnum(EnumMeta):
     # support for python < 3.12
-    def __contains__(cls, item):
+    def __contains__(cls, item: object) -> bool:
         try:
             cls(item)
         except ValueError:
@@ -25,7 +25,7 @@ class MetaEnum(EnumMeta):
 class StrEnum(str, Enum):
     # support for python < 3.11
     @staticmethod
-    def _generate_next_value_(name, start, count, last_values) -> str:
+    def _generate_next_value_(name: str, start: int, count: int, last_values: list) -> str: # noqa: ARG004
         return name.lower()
 
     def __str__(self) -> str:
@@ -209,13 +209,13 @@ class NamedLine:
     def start_position(self) -> Pos2D:
         return self.line[0]
 
-    def end_position(self, end) -> Pos2D:
+    def end_position(self) -> Pos2D:
         return self.line[1]
 
     def start_position_name(self) -> str | None:
         return self.name[0]
 
-    def end_position_name(self, end) -> str | None:
+    def end_position_name(self) -> str | None:
         return self.name[1]
 
     def get_line(self) -> Line:

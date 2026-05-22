@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import numpy as np
 import typing
 
+import numpy as np
 from bluebird_dt.utility import convert
 
-from bluebird_gymnasium.envs.base import BaseEnv
 from bluebird_gymnasium.state_repr import (
     StateReprClipper as SRC,
+)
+from bluebird_gymnasium.state_repr import (
     StateReprScaler as SRS,
 )
 from bluebird_gymnasium.state_repr.base import BaseRepresentation
@@ -20,6 +21,8 @@ from bluebird_gymnasium.utils.geo_utils import (
 from bluebird_gymnasium.utils.simulator_utils import (
     distance_to_target_pos_along_route,
     get_n_forward_fixes,
+)
+from bluebird_gymnasium.utils.simulator_utils import (
     get_aircraft_selected_heading as _selected_heading,
 )
 from bluebird_gymnasium.utils.types import PositionStatus
@@ -27,6 +30,7 @@ from bluebird_gymnasium.utils.types import PositionStatus
 if typing.TYPE_CHECKING:
     import numpy.typing as npt
 
+    from bluebird_gymnasium.envs.base import BaseEnv
     from bluebird_gymnasium.utils.types import Line
 
 
@@ -230,7 +234,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(RelativeRepresentationRaw, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
+        super().__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [
@@ -408,7 +412,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
 
         # difference between the previous and current track (current route)
         # distance to exit
-        if callsign in prev_tracked_data.keys():
+        if callsign in prev_tracked_data:
             prev_dist_ac_exit = prev_tracked_data[callsign].track_dist_to_exit_cr
         else:
             # aircraft tracking just started (either was just spawned or
@@ -433,16 +437,10 @@ class RelativeRepresentationRaw(BaseRepresentation):
         # aircraft route following status: indicates whether or not the
         # aircraft is following its defined flight plan route, or not (in this
         # case, flying on a heading issued by the agent).
-        if aircraft.on_route is True:
-            route_ff_status = 1.0
-        else:
-            route_ff_status = -1.0
+        route_ff_status = 1.0 if aircraft.on_route else -1.0
 
         # aircraft position indicator: in-sector or out of sector
-        if tracked_data[callsign].pos_status == PositionStatus.IN_SECTOR:
-            pos_status = 1.0
-        else:
-            pos_status = -1.0
+        pos_status = 1.0 if tracked_data[callsign].pos_status == PositionStatus.IN_SECTOR else -1.0
 
         # aircraft position status measurement:
         bearing_ac_nb_360 = tracked_data[callsign].nearest_360_boundary_bear
@@ -550,10 +548,10 @@ class RelativeRepresentationRaw(BaseRepresentation):
         ####### neighbours features
         neighbours_feats = self.generate_neighbours_features(gym_env, callsign)
 
-        feats_list = [base_feats] + fixes_feats + neighbours_feats
+        feats_list = [base_feats, *fixes_feats, *neighbours_feats]
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -608,12 +606,14 @@ class RelativeRepresentationRaw(BaseRepresentation):
         if _next_fix_idx == 0:
             prev_fixes_pos = [
                 tracked_data[callsign].pos_at_last_route_direct,
-            ] + next_fixes_pos[:-1]
+                *next_fixes_pos[:-1]
+            ]
         else:
             _prev_fix = route[_next_fix_idx - 1]
             prev_fixes_pos = [
                 simulator_env.airspace.fixes.places[_prev_fix],
-            ] + next_fixes_pos[:-1]
+                *next_fixes_pos[:-1]
+            ]
 
         # generate the features for each forward fix
         curr_route_start_pos = tracked_data[callsign].pos_at_last_route_direct
@@ -626,7 +626,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
         linear_dists_ac_nfs = []
         track_dists_ac_nfs = []
         in_sector_segments_ac_nfs = []
-        for prev_fix_pos, fix_pos in zip(prev_fixes_pos, next_fixes_pos):
+        for prev_fix_pos, fix_pos in zip(prev_fixes_pos, next_fixes_pos, strict=True):
             # relative angular diff b/w heading and bearing to next fix
             bearing_ac_nf = ac_pos.bearing_to(fix_pos)
             angle_diff_ac_nf = angle_diff(aircraft.heading, bearing_ac_nf)
@@ -702,13 +702,13 @@ class RelativeRepresentationRaw(BaseRepresentation):
             fixes_feats.append(tmp)
 
         # zero padding
-        for idx in range(num_none_fixes):
+        for _ in range(num_none_fixes):
             tmp = np.zeros(self.num_features_per_fix, dtype=np.float32)
             fixes_feats.append(tmp)
 
         return fixes_feats
 
-    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -754,7 +754,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
 
             controllable = None
             _cs = callsign_other
-            if _cs not in tracked_data.keys():
+            if _cs not in tracked_data:
                 controllable = -1.0
             elif (
                 tracked_data[_cs].pos_status == PositionStatus.IN_SECTOR
@@ -782,7 +782,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
             interactions_features.append(tmp)
 
         # zero padding
-        for i in range(balance_count):
+        for _ in range(balance_count):
             tmp = np.zeros(self.num_features_per_neighbour, dtype=np.float32)
             interactions_features.append(tmp)
 
@@ -978,7 +978,7 @@ class RelativeRepresentation(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(RelativeRepresentation, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
+        super().__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [
@@ -1157,7 +1157,7 @@ class RelativeRepresentation(BaseRepresentation):
 
         # difference between the previous and current track (current route)
         # distance to exit
-        if callsign in prev_tracked_data.keys():
+        if callsign in prev_tracked_data:
             prev_dist_ac_exit = prev_tracked_data[callsign].track_dist_to_exit_cr
         else:
             # aircraft tracking just started (either was just spawned or
@@ -1182,16 +1182,10 @@ class RelativeRepresentation(BaseRepresentation):
         # aircraft route following status: indicates whether or not the
         # aircraft is following its defined flight plan route, or not (in this
         # case, flying on a heading issued by the agent).
-        if aircraft.on_route is True:
-            route_ff_status = 1.0
-        else:
-            route_ff_status = -1.0
+        route_ff_status = 1.0 if aircraft.on_route else -1.0
 
         # aircraft position indicator: in-sector or out of sector
-        if tracked_data[callsign].pos_status == PositionStatus.IN_SECTOR:
-            pos_status = 1.0
-        else:
-            pos_status = -1.0
+        pos_status = 1.0 if tracked_data[callsign].pos_status == PositionStatus.IN_SECTOR else -1.0
 
         # aircraft position status measurement:
         bearing_ac_nb_360 = tracked_data[callsign].nearest_360_boundary_bear
@@ -1335,10 +1329,10 @@ class RelativeRepresentation(BaseRepresentation):
         ####### neighbours features
         neighbours_feats = self.generate_neighbours_features(gym_env, callsign)
 
-        feats_list = [base_feats] + fixes_feats + neighbours_feats
+        feats_list = [base_feats, *fixes_feats, *neighbours_feats]
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -1393,12 +1387,14 @@ class RelativeRepresentation(BaseRepresentation):
         if _next_fix_idx == 0:
             prev_fixes_pos = [
                 tracked_data[callsign].pos_at_last_route_direct,
-            ] + next_fixes_pos[:-1]
+                *next_fixes_pos[:-1]
+            ]
         else:
             _prev_fix = route[_next_fix_idx - 1]
             prev_fixes_pos = [
                 simulator_env.airspace.fixes.places[_prev_fix],
-            ] + next_fixes_pos[:-1]
+                *next_fixes_pos[:-1]
+            ]
 
         # generate the features for each forward fix
         curr_route_start_pos = tracked_data[callsign].pos_at_last_route_direct
@@ -1411,7 +1407,7 @@ class RelativeRepresentation(BaseRepresentation):
         linear_dists_ac_nfs = []
         track_dists_ac_nfs = []
         in_sector_segments_ac_nfs = []
-        for prev_fix_pos, fix_pos in zip(prev_fixes_pos, next_fixes_pos):
+        for prev_fix_pos, fix_pos in zip(prev_fixes_pos, next_fixes_pos, strict=True):
             # relative angular diff b/w heading and bearing to next fix
             bearing_ac_nf = ac_pos.bearing_to(fix_pos)
             angle_diff_ac_nf = angle_diff(aircraft.heading, bearing_ac_nf)
@@ -1489,13 +1485,13 @@ class RelativeRepresentation(BaseRepresentation):
             fixes_feats.append(tmp)
 
         # zero padding
-        for idx in range(num_none_fixes):
+        for _ in range(num_none_fixes):
             tmp = np.zeros(self.num_features_per_fix, dtype=np.float32)
             fixes_feats.append(tmp)
 
         return fixes_feats
 
-    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -1541,7 +1537,7 @@ class RelativeRepresentation(BaseRepresentation):
 
             controllable = None
             _cs = callsign_other
-            if _cs not in tracked_data.keys():
+            if _cs not in tracked_data:
                 controllable = -1.0
             elif (
                 tracked_data[_cs].pos_status == PositionStatus.IN_SECTOR
@@ -1584,7 +1580,7 @@ class RelativeRepresentation(BaseRepresentation):
             interactions_features.append(tmp)
 
         # zero padding
-        for i in range(balance_count):
+        for _ in range(balance_count):
             tmp = np.zeros(self.num_features_per_neighbour, dtype=np.float32)
             interactions_features.append(tmp)
 

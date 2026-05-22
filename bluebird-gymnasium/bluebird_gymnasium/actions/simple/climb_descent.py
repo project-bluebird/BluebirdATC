@@ -3,13 +3,12 @@ from __future__ import annotations
 import typing
 
 import numpy as np
-
 from bluebird_dt.core import Action
+
 from bluebird_gymnasium.actions import (
     DEFAULT_INTERVAL_FL,
     DEFAULT_RELATIVE_CLIMB_DESCENT,
 )
-
 from bluebird_gymnasium.utils.interaction_utils import (
     get_optimal_unblocked_flight_level,
 )
@@ -46,7 +45,7 @@ def fl_climb(
 
     if value <= 0:
         raise ValueError("`value` should be a positive integer")
-    elif value % DEFAULT_INTERVAL_FL != 0:
+    if value % DEFAULT_INTERVAL_FL != 0:
         raise ValueError(f"`value` should be in intervals of {DEFAULT_INTERVAL_FL}")
 
     value = int(value)
@@ -81,7 +80,7 @@ def fl_descent(
 
     if value <= 0:
         raise ValueError("`value` should be a positive integer")
-    elif value % DEFAULT_INTERVAL_FL != 0:
+    if value % DEFAULT_INTERVAL_FL != 0:
         raise ValueError(f"`value` should be in intervals of {DEFAULT_INTERVAL_FL}")
 
     value = int(value)

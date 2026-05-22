@@ -1,20 +1,23 @@
 from __future__ import annotations
 
+import typing
+
 import numpy as np
 from bluebird_dt.utility import convert
 
 from bluebird_gymnasium.state_repr import (
     StateReprClipper as SRC,
+)
+from bluebird_gymnasium.state_repr import (
     StateReprScaler as SRS,
 )
 from bluebird_gymnasium.state_repr.base import BaseRepresentation
 from bluebird_gymnasium.utils.simulator_utils import east_north_ground_speed
 
-import typing
-
 if typing.TYPE_CHECKING:
     import numpy.typing as npt
     from bluebird_dt.core import Environment as SimulatorEnv
+
     from bluebird_gymnasium.envs.base import BaseEnv
     from bluebird_gymnasium.utils.types import ACStateTracker
 
@@ -155,7 +158,7 @@ class DrlanRepresentationRaw(BaseRepresentation):
         if num_actions is None or num_actions < 1:
             raise ValueError("`num_actions` argument must be set to an integer value >= 1.")
 
-        super(DrlanRepresentationRaw, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
+        super().__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         # range for previous action feature vector
         low_prev_action = [
@@ -307,12 +310,10 @@ class DrlanRepresentationRaw(BaseRepresentation):
         ####### neighbours features
         neighbours_feats = self.generate_neighbours_features(gym_env, callsign)
 
-        feats_list = [
-            base_feats,
-        ] + neighbours_feats
+        feats_list = [base_feats, *neighbours_feats]
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -398,7 +399,7 @@ class DrlanRepresentationRaw(BaseRepresentation):
             interactions_features.append(tmp)
 
         # zero padding
-        for i in range(balance_count):
+        for _ in range(balance_count):
             # number of each neighbour (other) aircraft features.
             _num_features = (
                 8  # eight scalar features
@@ -510,7 +511,7 @@ class DrlanRepresentation(BaseRepresentation):
         if num_actions is None:
             raise ValueError("`num_actions` argument must be set.")
 
-        super(DrlanRepresentation, self).__init__(knn, num_forward_fixes, use_filed_route, num_actions)
+        super().__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         # range for previous action feature vector
         low_prev_action = [
@@ -668,12 +669,10 @@ class DrlanRepresentation(BaseRepresentation):
         ####### neighbours features
         neighbours_feats = self.generate_neighbours_features(gym_env, callsign)
 
-        feats_list = [
-            base_feats,
-        ] + neighbours_feats
+        feats_list = [base_feats, *neighbours_feats]
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -769,7 +768,7 @@ class DrlanRepresentation(BaseRepresentation):
             interactions_features.append(tmp)
 
         # zero padding
-        for i in range(balance_count):
+        for _ in range(balance_count):
             # number of each neighbour (other) aircraft features.
             _num_features = (
                 8  # eight scalar features

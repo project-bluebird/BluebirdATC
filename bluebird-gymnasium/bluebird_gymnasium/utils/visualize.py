@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import shutil
 import sys
+import typing
 
 import gymnasium as gym
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from bluebird_gymnasium.envs import registry_env
-
-import typing
 
 if typing.TYPE_CHECKING:
     from bluebird_gymnasium.envs.base import BaseEnv
@@ -17,7 +16,7 @@ if typing.TYPE_CHECKING:
 
 # sort out macOS matplotlib backend issues
 if sys.platform == "darwin":
-    matplotlib.use("macOSX")  # backend TKAgg also works
+    mpl.use("macOSX")  # backend TKAgg also works
 
 
 def visualize_airspace(env: BaseEnv, render_mode: str = "rgb_array", clean_up: bool = True):
@@ -43,8 +42,8 @@ def visualize_airspace(env: BaseEnv, render_mode: str = "rgb_array", clean_up: b
 
     # set up env if necessary
     if isinstance(env, str):
-        if env not in registry_env.keys():
-            raise ValueError("{0} not found. Specify one of the following: {1}".format(env, list(registry_env.keys())))
+        if env not in registry_env:
+            raise ValueError(f"{env} not found. Specify one of the following: {list(registry_env.keys())}")
         env = registry_env.get(env)(render_mode=render_mode)
         prev_mode = None
     else:

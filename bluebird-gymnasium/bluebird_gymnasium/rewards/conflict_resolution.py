@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import numpy as np
 import typing
+
+import numpy as np
 
 from bluebird_gymnasium.utils.geo_utils import project_x_from_range_to_range
 from bluebird_gymnasium.utils.interaction_utils import (
@@ -13,6 +14,7 @@ from bluebird_gymnasium.utils.types import PositionStatus
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.environment import Environment as SimulatorEnv
+
     from bluebird_gymnasium.envs.base import BaseEnv
     from bluebird_gymnasium.utils.types import (
         ACStateTracker,
@@ -260,7 +262,7 @@ def get_overlap_coeff(
     return coeff
 
 
-def conflict_resolution_tanh(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
+def conflict_resolution_tanh(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
     """Reward for resolving conflict through heading deconfliction strategy.
 
     Note: when there are no conflict to resolve, a 0.0 reward is returned.
@@ -338,7 +340,7 @@ def conflict_resolution_tanh(gym_env: BaseEnv, callsign: str, action: int, **kwa
     return 0.0 if len(_rewards) == 0 else float(np.sum(_rewards))
 
 
-def conflict_resolution_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
+def conflict_resolution_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
     """Reward for resolving conflict through heading deconfliction strategy.
 
     Note: when there are no conflict to resolve, a 0.0 reward is returned.

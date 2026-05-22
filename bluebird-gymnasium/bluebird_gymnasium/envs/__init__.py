@@ -2,11 +2,12 @@
 # added first before import envs module to prevent circular import
 
 ## types
-import numpy
 import typing
 from dataclasses import dataclass
-from numpy.typing import NDArray
 from typing import TypeAlias
+
+import numpy  # noqa: ICN001
+from numpy.typing import NDArray
 
 ActionConfig: TypeAlias = dict[str, bool | list[int]]
 AirspaceConfig: TypeAlias = dict[str, None | bool | str | list]
@@ -17,28 +18,29 @@ ScenarioConfig: TypeAlias = dict[str, str | dict | int | float]
 SimulationLogConfig: TypeAlias = dict[str, bool | str]
 StateReprConfig: TypeAlias = dict[str, bool | str]
 ViewConfig: TypeAlias = dict[str, str | dict]
-Config: TypeAlias = typing.Union[
-    ActionConfig,
-    AirspaceConfig,
-    ForwardFixesConfig,
-    RadarConfig,
-    RewardConfig,
-    ScenarioConfig,
-    SimulationLogConfig,
-    StateReprConfig,
-    ViewConfig,
-]
+Config: TypeAlias = (
+    ActionConfig
+    | AirspaceConfig
+    | ForwardFixesConfig
+    | RadarConfig
+    | RewardConfig
+    | ScenarioConfig
+    | SimulationLogConfig
+    | StateReprConfig
+    | ViewConfig
+)
 
-ObsType: TypeAlias = typing.Union[NDArray[numpy.float32], dict[str, NDArray[numpy.float32]]]
-RewardType: TypeAlias = typing.Union[float, dict[str, float]]
-DoneType: TypeAlias = typing.Union[bool, dict[str, bool]]
-TruncatedType: TypeAlias = typing.Union[bool, dict[str, bool]]
-InfoType: TypeAlias = typing.Union[dict[str, typing.Any], dict[str, dict[str, typing.Any]]]
-ActionType: TypeAlias = typing.Union[int, dict[str, int]]
+ObsType: TypeAlias = NDArray[numpy.float32] | dict[str, NDArray[numpy.float32]]
+RewardType: TypeAlias = float | dict[str, float]
+DoneType: TypeAlias = bool | dict[str, bool]
+TruncatedType: TypeAlias = bool | dict[str, bool]
+InfoType: TypeAlias = dict[str, typing.Any] | dict[str, dict[str, typing.Any]]
+ActionType: TypeAlias = int | dict[str, int]
 
 
 ## enums
 from enum import IntEnum  # noqa: E402
+
 from bluebird_gymnasium.utils.types import MetaEnum, StrEnum  # noqa: E402
 
 
@@ -149,12 +151,12 @@ class EnvConfig:
 
 
 # aircraft scenario generator class(es)
-from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager  # noqa: E402
 from bluebird_dt.scenario_manager import (  # noqa: E402
     Regular,
     Tactical,
     TwoAircraft,
 )
+from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager  # noqa: E402
 
 SCENARIO_CLS: dict[str, ScenarioManager] = {
     "regular": Regular,
@@ -197,12 +199,9 @@ available_names = ", ".join(name_to_gym_key.values())
 available_gym_keys = ", ".join(name_to_gym_key.keys())
 
 
-def get_gym_key(env_name):
+def get_gym_key(env_name: str) -> str:
     for gym_key, name in name_to_gym_key.items():
-        if env_name == name:
-            return gym_key
-
-        elif env_name == gym_key:
+        if env_name in (name, gym_key):
             return gym_key
 
     raise ValueError(
@@ -212,25 +211,24 @@ def get_gym_key(env_name):
     )
 
 
-def get_default_config(env_name: str) -> Config:
-    if env_name in name_to_gym_key.keys():
+def get_default_config(env_name: str) -> EnvConfig:
+    if env_name in name_to_gym_key:
         env_cls = registry_env.get(env_name)
         return env_cls.get_default_env_config()
 
-    elif env_name in name_to_gym_key.values():
+    if env_name in name_to_gym_key.values():
         env_name = get_gym_key(env_name)
         env_cls = registry_env.get(env_name)
         return env_cls.get_default_env_config()
 
-    else:
-        raise ValueError(
-            f"Environment '{env_name}' not found. Environment name"
-            f" can be specified using a name in: {available_names}"
-            f" or a gym key in: {available_gym_keys}"
-        )
+    raise ValueError(
+        f"Environment '{env_name}' not found. Environment name"
+        f" can be specified using a name in: {available_names}"
+        f" or a gym key in: {available_gym_keys}"
+    )
 
 
-def get_env_cls_and_config(env_name):
+def get_env_cls_and_config(env_name: str) -> tuple[type[BaseEnv], EnvConfig]:
     env_name = get_gym_key(env_name)
     config = get_default_config(env_name)
 
@@ -246,11 +244,11 @@ __all__ = [
     "SectorXPlusEnv",
     "SectorYEnv",
     "SpringfieldEnv",
-    "registry_env",
-    "name_to_gym_key",
-    "available_names",
     "available_gym_keys",
-    "get_gym_key",
+    "available_names",
     "get_default_config",
     "get_env_cls_and_config",
+    "get_gym_key",
+    "name_to_gym_key",
+    "registry_env",
 ]

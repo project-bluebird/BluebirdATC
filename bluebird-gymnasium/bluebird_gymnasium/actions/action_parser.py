@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing
+
 from bluebird_dt.core import Action
 
 from bluebird_gymnasium.actions import (
@@ -12,10 +14,7 @@ from bluebird_gymnasium.actions import (
     NUM_NOOP_ACTIONS,
     registry_actions,
 )
-
 from bluebird_gymnasium.utils.simulator_utils import get_aircraft_selected_cas
-
-import typing
 
 if typing.TYPE_CHECKING:
     from bluebird_gymnasium.envs import ActionConfig
@@ -71,7 +70,7 @@ def validate_action_list(action_name: str, data_list: list[Number]) -> tuple[boo
     """
 
     # check 1: the items in the list should be integers or floats
-    positive_num_status = [(isinstance(v, int) or isinstance(v, float)) and (v > 0) for v in data_list]
+    positive_num_status = [isinstance(v, (int, float)) and (v > 0) for v in data_list]
     positive_num_status = all(positive_num_status)
     if not positive_num_status:
         msg = (
@@ -90,7 +89,7 @@ def validate_action_list(action_name: str, data_list: list[Number]) -> tuple[boo
 
 
 class ActionParser:
-    supported_actions: list[str] = [
+    supported_actions: tuple[str] = [
         # noop
         "action_noop",
         # heading
@@ -141,7 +140,7 @@ class ActionParser:
                         raise ValueError(msg)
 
                 for v in param:
-                    _name = "{0}__{1}".format(action_name, v)
+                    _name = f"{action_name}__{v}"
                     self._action_formatter_map[num_actions + 1] = _name
                     num_actions += 1
 
@@ -168,31 +167,31 @@ class ActionParser:
                 if action_name in _to_check_heading:
                     # use a default value since a list of parameter values
                     # was not specified
-                    _name = "{0}__{1}".format(action_name, DEFAULT_RELATIVE_HEADING)
+                    _name = f"{action_name}__{DEFAULT_RELATIVE_HEADING}"
                     self._action_formatter_map[num_actions + 1] = _name
 
                 elif action_name in _to_check_climb_descent:
                     # use a default value since a list of parameter values
                     # was not specified
-                    _name = "{0}__{1}".format(action_name, DEFAULT_RELATIVE_CLIMB_DESCENT)
+                    _name = f"{action_name}__{DEFAULT_RELATIVE_CLIMB_DESCENT}"
                     self._action_formatter_map[num_actions + 1] = _name
 
                 elif action_name in _to_check_speed:
                     # use a default value since a list of parameter values
                     # was not specified
-                    _name = "{0}__{1}".format(action_name, DEFAULT_RELATIVE_SPEED)
+                    _name = f"{action_name}__{DEFAULT_RELATIVE_SPEED}"
                     self._action_formatter_map[num_actions + 1] = _name
 
                 elif action_name in _to_check_route_direct:
                     # use a default value since a list of parameter values
                     # was not specified
-                    _name = "{0}__{1}".format(action_name, DEFAULT_ROUTE_DIRECT)
+                    _name = f"{action_name}__{DEFAULT_ROUTE_DIRECT}"
                     self._action_formatter_map[num_actions + 1] = _name
 
                 elif action_name in _to_check_route_parallel:
                     # use a default value since a list of parameter values
                     # was not specified
-                    _name = "{0}__{1}".format(action_name, DEFAULT_ROUTE_PARALLEL)
+                    _name = f"{action_name}__{DEFAULT_ROUTE_PARALLEL}"
                     self._action_formatter_map[num_actions + 1] = _name
 
                 else:
@@ -315,8 +314,7 @@ class ActionParser:
         if exclude_noop_action:
             # should be minus 1
             return self.num_actions_per_aircraft - NUM_NOOP_ACTIONS
-        else:
-            return self.num_actions_per_aircraft
+        return self.num_actions_per_aircraft
 
     def get_total_num_actions(self) -> int:
         return self.total_num_actions
@@ -381,7 +379,7 @@ class ActionParser:
         return {callsign_chosen: action_rf}
 
     def _action_formatter_decentralized(
-        self, action: dict[str, int], sampled_aircraft: None | list[str] = None
+        self, action: dict[str, int], sampled_aircraft: None | list[str] = None  # noqa: ARG002
     ) -> dict[str, int]:
         """Helper method for action formatting.
 
@@ -395,7 +393,8 @@ class ActionParser:
                 integer action for the aircraft.
             sampled_aircraft (list): the list of sampled/selected aircraft
                 at the current time step. Defaults to None in decentralized
-                setup as it is not needed.
+                set up as it is not needed. Added to retain compatibility with
+                _action_formatter_centralized method signature.
 
         Returns:
             `dict`, the action argument passed. it is left unchanged as no
@@ -413,7 +412,7 @@ class ActionParser:
             _msg = "`action` should be of type {0}, not {1}."
             raise ValueError(_msg.format(type({}), type(action)))
 
-        for callsign, act in action.items():
+        for act in action.values():
             if act > (self.total_num_actions - 1):
                 _msg = (
                     "Invalid action {0}. Valid actions are integers "
@@ -886,7 +885,7 @@ class ActionParser:
 
         num_actions_per_aircraft = self.get_num_actions_per_aircraft(True)
         assert len(actions_rf_dict) == 1
-        callsign_chosen, action_rf = list(actions_rf_dict.items())[0]
+        callsign_chosen, action_rf = next(iter(actions_rf_dict.items()))
 
         if callsign_chosen not in sampled_aircraft:
             # the issued action is for an aircraft that is not selected for
@@ -907,7 +906,7 @@ class ActionParser:
     def _action_formatter_decentralized_reversed(
         self,
         actions_dict: dict[str, int],
-        sampled_aircraft: list[str] | None = None,
+        sampled_aircraft: list[str] | None = None, # noqa: ARG002
     ) -> dict[str, int]:
         """Reverse of the `_action_formatter_decentralized(...)` method
 
@@ -920,7 +919,8 @@ class ActionParser:
                 callsign and integer action for the aircraft.
             sampled_aircraft (list): the list of sampled/selected aircraft
                 at the current time step. Defaults to None in decentralized
-                setup as it is not needed.
+                set up as it is not needed. Added to retain compatibility with the
+                `_action_formatter_centralized_reversed` method signature.
 
         Returns:
             `dict`, the actions_int argument passed. it is left unchanged as no

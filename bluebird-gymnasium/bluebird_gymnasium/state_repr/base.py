@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import numpy as np
-
 import typing
+
+import numpy as np
 
 if typing.TYPE_CHECKING:
     import numpy.typing as npt
@@ -85,7 +85,7 @@ class BaseRepresentation:
         self,
         callsign: str,
         gym_env: BaseEnv,
-        relevant_interactions_only=True,
+        relevant_interactions_only: bool=True,
     ) -> list[InteractionInfo]:
         """Gets statistics about relevant aircraft interaction with others."""
 
@@ -93,10 +93,9 @@ class BaseRepresentation:
         if relevant_interactions_only:
             return traffic_monitor.get_relevant_traffic(callsign)
 
-        else:
-            return traffic_monitor.get_aircraft_interaction_info(callsign, gym_env)
+        return traffic_monitor.get_aircraft_interaction_info(callsign, gym_env)
 
-    def generate_forward_fixes_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -113,7 +112,7 @@ class BaseRepresentation:
 
         raise NotImplementedError
 
-    def generate_neighbours_features(self, gym_env, callsign) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:

@@ -82,7 +82,7 @@ class InfiniteEnv(BaseEnv):
         render_mode: str | None = None,
         config: EnvConfig | None = None,
     ):
-        super(InfiniteEnv, self).__init__(
+        super().__init__(
             render_mode,
             config,
         )
@@ -115,10 +115,7 @@ class InfiniteEnv(BaseEnv):
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
-        if suffix is None or suffix == "":
-            suffix = ""
-        else:
-            suffix = f"__{suffix}"
+        suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario_name}_{timestamp}{suffix}"
 
         # set up simulator manager
@@ -152,7 +149,7 @@ class InfiniteEnv(BaseEnv):
 
         if view_type not in ViewType:
             raise ValueError(f"{view_type} is not a valid value of {ViewType}")
-        elif isinstance(view_type, ViewType):
+        if isinstance(view_type, ViewType):
             view_type = view_type.value
 
         # airspace
@@ -270,7 +267,7 @@ class CustomInfiniteEnv(BaseEnv):
         render_mode: str | None = None,
         config: EnvConfig | None = None,
     ):
-        super(CustomInfiniteEnv, self).__init__(
+        super().__init__(
             render_mode,
             config,
         )
@@ -303,10 +300,7 @@ class CustomInfiniteEnv(BaseEnv):
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
-        if suffix is None or suffix == "":
-            suffix = ""
-        else:
-            suffix = f"__{suffix}"
+        suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario_name}_{timestamp}{suffix}"
 
         # set up simulator manager
@@ -350,7 +344,7 @@ class CustomInfiniteEnv(BaseEnv):
 
         if view_type not in ViewType:
             raise ValueError(f"{view_type} is not a valid value of {ViewType}")
-        elif isinstance(view_type, ViewType):
+        if isinstance(view_type, ViewType):
             view_type = view_type.value
 
         # airspace

@@ -3,7 +3,7 @@ from bluebird_gymnasium.utils.constants import STEPS_SINCE_ACTION_MAX
 from bluebird_gymnasium.utils.geo_utils import get_centreline_distance
 
 
-def action_penalty_memory(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
+def action_penalty_memory(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
     """Penalize taking actions. Linear decay has the effect of minimising delay
     between necessary actions.
 
@@ -25,12 +25,10 @@ def action_penalty_memory(gym_env: BaseEnv, callsign: str, action: int, **kwargs
     else:
         steps_since_action = ac_tracked_state.steps_since_action
 
-    reward = steps_since_action / STEPS_SINCE_ACTION_MAX - 1
-
-    return reward
+    return steps_since_action / STEPS_SINCE_ACTION_MAX - 1
 
 
-def action_penalty_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
+def action_penalty_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
     """Penalize taking action when it is not necessary.
 
     Penalty computed as a constant (`const`) cost per RL time step.
@@ -45,14 +43,10 @@ def action_penalty_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs)
         not 0 (No action), else returns 0.0).
     """
 
-    if action != 0:
-        reward = -1.0
-    else:
-        reward = 0.0
-    return reward
+    return -1.0 if action != 0 else 0.0
 
 
-def action_penalty_thresh(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
+def action_penalty_thresh(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
     """Penalize taking action when it is not necessary.
 
     Penalty computed based on the aircraft's distance from the aircraft's

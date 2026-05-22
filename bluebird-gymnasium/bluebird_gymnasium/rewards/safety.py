@@ -1,5 +1,4 @@
 import numpy as np
-
 from bluebird_dt.core import Pos4D
 
 from bluebird_gymnasium.envs.base import BaseEnv
@@ -37,7 +36,7 @@ def _ensured_lateral_separation(aircraft_1_cps: list[Pos4D], aircraft_2_cps: lis
         cp_dist_buffer = [distance_t0, distance_t1]
         return ensured_separation, cp_dist_buffer
 
-    for ac_cp, other_ac_cp in zip(aircraft_1_cps, aircraft_2_cps):
+    for ac_cp, other_ac_cp in zip(aircraft_1_cps, aircraft_2_cps, strict=True):
         cp_dist = ac_cp.distance(other_ac_cp)
         cp_dist_buffer.append(cp_dist)
 
@@ -49,7 +48,7 @@ def _ensured_lateral_separation(aircraft_1_cps: list[Pos4D], aircraft_2_cps: lis
     return ensured_separation, cp_dist_buffer
 
 
-def safety_simple_avoidance_nvl(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
+def safety_simple_avoidance_nvl(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
     """Reward for avoidance of aircraft loss of separation.
 
     Note: safety violation is not logged, hence the `nvl` suffix (no violation
@@ -86,7 +85,7 @@ def safety_simple_avoidance_nvl(gym_env: BaseEnv, callsign: str, action: int, **
     return reward
 
 
-def safety_simple_avoidance_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:
+def safety_simple_avoidance_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float: # noqa: ARG001, ANN003
     """Reward for avoidance of aircraft loss of separation.
 
     This includes a forward rollout check into the future for loss of
@@ -162,10 +161,7 @@ def safety_simple_avoidance_exp(gym_env: BaseEnv, callsign: str, action: int, **
         buffer["future_traj_dist"] = dist_buffer
         buffer["ensured_lateral_sep"] = lsep
 
-        if vsep:
-            _rewards.append(0.0)
-
-        elif lsep:
+        if vsep or lsep:
             _rewards.append(0.0)
 
         else:

@@ -3,14 +3,15 @@ from __future__ import annotations
 import typing
 
 from bluebird_dt.core import Action
+
 from bluebird_gymnasium.actions import (
     DEFAULT_INTERVAL_HEADING,
     DEFAULT_RELATIVE_HEADING,
 )
 
 if typing.TYPE_CHECKING:
-    from bluebird_dt.core import Aircraft
-    from bluebird_dt.core import Airspace
+    from bluebird_dt.core import Aircraft, Airspace
+
     from bluebird_gymnasium.envs.base import BaseEnv
     from bluebird_gymnasium.utils.types import ACStateTracker, Number
 
@@ -144,7 +145,7 @@ def heading_left(
 
     if value <= 0:
         raise ValueError("`value` should be a positive integer")
-    elif value % DEFAULT_INTERVAL_HEADING != 0:
+    if value % DEFAULT_INTERVAL_HEADING != 0:
         raise ValueError(f"`value` should be in intervals of {DEFAULT_INTERVAL_HEADING}")
 
     aircraft = gym_env.get_simulator_env().aircraft[callsign]
@@ -183,7 +184,7 @@ def heading_right(
 
     if value <= 0:
         raise ValueError("`value` should be a positive integer")
-    elif value % DEFAULT_INTERVAL_HEADING != 0:
+    if value % DEFAULT_INTERVAL_HEADING != 0:
         raise ValueError(f"`value` should be in intervals of {DEFAULT_INTERVAL_HEADING}")
 
     aircraft = gym_env.get_simulator_env().aircraft[callsign]
@@ -264,8 +265,8 @@ def heading_route_parallel(
 
 def heading_maintain_current(
     callsign: str,
-    gym_env: BaseEnv,
-    value: Number | None = None,
+    gym_env: BaseEnv, # noqa: ARG001
+    value: Number | None = None, # noqa: ARG001
     agent: str = "Agent",
 ) -> Action:
     """Generate a simulator action to maintain an aircraft's current heading.

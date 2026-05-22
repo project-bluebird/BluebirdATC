@@ -6,7 +6,6 @@ import typing
 import numpy as np
 from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.core.pos4d import Pos4D
-
 from bluebird_dt.utility.convert import (
     FL_TO_FT,  # flight level (FL) to feet (FT) converter
     KT_TO_MPS,  # nautical miles per second (knots) to metre per second
@@ -27,7 +26,7 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.core.environment import Environment as SimulatorEnv
     from bluebird_dt.predictor import Predictor
 
-Number: typing.TypeAlias = typing.Union[int, float]
+Number: typing.TypeAlias = int | float
 
 
 def aircraft_prev_next_fixes(
@@ -92,10 +91,9 @@ def aircraft_prev_next_fixes(
             _idx = filed_route.index(route[0])
             _fix = filed_route[_idx - 1]
 
-            # append it to the current route
-            modified_route = [
-                _fix,
-            ] + route
+            # append it to the current route as the first fix in the route,
+            # before the actual first fix of the route.
+            modified_route = [_fix, *route]
 
             next_fix = simulator_env.airspace.closest_forward_fix(
                 aircraft,
@@ -115,18 +113,13 @@ def aircraft_prev_next_fixes(
         # and return its last fix as its previous and next fixes.
         return route[-1], route[-1]
 
-    else:
-        # previous fix
-        next_fix_idx = route.index(next_fix)
-        if next_fix_idx == 0:
-            # if next fix is the first fix in the route,
-            # set previous fix to be same as next fix.
-            prev_fix = next_fix
+    # previous fix
+    next_fix_idx = route.index(next_fix)
+    # if next fix is the first fix in the route,
+    # set previous fix to be same as next fix.
+    prev_fix = route[next_fix_idx - 1] if next_fix_idx > 0 else next_fix
 
-        else:
-            prev_fix = route[next_fix_idx - 1]
-
-        return prev_fix, next_fix
+    return prev_fix, next_fix
 
 
 def prev_next_fixes(
@@ -250,7 +243,7 @@ def predict_trajectory_simple(
         [pos.lon, new_pos.lon],
     )
 
-    return [Pos2D(lat, lon) for lat, lon in zip(ac_cps_lat, ac_cps_lon)]
+    return [Pos2D(lat, lon) for lat, lon in zip(ac_cps_lat, ac_cps_lon, strict=True)]
 
 
 def predict_trajectory(
@@ -305,12 +298,11 @@ def predict_trajectory(
 
     if isinstance(trajectory, list):
         return trajectory
-    else:
-        return trajectory.control_points
+    return trajectory.control_points
 
 
 def aircraft_entry_coordination(
-    callsign: str, simulator_env: SimulatorEnv, sector_name: str = None
+    callsign: str, simulator_env: SimulatorEnv, sector_name: str | None = None
 ) -> None | Coordination | list[Coordination]:
     """Get the entry coordination of an aircraft.
 
@@ -336,20 +328,18 @@ def aircraft_entry_coordination(
 
     if sector_name is None:
         sectors = set(airspace.sectors.keys())
-        ac_coords = [simulator_env.entry_coordination(sector_name, callsign) for sector_name in sectors]
-        return ac_coords
+        return [simulator_env.entry_coordination(sector_name, callsign) for sector_name in sectors]
 
-    else:
-        if sector_name not in airspace.sectors.keys():
-            raise ValueError(
-                f"Sector '{sector_name}' does not exist in airspace with sectors list: {list(airspace.sectors.keys())}"
-            )
-        # the method below could return None
-        return simulator_env.entry_coordination(sector_name, callsign)
+    if sector_name not in airspace.sectors:
+        raise ValueError(
+            f"Sector '{sector_name}' does not exist in airspace with sectors list: {list(airspace.sectors.keys())}"
+        )
+    # the method below could return None
+    return simulator_env.entry_coordination(sector_name, callsign)
 
 
 def aircraft_exit_coordination(
-    callsign: str, simulator_env: SimulatorEnv, sector_name: str = None
+    callsign: str, simulator_env: SimulatorEnv, sector_name: str | None = None
 ) -> None | Coordination | list[Coordination]:
     """Get the exit coordination of an aircraft.
 
@@ -375,18 +365,16 @@ def aircraft_exit_coordination(
 
     if sector_name is None:
         sectors = set(airspace.sectors.keys())
-        ac_coords = [simulator_env.exit_coordination(sector_name, callsign) for sector_name in sectors]
-        return ac_coords
-    else:
-        if sector_name not in airspace.sectors.keys():
-            raise ValueError(
-                f"Sector '{sector_name}' does not exist in airspace with sectors list: {list(airspace.sectors.keys())}"
-            )
-        # the method below could return None
-        return simulator_env.exit_coordination(sector_name, callsign)
+        return [simulator_env.exit_coordination(sector_name, callsign) for sector_name in sectors]
+    if sector_name not in airspace.sectors:
+        raise ValueError(
+            f"Sector '{sector_name}' does not exist in airspace with sectors list: {list(airspace.sectors.keys())}"
+        )
+    # the method below could return None
+    return simulator_env.exit_coordination(sector_name, callsign)
 
 
-def top_of_ascent(aircraft: Aircraft, target_fl: Number, wind: Number = 0) -> tuple[float, float]:
+def top_of_ascent(aircraft: Aircraft, target_fl: Number, wind: Number = 0) -> tuple[float, float]: # noqa: ARG001
     """Computes the distance for an aircraft to climb to a target flight level.
 
     Computes the travel distance (in nautical miles) required for an aircraft
@@ -527,12 +515,11 @@ def distance_time_to_target_fl(aircraft: Aircraft, target_fl: Number, wind: Numb
         # calculate top of ascent
         return top_of_ascent(aircraft, target_fl, wind)
 
-    elif aircraft.fl > target_fl:
+    if aircraft.fl > target_fl:
         # calculate top of descent
         return top_of_descent(aircraft, target_fl, wind)
 
-    else:
-        return 0.0, 0.0
+    return 0.0, 0.0
 
 
 def distance_to_target_pos_along_route(
@@ -585,8 +572,7 @@ def distance_to_target_pos_along_route(
         # the aircraft has already passed the target position
         # hence, the negative distance.
         return -1
-    else:
-        return lateral_distance
+    return lateral_distance
 
 
 def time_to_target_pos_along_route(
@@ -737,8 +723,7 @@ def get_aircraft_selected_heading(aircraft: Aircraft) -> Number:
 
     if aircraft.selected_instructions.heading is not None:
         return aircraft.selected_instructions.heading
-    else:
-        return aircraft.heading
+    return aircraft.heading
 
 
 def get_aircraft_selected_flight_level(aircraft: Aircraft) -> Number:
@@ -758,11 +743,10 @@ def get_aircraft_selected_flight_level(aircraft: Aircraft) -> Number:
     if aircraft.selected_fl is not None:
         return aircraft.selected_fl
 
-    elif aircraft.selected_instructions.fl is not None:
+    if aircraft.selected_instructions.fl is not None:
         return aircraft.selected_instructions.fl
 
-    else:
-        return aircraft.fl
+    return aircraft.fl
 
 
 def infer_aircraft_speed(aircraft: Aircraft, rollout_predictor: Predictor) -> tuple[float, float]:
