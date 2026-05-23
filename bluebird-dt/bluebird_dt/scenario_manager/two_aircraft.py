@@ -262,7 +262,7 @@ class TwoAircraft(
             coordinations_rev = self.get_descender_coordination_FLs(overflier_fl, allowed_FLs)
         coordinations = [coordinations_fwd, coordinations_rev]
 
-        # create emtpy event handler
+        # create empty event handler
         event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
 
         for i in range(2):
