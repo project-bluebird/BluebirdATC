@@ -33,7 +33,7 @@ def visualize_airspace(env: BaseEnv | str, render_mode: str = "rgb_array", clean
             environment, set to one of the following ['rgb_array', 'human',
             'file'].
         clean_up: specifies whether to clean up the directory structure after
-            visualization is completed (as the airspace image is saved to disk
+            visualisation is completed (as the airspace image is saved to disk
             default). Note, when `render_mode` is set to 'file', this
             argument is ignored regardless of its set value.
     """
@@ -49,7 +49,7 @@ def visualize_airspace(env: BaseEnv | str, render_mode: str = "rgb_array", clean
     else:
         prev_mode = env.get_render_mode()
 
-    # visualize
+    # visualise
     if render_mode == "file":
         env.render()
     else:

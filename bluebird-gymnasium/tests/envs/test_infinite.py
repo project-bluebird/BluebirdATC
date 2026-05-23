@@ -79,7 +79,7 @@ def test_reset(view_type: ViewType, env_cls: EnvCls):
         assert isinstance(obs, np.ndarray)
         assert isinstance(info, dict)
         assert obs.shape == gym_env.observation_space.shape
-    else:  # decentralized
+    else:  # decentralised
         assert isinstance(obs, dict)
         assert isinstance(info, dict)
         if len(obs) > 0:
@@ -115,7 +115,7 @@ def test_step(view_type: ViewType, env_cls: EnvCls):
         assert (timestep_before + 1) == timestep_after
         assert obs.shape == gym_env.observation_space.shape
 
-    else:  # decentralized
+    else:  # decentralised
         action = {}  # no action on any aircraft
         obs, reward, done, truncated, info = gym_env.step(action)
         timestep_after = gym_env.timestep

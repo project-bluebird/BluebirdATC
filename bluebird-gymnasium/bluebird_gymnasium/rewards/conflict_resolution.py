@@ -33,7 +33,7 @@ def get_overlap_coeff(
 ) -> Number:
     """Get the coefficient for conflict resolution penalty based on interaction
 
-    The scaling coeffiicent is determined based on whther the conflict can be
+    The scaling coefficient is determined based on whether the conflict can be
     resolved by only lateral resolution techniques (or resolved using either
     lateral or vertical techniques).
 

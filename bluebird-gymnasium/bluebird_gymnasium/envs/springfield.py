@@ -49,7 +49,7 @@ class SpringfieldEnv(BaseEnv):
     simulator.
 
     Args:
-        render_mode: the mode to visualize (render) the simulator. It can
+        render_mode: the mode to visualise (render) the simulator. It can
             only be set to None or one of the following:
             'human', 'rgb_array', 'file'.
             Defaults to `None`.
@@ -135,7 +135,7 @@ class SpringfieldEnv(BaseEnv):
         obs, reward, done, truncated, info = super().step(action)
 
         # Springfield can start before any aircraft is controllable; keep an
-        # empty decentralized done dict from ending loops that call all(...).
+        # empty decentralised done dict from ending loops that call all(...).
         if (
             self.config.view_config["type"] == ViewType.DECENTRALIZED
             and isinstance(done, dict)
@@ -155,8 +155,8 @@ class SpringfieldEnv(BaseEnv):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralized (single agent) or
-                decentralized (multi-agent).
+            view_type: the type of agent view, centralised (single agent) or
+                decentralised (multi-agent).
                 Defaults to "centralized".
 
         Returns:

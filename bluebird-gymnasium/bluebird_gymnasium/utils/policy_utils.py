@@ -90,7 +90,7 @@ def default_outcomm_policy_simple(
             the exit position from the fix before the position.)
             Optional. Defaults to 5.0 degrees.
         single_action: defines whether or not to return a single action if
-            there are multiple aircraft eligble for an outcomm action. if set
+            there are multiple aircraft eligible for an outcomm action. if set
             to `True`, and there multiple eligible aircraft, then priority is
             given to the aircraft that requires an immediate outcomm clearance
             (e.g., an aircraft out of sector requires an immediate clearance
@@ -107,7 +107,7 @@ def default_outcomm_policy_simple(
     """
 
     # constants
-    OUTCOMM_PRIORTY_LOW = 1
+    OUTCOMM_PRIORITY_LOW = 1
     OUTCOMM_PRIORITY_MEDIUM = 2
     OUTCOMM_PRIORITY_HIGH = 3
 
@@ -215,7 +215,7 @@ def default_outcomm_policy_simple(
         max_fl = airspace.sectors[airspace_sector].volumes[found_idx].max_fl
 
         # condition 4
-        # checks the minmum allowable flight level
+        # checks the minimum allowable flight level
         cond_4_1 = aircraft.selected_fl < min_fl
         cond_4_2 = abs(aircraft.fl - min_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
 
@@ -227,7 +227,7 @@ def default_outcomm_policy_simple(
         if cond_1_1 and cond_1_2 and cond_1_3:
             # issue an outcomm clearance
             actions[callsign] = action
-            outcomm_priorities[callsign] = OUTCOMM_PRIORTY_LOW
+            outcomm_priorities[callsign] = OUTCOMM_PRIORITY_LOW
         elif cond_2_1:
             # issue an outcomm clearance
             actions[callsign] = action
@@ -324,7 +324,7 @@ def default_outcomm_policy_lenient(
             the exit position from the fix before the position.)
             Optional. Defaults to 5.0 degrees.
         single_action: defines whether or not to return a single action if
-            there are multiple aircraft eligble for an outcomm action. if set
+            there are multiple aircraft eligible for an outcomm action. if set
             to `True`, and there multiple eligible aircraft, then priority is
             given to the aircraft that requires an immediate outcomm clearance
             (e.g., an aircraft out of sector requires an immediate clearance
@@ -341,7 +341,7 @@ def default_outcomm_policy_lenient(
     """
 
     # constants
-    OUTCOMM_PRIORTY_LOW = 1
+    OUTCOMM_PRIORITY_LOW = 1
     OUTCOMM_PRIORITY_MEDIUM = 2
     OUTCOMM_PRIORITY_HIGH = 3
     OUTCOMM_PRIORITY_VERY_HIGH = 4
@@ -467,7 +467,7 @@ def default_outcomm_policy_lenient(
         max_fl = airspace.sectors[airspace_sector].volumes[found_idx].max_fl
 
         # condition 4
-        # checks the minmum allowable flight level
+        # checks the minimum allowable flight level
         cond_4_1 = aircraft.selected_fl < min_fl
         cond_4_2 = abs(aircraft.fl - min_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
 
@@ -479,7 +479,7 @@ def default_outcomm_policy_lenient(
         if cond_1_1 and cond_1_2 and cond_1_3:
             # issue an outcomm clearance
             actions[callsign] = action
-            outcomm_priorities[callsign] = OUTCOMM_PRIORTY_LOW
+            outcomm_priorities[callsign] = OUTCOMM_PRIORITY_LOW
 
         elif cond_2_1:
             # issue an outcomm clearance
@@ -633,7 +633,7 @@ def default_outcomm_policy(
             the exit position from the fix before the position.)
             Optional. Defaults to 5.0 degrees.
         single_action: defines whether or not to return a single action if
-            there are multiple aircraft eligble for an outcomm action. if set
+            there are multiple aircraft eligible for an outcomm action. if set
             to `True`, and there multiple eligible aircraft, then priority is
             given to the aircraft that requires an immediate outcomm clearance
             (e.g., an aircraft out of sector requires an immediate clearance
@@ -650,7 +650,7 @@ def default_outcomm_policy(
     """
 
     # constants
-    OUTCOMM_PRIORTY_LOW = 1
+    OUTCOMM_PRIORITY_LOW = 1
     OUTCOMM_PRIORITY_MEDIUM = 2
     OUTCOMM_PRIORITY_HIGH = 3
 
@@ -737,7 +737,7 @@ def default_outcomm_policy(
         if cond_1_1 and cond_1_2 and cond_1_3:
             # issue an outcomm clearance
             actions[callsign] = action
-            outcomm_priorities[callsign] = OUTCOMM_PRIORTY_LOW
+            outcomm_priorities[callsign] = OUTCOMM_PRIORITY_LOW
         elif cond_2_1 and cond_2_2:
             # issue an outcomm clearance
             actions[callsign] = action

@@ -352,7 +352,7 @@ def passed_fixes_intersections(
     ac_tracked_data = tracked_data.get(callsign)
     other_ac_tracked_data = tracked_data.get(other_callsign)
 
-    # initialization
+    # initialisation
     passed = False
     # when both aircraft have passed each other, it indicates that the
     # interactions is irrelevant by default. however, when both aircraft
@@ -772,7 +772,7 @@ def get_continuous_track_info(
 def get_centreline_distance_diff(centre_dist_1: Number, centre_dist_2: Number, category: InteractionCategory) -> Number:
     """Get the lateral distance between both aircraft.
 
-    Use their route's centreline distance as a proxy and interaction catgory.
+    Use their route's centreline distance as a proxy and interaction category.
 
     Note, the distance is maximised by placing aircraft on opposite
     sides of the intersecting position along their route.
@@ -1981,7 +1981,7 @@ def filter_relevant_interactions(
           less five nautical miles
     (ii)  a flight route overlap exist between aircraft pair (if they're
           both following their defined route) or if their current headings
-          interesects when one of them is not following its defined route.
+          intersects when one of them is not following its defined route.
     (iii) a flight level range overlap occur (range defined using current
           and exit flight level)
 
@@ -2195,7 +2195,7 @@ def get_aircraft_relevant_interactions(
     if relevance is None:
         # return the relevant interactions for each relevance category/type,
         # removing duplicates with a lower priority/category.
-        # highest to lowest priority defintion: LEVEL_1, LEVEL_2.
+        # highest to lowest priority definition: LEVEL_1, LEVEL_2.
         primary_interactions = filter_relevant_interactions(
             callsign,
             sector,
@@ -2296,7 +2296,7 @@ def get_optimal_unblocked_flight_level(
             use_filed_route=False,
         )
 
-    # filter 1: select only intervation with relevance level 1
+    # filter 1: select only interactions with relevance level 1
     filtered_interactions = [
         interaction for interaction in interactions if interaction.relevance == InteractionRelevance.LEVEL_1
     ]
@@ -2934,7 +2934,7 @@ def top_of_descent_after_intersection(
     current_route_start_position: Pos2D | None,
     uncertainty_distance: Number = 0,
 ) -> bool:
-    """Check whether top of descent of aircraft occurr after an intersection"""
+    """Check whether top of descent of aircraft occur after an intersection"""
 
     # get the track distance to the exit position from the intersection point
     dist_to_exit_from_intersect = distance_to_target_pos_along_route(

@@ -56,7 +56,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
     |     | filed route centreline        |      |      |                     |
     |   5 | Aircraft distance from the    | -inf |  inf | Nautical Miles (NM) |
     |     | current route centreline      |      |      |                     |
-    |   6 | Difference betweeen aircraft  | -inf |  inf | Nautical Miles (NM) |
+    |   6 | Difference between aircraft  | -inf |  inf | Nautical Miles (NM) |
     |     | track distance (current route)|      |      |                     |
     |     | to its exit position and its  |      |      |                     |
     |     | track distance to its exit    |      |      |                     |
@@ -200,7 +200,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
     |   8 | difference between aircraft   |  0.0| inf | Nautical Miles (NM)   |
     |     | pair relative centreline      |     |     |                       |
     |     | distance, depending on the    |     |     |                       |
-    |     | interaction cateogry          |     |     |                       |
+    |     | interaction category          |     |     |                       |
     |     |                               |     |     |                       |
     +-----+------------------------------ +-----+-----+-----------------------+
 
@@ -216,10 +216,10 @@ class RelativeRepresentationRaw(BaseRepresentation):
             `None` if it is not used in the aircraft's state representation.
 
     Note for users when training agents based on neural network policies:
-    while this representation could be proccessed directly by a neural network,
+    while this representation could be processed directly by a neural network,
     only consider using it only when additional pre-processing has been
     done before it is fed to a network as input. This is because the scales
-    and the range of values for each feature is signficantly different.
+    and the range of values for each feature is significantly different.
     An example of an additional processing is the use of normalization (and
     clipping) strategies to standardize the input based on running mean and
     standard deviation. This dynamically adjusts the scaling metrics unlike
@@ -378,11 +378,11 @@ class RelativeRepresentationRaw(BaseRepresentation):
         entry_fl = tracked_data[callsign].entry_coords[airspace_sector].fl
         exit_fl = tracked_data[callsign].exit_coords[airspace_sector].fl
 
-        # relative flight level: difference beween aircraft flight level
+        # relative flight level: difference between aircraft flight level
         # and exit flight level
         fl_diff_ac_exit = aircraft.fl - exit_fl
 
-        # relative flight level: difference beween aircraft
+        # relative flight level: difference between aircraft
         # selected flight level and exit flight level
         fl_diff_ac_exit_selected = aircraft.selected_fl - exit_fl
 
@@ -806,7 +806,7 @@ class RelativeRepresentation(BaseRepresentation):
     |     | filed route centreline        |      |      |                     |
     |   5 | Aircraft distance from the    | -3.0 |  3.0 | Nautical Miles (NM) |
     |     | current route centreline      |      |      |                     |
-    |   6 | Difference betweeen aircraft  | -3.0 |  3.0 | Nautical Miles (NM) |
+    |   6 | Difference between aircraft  | -3.0 |  3.0 | Nautical Miles (NM) |
     |     | track distance (current route)|      |      |                     |
     |     | to its exit position and its  |      |      |                     |
     |     | track distance to its exit    |      |      |                     |
@@ -949,7 +949,7 @@ class RelativeRepresentation(BaseRepresentation):
     |   8 | difference between aircraft   |  0.0| 3.0 | Nautical Miles (NM)   |
     |     | pair relative centreline      |     |     |                       |
     |     | distance, depending on the    |     |     |                       |
-    |     | interaction cateogry          |     |     |                       |
+    |     | interaction category          |     |     |                       |
     |     |                               |     |     |                       |
     +-----+------------------------------ +-----+-----+-----------------------+
 
@@ -1115,11 +1115,11 @@ class RelativeRepresentation(BaseRepresentation):
         entry_fl = tracked_data[callsign].entry_coords[airspace_sector].fl
         exit_fl = tracked_data[callsign].exit_coords[airspace_sector].fl
 
-        # relative flight level: difference beween aircraft flight level
+        # relative flight level: difference between aircraft flight level
         # and exit flight level
         fl_diff_ac_exit = aircraft.fl - exit_fl
 
-        # relative flight level: difference beween aircraft
+        # relative flight level: difference between aircraft
         # selected flight level and exit flight level
         fl_diff_ac_exit_selected = aircraft.selected_fl - exit_fl
 

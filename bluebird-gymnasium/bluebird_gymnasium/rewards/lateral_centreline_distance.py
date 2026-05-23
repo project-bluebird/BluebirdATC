@@ -141,16 +141,16 @@ def lateral_centreline_distance_exp(gym_env: BaseEnv, callsign: str, action: int
 def lateral_centreline_distance_shaped(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Shaped Reward for staying close to route's centreline
 
-    Penalize for taking lateral actions away from the route's centre and
+    Penalise for taking lateral actions away from the route's centre and
     give positive reward for staying on the route's centre.
 
     If the aircraft is away from centreline (based on a threshold), then
     reward the agent if lateral actions are taken to return the
-    aircraft to the centreline. Otherwise, penalize the agent.
+    aircraft to the centreline. Otherwise, penalise the agent.
 
     Also, if the aircraft is on the route's centreline, then reward the agent
     if no lateral action is taken for the aircraft (e.g., action 0). Otherwise,
-    penalize the agent. *Note*: there's an exception to this formulation, which
+    penalise the agent. *Note*: there's an exception to this formulation, which
     is: if the aircraft is on the route's centre but it is close to its
     next fix which would require a change of heading (turn), then reward agent
     if a heading (turn) action is issued because it would keep the agent on the
@@ -198,12 +198,12 @@ def lateral_centreline_distance_shaped(gym_env: BaseEnv, callsign: str, action: 
             # further action (hence NOOP action, action 0) as the aircraft's
             # continued navigation will re-position it at the route's centre.
             #
-            # to detect whcih scenario the aircraft is in, simulate a future
+            # to detect which scenario the aircraft is in, simulate a future
             # trajectory of the aircraft based on the its current heading.
             # if future position of the aircraft is farther away from the
             # route's centreline, then it's scenario 1, otherwise, scenario 2
             #
-            # if scenario 1, then penalize agent, otherwise, reward agent.
+            # if scenario 1, then penalise agent, otherwise, reward agent.
 
             future_pos = predict_trajectory_simple(ac.pos2d(), ac.heading, distance=1.0, num_control_points=1)[1]
             future_centre_dist, _, _ = get_centreline_distance(
@@ -239,7 +239,7 @@ def lateral_centreline_distance_shaped(gym_env: BaseEnv, callsign: str, action: 
                 else:
                     reward = -1.0
             else:
-                # penalize: agent made an unneccessary turn action for the
+                # penalise: agent made an unnecessary turn action for the
                 # aircraft even though it's approximately at the route centre
                 if (nf_turn_dir == TurnDirection.LEFT and action in actions_decr_hd) or (
                     nf_turn_dir == TurnDirection.RIGHT and action in actions_incr_hd

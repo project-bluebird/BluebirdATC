@@ -267,10 +267,10 @@ def climb_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) 
         distance_to_exit, distance_to_level = ret
 
         if distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
 
             if ac.selected_fl == exit_fl:  # noqa: SIM108
-                # soft penalty as correct exit flight level choosen
+                # soft penalty as correct exit flight level chosen
                 reward = min(abs(ac.fl - exit_fl), _MAX_PENALTY)
             else:
                 # otherwise, issue a hard penalty
@@ -328,10 +328,10 @@ def descent_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs
         distance_to_exit, distance_to_level = ret
 
         if distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
 
             if ac.selected_fl == exit_fl:  # noqa: SIM108
-                # soft penalty as correct exit flight level choosen
+                # soft penalty as correct exit flight level chosen
                 reward = min(abs(ac.fl - exit_fl) / _FL_SCALER, _MAX_PENALTY)
             else:
                 # otherwise, issue a hard penalty
@@ -398,10 +398,10 @@ def descent_target_linear_shaped(gym_env: BaseEnv, callsign: str, action: int, *
         distance_to_exit, distance_to_level = ret
 
         if distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
 
             if ac.selected_fl == exit_fl:  # noqa: SIM108
-                # soft penalty as correct exit flight level choosen
+                # soft penalty as correct exit flight level chosen
                 reward = min(abs(ac.fl - exit_fl), _MAX_PENALTY)
             else:
                 # otherwise, issue a hard penalty
@@ -475,7 +475,7 @@ def climb_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) ->
         distance_to_exit, distance_to_level = ret
 
         if distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
             fl_diff = abs(ac.fl - exit_fl) / _FL_SCALER
 
         else:
@@ -531,11 +531,11 @@ def descent_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) 
         distance_to_exit, distance_to_level = ret
 
         if distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
 
             if ac.selected_fl == exit_fl:
-                # soft penalty as correct exit flight level choosen
-                # give a small bonus for correctly chosing
+                # soft penalty as correct exit flight level chosen
+                # give a small bonus for correctly choosing
                 # the exit (target) flight level
                 small_bonus = 5.0
                 reward = (abs(ac.fl - exit_fl) / _FL_SCALER) ** 2
@@ -702,7 +702,7 @@ def descent_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -
             reward = -5.0
 
         elif distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
             reward = normalized_exponential(
                 x=abs(ac.selected_fl - exit_fl) / _scaler,
                 k=2,

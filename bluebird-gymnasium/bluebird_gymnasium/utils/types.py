@@ -142,7 +142,7 @@ class ACStateTracker:
     entry_coords: dict[str, Coordination] | None = None
     exit_coords: dict[str, Coordination] | None = None
 
-    # dynamic data: first initialize
+    # dynamic data: first initialise
     pos_status: PositionStatus | None = None
     incomm_status: bool | None = None
     outcomm_status: bool | None = None

@@ -64,7 +64,7 @@ def route_parallel_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs)
 def route_parallel_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for flying parallel to the aircraft's current route.
 
-    Linearly penalize the aircraft for not flying parallel to its
+    Linearly penalise the aircraft for not flying parallel to its
     current route.
 
     Args:
@@ -112,7 +112,7 @@ def route_parallel_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs
 def route_parallel_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for flying parallel to the aircraft's current route.
 
-    Quadratically penalize the aircraft for not flying parallel to its
+    Quadratically penalise the aircraft for not flying parallel to its
     current route.
 
     Args:

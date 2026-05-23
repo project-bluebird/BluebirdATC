@@ -135,7 +135,7 @@ class BaseEnv(gym.Env):
     The simulator wrapped around `gymnasium` (gym) API.
 
     Args:
-        render_mode: the mode to visualize (render) the simulator. It can
+        render_mode: the mode to visualise (render) the simulator. It can
             only be set to None or one of the following:
             'human', 'rgb_array', 'file'.
             Defaults to `None`.
@@ -254,7 +254,7 @@ class BaseEnv(gym.Env):
             "'out_sector_control` in `config.airspace_config` is set to "
             "`True`. "
             "set `use_default_outcomm_policy` to `False` to allow out of "
-            "sector control in the airpsace."
+            "sector control in the airspace."
             raise ValueError(_msg)
         self._out_sector_control = self.config.airspace_config.get("out_sector_control", False)
 
@@ -281,7 +281,7 @@ class BaseEnv(gym.Env):
 
         ## store aircraft that are background traffic (i.e., aircraft whose
         ## flight plan does not go through the sector/airspace). instead,
-        ## they fly in past neighborough airspace but not through the current
+        ## they fly in past neighbouring airspace but not through the current
         ## airspace.
         self.ac_background_traffic: list[str] = []
 
@@ -318,7 +318,7 @@ class BaseEnv(gym.Env):
         # state representation, view, action space, and step function
         self.maybe_concat_action = None  # will be set below
         if self.config.view_config["type"] == ViewType.CENTRALIZED:
-            ## validate parameters for centralized view
+            ## validate parameters for centralised view
             ## and set it to default if does not exist
             _vp_config = self.config.view_config.get("centralized_params", {})
             _vp_default = default_config.view_config["centralized_params"]
@@ -862,8 +862,8 @@ class BaseEnv(gym.Env):
                 corresponding simulator action as the value.
         Returns
             three-element tuple:
-            - gym action as `int` for centralized setup and `dict` for
-                decentralized setup.
+            - gym action as `int` for centralised setup and `dict` for
+                decentralised setup.
             - the reformatted action specific to each aircraft.
             - the action information specific to each aircraft.
         """
@@ -882,8 +882,8 @@ class BaseEnv(gym.Env):
             else:
                 actions_rf_int[callsign] = action_tuple[0]
 
-        # returns a single integer value for centralized
-        # setup and a dict for decentralized setup
+        # returns a single integer value for centralised
+        # setup and a dict for decentralised setup
         gym_action_int = action_p.reverse_action_formatter(actions_rf_int, self.selected_aircraft_prev_step)
 
         return gym_action_int, actions_rf_int, actions_info
@@ -893,8 +893,8 @@ class BaseEnv(gym.Env):
 
         Args:
             action: defines the gym action to convert to the
-                simulator action(s). `int` for centralized setup and `dict`
-                for decentralized setup.
+                simulator action(s). `int` for centralised setup and `dict`
+                for decentralised setup.
         Returns
             two-element tuple:
             - `dict` with each key-value pair representing a callsign and the
@@ -1045,7 +1045,7 @@ class BaseEnv(gym.Env):
     def _initialize_dynamic_data(self, callsign: str) -> None:
         """Initialize data store for an aircraft tracked dynamic data.
 
-        Initialization only done once, when the aircraft first appear in the
+        Initialisation only done once, when the aircraft first appear in the
         airspace in the simulation.
 
         Args:
@@ -1060,9 +1060,9 @@ class BaseEnv(gym.Env):
         ## step counter
         self.ac_tracker[callsign].step_counter = -1
 
-        ## note, this initialization assumes that the new aircraft has not
+        ## note, this initialisation assumes that the new aircraft has not
         ## yet incommed. however, some scenarios exist when the aircraft
-        ## is initialized within the sector.
+        ## is initialised within the sector.
         ## the correct position status, incomm and outcomm status will be
         ## computed and set when the dynamic data is updated a few lines
         ## below (i.e. in the for loop where the aircraft tracker dynamic
@@ -1072,7 +1072,7 @@ class BaseEnv(gym.Env):
         self.ac_tracker[callsign].outcomm_status = False
         self.ac_tracker[callsign].dist_to_sector_entry = None
         self.ac_tracker[callsign].dist_away_from_sector_exit = None
-        # at initialization we don't yet know if the aircraft exited
+        # at initialisation we don't yet know if the aircraft exited
         # the sector incorrectly. aircraft is likely entering the
         # sector or in-sector rather than incorrectly exiting it.
         self.ac_tracker[callsign].dist_away_from_incorrect_sector_exit = None
@@ -1084,7 +1084,7 @@ class BaseEnv(gym.Env):
         ## instantiate steps since action
         self.ac_tracker[callsign].steps_since_action = STEPS_SINCE_ACTION_MAX
 
-        ## initialize position at last route direct
+        ## initialise position at last route direct
         _route = aircraft.flight_plan.route
         if _route.filed == _route.current:
             # final check
@@ -1270,9 +1270,9 @@ class BaseEnv(gym.Env):
             self.ac_tracker[callsign].steps_since_action += 1
 
         ### aircraft action
-        ### note, in centralized setup, this is the reformatted action
+        ### note, in centralised setup, this is the reformatted action
         ### (i.e., action_rf_int`), which are the actions specific to
-        ### the aircraft. decentralized setup do not require the reformatting
+        ### the aircraft. decentralised setup do not require the reformatting
         ### as each aircraft is an agent with its own set of action.
         self.ac_tracker[callsign].action = aircraft_action
 
@@ -1373,17 +1373,17 @@ class BaseEnv(gym.Env):
                 self.simulator_env.aircraft[callsign].speed_tas = _speed_tas
                 self.simulator_env.aircraft[callsign].ground_speed = _speed_gs
 
-            # initialize success metric for the aircraft
+            # initialise success metric for the aircraft
             self.ac_success_metric[callsign] = SuccessMetric.PENDING
 
-            # initialize a tracker for the aircraft
+            # initialise a tracker for the aircraft
             self.ac_tracker[callsign] = ACStateTracker()
 
             # static (one-off) data in the tracker
             self._set_static_data(callsign)
 
             # some of the dynamic data store in the tracker
-            # require initialization. initialize them.
+            # require initialisation. initialise them.
             self._initialize_dynamic_data(callsign)
 
             # update aircraft tracker: dynamic data to continually track
@@ -1495,7 +1495,7 @@ class BaseEnv(gym.Env):
 
         # store the previous state of tracked data before they are updated
         # (in `self.step_fn(...)`) after the simulation is evolved via a call
-        # to evolve simulation (update implicity through `self.manager`)
+        # to evolve simulation (update implicitly through `self.manager`)
         self.update_ac_tracker_prev_step(
             exclude=[
                 "future_trajectory",
@@ -1511,7 +1511,7 @@ class BaseEnv(gym.Env):
         # update steps counter
         self.timestep += 1
 
-        # now call step function specific to centralized or decentralized
+        # now call step function specific to centralised or decentralised
         # update aircraft tracker, compute reward and generate the next state
         ret_values = self.step_fn(actions_rf_int, actions_st, action)
 
@@ -1533,7 +1533,7 @@ class BaseEnv(gym.Env):
     def _state_formatter_centralized(
         self, _state: dict[str, NDArray[numpy.float32]]
     ) -> tuple[NDArray[numpy.float32], list[str]]:
-        """Generate the final state representation for centralized setup.
+        """Generate the final state representation for centralised setup.
 
         This works by:
         1. selecting all aircraft or a subset (if the number of aircraft in
@@ -1541,7 +1541,7 @@ class BaseEnv(gym.Env):
            configured view size).
         2. concatenate representation for each selected aircraft into a
            single representation. note that if the number of aircraft in the
-           scenario at the currnet timestep is less than the configured view
+           scenario at the current timestep is less than the configured view
            size, then a zero-padding is added to this final representation.
 
         Args
@@ -1562,7 +1562,7 @@ class BaseEnv(gym.Env):
 
         if self.timestep == 0 and strategy == CentralizedSampler.RANDOM_EPISODAL:
             # the environment was just reset (a new episode). so, reset the
-            # centralized sample episodal mask
+            # centralised sample episodal mask
             num_sampled_aircraft = self.config.view_config["centralized_params"]["num_sampled_aircraft"]
             self._mask_centralized_random_episodal = np.random.permutation(num_sampled_aircraft)
 
@@ -1645,9 +1645,9 @@ class BaseEnv(gym.Env):
 
         Args:
             actions_rf_int: the reformatted action specific to the aircraft.
-                a one element `dict` in the centralized setup.
+                a one element `dict` in the centralised setup.
             actions_st: the simulator action for the aircraft. a one element
-                `dict` in the centralized setup.
+                `dict` in the centralised setup.
             original_action: the original gymnasium action taken by the
                 external agent.
 
@@ -1661,7 +1661,7 @@ class BaseEnv(gym.Env):
         """
 
         # a single element in the `actions_rf_int` and `actions_st`
-        # dicts for the centralized set up
+        # dicts for the centralised set up
         callsign_chosen = next(iter(actions_st.keys()))
         action_st = next(iter(actions_st.values()))
         action_rf = next(iter(actions_rf_int.values()))
@@ -1706,17 +1706,17 @@ class BaseEnv(gym.Env):
                 self.simulator_env.aircraft[callsign].speed_tas = _speed_tas
                 self.simulator_env.aircraft[callsign].ground_speed = _speed_gs
 
-            # initialize success metric for the aircraft
+            # initialise success metric for the aircraft
             self.ac_success_metric[callsign] = SuccessMetric.PENDING
 
-            # initialize a tracker for the aircraft
+            # initialise a tracker for the aircraft
             self.ac_tracker[callsign] = ACStateTracker()
 
             # static (one-off) data in the tracker
             self._set_static_data(callsign)
 
             # some of the dynamic data store in the tracker
-            # require initialization. initialize them.
+            # require initialisation. initialise them.
             self._initialize_dynamic_data(callsign)
 
         # unsure if this is a simulator bug or feature
@@ -1733,7 +1733,7 @@ class BaseEnv(gym.Env):
         callsigns_deleted = callsigns_to_move
 
         # action map for all aircraft: used for reward computation.
-        # initialize map. all set to 0 (no action, aka noop or no_operation).
+        # initialise map. all set to 0 (no action, aka noop or no_operation).
         actions_in = {}  # action represented as `int` from the agent.
         actions_rf_in = {}  # action represented as `int` reformatted.
         actions_st = {}  # `int` action represented in `simulator` format.
@@ -1816,7 +1816,7 @@ class BaseEnv(gym.Env):
 
                 # so, use the current/next outcomm status and position status,
                 # which should be set to `False` and `BEFORE_ENTRY`
-                # respectively when the dynamic data was initialized for the
+                # respectively when the dynamic data was initialised for the
                 # new aircraft in an earlier portion of this mdethod.
 
                 # assumed previous step (p_) outcomm and position status
@@ -1877,7 +1877,7 @@ class BaseEnv(gym.Env):
             # and position status as (in sector or pre-incomm)
             # note, uncontrollable aircraft or those transferred out
             # of the sector could still be encoded in the state but only
-            # as a neighborouring aircraft of a represented aircraft.
+            # as a neighbouring aircraft of a represented aircraft.
             #
             # therefore, this excludes an aircraft that has outcommed (i.e.,
             # `ac_tracker.outcomm_status` is set to True; whether it's still
@@ -1960,7 +1960,7 @@ class BaseEnv(gym.Env):
         #      to have exited the sector successfully.
         # (iii) the aircraft navigates *out of the sector* without going
         #       through the defined exit fix/window in its route. this is a
-        #       negative situation and agents should optimize their policy
+        #       negative situation and agents should optimise their policy
         #       to avoid it.
         #       NOTE: depending on the geometry of the sector/airspace, an
         #       aircraft that goes out of the sector re-enter the sector
@@ -2018,9 +2018,9 @@ class BaseEnv(gym.Env):
     def _state_formatter_decentralized(
         self, _state: dict[str, NDArray[numpy.float32]]
     ) -> dict[str, NDArray[numpy.float32]]:
-        """Generate the final state representation for decentralized setup.
+        """Generate the final state representation for decentralised setup.
 
-        note that the final state representation for the decentralized setup
+        note that the final state representation for the decentralised setup
         is the same `_state` argument passed into the function.
 
         Args
@@ -2061,7 +2061,7 @@ class BaseEnv(gym.Env):
             original_actions: key specified the callsign of an aircraft and
                 value is the action taken for the aircraft. Added to maintain
                 the same function signature as `_step_centralized` even though
-                in the decentralized setup, the original action is already in
+                in the decentralised setup, the original action is already in
                 a dict format with callsign as key and action as value.
 
         Returns:
@@ -2073,7 +2073,7 @@ class BaseEnv(gym.Env):
             the value of type `numpy.ndarray`, the state for the aircraft.
         """
 
-        actions = actions_rf_int  # same as original_actions for decentralized
+        actions = actions_rf_int  # same as original_actions for decentralised
 
         # preparation for the block of code below
         s1 = set(self.simulator_env.aircraft.keys())
@@ -2115,17 +2115,17 @@ class BaseEnv(gym.Env):
                 self.simulator_env.aircraft[callsign].speed_tas = _speed_tas
                 self.simulator_env.aircraft[callsign].ground_speed = _speed_gs
 
-            # initialize success metric for the aircraft
+            # initialise success metric for the aircraft
             self.ac_success_metric[callsign] = SuccessMetric.PENDING
 
-            # initialize a tracker for the aircraft
+            # initialise a tracker for the aircraft
             self.ac_tracker[callsign] = ACStateTracker()
 
             # static (one-off) data in the tracker
             self._set_static_data(callsign)
 
             # some of the dynamic data store in the tracker
-            # require initialization. initialize them.
+            # require initialisation. initialise them.
             self._initialize_dynamic_data(callsign)
 
             # initialise actions for new aircraft
@@ -2216,7 +2216,7 @@ class BaseEnv(gym.Env):
 
                 # so, use the current outcomm status and position status,
                 # which should be set to `False` and `BEFORE_ENTRY`
-                # respectively when the dynamic data was initialized for the
+                # respectively when the dynamic data was initialised for the
                 # new aircraft in an earlier portion of this mdethod.
 
                 # assumed previous step (p_) outcomm and position status
@@ -2296,7 +2296,7 @@ class BaseEnv(gym.Env):
             # and position status as (in sector or pre-incomm)
             # note, uncontrollable aircraft or those transferred out
             # of the sector could still be encoded in the state but only
-            # as a neighborouring aircraft of a represented aircraft.
+            # as a neighbouring aircraft of a represented aircraft.
             #
             # therefore, this excludes an aircraft that has outcommed (i.e.,
             # `ac_tracker.outcomm_status` is set to True; whether it's still
@@ -2384,7 +2384,7 @@ class BaseEnv(gym.Env):
         #      to have exited the sector successfully.
         # (iii) the aircraft navigates *out of the sector* without going
         #       through the defined exit fix/window in its route. this is a
-        #       negative situation and agents should optimize their policy
+        #       negative situation and agents should optimise their policy
         #       to avoid it.
         #       NOTE: depending on the geometry of the sector/airspace, an
         #       aircraft that goes out of the sector re-enter the sector
@@ -2596,11 +2596,11 @@ class BaseEnv(gym.Env):
                 outcomm_status = prev_outcomm_status
                 distance_away_from_sector_exit = 0.0
                 # however, if default env outcomm policy is active, it could
-                # stil outcomm out-of-sector aircraft (this ensures that the
+                # still outcomm out-of-sector aircraft (this ensures that the
                 # external agent receives punishment for out-of-sector
                 # behaviour before it outcomms the aircraft). therefore,
                 # check whether the out-of-sector aircraft has been outcommed
-                # by the defaul env outcomm policy and override the set
+                # by the default env outcomm policy and override the set
                 # outcomm status.
                 if self.use_default_outcomm_policy and callsign in self._current_time_step_outcomm_buffer:
                     outcomm_status = True
@@ -2939,7 +2939,7 @@ class BaseEnv(gym.Env):
             gym.logger.warn(
                 "`.render()` called with `render_mode` set to None "
                 "(i.e., no render mode was specified). `render_mode` "
-                "can be specified as an argument at the initalization of "
+                "can be specified as an argument at the initialisation of "
                 "the environment. It can be set to one of the following: "
                 f"{self.metadata['render_modes']}"
             )
@@ -3171,9 +3171,9 @@ class BaseEnv(gym.Env):
 
         Returns:
             the available actions for the aircraft.
-            note, in centralized setup, if the aircraft was not selected in
+            note, in centralised setup, if the aircraft was not selected in
             the generation of state for the current time step, then `None`
-            is returned. this does not apply to decentralized setup.
+            is returned. this does not apply to decentralised setup.
         """
         try:
             aircraft_idx = self.selected_aircraft.index(callsign)
@@ -3188,7 +3188,7 @@ class BaseEnv(gym.Env):
             aircraft_action_map = {}
             for action_int, action_str in action_map.items():
                 if action_int == ACTION_NOOP:  # noqa: SIM108
-                    # noop action stays the same in centralized setup
+                    # noop action stays the same in centralised setup
                     reformatted_action_int = action_int
                 else:
                     reformatted_action_int = m[action_int]
@@ -3206,8 +3206,8 @@ class BaseEnv(gym.Env):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralized (single agent) or
-                decentralized (multi-agent).
+            view_type: the type of agent view, centralised (single agent) or
+                decentralised (multi-agent).
                 Defaults to "centralized".
 
         Returns:

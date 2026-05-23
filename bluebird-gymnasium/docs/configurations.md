@@ -64,15 +64,15 @@ Each configuration comprises sub-configurations, primarily defined as dictionari
 
 ### Agent Focused Sub-Configurations
 - `.action_config`: defines the action space for an environment instance.
-- `.reward_config`: defines a set of reward functions and their respective weights used to compute the scalarized reward per aircraft per step.
+- `.reward_config`: defines a set of reward functions and their respective weights used to compute the scalarised reward per aircraft per step.
 - `.state_repr_config`: defines the state encoding method to use in representing each aircraft state.
-- `.view_config`: defines the parameters that set up the gymnasium environment for either a single-agent (centralized) or multi-agent (decentralized).
+- `.view_config`: defines the parameters that set up the gymnasium environment for either a single-agent (centralised) or multi-agent (decentralised).
 - `.forward_fixes_config`: defines the parameters used to configure an aircraft's route information based on the number of forward fixes. The config is exploited by the actions execution and aircraft state representation.
 
 ### Digital Twin Related Sub-Configurations
 
 - `.airspace_config`: defines the airspace parameters used by the underlying `bluebird_dt` digital twin.
-- `.radar_config`: defines the parameters used for visualizing the digital twin via a matplotlib-based or SVG plot.
+- `.radar_config`: defines the parameters used for visualising the digital twin via a matplotlib-based or SVG plot.
 - `.scenario_config`: defines the parameters used to instantiate a scenario to run in the `bluebird_dt` digital twin.
 - `.simulation_log_config`: defines parameters used for specifying logging in the digital twin.
 

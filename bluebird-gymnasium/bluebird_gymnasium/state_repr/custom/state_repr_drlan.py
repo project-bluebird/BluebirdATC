@@ -137,10 +137,10 @@ class DrlanRepresentationRaw(BaseRepresentation):
 
 
     Note for users when training agents based on neural network policies:
-    while this presentation could be proccessed directly by a neural network,
+    while this presentation could be processed directly by a neural network,
     only consider using it only when additional pre-processing has been
     done before it is fed to a network as input. This is because the scales
-    and the range of values for each feature is signficantly different.
+    and the range of values for each feature is significantly different.
     An example of an additional processing is the use of normalization (and
     clipping) strategies to standardize the input based on running mean and
     standard deviation. This dynamically adjusts the scaling metrics unlike

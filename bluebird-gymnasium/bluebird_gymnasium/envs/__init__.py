@@ -61,7 +61,7 @@ class ViewType(StrEnum, metaclass=MetaEnum):
 
 
 class CentralizedSampler(StrEnum, metaclass=MetaEnum):
-    """Aircraft sampler for centralized setup."""
+    """Aircraft sampler for centralised setup."""
 
     EARLIEST = "earliest_entries"
     LATEST = "latest_entries"
@@ -84,7 +84,7 @@ class EnvConfig:
             simulator.
             Defaults to `None` which leads to the use of default configuration.
         radar_config: defines the parameters for the radar instance to
-            visualize the airspace.
+            visualise the airspace.
             Defaults to `None` which leads to the use of default configuration.
         reward_config: defines the reward function(s) employed and their
             respective weight/coefficient to the total reward per step.
@@ -96,7 +96,7 @@ class EnvConfig:
             the logging of simulation to disk at the end of an episode.
             Includes a flag to switch on/off simulation logging.
             Defaults to `None` which leads to the use of default configuration.
-        state_repr_config: defines the parameters used for genrating the
+        state_repr_config: defines the parameters used for generating the
             state representation per aircraft.
             Defaults to `None` which leads to the use of default configuration.
         view_config: defines the parameters used for generating final state

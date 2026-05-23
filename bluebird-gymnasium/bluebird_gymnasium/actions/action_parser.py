@@ -211,7 +211,7 @@ class ActionParser:
         self.num_actions_per_aircraft = NUM_NOOP_ACTIONS + num_actions
 
         if isinstance(num_sampled_aircraft, int) and num_sampled_aircraft > 0:
-            # centralized (single agent) action set up.
+            # centralised (single agent) action set up.
             # one global noop action rather than each aircraft
             # assigned a noop action
             self.total_num_actions = NUM_NOOP_ACTIONS + (
@@ -224,10 +224,10 @@ class ActionParser:
             self.reverse_action_formatter = self._action_formatter_centralized_reversed
 
         elif num_sampled_aircraft is None:
-            # decentralized (multi-agent) action set up.
+            # decentralised (multi-agent) action set up.
             self.total_num_actions = self.num_actions_per_aircraft
 
-            ## dict of ints action formatter for decentralized set up
+            ## dict of ints action formatter for decentralised set up
             self.action_formatter = self._action_formatter_decentralized
             self.reverse_action_formatter = self._action_formatter_decentralized_reversed
         else:
@@ -322,14 +322,14 @@ class ActionParser:
     def _action_formatter_centralized(self, action: int, sampled_aircraft: list[str]) -> dict[str, int]:
         """Format integer action to the integer action for a specific aircraft
 
-        This is necessary for centralized (single-agent) setup because the
+        This is necessary for centralised (single-agent) setup because the
         gym environment exposes the actions to the agent based on the total
         number of actions per aircraft multiplied by the number of selected
         (sampled aircraft).
 
         For example, if there are 3 actions are
         available to each aircraft and there are 5 sampled aircraft, then
-        the action space for the centralized setup would be 16
+        the action space for the centralised setup would be 16
         (3 actions per aircraft x 5 aircraft) + 1 no-op/dummy action.
         Hence [0, 1, .... 15]. Note, no-op action is assigned as integer
         action 0 by default.
@@ -340,7 +340,7 @@ class ActionParser:
 
 
         Args:
-            action: the action selected from the gym enviornment.
+            action: the action selected from the gym environment.
             sampled_aircraft: the list of sampled/selected aircraft at the
                 current time step.
 
@@ -385,7 +385,7 @@ class ActionParser:
     ) -> dict[str, int]:
         """Helper method for action formatting.
 
-        In the decentralized (multi-agent) setup, nothing needs to be done
+        In the decentralised (multi-agent) setup, nothing needs to be done
         as each agent/aircraft has its own action space which is number of
         actions available to it. the action argument (which is a `dict`) is
         already in the correct format.
@@ -394,13 +394,13 @@ class ActionParser:
             action: defines each key-value as an aircraft's callsign and
                 integer action for the aircraft.
             sampled_aircraft (list): the list of sampled/selected aircraft
-                at the current time step. Defaults to None in decentralized
+                at the current time step. Defaults to None in decentralised
                 set up as it is not needed. Added to retain compatibility with
                 _action_formatter_centralized method signature.
 
         Returns:
             `dict`, the action argument passed. it is left unchanged as no
-            action formatting is required in the decentralized setup.
+            action formatting is required in the decentralised setup.
         """
 
         # final action formatting based on the action types
@@ -585,7 +585,7 @@ class ActionParser:
             tuple of two elements or `None`.
             the tuple contains the action id (`int`) and the string identifier
             of the action specified in `.action_formatter_map`.
-            if `None`, is returned it inidicates that the action is not
+            if `None`, is returned it indicates that the action is not
             supported in the current instance of the environment.
         """
 
@@ -609,7 +609,7 @@ class ActionParser:
                 curr_selected_heading = tracked_data.selected_heading
 
             else:
-                # difference betweeen current and previous selected headings
+                # difference between current and previous selected headings
                 curr_selected_heading = tracked_data.selected_heading
                 if curr_selected_heading != action_st.value:
                     raise ValueError("Inconsistent data: selected heading")
@@ -878,7 +878,7 @@ class ActionParser:
                 current time step
 
         Returns:
-            action, `int` (based on the centralized setup action space for the
+            action, `int` (based on the centralised setup action space for the
             gym environment) or `None` if the value in `action_rf_dict` is
             `None` (which indicates that the action issued for the aircraft is
             not supported in the current environment instance).
@@ -895,7 +895,7 @@ class ActionParser:
             # hence ignore it.
             gym_action_int = None
         elif action_rf is None:
-            # this indiciates that the action is not supported
+            # this indicates that the action is not supported
             # in the current env instannce. see the docstring of
             # `.convert_simulator_action_to_gym_action(...)` for more details
             gym_action_int = None
@@ -912,7 +912,7 @@ class ActionParser:
     ) -> dict[str, int]:
         """Reverse of the `_action_formatter_decentralized(...)` method
 
-        No reverse formatting needs to be done for the decentralized setup as
+        No reverse formatting needs to be done for the decentralised setup as
         the actions from the gym env are never formatted as they're already in
         the correct format.
 
@@ -920,16 +920,16 @@ class ActionParser:
             action_dict (dict): defines each key-value as an aircraft's
                 callsign and integer action for the aircraft.
             sampled_aircraft (list): the list of sampled/selected aircraft
-                at the current time step. Defaults to None in decentralized
+                at the current time step. Defaults to None in decentralised
                 set up as it is not needed. Added to retain compatibility with the
                 `_action_formatter_centralized_reversed` method signature.
 
         Returns:
             `dict`, the actions_int argument passed. it is left unchanged as no
-            reverse action formatting is required in the decentralized setup.
+            reverse action formatting is required in the decentralised setup.
         """
 
         # do nothing.
-        # decentralized setup does not use action formatting.
+        # decentralised setup does not use action formatting.
         # see `._action_formatter_decentralized(...)`
         return actions_dict

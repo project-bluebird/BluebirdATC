@@ -7,7 +7,7 @@ DIFF_THRESHOLD = 1.0  # nautical miles (nmi)
 
 
 def expeditious_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
-    """Reward or penalize for being navigating efficiently or inefficiently.
+    """Reward or penalise for being navigating efficiently or inefficiently.
 
     Reward or penalty is computed as a constant.
     For a given aircraft, if its current distance to its exit is less than the
@@ -39,7 +39,7 @@ def expeditious_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) ->
 
 
 def expeditious_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
-    """Reward or penalize for being navigating efficiently or inefficiently.
+    """Reward or penalise for being navigating efficiently or inefficiently.
 
     Reward is computed using an linear function.
 
@@ -90,7 +90,7 @@ def expeditious_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -
         # flight level, the faster the aircraft).
 
         speed_scale = 1.0 - (aircraft.speed_tas / MAX_SPEED_TAS)
-        # ensure that the scale is not completelly 0.0 for aircraft
+        # ensure that the scale is not completely 0.0 for aircraft
         # flying at the max speed.
         speed_scale = max(speed_scale, 0.1)
 
@@ -100,7 +100,7 @@ def expeditious_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -
 
 
 def expeditious_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
-    """Reward or penalize for being navigating efficiently or inefficiently.
+    """Reward or penalise for being navigating efficiently or inefficiently.
 
     Reward is computed using a quadratic function.
 
@@ -153,7 +153,7 @@ def expeditious_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> 
         # flight level, the faster the aircraft).
 
         speed_scale = 1.0 - (aircraft.speed_tas / MAX_SPEED_TAS)
-        # ensure that the scale is not completelly 0.0 for aircraft
+        # ensure that the scale is not completely 0.0 for aircraft
         # flying at the max speed.
         speed_scale = max(speed_scale, 0.1)
 
@@ -163,7 +163,7 @@ def expeditious_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> 
 
 
 def expeditious_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
-    """Reward or penalize for being navigating efficiently or inefficiently.
+    """Reward or penalise for being navigating efficiently or inefficiently.
 
     Reward is computed using an exponeniated function or a constant value of
     0 (for a penalty).
@@ -219,7 +219,7 @@ def expeditious_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> f
             # flight level, the faster the aircraft).
 
             speed_scale = 1.0 - (aircraft.speed_tas / MAX_SPEED_TAS)
-            # ensure that the scale is not completelly 0.0 for aircraft
+            # ensure that the scale is not completely 0.0 for aircraft
             # flying at the max speed.
             speed_scale = max(speed_scale, 0.1)
 

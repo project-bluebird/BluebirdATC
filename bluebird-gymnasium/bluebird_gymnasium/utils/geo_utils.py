@@ -223,7 +223,7 @@ def get_route_segments_in_sector(
 ) -> list[NamedLine]:
     """Get route segments/lines for segments within a sector
 
-    Returns route segements for the given route, consisting of tuples marking
+    Returns route segments for the given route, consisting of tuples marking
     the start and end in Pos2D.
 
     Note that for a segment where one fix is within the sector and the other
@@ -365,7 +365,7 @@ def get_route_segments(
 ) -> list[NamedLine]:
     """Get route segments/lines
 
-    Returns route segements for the given route, consisting of tuples marking
+    Returns route segments for the given route, consisting of tuples marking
     the start and end in Pos2D; Used for finding closest segments, finding
     lateral route deviations etc.
 
@@ -520,7 +520,7 @@ def get_centreline_distance(
             before the first fix (standard) position in the route.
 
     Returns:
-        tuple containg three elements:
+        tuple containing three elements:
         - the centreline distance,
         - direction of turn (deviation) from centreline (encoded as a
           ternary value),
@@ -547,7 +547,7 @@ def _get_centreline_distance(position: Pos2D, segments: list[Line]) -> tuple[flo
             each segment/line is defined by its start and end position.
 
     Returns:
-        tuple containg three elements:
+        tuple containing three elements:
         - the centreline distance,
         - direction of turn (deviation) from centreline (encoded as a
           ternary value),
@@ -840,7 +840,7 @@ def nearest_forward_boundary_position(
       (or within the correct exit fix window). If no intersection exist (
       None returned), it implies that the sector is longer than the 150nm
       distance chosen. Consider calling the function again with an increased
-      value pased for `on_heading_forward_distance`.
+      value passed for `on_heading_forward_distance`.
 
     Args:
         aircraft: defines the aircraft.
@@ -849,7 +849,7 @@ def nearest_forward_boundary_position(
         exit_fix_pos: defines the location of the aircraft's exit fix.
         route_distance_to_exit_fix: defines the aircraft's current track
             distance to its exit fix position. This is used when the
-            aircraft is route following and its current segement does not
+            aircraft is route following and its current segment does not
             intersect with the sector boundary. Hence, the returned distance
             from this function is set to this value.
         on_heading_forward_distance: defines the distance to project the
@@ -1263,7 +1263,7 @@ def path_intersection(
 
     A path is a collection of segments/lines.
     Note: this is a generalised version of `line_intersection_any(...)`
-    where there are mulitple target lines.
+    where there are multiple target lines.
 
     Args:
         lines_1: defines the list of lines for the first path.
@@ -1332,7 +1332,7 @@ def line_parallel(line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: f
     angular_diff2 = angle_diff(line_1_angle, line_2_angle_reverse)
 
     if angular_diff <= epsilon or angular_diff2 <= epsilon:
-        # step 2: check for latitudinal spearation
+        # step 2: check for latitudinal separation
         bearing = line_1[0].bearing_to(line_2[0])
 
         parallel_status = angle_diff(bearing, line_1_angle) > epsilon

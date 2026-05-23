@@ -139,7 +139,7 @@ def safety_simple_avoidance_exp(gym_env: BaseEnv, callsign: str, action: int, **
         buffer = {}
 
         ## get future trajectory of the other aircraft
-        ## optimize: this could be optimized with a lambda fn
+        ## optimise: this could be optimised with a lambda fn
         ## so that `if` is not checked in every loop iteration.
         other_ac_tracked_state = gym_env.get_tracked_aircraft_data(other_callsign)
         if other_ac_tracked_state is not None:

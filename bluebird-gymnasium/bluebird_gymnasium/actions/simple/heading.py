@@ -67,7 +67,7 @@ def get_forward_segment_angle(
         - if the `segment_idx` is greater than the number of available forward
           segment and `clip` is False, then `None` is returned.
 
-        Note, this scenario could ocurr if an aircraft is approaching its last
+        Note, this scenario could occur if an aircraft is approaching its last
         fix in the route, and an action action to fly parallel to segment after
         the current segment (i.e., segment_idx set to 2) is issued, this clip
         ensures that the current segment is used instead, as there is no next
