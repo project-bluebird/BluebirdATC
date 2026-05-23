@@ -24,7 +24,7 @@ def _get_env_instance(
     view_type: ViewType,
     env_cls: EnvCls,
     scenario_name: ScenarioName = ScenarioName.sector_xplus,
-) -> EnvCls:
+) -> InfiniteEnv | CustomInfiniteEnv:
     config = env_cls.get_default_env_config(view_type)
     config.scenario_config["scenario_name"] = scenario_name.value
     return env_cls(config=config)
