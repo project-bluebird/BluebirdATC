@@ -89,7 +89,7 @@ def validate_action_list(action_name: str, data_list: list[Number]) -> tuple[boo
 
 
 class ActionParser:
-    supported_actions: tuple[str] = [
+    supported_actions: tuple[str, ...] = (
         # noop
         "action_noop",
         # heading
@@ -111,7 +111,7 @@ class ActionParser:
         "simple_route_direct",
         # outcomm
         "simple_outcomm",
-    ]
+    )
 
     def __init__(
         self,

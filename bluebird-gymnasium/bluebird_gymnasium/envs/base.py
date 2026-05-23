@@ -220,8 +220,7 @@ class BaseEnv(gym.Env):
         elif self.config.diagnostics_level == Diagnostics.FULL:
             self._diagnostics = self._full_diagnostics
         else:
-            _msg = "diagnostics_level can only be set to one of the "
-            f"following: {list(Diagnostics)}"
+            _msg = f"diagnostics_level can only be set to one of the following: {list(Diagnostics)}"
             raise ValueError(_msg)
 
         # exit window width
@@ -238,8 +237,10 @@ class BaseEnv(gym.Env):
         # use default outcomm policy: it is only valid for use when "outcomm"
         # in action config is set to False.
         if self.config.action_config.get("outcomm", False) is True and self.config.use_default_outcomm_policy is True:
-            _msg = "`config.use_default_outcomm_policy` can only be set "
-            "to True when `config.action_config['outcomm']` is set to False"
+            _msg = (
+                "`config.use_default_outcomm_policy` can only be set to True when "
+                "`config.action_config['outcomm']` is set to False"
+            )
             raise ValueError(_msg)
         self.use_default_outcomm_policy = config.use_default_outcomm_policy
 
@@ -2908,7 +2909,7 @@ class BaseEnv(gym.Env):
         if render_mode is None or render_mode in self.metadata["render_modes"]:
             self.render_mode = render_mode
         else:
-            _msg = "`render_mode` can only be set to `None` or one of thefollowing: {0}"
+            _msg = "`render_mode` can only be set to `None` or one of the following: {0}"
             raise ValueError(_msg.format(self.metadata["render_modes"]))
 
     def render(self) -> None | NDArray[numpy.float32]:

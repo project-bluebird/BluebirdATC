@@ -19,7 +19,7 @@ if sys.platform == "darwin":
     mpl.use("macOSX")  # backend TKAgg also works
 
 
-def visualize_airspace(env: BaseEnv, render_mode: str = "rgb_array", clean_up: bool = True):
+def visualize_airspace(env: BaseEnv | str, render_mode: str = "rgb_array", clean_up: bool = True):
     """Visualize the airspace of an environment
 
     This is useful to give a pictorial view of an airspace without

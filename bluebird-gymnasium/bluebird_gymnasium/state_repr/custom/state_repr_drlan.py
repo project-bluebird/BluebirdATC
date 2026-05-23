@@ -330,7 +330,6 @@ class DrlanRepresentationRaw(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -361,10 +360,10 @@ class DrlanRepresentationRaw(BaseRepresentation):
             fl_diff_ac_other = interactions[i].fl_diff_ac_other
 
             # horizontal airspeed
-            other_horizontal_airspeed = convert.horizontal_tas(aircraft.speed_tas, aircraft.vertical_speed)
+            other_horizontal_airspeed = convert.horizontal_tas(other_aircraft.speed_tas, other_aircraft.vertical_speed)
 
             # ground speed: east and north ground speed
-            other_east_ground_speed, other_north_ground_speed = east_north_ground_speed(callsign, simulator_env)
+            other_east_ground_speed, other_north_ground_speed = east_north_ground_speed(callsign_other, simulator_env)
 
             # previous step action
             _action_int = tracked_data[callsign_other].action
@@ -689,7 +688,6 @@ class DrlanRepresentation(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -720,10 +718,10 @@ class DrlanRepresentation(BaseRepresentation):
             fl_diff_ac_other = interactions[i].fl_diff_ac_other
 
             # horizontal airspeed
-            other_horizontal_airspeed = convert.horizontal_tas(aircraft.speed_tas, aircraft.vertical_speed)
+            other_horizontal_airspeed = convert.horizontal_tas(other_aircraft.speed_tas, other_aircraft.vertical_speed)
 
             # ground speed: east and north ground speed
-            other_east_ground_speed, other_north_ground_speed = east_north_ground_speed(callsign, simulator_env)
+            other_east_ground_speed, other_north_ground_speed = east_north_ground_speed(callsign_other, simulator_env)
 
             # previous step action
             _action_int = tracked_data[callsign_other].action

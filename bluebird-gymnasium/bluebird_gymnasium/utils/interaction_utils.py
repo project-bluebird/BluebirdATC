@@ -1661,6 +1661,7 @@ def filter_interactions_by_route_or_heading(
 def filter_interactions_by_current_distance(
     interactions: list[InteractionInfo],
     callsign: str,
+    tracked_data: dict[str, ACStateTracker],
     simulator_env: SimulatorEnv,
     distance_threshold: float,
 ) -> tuple[list[InteractionInfo], list[int]]:
@@ -1684,6 +1685,8 @@ def filter_interactions_by_current_distance(
         callsign: defines the identifier of the aircraft for which its
             interactions with other aircraft is defined in the `interaction`
             list.
+        tracked_data: retained for API compatibility. Current-distance
+            filtering does not use the tracked trajectory data.
         simulator_env: defines the underlying simulator.
         distance_threshold: the threshold distance used to check the
             evaluate the condition for filtering out interactions.
@@ -1695,6 +1698,8 @@ def filter_interactions_by_current_distance(
         - the indexes/positions of the filtered interactions in the original
           list.
     """
+
+    _ = tracked_data
 
     # get future traj for aircraft
     aircraft = simulator_env.aircraft[callsign]

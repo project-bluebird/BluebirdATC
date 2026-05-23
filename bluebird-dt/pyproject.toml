@@ -84,9 +84,6 @@ select = [
   "PT", # flake8-pytest-style
   "RET", # flake8-return
   "ARG", # flake8-unused-arguments
-  "PD", # pandas-vet
-  "R", # refactor
-  "W", # warnings
   "PERF", #perflint
   "RUF", # ruff
   "NPY201", # numpy v2. depreciation checking

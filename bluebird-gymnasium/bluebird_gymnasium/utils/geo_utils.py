@@ -1015,7 +1015,7 @@ def passed_location(location: Pos2D, aircraft_cps: list[Pos4D]) -> bool:
     d0 = aircraft_cps[0].distance(location)
     d1 = aircraft_cps[1].distance(location)
 
-    return d1 > d0
+    return d0 <= d1
 
 
 ############ fixes and position checks in a given sector.
