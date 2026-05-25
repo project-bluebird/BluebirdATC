@@ -186,7 +186,7 @@ def find_all_boundary_intersections(
         - the line a->b intersects c->d at the location: c + u * (d - c)
         - see `line_intersection()` function for more detail
     """
-    from bluebird_dt.core.area import Area # avoid circular import
+    from bluebird_dt.core.area import Area  # avoid circular import
 
     # extract the coordinates of the polygon -- note that the
     # attribute .xy consists of two rows: lons and lats
