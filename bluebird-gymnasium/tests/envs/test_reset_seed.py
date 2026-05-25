@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 import typing
 
@@ -13,7 +15,18 @@ from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv
 from bluebird_gymnasium.envs.sector_y import SectorYEnv
 from bluebird_gymnasium.envs.springfield import SpringfieldEnv
 
-EnvCls: typing.TypeAlias = typing.Any
+if typing.TYPE_CHECKING:
+    from bluebird_dt.core.coordination import Coordination
+
+EnvCls: typing.TypeAlias = (
+    type[InfiniteEnv]
+    | type[CustomInfiniteEnv]
+    | type[SectorIEnv]
+    | type[SectorXEnv]
+    | type[SectorXPlusEnv]
+    | type[SectorYEnv]
+    | type[SpringfieldEnv]
+)
 
 SECTOR_ENV_CLASSES = (SectorIEnv, SectorXEnv, SectorXPlusEnv, SectorYEnv)
 GENERATED_ENV_CLASSES = (
@@ -26,7 +39,7 @@ GENERATED_ENV_CLASSES = (
 )
 
 
-def _get_env_instance(env_cls: EnvCls):
+def _get_env_instance(env_cls: EnvCls) -> EnvCls:
     config = env_cls.get_default_env_config(ViewType.CENTRALIZED)
 
     if env_cls in SECTOR_ENV_CLASSES:
@@ -35,10 +48,10 @@ def _get_env_instance(env_cls: EnvCls):
     return env_cls(config=config)
 
 
-def _initial_aircraft_signature(gym_env):
+def _initial_aircraft_signature(gym_env: EnvCls) -> tuple[typing.Any, ...]:
     """Build a stable snapshot of generated initial traffic."""
 
-    def _coordination_signature(coordination):
+    def _coordination_signature(coordination: Coordination) -> tuple[typing.Any]:
         level_by_details = coordination.level_by_details
         if isinstance(level_by_details, dict):
             level_by_details = tuple(sorted(level_by_details.items()))
@@ -79,16 +92,12 @@ def _initial_aircraft_signature(gym_env):
             tuple(
                 sorted(
                     _coordination_signature(coordination)
-                    for coordination in (
-                        simulator_env.coordinations.coords.values()
-                    )
+                    for coordination in (simulator_env.coordinations.coords.values())
                     if coordination.callsign == callsign
                 )
             ),
         )
-        for callsign, aircraft in sorted(
-            simulator_env.aircraft.items()
-        )
+        for callsign, aircraft in sorted(simulator_env.aircraft.items())
     )
 
 
@@ -106,10 +115,10 @@ def _initial_aircraft_signature(gym_env):
     ids=lambda param: param.name if isinstance(param, ScenarioGenSeedMode) else None,
 )
 def test_reset_seed_context_applies_seed_mode(
-    seed_mode,
-    expected_reset_seed,
-    expects_legacy_rngs,
-    monkeypatch,
+    seed_mode: ScenarioGenSeedMode,
+    expected_reset_seed: int | None,
+    expects_legacy_rngs: bool,
+    monkeypatch,  # noqa: ANN001
 ):
     """Test how each seed mode applies reset seeds."""
 
@@ -130,9 +139,7 @@ def test_reset_seed_context_applies_seed_mode(
     assert len(numpy_seeds) == (1 if expects_legacy_rngs else 0)
 
 
-@pytest.mark.parametrize(
-    "env_cls", GENERATED_ENV_CLASSES, ids=lambda env_cls: env_cls.__name__
-)
+@pytest.mark.parametrize("env_cls", GENERATED_ENV_CLASSES, ids=lambda env_cls: env_cls.__name__)
 def test_reset_seed_controls_generated_aircraft(env_cls: EnvCls):
     """Test that reset seeds are propagated to scenario generation."""
 
@@ -155,13 +162,11 @@ def test_reset_seed_controls_generated_aircraft(env_cls: EnvCls):
     assert unseeded_signature != first_seed_signature
 
 
-def test_legacy_rng_seed_uses_full_reset_seed(monkeypatch):
+def test_legacy_rng_seed_uses_full_reset_seed(monkeypatch):  # noqa: ANN001
     """Test that legacy RNG seeding uses the full reset seed."""
 
     gym_env = object.__new__(BaseEnv)
-    gym_env.scenario_seed_mode = (
-        ScenarioGenSeedMode.LEGACY_MODULE_RNGS
-    )
+    gym_env.scenario_seed_mode = ScenarioGenSeedMode.LEGACY_MODULE_RNGS
     gym_env._reset_seed = None
 
     numpy_seeds = []
@@ -180,19 +185,16 @@ def test_reset_seed_context_clears_seed_after_error():
     """Test that the reset seed context cleans up after exceptions."""
 
     gym_env = object.__new__(BaseEnv)
-    gym_env.scenario_seed_mode = (
-        ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE
-    )
+    gym_env.scenario_seed_mode = ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE
     gym_env._reset_seed = None
 
     random_state = random.getstate()
     numpy_random_state = np.random.get_state()
 
     try:
-        with pytest.raises(RuntimeError):
-            with gym_env._use_reset_seed_for_scenario_generation(42):
-                assert gym_env._reset_seed == 42
-                raise RuntimeError
+        with pytest.raises(RuntimeError), gym_env._use_reset_seed_for_scenario_generation(42):  # noqa: PT012
+            assert gym_env._reset_seed == 42
+            raise RuntimeError
 
         assert gym_env._reset_seed is None
 

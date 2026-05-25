@@ -31,7 +31,7 @@ To keep a fixed feature size for the neighbour aircraft features, a parameter ca
 
 To use a specific state representation (for aircraft encoding) in an environment instance, specify the state representation in the configuration used to instantiate the environment. In a sample environment, a `RelativeRepresentation` can be specified using:
 
-```
+```json
 {
     ...
     "state_repr_config": {

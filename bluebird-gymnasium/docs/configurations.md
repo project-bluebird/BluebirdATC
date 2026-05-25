@@ -7,7 +7,7 @@ Each environment contains a default environment configuration which can be retri
 
 The sample code snippet below fetches the default configuration for the `SectorXPlusEnv` environment.
 
-```
+```python
 from bluebird_gymnasium.envs import SectorXPlusEnv
 env_config = SectorXPlusEnv.get_default_env_config()
 ```
@@ -18,7 +18,7 @@ env_config = SectorXPlusEnv.get_default_env_config()
 
 The sample code snippet below demonstrates how to instantiate the `SectorXPlusEnv` environment.
 
-```
+```python
 from bluebird_gymnasium.envs import SectorXPlusEnv
 env_config = SectorXPlusEnv.get_default_env_config()
 
@@ -35,17 +35,24 @@ env_2 = gym.make("SectorXPlusEnv-v0", config=env_config)
 The configuration can be saved to and loaded from a disk as a JSON file.
 
 The sample code snippet below saves a configuration to disk.
-```
-# assuming env_config was previously defined
+```python
 import json
+from dataclasses import asdict
+
+from bluebird_gymnasium.envs import SectorXPlusEnv
+
+env_config = SectorXPlusEnv.get_default_env_config()
+
 with open("env_config.json", "w") as fp:
-    json.dump(vars(args), fp, indent=4)
+    json.dump(asdict(env_config), fp, indent=4)
 ```
 
 The sample code snippet below loads a configuration from disk.
-```
+```python
 import json
+
 from bluebird_gymnasium.envs import EnvConfig
+
 with open("env_config.json", "r") as fp:
     env_config_dict = json.load(fp)
     env_config = EnvConfig(**env_config_dict)
@@ -57,15 +64,15 @@ Each configuration comprises sub-configurations, primarily defined as dictionari
 
 ### Agent Focused Sub-Configurations
 - `.action_config`: defines the action space for an environment instance.
-- `.reward_config`: defines a set of reward functions and their respective weights used to compute the scalarized reward per aircraft per step.
+- `.reward_config`: defines a set of reward functions and their respective weights used to compute the scalarised reward per aircraft per step.
 - `.state_repr_config`: defines the state encoding method to use in representing each aircraft state.
-- `.view_config`: defines the parameters that set up the gymnasium environment for either a single-agent (centralized) or multi-agent (decentralized).
+- `.view_config`: defines the parameters that set up the gymnasium environment for either a single-agent (centralised) or multi-agent (decentralised).
 - `.forward_fixes_config`: defines the parameters used to configure an aircraft's route information based on the number of forward fixes. The config is exploited by the actions execution and aircraft state representation.
 
 ### Digital Twin Related Sub-Configurations
 
 - `.airspace_config`: defines the airspace parameters used by the underlying `bluebird_dt` digital twin.
-- `.radar_config`: defines the parameters used for visualizing the digital twin via a matplotlib-based or SVG plot.
+- `.radar_config`: defines the parameters used for visualising the digital twin via a matplotlib-based or SVG plot.
 - `.scenario_config`: defines the parameters used to instantiate a scenario to run in the `bluebird_dt` digital twin.
 - `.simulation_log_config`: defines parameters used for specifying logging in the digital twin.
 

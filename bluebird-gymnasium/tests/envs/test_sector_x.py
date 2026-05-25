@@ -1,18 +1,16 @@
 import numpy as np
 import pytest
 
-from datetime import timezone
-
 from bluebird_gymnasium.envs import ViewType
 from bluebird_gymnasium.envs.sector_x import SectorXEnv
-from bluebird_gymnasium.utils.types import PositionStatus, ACPositionInfo
+from bluebird_gymnasium.utils.types import ACPositionInfo, PositionStatus
 
 VIEW_TYPES = list(ViewType)
 
-def _get_env_instance(view_type: ViewType=ViewType.CENTRALIZED):
+
+def _get_env_instance(view_type: ViewType = ViewType.CENTRALIZED) -> SectorXEnv:
     config = SectorXEnv.get_default_env_config(view_type)
-    gym_env = SectorXEnv(config=config)
-    return gym_env
+    return SectorXEnv(config=config)
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
@@ -24,7 +22,7 @@ def test_init_exceptions(view_type: ViewType):
             or DECENTRALIZED (multi agent) representations.
     """
 
-    gym_env = _get_env_instance(view_type)
+    _get_env_instance(view_type)
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
@@ -43,11 +41,11 @@ def test_reset(view_type: ViewType):
         assert isinstance(obs, np.ndarray)
         assert isinstance(info, dict)
         assert obs.shape == gym_env.observation_space.shape
-    else:  # decentralized
+    else:  # decentralised
         assert isinstance(obs, dict)
         assert isinstance(info, dict)
         if len(obs) > 0:
-            callsign = list(obs.keys())[0]
+            callsign = next(iter(obs.keys()))
             assert obs[callsign].shape == gym_env.observation_space.shape
 
 
@@ -77,7 +75,7 @@ def test_step(view_type: ViewType):
         assert (timestep_before + 1) == timestep_after
         assert obs.shape == gym_env.observation_space.shape
 
-    else:  # decentralized
+    else:  # decentralised
         action = {}  # no action on any aircraft
         obs, reward, done, truncated, info = gym_env.step(action)
         timestep_after = gym_env.timestep
@@ -89,7 +87,7 @@ def test_step(view_type: ViewType):
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after
         if len(obs) > 0:
-            callsign = list(obs.keys())[0]
+            callsign = next(iter(obs.keys()))
             assert obs[callsign].shape == gym_env.observation_space.shape
 
 
@@ -109,26 +107,27 @@ def test_pos_information(view_type: ViewType):
             or DECENTRALIZED (multi agent) representations.
     """
 
-    if view_type == ViewType.CENTRALIZED:
-        action = 0
-    else:  # decentralized
-        action = {}  # no action on any aircraft
+    action = 0 if view_type == ViewType.CENTRALIZED else {}  # no action on any aircraft
 
     gym_env = _get_env_instance(view_type)
-    obs, info = gym_env.reset()
-    simulator_env = gym_env.get_simulator_env()
+    gym_env.reset()
 
-    # check what time the first aircraft is spawned in the environment
-    radar_df = gym_env.get_manager().event_handler.radar_df
-    start_time = radar_df.index.min().replace(tzinfo=timezone.utc).timestamp()
-    start_step = int(start_time // gym_env.scenario_sec_per_step)
-    for _ in range(start_step):
+    # forward the simulation to the time when at least one aircraft is being
+    # tracked
+    tracked_data = {}
+    max_steps = 100
+    for _ in range(max_steps):
+        tracked_data = gym_env.get_tracked_aircraft_data()
+        if tracked_data:
+            break
+
         gym_env.step(action)
 
-    callsign = list(simulator_env.aircraft.keys())[0]
-    ret: ACPositionInfo = gym_env.check_pos_information(
-        callsign, PositionStatus.BEFORE_ENTRY, False, False, None
-    )
+    else:
+        pytest.fail(f"No aircraft were tracked within the step limit of {max_steps}.")
+
+    callsign = next(iter(tracked_data))
+    ret: ACPositionInfo = gym_env.check_pos_information(callsign, PositionStatus.BEFORE_ENTRY, False, False, None)
 
     # in artificial airspace, we can expect that the first aircraft
     # at start of the scenario is yet to enter the airspace/sector.

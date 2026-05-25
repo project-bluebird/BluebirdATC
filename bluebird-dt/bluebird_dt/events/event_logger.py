@@ -997,7 +997,7 @@ class EventLogger:
             The event logger save EnvironmentManager parameters automatically but attributes of
             the Simulator class need to be explicitly added to the config log.
         save_csv: bool
-            A flag to determine if csv should be saved, deafult yes.
+            A flag to determine if csv should be saved, default yes.
 
         Returns
         -------

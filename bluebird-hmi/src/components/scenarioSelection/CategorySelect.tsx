@@ -7,25 +7,26 @@ import PanelHeading from "components/panel/items/PanelHeading";
 import PanelButton from "components/panel/items/PanelButton";
 
 interface CategorySelectProps {
-    handleSelectCategory: (string) => void;
-    handleCancel: () => void;
+  handleSelectCategory: (string) => void;
+  handleCancel: () => void;
 }
 
 export function CategorySelect(props: CategorySelectProps) {
+  const { handleSelectCategory, handleCancel } = props;
 
-    const {handleSelectCategory, handleCancel} = props;
-
-    return (
-        <Box className={"page"}>
-            <Paper className={"column"}>
-                <PanelHeading text="Category selection" />
-                <Divider />
-                <CategoryListPanel handleSelectCategory={handleSelectCategory}/>
-                <Divider />
-                <PanelButton onClick={handleCancel} text={"Cancel"} icon={<CancelIcon />} />
-            </Paper>
-        </Box>
-
-    );
-
+  return (
+    <Box className={"page"}>
+      <Paper className={"column"}>
+        <PanelHeading text="Category selection" />
+        <Divider />
+        <CategoryListPanel handleSelectCategory={handleSelectCategory} />
+        <Divider />
+        <PanelButton
+          onClick={handleCancel}
+          text={"Cancel"}
+          icon={<CancelIcon />}
+        />
+      </Paper>
+    </Box>
+  );
 }

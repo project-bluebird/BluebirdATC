@@ -5,13 +5,13 @@ It is written in the [React](https://react.dev/) framework.
 
 ## Terminology
 
-In this context, **HMI** means the web-based **GUI** ("Human Machine Interface") used to view and interact with a running Bluebird simulation.
+In this context, **HMI** ("Human Machine Interface") means the web-based **GUI** used to view and interact with a running Bluebird simulation.
 
 ## Using the pre-built HMI
 
 The built (minified) HMI code is distributed in the BluebirdATC repository, so users can run it without installing Node.js or frontend dependencies.
 
-1. Start the `bluebird-api` service (see documentation [here](../bluebird-api/index.md)).
+1. Start the `bluebird-api` service (see documentation [here](../bluebird-api/getting-started.md)).
 2. Confirm the API is running locally on port `8000`.
 3. Open the HMI in your browser at [http://localhost:8000/hmi](http://localhost:8000/hmi).
 

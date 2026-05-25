@@ -1,20 +1,23 @@
 from __future__ import annotations
 
+import typing
+
 import numpy as np
 from bluebird_dt.utility import convert
 
-from bluebird_gymnasium.envs.base import BaseEnv
 from bluebird_gymnasium.state_repr import (
     StateReprClipper as SRC,
+)
+from bluebird_gymnasium.state_repr import (
     StateReprScaler as SRS,
 )
 from bluebird_gymnasium.state_repr.base import BaseRepresentation
 from bluebird_gymnasium.utils.simulator_utils import get_n_forward_fixes
 
-import typing
-
 if typing.TYPE_CHECKING:
     import numpy.typing as npt
+
+    from bluebird_gymnasium.envs.base import BaseEnv
 
 
 class VanillaRepresentationRaw(BaseRepresentation):
@@ -70,10 +73,10 @@ class VanillaRepresentationRaw(BaseRepresentation):
             `None` if it is not used in the aircraft's state representation.
 
     Note for users when training agents based on neural network policies:
-    while this representation could be proccessed directly by a neural network,
+    while this representation could be processed directly by a neural network,
     only consider using it only when additional pre-processing has been
     done before it is fed to a network as input. This is because the scales
-    and the range of values for each feature is signficantly different.
+    and the range of values for each feature is significantly different.
     An example of an additional processing is the use of normalization (and
     clipping) strategies to standardize the input based on running mean and
     standard deviation. This dynamically adjusts the scaling metrics unlike
@@ -88,9 +91,7 @@ class VanillaRepresentationRaw(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(VanillaRepresentationRaw, self).__init__(
-            knn, num_forward_fixes, use_filed_route, num_actions
-        )
+        super().__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [-np.inf, 0.0]
@@ -144,7 +145,6 @@ class VanillaRepresentationRaw(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing base features
@@ -167,12 +167,10 @@ class VanillaRepresentationRaw(BaseRepresentation):
         ####### neighbours features
         neighbours_feats = self.generate_neighbours_features(gym_env, callsign)
 
-        feats_list = [base_feats] + fixes_feats + neighbours_feats
+        feats_list = [base_feats, *fixes_feats, *neighbours_feats]
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -192,7 +190,6 @@ class VanillaRepresentationRaw(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing fixes features
@@ -202,17 +199,10 @@ class VanillaRepresentationRaw(BaseRepresentation):
         prev_fix_pos = simulator_env.airspace.fixes.places[prev_fix]
 
         _next_fix = tracked_data[callsign].next_fix_fr
-        fixes = get_n_forward_fixes(
-            route, start_from=_next_fix, n=self.num_forward_fixes
-        )
-        next_fixes_pos = [
-            simulator_env.airspace.fixes.places[fix]
-            for fix in fixes
-            if fix is not None
-        ]
+        fixes = get_n_forward_fixes(route, start_from=_next_fix, n=self.num_forward_fixes)
+        next_fixes_pos = [simulator_env.airspace.fixes.places[fix] for fix in fixes if fix is not None]
         num_none_fixes = self.num_forward_fixes - len(next_fixes_pos)
 
-        ac_pos = aircraft.pos2d()
         bearings_pf_nf = []
         prev_pos = prev_fix_pos  # initialise prev_pos
         for fix_pos in next_fixes_pos:
@@ -232,15 +222,13 @@ class VanillaRepresentationRaw(BaseRepresentation):
             fixes_feats.append(tmp)
 
         # zero padding
-        for idx in range(num_none_fixes):
+        for _ in range(num_none_fixes):
             tmp = np.zeros(self.num_features_per_fix, dtype=np.float32)
             fixes_feats.append(tmp)
 
         return fixes_feats
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -254,11 +242,6 @@ class VanillaRepresentationRaw(BaseRepresentation):
 
         if self.knn == 0:
             return []
-
-        simulator_env = gym_env.get_simulator_env()
-        tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -283,11 +266,7 @@ class VanillaRepresentationRaw(BaseRepresentation):
             tmp = np.asarray(
                 [
                     dist_ac_other,
-                    (
-                        angle_diff_ac_other
-                        * convert.DEG_TO_RAD
-                        * turn_dir_ac_other
-                    ),
+                    (angle_diff_ac_other * convert.DEG_TO_RAD * turn_dir_ac_other),
                     dist_type_ac_other,
                 ],
                 dtype=np.float32,
@@ -295,7 +274,7 @@ class VanillaRepresentationRaw(BaseRepresentation):
             interactions_features.append(tmp)
 
         # zero padding
-        for i in range(balance_count):
+        for _ in range(balance_count):
             tmp = np.zeros(self.num_features_per_neighbour, dtype=np.float32)
             interactions_features.append(tmp)
 
@@ -367,9 +346,7 @@ class VanillaRepresentation(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(VanillaRepresentation, self).__init__(
-            knn, num_forward_fixes, use_filed_route, num_actions
-        )
+        super().__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [-3.0, -np.pi]
@@ -423,7 +400,6 @@ class VanillaRepresentation(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing base features
@@ -447,12 +423,10 @@ class VanillaRepresentation(BaseRepresentation):
         ####### neighbours features
         neighbours_feats = self.generate_neighbours_features(gym_env, callsign)
 
-        feats_list = [base_feats] + fixes_feats + neighbours_feats
+        feats_list = [base_feats, *fixes_feats, *neighbours_feats]
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -472,7 +446,6 @@ class VanillaRepresentation(BaseRepresentation):
 
         simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for computing fixes features
@@ -482,17 +455,10 @@ class VanillaRepresentation(BaseRepresentation):
         prev_fix_pos = simulator_env.airspace.fixes.places[prev_fix]
 
         _next_fix = tracked_data[callsign].next_fix_fr
-        fixes = get_n_forward_fixes(
-            route, start_from=_next_fix, n=self.num_forward_fixes
-        )
-        next_fixes_pos = [
-            simulator_env.airspace.fixes.places[fix]
-            for fix in fixes
-            if fix is not None
-        ]
+        fixes = get_n_forward_fixes(route, start_from=_next_fix, n=self.num_forward_fixes)
+        next_fixes_pos = [simulator_env.airspace.fixes.places[fix] for fix in fixes if fix is not None]
         num_none_fixes = self.num_forward_fixes - len(next_fixes_pos)
 
-        ac_pos = aircraft.pos2d()
         bearings_pf_nf = []
         prev_pos = prev_fix_pos  # initialise prev_pos
         for fix_pos in next_fixes_pos:
@@ -512,15 +478,13 @@ class VanillaRepresentation(BaseRepresentation):
             fixes_feats.append(tmp)
 
         # zero padding
-        for idx in range(num_none_fixes):
+        for _ in range(num_none_fixes):
             tmp = np.zeros(self.num_features_per_fix, dtype=np.float32)
             fixes_feats.append(tmp)
 
         return fixes_feats
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -534,11 +498,6 @@ class VanillaRepresentation(BaseRepresentation):
 
         if self.knn == 0:
             return []
-
-        simulator_env = gym_env.get_simulator_env()
-        tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
-        aircraft = simulator_env.aircraft[callsign]
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -564,11 +523,7 @@ class VanillaRepresentation(BaseRepresentation):
             tmp = np.asarray(
                 [
                     _dist / SRS.SCALER_AC_OTHER_DIST,
-                    (
-                        angle_diff_ac_other
-                        * convert.DEG_TO_RAD
-                        * turn_dir_ac_other
-                    ),
+                    (angle_diff_ac_other * convert.DEG_TO_RAD * turn_dir_ac_other),
                     dist_type_ac_other,
                 ],
                 dtype=np.float32,
@@ -576,7 +531,7 @@ class VanillaRepresentation(BaseRepresentation):
             interactions_features.append(tmp)
 
         # zero padding
-        for i in range(balance_count):
+        for _ in range(balance_count):
             tmp = np.zeros(self.num_features_per_neighbour, dtype=np.float32)
             interactions_features.append(tmp)
 

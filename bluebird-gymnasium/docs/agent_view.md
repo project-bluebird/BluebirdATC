@@ -1,6 +1,6 @@
 # Agent View
 
-Each environment in `bluebird_gymnasium` can support single agent (centralized) or multi-agent (decentralized) views.
+Each environment in `bluebird_gymnasium` can support single agent (centralised) or multi-agent (decentralised) views.
 
 In a single agent view, an environment expects a single external agent interacting with it. The `step` method expects a scalar integer for the `action` argument. The `step` and `reset` methods produce a single quantity per step for the observed state, reward, done flag, truncated flag, and a Python dictionary of auxiliary information.
 
@@ -27,14 +27,14 @@ If the number of aircraft in a scenario exceeds the specified `num_sampled_aircr
 Note: `CentralizedSampler` is located in `bluebird_gymnasium.envs.__init__.py`
 
  ### Multi-Agent View
-In the multi-agent (decentralized) set up, where a single aircraft is controlled by a single agent, an agent receives the encoded state for the aircraft it was assigned.
+In the multi-agent (decentralised) set up, where a single aircraft is controlled by a single agent, an agent receives the encoded state for the aircraft it was assigned.
 
 
 ## Usage
 
 To set up an environment instance as a single agent view, see sample configuration snippet below.
 
-```
+```json
 {
     ...
     "view_config": {
@@ -50,7 +50,7 @@ To set up an environment instance as a single agent view, see sample configurati
 
 To set up an environment instance as a multi-agent view, see sample configuration snippet below.
 
-```
+```json
 {
     ...
     "view_config": {

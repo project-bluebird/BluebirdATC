@@ -154,7 +154,7 @@ class Simulator:
 
     def setup_logging(self):
         """
-        The location of the base logfile directory can be overriden by derived classes.
+        The location of the base logfile directory can be overridden by derived classes.
         """
         os.makedirs(os.path.join(LOG_DIR, self.log_filename), exist_ok=True)
         self.logging_file_handler = logging.FileHandler(
