@@ -1989,7 +1989,7 @@ class BaseEnv(gym.Env):
                 if c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
                     continue
 
-                _d1 = self.ac_tracker[callsign].dist_away_from_incorrect_sector_exit
+                _d1 = self.ac_tracker[callsign].dist_away_from_sector_exit
                 _d2 = self.ac_tracker[callsign].dist_away_from_incorrect_sector_exit
                 if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
                     callsigns_to_move.append(callsign)
