@@ -4,9 +4,10 @@ import datetime
 import string
 import typing
 
+from bluebird_dt.predictor import LinearPredictor
+
 # simulator package
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager
-from bluebird_dt.predictor import LinearPredictor
 
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import CentralizedSampler, EnvConfig, ViewType
@@ -29,6 +30,11 @@ if typing.TYPE_CHECKING:
         TruncatedType,
     )
 
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
+
 
 SPRINGFIELD_SECTOR_NAME = "SPRINGFIELD"
 
@@ -43,7 +49,7 @@ class SpringfieldEnv(BaseEnv):
     simulator.
 
     Args:
-        render_mode: the mode to visualize (render) the simulator. It can
+        render_mode: the mode to visualise (render) the simulator. It can
             only be set to None or one of the following:
             'human', 'rgb_array', 'file'.
             Defaults to `None`.
@@ -56,7 +62,7 @@ class SpringfieldEnv(BaseEnv):
         render_mode: str | None = None,
         config: EnvConfig | None = None,
     ):
-        super(SpringfieldEnv, self).__init__(
+        super().__init__(
             render_mode,
             config,
         )
@@ -64,9 +70,7 @@ class SpringfieldEnv(BaseEnv):
         # if the `exit_window_width` value was originally None, override the
         # default set in the parent class with a new default here (based on
         # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get(
-            "exit_window_width", None
-        )
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
         if exit_window_width is None:
             # the width of each springfield exit boundary is 10 nautical miles
             self.exit_window_width = 10 // 2
@@ -98,10 +102,7 @@ class SpringfieldEnv(BaseEnv):
 
         ####### active airspace sector
         airspace_sectors = list(airspace.sectors.keys())
-        if (
-            len(airspace_sectors) >= 1
-            and SPRINGFIELD_SECTOR_NAME in airspace_sectors
-        ):
+        if len(airspace_sectors) >= 1 and SPRINGFIELD_SECTOR_NAME in airspace_sectors:
             self.active_airspace_sector = SPRINGFIELD_SECTOR_NAME
         else:
             raise ValueError("Could not initialise sector")
@@ -116,14 +117,11 @@ class SpringfieldEnv(BaseEnv):
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
-        if suffix is None or suffix == "":
-            suffix = ""
-        else:
-            suffix = f"__{suffix}"
+        suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario}_{timestamp}{suffix}"
 
         # set up simulator manager
-        sim = self.scenario_manager.to_simulator(
+        return self.scenario_manager.to_simulator(
             category=category,
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
@@ -132,15 +130,12 @@ class SpringfieldEnv(BaseEnv):
             log_filename=log_filename,
             predictor=None,  # use the default in the scenario
         )
-        return sim
 
-    def step(
-        self, action: ActionType
-    ) -> tuple[ObsType, RewardType, DoneType, TruncatedType, InfoType]:
+    def step(self, action: ActionType) -> tuple[ObsType, RewardType, DoneType, TruncatedType, InfoType]:
         obs, reward, done, truncated, info = super().step(action)
 
         # Springfield can start before any aircraft is controllable; keep an
-        # empty decentralized done dict from ending loops that call all(...).
+        # empty decentralised done dict from ending loops that call all(...).
         if (
             self.config.view_config["type"] == ViewType.DECENTRALIZED
             and isinstance(done, dict)
@@ -153,17 +148,15 @@ class SpringfieldEnv(BaseEnv):
         return obs, reward, done, truncated, info
 
     @classmethod
-    def get_default_env_config(
-        cls, view_type: ViewType | str = ViewType.CENTRALIZED
-    ) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralized (single agent) or
-                decentralized (multi-agent).
+            view_type: the type of agent view, centralised (single agent) or
+                decentralised (multi-agent).
                 Defaults to "centralized".
 
         Returns:
@@ -172,7 +165,7 @@ class SpringfieldEnv(BaseEnv):
 
         if view_type not in ViewType:
             raise ValueError(f"{view_type} is not a valid value of {ViewType}")
-        elif isinstance(view_type, ViewType):
+        if isinstance(view_type, ViewType):
             view_type = view_type.value
 
         # airspace
@@ -312,7 +305,7 @@ if __name__ == "__main__":
         print(obs)
         pprint(info)
         for idx in range(50):
-            actions = {callsign: 0 for callsign in obs.keys()}
+            actions = dict.fromkeys(obs.keys(), 0)
             obs, reward, done, truncated, info = env.step(actions)
             print(idx, obs)
             pprint(info)

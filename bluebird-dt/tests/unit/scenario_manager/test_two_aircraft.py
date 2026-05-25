@@ -242,7 +242,7 @@ def test_create_event_handler(generate_i):
 
 def test_to_simulator(generate_i):
     """
-    Test the TwoAircraft.to_simulator() method creates the required components and sets the appropriate variables correectly.
+    Test the TwoAircraft.to_simulator() method creates the required components and sets the appropriate variables correctly.
     """
     
     airspace, routes = generate_i

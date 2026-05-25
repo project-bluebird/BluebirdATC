@@ -716,7 +716,7 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
         ----------
         bandboxed_sector_name: str
             Name of the bandboxed sector. Only aircraft which have this sector as their current sector
-            will be re-assigned ot individual sectors
+            will be re-assigned to individual sectors
         """
         # assign all aircraft in a bandboxed sector to the individual sector containing it
         # or else to the individual sector nearest to it
@@ -908,7 +908,7 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
             The event logger save EnvironmentManager parameters automatically but attributes of
             the Simulator class need to be explicitly added to the save log.
         save_csv: bool
-            A flag to determine if csv should be saved, deafult yes.
+            A flag to determine if csv should be saved, default yes.
 
         Returns
         -------
