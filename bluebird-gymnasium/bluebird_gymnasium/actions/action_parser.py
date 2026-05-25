@@ -231,9 +231,11 @@ class ActionParser:
             self.action_formatter = self._action_formatter_decentralized
             self.reverse_action_formatter = self._action_formatter_decentralized_reversed
         else:
-            _msg = "Incorrect parameter value for `num_sampled_aircraft`. "
-            "It should be set to `None` (for decentralized agent/action set "
-            "up) or an `int` > 0 (for centralized agent/action set up)."
+            _msg = (
+                "Incorrect parameter value for `num_sampled_aircraft`. "
+                "It should be set to `None` (for decentralized agent/action set "
+                "up) or an `int` > 0 (for centralized agent/action set up)."
+            )
             raise ValueError(_msg)
 
         # define buffers to hold the different categories of `int` actions

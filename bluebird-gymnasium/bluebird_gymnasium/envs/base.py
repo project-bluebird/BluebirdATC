@@ -250,11 +250,13 @@ class BaseEnv(gym.Env):
             self.config.airspace_config.get("out_sector_control", False) is True
             and self.use_default_outcomm_policy is True
         ):
-            _msg = "`use_default_outcomm_policy` was set to `True` when "
-            "'out_sector_control` in `config.airspace_config` is set to "
-            "`True`. "
-            "set `use_default_outcomm_policy` to `False` to allow out of "
-            "sector control in the airspace."
+            _msg = (
+                "`use_default_outcomm_policy` was set to `True` when "
+                "`out_sector_control` in `config.airspace_config` is set to "
+                "`True`. "
+                "set `use_default_outcomm_policy` to `False` to allow out of "
+                "sector control in the airspace."
+            )
             raise ValueError(_msg)
         self._out_sector_control = self.config.airspace_config.get("out_sector_control", False)
 
