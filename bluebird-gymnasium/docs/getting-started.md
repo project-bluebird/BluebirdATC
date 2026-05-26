@@ -1,7 +1,7 @@
 # `bluebird_gymnasium` documentation
 
 A suite of [gymnasium](https://github.com/Farama-Foundation/Gymnasium) API compliant environments for air traffic control (ATC).
-The environments are based on the digital twin simulator, [bluebird-dt](https://github.com/project-bluebird/BluebirdATC/tree/main/bluebird-dt){ target="_blank" rel="noopener" }, serving as a wrapper around it. The environments support research in learning-based agents (e.g., reinforcement learning and imitation learning) for ATC. It supports either single agent (aka centralized) or multi-agent (aka decentralized) agent set up.
+The environments are based on the digital twin simulator, [bluebird-dt](https://github.com/project-bluebird/BluebirdATC/tree/main/bluebird-dt){ target="_blank" rel="noopener" }, serving as a wrapper around it. The environments support research in learning-based agents (e.g., reinforcement learning and imitation learning) for ATC. It supports either single agent (aka centralised) or multi-agent (aka decentralised) agent set up.
 
 In addition to the environment specification, the package also contains a set of state spaces (encodings), reward functions, and discrete action spaces definitions that are configurable, thus enabling users to set up custom problems according to their defined specifications. Furthermore, users develop new reward functions. See [Rewards](rewards.md) for more information.
 

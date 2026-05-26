@@ -18,16 +18,16 @@ from bluebird_gymnasium.utils.constants import (
 from bluebird_gymnasium.utils.geo_utils import (
     angle_diff,
     angle_in_range,
-    filter_fixes_in_sector,
     filter_route_fixes_in_sector_by_coordination,
     get_centreline_distance,
     get_route_segments,
     get_route_segments_in_sector,
     left_right_check,
-    passed_location as _passed_location,
     path_intersection,
     path_overlap,
-    positions_in_sector,
+)
+from bluebird_gymnasium.utils.geo_utils import (
+    passed_location as _passed_location,
 )
 from bluebird_gymnasium.utils.simulator_utils import (
     aircraft_prev_next_fixes,
@@ -48,12 +48,18 @@ from bluebird_gymnasium.utils.types import (
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.aircraft import Aircraft
-    from bluebird_dt.core.airpsace import Airspace
+    from bluebird_dt.core.airspace import Airspace
     from bluebird_dt.core.environment import Environment as SimulatorEnv
-    from bluebird_dt.predictor import Predictor
     from bluebird_dt.core.pos4d import Pos4D
+    from bluebird_dt.predictor import Predictor
+
     from bluebird_gymnasium.envs.base import BaseEnv
-    from bluebird_gymnasium.utils.types import ACStateTracker
+    from bluebird_gymnasium.utils.types import ACStateTracker, Number
+
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
 
 
 ############ constants below
@@ -87,34 +93,29 @@ def f_traj(
     if trajectory_alias is None:
         if aircraft_tracked_data is not None:
             return aircraft_tracked_data.future_trajectory
-        else:
-            return predict_trajectory(
-                aircraft,
-                predictor,
-                duration=duration,
-                curr_time=simulator_env.time,
-            )
-    else:
-        extra_tp = aircraft_tracked_data.extra_future_trajectory
+        return predict_trajectory(
+            aircraft,
+            predictor,
+            duration=duration,
+            curr_time=simulator_env.time,
+        )
+    extra_tp = aircraft_tracked_data.extra_future_trajectory
 
-        if trajectory_alias in extra_tp.keys():
-            return extra_tp[trajectory_alias]
-        else:
-            trajectory = predict_trajectory(
-                aircraft,
-                predictor,
-                duration=duration,
-                curr_time=simulator_env.time,
-            )
-            # cache the trajectory in case it's need still within the current
-            # traffic monitor update. note: before the end of `update(...)` in
-            # traffic monitor (at the end of this file), the extra trajectory
-            # buffer is cleared.
-            aircraft_tracked_data.extra_future_trajectory[trajectory_alias] = (
-                trajectory
-            )
+    if trajectory_alias in extra_tp:
+        return extra_tp[trajectory_alias]
+    trajectory = predict_trajectory(
+        aircraft,
+        predictor,
+        duration=duration,
+        curr_time=simulator_env.time,
+    )
+    # cache the trajectory in case it's need still within the current
+    # traffic monitor update. note: before the end of `update(...)` in
+    # traffic monitor (at the end of this file), the extra trajectory
+    # buffer is cleared.
+    aircraft_tracked_data.extra_future_trajectory[trajectory_alias] = trajectory
 
-            return trajectory
+    return trajectory
 
 
 def passed_location(
@@ -126,11 +127,9 @@ def passed_location(
 ) -> bool:
     """Check whether a location has been passed."""
 
-    ac_f_traj = f_traj(
-        aircraft_tracked_data, aircraft, rollout_predictor, 300, simulator_env
-    )
+    ac_f_traj = f_traj(aircraft_tracked_data, aircraft, rollout_predictor, 300, simulator_env)
 
-    return _passed_location(aircraft, location, ac_f_traj)
+    return _passed_location(location, ac_f_traj)
 
 
 def route_distance_and_time_to_location(
@@ -206,9 +205,9 @@ def flight_level_range_overlap(
     range_1_min, range_1_max = sorted(aircraft_1_fl_range)
     range_2_min, range_2_max = sorted(aircraft_2_fl_range)
 
-    no_overlap = range_1_min >= (
-        range_2_max + MinAircraftSeparation.VERTICAL
-    ) or range_2_min >= (range_1_max + MinAircraftSeparation.VERTICAL)
+    no_overlap = range_1_min >= (range_2_max + MinAircraftSeparation.VERTICAL) or range_2_min >= (
+        range_1_max + MinAircraftSeparation.VERTICAL
+    )
 
     return not no_overlap
 
@@ -227,24 +226,16 @@ def get_previous_next_fixes_from_position(
         # get previous and next fix by using the only the position
         # relative to the aircraft route.
 
-        if deepcopy_aircraft:
-            dummy_aircraft = copy.deepcopy(aircraft)
-        else:
-            dummy_aircraft = aircraft
+        dummy_aircraft = copy.deepcopy(aircraft) if deepcopy_aircraft else aircraft
         dummy_aircraft.lat = custom_fix.lat
         dummy_aircraft.lon = custom_fix.lon
-        previous_fix, next_fix = aircraft_prev_next_fixes(
-            dummy_aircraft, simulator_env, use_filed_route
-        )
+        previous_fix, next_fix = aircraft_prev_next_fixes(dummy_aircraft, simulator_env, use_filed_route)
         del dummy_aircraft
 
     else:
         # get previous and next fixes by parsing the custom fix name
 
-        if use_filed_route:
-            route = aircraft.flight_plan.route.filed
-        else:
-            route = aircraft.flight_plan.route.current
+        route = aircraft.flight_plan.route.filed if use_filed_route else aircraft.flight_plan.route.current
 
         location, location_name = custom_fix
         ret = location_name.split("///")
@@ -283,16 +274,11 @@ def get_previous_next_fixes_from_position(
                     previous_fix = aircraft_tracked_data.previous_fix_cr
                     next_fix = aircraft_tracked_data.next_fix_cr
             elif _name == CUSTOM_FIX_FUTURE_POS:
-                if deepcopy_aircraft:
-                    dummy_aircraft = copy.deepcopy(aircraft)
-                else:
-                    dummy_aircraft = aircraft
+                dummy_aircraft = copy.deepcopy(aircraft) if deepcopy_aircraft else aircraft
 
                 dummy_aircraft.lat = location.lat
                 dummy_aircraft.lon = location.lon
-                previous_fix, next_fix = aircraft_prev_next_fixes(
-                    dummy_aircraft, simulator_env, use_filed_route
-                )
+                previous_fix, next_fix = aircraft_prev_next_fixes(dummy_aircraft, simulator_env, use_filed_route)
             else:
                 raise ValueError(f"Unknown custom fix name: {location_name}")
 
@@ -363,10 +349,10 @@ def passed_fixes_intersections(
     other_callsign = interaction.other_callsign
     other_aircraft = simulator_env.aircraft[other_callsign]
 
-    ac_tracked_data = tracked_data.get(callsign, None)
-    other_ac_tracked_data = tracked_data.get(other_callsign, None)
+    ac_tracked_data = tracked_data.get(callsign)
+    other_ac_tracked_data = tracked_data.get(other_callsign)
 
-    # initialization
+    # initialisation
     passed = False
     # when both aircraft have passed each other, it indicates that the
     # interactions is irrelevant by default. however, when both aircraft
@@ -390,9 +376,7 @@ def passed_fixes_intersections(
         location = intersect_fixes[-1].location
 
         s1 = passed_location(aircraft, location, ac_tracked_data, *args)
-        s2 = passed_location(
-            other_aircraft, location, other_ac_tracked_data, *args
-        )
+        s2 = passed_location(other_aircraft, location, other_ac_tracked_data, *args)
         passed = s1 or s2
         relevant = not passed
 
@@ -459,18 +443,13 @@ def passed_fixes_intersections(
         passed = s1 or s2
         relevant = not passed
 
-    elif (
-        interaction.track_category_ac_other
-        == InteractionCategory.OPPOSITE_TRACK
-    ):
+    elif interaction.track_category_ac_other == InteractionCategory.OPPOSITE_TRACK:
         passed = False
         for _intersect_fix in intersect_fixes:
             location = _intersect_fix.location
 
             s1 = passed_location(aircraft, location, ac_tracked_data, *args)
-            s2 = passed_location(
-                other_aircraft, location, other_ac_tracked_data, *args
-            )
+            s2 = passed_location(other_aircraft, location, other_ac_tracked_data, *args)
 
             passed = s1 and s2
             if passed:
@@ -480,27 +459,19 @@ def passed_fixes_intersections(
                 break
         relevant = not passed
 
-    elif (
-        interaction.track_category_ac_other in _cross_track_types
-        and len(intersect_fixes) > 1
-    ):
+    elif interaction.track_category_ac_other in _cross_track_types and len(intersect_fixes) > 1:
         # cross track: start as cross track but later
         # transforms into same or opposite track.
         location = intersect_fixes[-1].location
         passed = passed_location(aircraft, location, ac_tracked_data, *args)
         relevant = not passed
 
-    elif (
-        interaction.track_category_ac_other in _cross_track_types
-        and len(intersect_fixes) == 1
-    ):
+    elif interaction.track_category_ac_other in _cross_track_types and len(intersect_fixes) == 1:
         # cross track with one intersecting fix.
         location_name = intersect_fixes[-1].location_name
         location = intersect_fixes[-1].location
         s1 = passed_location(aircraft, location, ac_tracked_data, *args)
-        s2 = passed_location(
-            other_aircraft, location, other_ac_tracked_data, *args
-        )
+        s2 = passed_location(other_aircraft, location, other_ac_tracked_data, *args)
         passed = s1 or s2
 
         if passed:
@@ -673,31 +644,21 @@ def get_discrete_track_category(
     # determine interaction type based on distance between
     # aircraft control points and FOV range
     interaction_type = None
-    if aircraft_1_cps[1].distance(aircraft_2_cps[1]) < aircraft_1_cps[
-        0
-    ].distance(aircraft_2_cps[0]):
+    if aircraft_1_cps[1].distance(aircraft_2_cps[1]) < aircraft_1_cps[0].distance(aircraft_2_cps[0]):
         # both aircraft are drawing closer to each other. it could
         # be any of the interaction types. so, check for all types.
         ac2_heading = aircraft_2.heading
 
-        if angle_in_range(
-            ac2_heading, track_range[InteractionCategory.SAME_TRACK]
-        ):
+        if angle_in_range(ac2_heading, track_range[InteractionCategory.SAME_TRACK]):
             interaction_type = InteractionCategory.SAME_TRACK
 
-        elif angle_in_range(
-            ac2_heading, track_range[InteractionCategory.CROSS_TRACK_LEFT]
-        ):
+        elif angle_in_range(ac2_heading, track_range[InteractionCategory.CROSS_TRACK_LEFT]):
             interaction_type = InteractionCategory.CROSS_TRACK_LEFT
 
-        elif angle_in_range(
-            ac2_heading, track_range[InteractionCategory.CROSS_TRACK_RIGHT]
-        ):
+        elif angle_in_range(ac2_heading, track_range[InteractionCategory.CROSS_TRACK_RIGHT]):
             interaction_type = InteractionCategory.CROSS_TRACK_RIGHT
 
-        elif angle_in_range(
-            ac2_heading, track_range[InteractionCategory.OPPOSITE_TRACK]
-        ):
+        elif angle_in_range(ac2_heading, track_range[InteractionCategory.OPPOSITE_TRACK]):
             interaction_type = InteractionCategory.OPPOSITE_TRACK
 
         else:
@@ -708,9 +669,7 @@ def get_discrete_track_category(
         # could still be a same track interaction. therefore, check for that.
         ac2_heading = aircraft_2.heading
 
-        if angle_in_range(
-            ac2_heading, track_range[InteractionCategory.SAME_TRACK]
-        ):
+        if angle_in_range(ac2_heading, track_range[InteractionCategory.SAME_TRACK]):
             interaction_type = InteractionCategory.SAME_TRACK
         else:
             interaction_type = InteractionCategory.NONE
@@ -723,7 +682,7 @@ def get_continuous_track_info(
     aircraft_2: Aircraft,
     aircraft_1_cps: list[Pos4D],
     aircraft_2_cps: list[Pos4D],
-) -> typle[float, int, float, int, InteractionDistance]:
+) -> tuple[float, int, float, int, InteractionDistance]:
     """Compute the interaction type between two aircraft.
 
     Compute the interaction type between two aircraft in a
@@ -752,9 +711,7 @@ def get_continuous_track_info(
 
     angle_diff_ac1_ac2 = angle_diff(aircraft_1.heading, aircraft_2.heading)
     # turn_dir_ac1_ac2 = left_right_check(aircraft_1.heading, aircraft_2.heading)
-    turn_dir_ac1_ac2 = left_right_check(
-        aircraft_1.heading, aircraft_1.pos2d().bearing_to(aircraft_2.pos2d())
-    )
+    turn_dir_ac1_ac2 = left_right_check(aircraft_1.heading, aircraft_1.pos2d().bearing_to(aircraft_2.pos2d()))
 
     aircraft_1_sh = get_aircraft_selected_heading(aircraft_1)
     aircraft_2_sh = get_aircraft_selected_heading(aircraft_2)
@@ -762,9 +719,7 @@ def get_continuous_track_info(
     # turn_dir_ac1_ac2_sh = left_right_check(
     #    aircraft_1_sh, aircraft_2_sh
     # )
-    turn_dir_ac1_ac2_sh = left_right_check(
-        aircraft_1_sh, aircraft_1.pos2d().bearing_to(aircraft_2.pos2d())
-    )
+    turn_dir_ac1_ac2_sh = left_right_check(aircraft_1_sh, aircraft_1.pos2d().bearing_to(aircraft_2.pos2d()))
 
     dist_future_pos = aircraft_1_cps[1].distance(aircraft_2_cps[1])
     dist_current_pos = aircraft_1_cps[0].distance(aircraft_2_cps[0])
@@ -814,12 +769,10 @@ def get_continuous_track_info(
     )
 
 
-def get_centreline_distance_diff(
-    centre_dist_1: Number, centre_dist_2: Number, category: InteractionCategory
-) -> Number:
+def get_centreline_distance_diff(centre_dist_1: Number, centre_dist_2: Number, category: InteractionCategory) -> Number:
     """Get the lateral distance between both aircraft.
 
-    Use their route's centreline distance as a proxy and interaction catgory.
+    Use their route's centreline distance as a proxy and interaction category.
 
     Note, the distance is maximised by placing aircraft on opposite
     sides of the intersecting position along their route.
@@ -847,13 +800,9 @@ def get_centreline_distance_diff(
         # route's centreline and the other is on the right.
         pair_distance = abs(centre_dist_1 - centre_dist_2)
 
-    elif category == InteractionCategory.OPPOSITE_TRACK:
-        # maximised distance when both aircraft are either on the
-        # left side of their route's centreline or on the right.
-        pair_distance = abs(centre_dist_1 + centre_dist_2)
-
     elif (
-        category == InteractionCategory.CROSS_TRACK_LEFT
+        category == InteractionCategory.OPPOSITE_TRACK
+        or category == InteractionCategory.CROSS_TRACK_LEFT
         or category == InteractionCategory.CROSS_TRACK_RIGHT
     ):
         # maximised distance when both aircraft are either on the
@@ -871,9 +820,7 @@ def get_centreline_distance_diff(
 ############ core functions below
 
 
-def lateral_interaction_dist_thresh_heuristic(
-    aircraft_1: Aircraft, aircraft_2: Aircraft
-) -> Number:
+def lateral_interaction_dist_thresh_heuristic(aircraft_1: Aircraft, aircraft_2: Aircraft) -> Number:
     """Compute the interaction threshold distance b/w aircraft pair.
 
     Used in safety and conflict resolution to determine the minimum distance
@@ -938,17 +885,14 @@ def lateral_interaction_dist_thresh_by_type(
         if interaction_category == InteractionCategory.SAME_TRACK:
             if interaction_distance_type == InteractionDistance.CLOSER:
                 speed_diff = abs(aircraft_1.speed_tas - aircraft_2.speed_tas)
-                if speed_diff <= 40:
-                    distance = 20
-                else:  # > 40
-                    distance = 30
+                distance = 20 if speed_diff <= 40 else 30
             else:
                 distance = 10
 
-        elif interaction_category == InteractionCategory.CROSS_TRACK_LEFT:
-            distance = 20
-
-        elif interaction_category == InteractionCategory.CROSS_TRACK_RIGHT:
+        elif (
+            interaction_category == InteractionCategory.CROSS_TRACK_LEFT
+            or interaction_category == InteractionCategory.CROSS_TRACK_RIGHT
+        ):
             distance = 20
 
         elif interaction_category == InteractionCategory.OPPOSITE_TRACK:
@@ -1019,7 +963,7 @@ def get_aircraft_interaction_info(
 
     ac = simulator_env.aircraft[callsign]
     ac_f_traj = f_traj(
-        tracked_data.get(callsign, None),
+        tracked_data.get(callsign),
         ac,
         rollout_predictor,
         duration,
@@ -1068,7 +1012,7 @@ def get_aircraft_interaction_info(
         # get other aircraft
         other_ac = simulator_env.aircraft[other_callsign]
         other_ac_f_traj = f_traj(
-            tracked_data.get(other_callsign, None),
+            tracked_data.get(other_callsign),
             other_ac,
             rollout_predictor,
             duration,
@@ -1085,9 +1029,7 @@ def get_aircraft_interaction_info(
 
         # relative angular diff between aircraft heading and
         # other aircraft heading, turn direction and distance type
-        ret = get_continuous_track_info(
-            ac, other_ac, ac_f_traj, other_ac_f_traj
-        )
+        ret = get_continuous_track_info(ac, other_ac, ac_f_traj, other_ac_f_traj)
         angle_diff_ac_others.append(ret[0])
         turn_dir_ac_others.append(ret[1])
         angle_diff_ac_others_sh.append(ret[2])
@@ -1097,32 +1039,24 @@ def get_aircraft_interaction_info(
 
         # discrete track type between aircraft and other aircraft
         # i.e., cross track or opposite track or same track or undefined
-        track_category = get_discrete_track_category(
-            ac, other_ac, ac_f_traj, other_ac_f_traj
-        )
+        track_category = get_discrete_track_category(ac, other_ac, ac_f_traj, other_ac_f_traj)
         track_category_ac_others.append(track_category)
 
         # flight level difference.
         ## current flight level difference
         fl_diff_ac_others.append(float(ac.fl - other_ac.fl))
         ## selected flight level difference
-        selected_fl_diff_ac_others.append(
-            float(ac.selected_fl - other_ac.selected_fl)
-        )
+        selected_fl_diff_ac_others.append(float(ac.selected_fl - other_ac.selected_fl))
 
         # speed difference
         speed_diff_ac_others.append(ac.speed_tas - other_ac.speed_tas)
 
         # centreline distance difference
         centreline_dist_diff_ac_others_fr.append(
-            get_centreline_distance_diff(
-                ac_centre_dist_fr, other_ac_centre_dist_fr, track_category
-            )
+            get_centreline_distance_diff(ac_centre_dist_fr, other_ac_centre_dist_fr, track_category)
         )
         centreline_dist_diff_ac_others_cr.append(
-            get_centreline_distance_diff(
-                ac_centre_dist_cr, other_ac_centre_dist_cr, track_category
-            )
+            get_centreline_distance_diff(ac_centre_dist_cr, other_ac_centre_dist_cr, track_category)
         )
 
         # lateral distance threshold for any potential safety violation
@@ -1141,35 +1075,31 @@ def get_aircraft_interaction_info(
 
     # sort other aircraft based on distance from aircraft
     if sort_by_distance:
-        indices = sorted(
-            list(range(len(dist_ac_others))), key=lambda k: dist_ac_others[k]
-        )
+        indices = sorted(range(len(dist_ac_others)), key=lambda k: dist_ac_others[k])
     else:
         indices = list(range(len(dist_ac_others)))
 
-    interactions = []
-    for idx in indices:
-        interactions.append(
-            InteractionInfo(
-                callsign_others[idx],
-                dist_ac_others[idx],
-                bearing_ac_others[idx],
-                angle_diff_ac_others[idx],
-                turn_dir_ac_others[idx],
-                angle_diff_ac_others_sh[idx],
-                turn_dir_ac_others_sh[idx],
-                dist_type_ac_others[idx],
-                track_category_ac_others[idx],
-                fl_diff_ac_others[idx],
-                selected_fl_diff_ac_others[idx],
-                speed_diff_ac_others[idx],
-                centreline_dist_diff_ac_others_fr[idx],
-                centreline_dist_diff_ac_others_cr[idx],
-                lateral_dist_thresh_ac_others[idx],
-                InteractionRelevance.UNDEFINED,
-            )
+    return [
+        InteractionInfo(
+            callsign_others[idx],
+            dist_ac_others[idx],
+            bearing_ac_others[idx],
+            angle_diff_ac_others[idx],
+            turn_dir_ac_others[idx],
+            angle_diff_ac_others_sh[idx],
+            turn_dir_ac_others_sh[idx],
+            dist_type_ac_others[idx],
+            track_category_ac_others[idx],
+            fl_diff_ac_others[idx],
+            selected_fl_diff_ac_others[idx],
+            speed_diff_ac_others[idx],
+            centreline_dist_diff_ac_others_fr[idx],
+            centreline_dist_diff_ac_others_cr[idx],
+            lateral_dist_thresh_ac_others[idx],
+            InteractionRelevance.UNDEFINED,
         )
-    return interactions
+        for idx in indices
+    ]
 
 
 def filter_interactions_by_filed_route(
@@ -1221,7 +1151,6 @@ def filter_interactions_by_filed_route(
           an intersection is captured as a tuple (fix_name, fix_position).
     """
 
-    airspace = simulator_env.airspace
     places = simulator_env.airspace.fixes.places
     aircraft = simulator_env.aircraft[callsign]
 
@@ -1264,13 +1193,8 @@ def filter_interactions_by_filed_route(
             indexes.append(idx)
 
             # order the common_fixes based on the aircraft's filed route
-            ordered_intersection = [
-                _fix for _fix in aircraft_route_original if _fix in common_fixes
-            ]
-            ordered_intersection = [
-                IntersectionInfo(True, places[fix], fix)
-                for fix in ordered_intersection
-            ]
+            ordered_intersection = [_fix for _fix in aircraft_route_original if _fix in common_fixes]
+            ordered_intersection = [IntersectionInfo(True, places[fix], fix) for fix in ordered_intersection]
             intersections.append(ordered_intersection)
 
     return filtered_interactions, indexes, intersections
@@ -1362,9 +1286,7 @@ def filter_interactions_by_current_route(
         other_aircraft = simulator_env.aircraft[other_callsign]
         other_ac_route = other_aircraft.flight_plan.route.current
         other_ac_next_fix = tracked_data[other_callsign].next_fix_cr
-        other_ac_next_fix_idx = (
-            other_ac_route.index(other_ac_next_fix) if from_next_fix else 0
-        )
+        other_ac_next_fix_idx = other_ac_route.index(other_ac_next_fix) if from_next_fix else 0
 
         # initialisation
         relevant = False
@@ -1384,13 +1306,8 @@ def filter_interactions_by_current_route(
             relevant = True
 
             # order the common_fixes based on the aircraft's route
-            ordered_intersection = [
-                _fix for _fix in ac_route if _fix in common_fixes
-            ]
-            ordered_intersection = [
-                IntersectionInfo(True, places[fix], fix)
-                for fix in ordered_intersection
-            ]
+            ordered_intersection = [_fix for _fix in ac_route if _fix in common_fixes]
+            ordered_intersection = [IntersectionInfo(True, places[fix], fix) for fix in ordered_intersection]
 
         elif ac_next_fix_idx == 0 or other_ac_next_fix_idx == 0:
             ordered_intersection = None
@@ -1408,9 +1325,7 @@ def filter_interactions_by_current_route(
                 in_sector_fixes_only=in_sector_fixes_only,
                 from_next_fix=from_next_fix,
             )
-            intersect_exist, location, found_indices = path_intersection(
-                ac_segments, other_ac_segments
-            )
+            intersect_exist, location, found_indices = path_intersection(ac_segments, other_ac_segments)
             if intersect_exist:
                 relevant = True
                 ac_segment_idx, _ = found_indices
@@ -1420,9 +1335,7 @@ def filter_interactions_by_current_route(
                 _start_fix, _end_fix = found_segment.get_name()
                 _tmp_fix_name = CUSTOM_FIX_BEFORE_X.format(_end_fix)
 
-                ordered_intersection = [
-                    IntersectionInfo(intersect_exist, location, _tmp_fix_name)
-                ]
+                ordered_intersection = [IntersectionInfo(intersect_exist, location, _tmp_fix_name)]
 
             else:
                 # final drastic check.
@@ -1529,7 +1442,7 @@ def filter_interactions_by_route(
             InteractionCategory.CROSS_TRACK_LEFT,
             InteractionCategory.CROSS_TRACK_RIGHT,
         ]
-        for interaction, interaction_idx, intersect_fixes in zip(*results):
+        for interaction, interaction_idx, intersect_fixes in zip(*results, strict=True):
             if (
                 from_next_fix
                 and len(intersect_fixes) == 1
@@ -1618,18 +1531,9 @@ def filter_interactions_by_route_or_heading(
           an intersection information contains the fix name and position.
     """
 
-    # define some threshold/constants
-    future_distance = 100  # nautical miles
-
-    airspace = simulator_env.airspace
-
     # aircraft variables.
     aircraft = simulator_env.aircraft[callsign]
     ac_route_ff = aircraft.on_route
-    ac_current_pos = aircraft.pos2d()
-    ac_future_pos_on_heading = ac_current_pos.forward(
-        dist=future_distance, heading=aircraft.heading
-    )
 
     filtered_interactions = []
     indexes = []
@@ -1705,9 +1609,7 @@ def filter_interactions_by_route_or_heading(
                 # compute the respective time (in minutes) to intersection
                 # position (ip) for both aircraft
                 ac_time_ip = (ac_dist_ip / aircraft.speed_tas) * 60
-                other_ac_time_ip = (
-                    other_ac_dist_ip / other_aircraft.speed_tas
-                ) * 60
+                other_ac_time_ip = (other_ac_dist_ip / other_aircraft.speed_tas) * 60
 
                 relevant = abs(ac_time_ip - other_ac_time_ip) < TIME_DIFF
 
@@ -1726,13 +1628,9 @@ def filter_interactions_by_route_or_heading(
                         # aircraft is in. Use the aircraft position as the
                         # position from where the overlap starts.
 
-                        _tmp_fix_name = CUSTOM_FIX_AT_X.format(
-                            CUSTOM_FIX_CURRENT_POS
-                        )
+                        _tmp_fix_name = CUSTOM_FIX_AT_X.format(CUSTOM_FIX_CURRENT_POS)
                         intersect_fixes: list[IntersectionInfo] = [
-                            IntersectionInfo(
-                                True, aircraft.pos2d(), _tmp_fix_name
-                            ),
+                            IntersectionInfo(True, aircraft.pos2d(), _tmp_fix_name),
                         ]
 
                     else:
@@ -1787,8 +1685,8 @@ def filter_interactions_by_current_distance(
         callsign: defines the identifier of the aircraft for which its
             interactions with other aircraft is defined in the `interaction`
             list.
-        tracked_data: defines a data store that tracks information about all
-            active aircraft in a sector.
+        tracked_data: retained for API compatibility. Current-distance
+            filtering does not use the tracked trajectory data.
         simulator_env: defines the underlying simulator.
         distance_threshold: the threshold distance used to check the
             evaluate the condition for filtering out interactions.
@@ -1800,6 +1698,8 @@ def filter_interactions_by_current_distance(
         - the indexes/positions of the filtered interactions in the original
           list.
     """
+
+    _ = tracked_data
 
     # get future traj for aircraft
     aircraft = simulator_env.aircraft[callsign]
@@ -1827,7 +1727,7 @@ def filter_interactions_by_distance(
     callsign: str,
     tracked_data: dict[str, ACStateTracker],
     simulator_env: SimulatorEnv,
-    rollout_predictor: predictor,
+    rollout_predictor: Predictor,
     distance_threshold: float,
 ) -> tuple[list[InteractionInfo], list[int], list[float]]:
     """
@@ -1872,7 +1772,7 @@ def filter_interactions_by_distance(
     aircraft = simulator_env.aircraft[callsign]
     # 300 => 300 seconds
     ac_f_traj = f_traj(
-        tracked_data.get(callsign, None),
+        tracked_data.get(callsign),
         aircraft,
         rollout_predictor,
         300,
@@ -1893,14 +1793,14 @@ def filter_interactions_by_distance(
         other_callsign = other_ac_interaction.other_callsign
         other_aircraft = simulator_env.aircraft[other_callsign]
         other_ac_f_traj = f_traj(
-            tracked_data.get(callsign, None),
+            tracked_data.get(callsign),
             other_aircraft,
             rollout_predictor,
             300,
             simulator_env,
         )
 
-        for ac_cp, other_ac_cp in zip(ac_f_traj, other_ac_f_traj):
+        for ac_cp, other_ac_cp in zip(ac_f_traj, other_ac_f_traj, strict=True):
             distance = ac_cp.distance(other_ac_cp)
             _dists.append(distance)
             if distance < distance_threshold:
@@ -2081,7 +1981,7 @@ def filter_relevant_interactions(
           less five nautical miles
     (ii)  a flight route overlap exist between aircraft pair (if they're
           both following their defined route) or if their current headings
-          interesects when one of them is not following its defined route.
+          intersects when one of them is not following its defined route.
     (iii) a flight level range overlap occur (range defined using current
           and exit flight level)
 
@@ -2117,9 +2017,7 @@ def filter_relevant_interactions(
     """
 
     ####### filter by flight level range overlap
-    ret = filter_interactions_by_fl_range_overlap(
-        interactions, callsign, tracked_data, simulator_env, sector
-    )
+    ret = filter_interactions_by_fl_range_overlap(interactions, callsign, tracked_data, simulator_env, sector)
     filtered_interactions, _, _ = ret
 
     ####### filter by relevance level
@@ -2140,9 +2038,7 @@ def filter_relevant_interactions(
         )
         filtered_interactions, _, intersections = ret
 
-        for interaction, ac_other_ac_intersections in zip(
-            filtered_interactions, intersections
-        ):
+        for interaction, ac_other_ac_intersections in zip(filtered_interactions, intersections, strict=True):
             # set relevance level
             interaction.relevance = InteractionRelevance.LEVEL_1
 
@@ -2151,9 +2047,7 @@ def filter_relevant_interactions(
 
             # set main intersection
             ac_route_ff = simulator_env.aircraft[callsign].on_route
-            other_ac_route_ff = simulator_env.aircraft[
-                interaction.other_callsign
-            ].on_route
+            other_ac_route_ff = simulator_env.aircraft[interaction.other_callsign].on_route
 
             # if len(ac_other_ac_intersections) == 1 and not (
             #    ac_route_ff and other_ac_route_ff
@@ -2169,9 +2063,10 @@ def filter_relevant_interactions(
                 # this should only happen when both aircraft are route
                 # following and the intersecting fixes along their route has
                 # been returned.
-                assert ac_route_ff and other_ac_route_ff
+                assert ac_route_ff
+                assert other_ac_route_ff
 
-                ret = get_intersection_location_both_route_ff(
+                main_intersection, _, _ = get_intersection_location_both_route_ff(
                     callsign,
                     interaction.other_callsign,
                     simulator_env,
@@ -2181,12 +2076,8 @@ def filter_relevant_interactions(
                     trial_duration_mins=10,
                     rollout_predictor=rollout_predictor,
                 )
-                main_intersection, future_ac_pos, other_ac_pos = ret
                 if main_intersection is None:
-                    raise ValueError(
-                        "`main_intersection` should not be None "
-                        "aircraft pair have intersecting fixes"
-                    )
+                    raise ValueError("`main_intersection` should not be None aircraft pair have intersecting fixes")
                 interaction.main_intersection = main_intersection
 
             interaction.proxy_intersection = None
@@ -2206,9 +2097,7 @@ def filter_relevant_interactions(
         )
         filtered_interactions, _, intersections = ret
 
-        for interaction, ac_other_ac_intersections in zip(
-            filtered_interactions, intersections
-        ):
+        for interaction, ac_other_ac_intersections in zip(filtered_interactions, intersections, strict=True):
             # set relevance level
             interaction.relevance = InteractionRelevance.LEVEL_2
 
@@ -2249,10 +2138,7 @@ def filter_relevant_interactions(
                 interaction.proxy_intersection = interaction.intersections[idx]
 
     else:
-        raise ValueError(
-            f"`relevance category {relevance} is not supported in this "
-            "function."
-        )
+        raise ValueError(f"`relevance category {relevance} is not supported in this function.")
 
     return filtered_interactions
 
@@ -2295,24 +2181,21 @@ def get_aircraft_relevant_interactions(
     """
 
     # get all interactions with the current aircraft
-    interactions = get_aircraft_interaction_info(
-        callsign, tracked_data, simulator_env, rollout_predictor, True
-    )
+    interactions = get_aircraft_interaction_info(callsign, tracked_data, simulator_env, rollout_predictor, True)
 
     # only keep interactions with other aircraft that are still in the
     # sector.
     interactions = [
         interaction
         for interaction in interactions
-        if tracked_data[interaction.other_callsign].pos_status
-        != PositionStatus.EXIT_REACHED
+        if tracked_data[interaction.other_callsign].pos_status != PositionStatus.EXIT_REACHED
     ]
 
     # filter the interactions to only keep relevant ones.
     if relevance is None:
         # return the relevant interactions for each relevance category/type,
         # removing duplicates with a lower priority/category.
-        # highest to lowest priority defintion: LEVEL_1, LEVEL_2.
+        # highest to lowest priority definition: LEVEL_1, LEVEL_2.
         primary_interactions = filter_relevant_interactions(
             callsign,
             sector,
@@ -2323,18 +2206,10 @@ def get_aircraft_relevant_interactions(
             InteractionRelevance.LEVEL_1,
             use_filed_route,
         )
-        callsigns_to_exclude = [
-            interaction.other_callsign for interaction in primary_interactions
-        ]
-        subset_tracked_data = {
-            cs: tracked_data[cs]
-            for cs in tracked_data.keys()
-            if cs not in callsigns_to_exclude
-        }
+        callsigns_to_exclude = [interaction.other_callsign for interaction in primary_interactions]
+        subset_tracked_data = {cs: tracked_data[cs] for cs in tracked_data if cs not in callsigns_to_exclude}
         subset_interactions = [
-            interaction
-            for interaction in interactions
-            if interaction.other_callsign not in callsigns_to_exclude
+            interaction for interaction in interactions if interaction.other_callsign not in callsigns_to_exclude
         ]
         secondary_interactions = filter_relevant_interactions(
             callsign,
@@ -2408,7 +2283,6 @@ def get_optimal_unblocked_flight_level(
     # typecast to regular float
     ac_fl = float(simulator_env.aircraft[callsign].fl)
     ac_exit_fl = float(tracked_data[callsign].exit_coords[sector].fl)
-    range_ac = (ac_fl, ac_exit_fl)
 
     # get interactions relevant to the current aircraft
     if interactions is None:
@@ -2422,11 +2296,9 @@ def get_optimal_unblocked_flight_level(
             use_filed_route=False,
         )
 
-    # filter 1: select only intervation with relevance level 1
+    # filter 1: select only interactions with relevance level 1
     filtered_interactions = [
-        interaction
-        for interaction in interactions
-        if interaction.relevance == InteractionRelevance.LEVEL_1
+        interaction for interaction in interactions if interaction.relevance == InteractionRelevance.LEVEL_1
     ]
     # filter 2: re-filter the original list of interaction and keep
     # an level 2 relevance interaction only if they are close to the subject
@@ -2447,9 +2319,7 @@ def get_optimal_unblocked_flight_level(
     if ac_fl < ac_exit_fl:
         tmp_filtered_interactions = []
         for interaction in filtered_interactions:
-            _intersection = main_or_proxy_intersection_location(
-                callsign, interaction
-            )
+            _intersection = main_or_proxy_intersection_location(callsign, interaction)
             ac_status = top_of_ascent_before_intersection(
                 callsign,
                 simulator_env,
@@ -2478,10 +2348,8 @@ def get_optimal_unblocked_flight_level(
 
         other_ac_fl = float(simulator_env.aircraft[other_callsign].fl)
         try:
-            other_ac_exit_fl = (
-                tracked_data[other_callsign].exit_coords[sector].fl
-            )
-        except:
+            other_ac_exit_fl = tracked_data[other_callsign].exit_coords[sector].fl
+        except KeyError:
             # this means that aircraft was removed from the tracked data in
             # the previous step, likely due to incorrect sector exit and has
             # been tracked for a number of timestep after the incorrect exit.
@@ -2489,9 +2357,7 @@ def get_optimal_unblocked_flight_level(
                 aircraft_exit_coordination,
             )
 
-            coord = aircraft_exit_coordination(
-                other_callsign, simulator_env, sector
-            )
+            coord = aircraft_exit_coordination(other_callsign, simulator_env, sector)
             other_ac_exit_fl = coord.fl
 
         other_ac_exit_fl = float(other_ac_exit_fl)
@@ -2515,9 +2381,7 @@ def get_optimal_unblocked_flight_level(
 
         if ac_fl < ac_exit_fl:  # aircraft needs to climb
             blocked_fls = []
-            for other_callsign, other_ac_range in zip(
-                other_callsigns, ranges_other_ac
-            ):
+            for other_callsign, other_ac_range in zip(other_callsigns, ranges_other_ac, strict=True):
                 other_ac_fl, other_ac_exit_fl = other_ac_range
                 other_aircraft = simulator_env.aircraft[other_callsign]
                 other_ac_selected_fl = other_aircraft.selected_fl
@@ -2553,9 +2417,7 @@ def get_optimal_unblocked_flight_level(
 
         else:  # aircraft needs to descend.
             blocked_fls = []
-            for other_callsign, other_ac_range in zip(
-                other_callsigns, ranges_other_ac
-            ):
+            for other_callsign, other_ac_range in zip(other_callsigns, ranges_other_ac, strict=True):
                 other_ac_fl, other_ac_exit_fl = other_ac_range
                 other_aircraft = simulator_env.aircraft[other_callsign]
                 other_ac_selected_fl = other_aircraft.selected_fl
@@ -2638,9 +2500,7 @@ def get_intersection_location_both_route_ff(
     other_aircraft = simulator_env.aircraft[other_callsign]
 
     if not aircraft.on_route or not other_aircraft.on_route:
-        raise Exception(
-            "Only use this function when both aircraft are route following"
-        )
+        raise Exception("Only use this function when both aircraft are route following")
 
     # use a route following predictor to get a intersection location.
     if rollout_predictor is not None:
@@ -2708,11 +2568,10 @@ def get_intersection_location_both_route_ff(
                 # minimum
                 pass
             break
-        else:
-            dummy_ac.lat = ac_traj[-1].lat
-            dummy_ac.lon = ac_traj[-1].lon
-            dummy_other_ac.lat = other_ac_traj[-1].lat
-            dummy_other_ac.lon = other_ac_traj[-1].lon
+        dummy_ac.lat = ac_traj[-1].lat
+        dummy_ac.lon = ac_traj[-1].lon
+        dummy_other_ac.lat = other_ac_traj[-1].lat
+        dummy_other_ac.lon = other_ac_traj[-1].lon
 
     found_locations = dummy_ac.pos2d(), dummy_other_ac.pos2d()
     assert found_locations[0].distance(found_locations[1]) == minimum_distance
@@ -2743,10 +2602,8 @@ def get_intersection_location_both_route_ff(
             tracked_data[dummy_other_ac.callsign].pos_at_last_route_direct,
         )
 
-        if other_ac_centre_dist < ac_centre_dist:
-            found_location = found_locations[0]  # use aircraft location
-        else:
-            found_location = found_locations[1]  # use other aircraft location
+        # use aircraft location or other aircraft location
+        found_location = found_locations[0] if other_ac_centre_dist < ac_centre_dist else found_locations[1]
 
     previous_fix, next_fix = get_previous_next_fixes_from_position(
         dummy_ac,
@@ -2846,12 +2703,8 @@ def get_intersection_location(
     if intersect_exist:
         idx_1, _ = found_indices
         start_pos_name, end_pos_name = aircraft_segments[idx_1].get_name()
-        _tmp_fix_name = CUSTOM_FIX_BETWEEN_X_AND_Y.format(
-            start_pos_name, end_pos_name
-        )
-        intersection_info = IntersectionInfo(
-            intersect_exist, location, _tmp_fix_name
-        )
+        _tmp_fix_name = CUSTOM_FIX_BETWEEN_X_AND_Y.format(start_pos_name, end_pos_name)
+        intersection_info = IntersectionInfo(intersect_exist, location, _tmp_fix_name)
     else:
         intersection_info = None
 
@@ -2894,11 +2747,7 @@ def get_segments_from_route(
     """
 
     if use_filed_route:
-        if from_next_fix:
-            # start_from = aircraft_tracked_data.next_fix_fr
-            start_from = (aircraft.pos2d(), aircraft_tracked_data.next_fix_fr)
-        else:
-            start_from = None
+        start_from = (aircraft.pos2d(), aircraft_tracked_data.next_fix_fr) if from_next_fix else None
     else:
         # ac_next_fix = aircraft_tracked_data.next_fix_cr
         # ac_route = aircraft.flight_plan.route.current
@@ -2924,10 +2773,7 @@ def get_segments_from_route(
                 ac_route[0],
             )
 
-    if use_filed_route:
-        route = aircraft.flight_plan.route.filed
-    else:
-        route = aircraft.flight_plan.route.current
+    route = aircraft.flight_plan.route.filed if use_filed_route else aircraft.flight_plan.route.current
 
     if in_sector_fixes_only:
         aircraft_segments = get_route_segments_in_sector(
@@ -3001,9 +2847,7 @@ def get_segments_from_route_or_heading(
 
     else:
         # get segment based on the aircraft's current heading
-        ac_future_pos_on_heading = ac_current_pos.forward(
-            dist=heading_segment_length, heading=aircraft.heading
-        )
+        ac_future_pos_on_heading = ac_current_pos.forward(dist=heading_segment_length, heading=aircraft.heading)
         current_pos_name = CUSTOM_FIX_AT_X.format(CUSTOM_FIX_CURRENT_POS)
         future_pos_name = CUSTOM_FIX_AT_X.format(CUSTOM_FIX_FUTURE_POS)
         ac_segments = [
@@ -3016,23 +2860,17 @@ def get_segments_from_route_or_heading(
     return ac_segments
 
 
-def main_or_proxy_intersection_location(
-    callsign: str, interaction: InteractionInfo
-) -> IntersectionInfo:
+def main_or_proxy_intersection_location(callsign: str, interaction: InteractionInfo) -> IntersectionInfo:
     """Get the most relevant intersection for an interaction."""
 
     if interaction.main_intersection is not None:
-        assert (
-            interaction.relevance == InteractionRelevance.LEVEL_1
-            and len(interaction.intersections) > 0
-        )
+        assert interaction.relevance == InteractionRelevance.LEVEL_1
+        assert len(interaction.intersections) > 0
         intersection = interaction.main_intersection
 
     elif interaction.proxy_intersection is not None:
-        assert (
-            interaction.relevance == InteractionRelevance.LEVEL_2
-            and len(interaction.intersections) > 0
-        )
+        assert interaction.relevance == InteractionRelevance.LEVEL_2
+        assert len(interaction.intersections) > 0
         intersection = interaction.proxy_intersection
 
     else:
@@ -3066,7 +2904,7 @@ def top_of_ascent_before_intersection(
 
     else:
         # custom (fix) location
-        previous_fix, next_fix = get_previous_next_fixes_from_position(
+        previous_fix, _ = get_previous_next_fixes_from_position(
             aircraft,
             intersection.location,
             aircraft_tracked_data,
@@ -3084,9 +2922,7 @@ def top_of_ascent_before_intersection(
         use_filed_route=False,
     )
 
-    return (
-        distance_to_target_fl + interaction_distance + uncertainty_distance
-    ) < dist_to_intersection
+    return (distance_to_target_fl + interaction_distance + uncertainty_distance) < dist_to_intersection
 
 
 def top_of_descent_after_intersection(
@@ -3098,7 +2934,7 @@ def top_of_descent_after_intersection(
     current_route_start_position: Pos2D | None,
     uncertainty_distance: Number = 0,
 ) -> bool:
-    """Check whether top of descent of aircraft occurr after an intersection"""
+    """Check whether top of descent of aircraft occur after an intersection"""
 
     # get the track distance to the exit position from the intersection point
     dist_to_exit_from_intersect = distance_to_target_pos_along_route(
@@ -3111,9 +2947,7 @@ def top_of_descent_after_intersection(
 
     # add an uncertainty buffer to the distance
     # to target fl being checked against.
-    return dist_to_exit_from_intersect > (
-        distance_to_target_fl + uncertainty_distance
-    )
+    return dist_to_exit_from_intersect > (distance_to_target_fl + uncertainty_distance)
 
 
 class TrafficMonitor:
@@ -3130,7 +2964,7 @@ class TrafficMonitor:
         tracked_data = gym_env.get_tracked_aircraft_data()
 
         # initialise dict to store the extra predicted trajectory
-        for callsign in tracked_data.keys():
+        for callsign in tracked_data:
             if tracked_data[callsign].extra_future_trajectory is None:
                 tracked_data[callsign].extra_future_trajectory = {}
 
@@ -3152,7 +2986,7 @@ class TrafficMonitor:
                 )
 
         # delete the extra predicted trajectory
-        for callsign in tracked_data.keys():
+        for callsign in tracked_data:
             tracked_data[callsign].extra_future_trajectory.clear()
 
     def get_relevant_traffic(
@@ -3163,20 +2997,13 @@ class TrafficMonitor:
     ) -> list[InteractionInfo]:
         """get relevant traffic for an aircraft."""
 
-        if callsign not in self.store.keys():
+        if callsign not in self.store:
             return []
 
-        if copy:
-            interactions = copy.deepcopy(self.store[callsign])
-        else:
-            interactions = self.store[callsign]
+        interactions = copy.deepcopy(self.store[callsign]) if copy else self.store[callsign]
 
         if relevance is not None:
-            interactions = [
-                interaction
-                for interaction in interactions
-                if interaction.relevance == relevance
-            ]
+            interactions = [interaction for interaction in interactions if interaction.relevance == relevance]
 
         return interactions
 
@@ -3189,19 +3016,12 @@ class TrafficMonitor:
         """get the summary of relevant traffic for an aircraft."""
 
         interactions = self.get_relevant_traffic(callsign, relevance, copy)
-        return [
-            (interaction.other_callsign, interaction.intersections)
-            for interaction in interactions
-        ]
+        return [(interaction.other_callsign, interaction.intersections) for interaction in interactions]
 
     @classmethod
-    def get_aircraft_interaction_info(
-        cls, callsign: str, gym_env: BaseEnv
-    ) -> list[InteractionInfo]:
+    def get_aircraft_interaction_info(cls: type[Self], callsign: str, gym_env: BaseEnv) -> list[InteractionInfo]:
         tracked_data = gym_env.get_tracked_aircraft_data()
         simulator_env = gym_env.get_simulator_env()
         rollout_predictor = gym_env.get_rollout_predictor()
 
-        return get_aircraft_interaction_info(
-            callsign, tracked_data, simulator_env, rollout_predictor, True
-        )
+        return get_aircraft_interaction_info(callsign, tracked_data, simulator_env, rollout_predictor, True)

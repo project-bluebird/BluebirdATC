@@ -5,7 +5,7 @@ license = "AGPL-3.0-or-later"
 description = "An gymnasium environment for air traffic control."
 authors = [{name="Project Bluebird"}]
 readme = "README.md"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.10,<3.15"
 
 dependencies = [
     "gymnasium>=0.29.1",
@@ -33,8 +33,50 @@ bluebird-dt = { workspace = true }
 
 [tool.ruff]
 extend-exclude = ["*.ipynb", "tests/*"]
-line-length = 80
+line-length = 120
 target-version = "py310"
+
+[tool.ruff.lint]
+ignore = [
+  "F821", # Undefined name
+  "B019", # Use of `functools.lru_cache` or `functools.cache` on methods can lead to memory leaks
+  "ISC001", # clashes with formatter
+  "RUF100", # Unused `noqa` directive. (Does not work for multiple on one line)
+]
+select = [
+  "E", # pycodestyle
+  "F", # Pyflakes
+  "I", # isort
+  "UP", # pyupgrade
+  "B", # flake8-bugbear
+  "SIM", # flake8-simplify
+  "PD", # pandas-vet
+  "W", # pycodestyle
+  "ANN", # flake8-annotations
+  "ASYNC", #flake8-async
+  "A", # flake8-builtins
+  "C4", # flake8-comprehensions
+  "ISC", # flake8-implicit-str-concat
+  "ICN", # flake8-import-conventions
+  "PT", # flake8-pytest-style
+  "RET", # flake8-return
+  "ARG", # flake8-unused-arguments
+  "PERF", #perflint
+  "RUF", # ruff
+  "NPY201", # numpy v2. deprecation checking
+]
+
+[tool.ruff.lint.per-file-ignores]
+# ignores for the test files explicitly
+"tests/*" = [
+  "E712", # Avoid equality comparisons to `True`; use `if received:` for truth
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint.flake8-annotations]
+suppress-none-returning = true
 
 [build-system]
 requires = ["hatchling"]

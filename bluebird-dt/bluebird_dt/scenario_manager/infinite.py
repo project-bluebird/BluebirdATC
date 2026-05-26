@@ -397,7 +397,7 @@ class Infinite(
             EventHandler instance for the chosen scenario
         """
 
-        # create emtpy event handler
+        # create empty event handler
         event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
 
         # add starter aircraft

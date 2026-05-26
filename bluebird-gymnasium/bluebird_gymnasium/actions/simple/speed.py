@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing
 
 from bluebird_dt.core import Action
+
 from bluebird_gymnasium.actions import DEFAULT_RELATIVE_SPEED
 from bluebird_gymnasium.utils.simulator_utils import get_aircraft_selected_cas
 
@@ -84,7 +85,7 @@ def speed_decrease(
 def speed_maintain_current(
     callsign: str,
     gym_env: BaseEnv,
-    value: Number | None = None,
+    value: Number | None = None,  # noqa: ARG001
     agent: str = "Agent",
 ) -> Action:
     """Generate a simulator action to maintain an aircraft current speed.
@@ -114,8 +115,8 @@ def speed_maintain_current(
 
 def speed_choose_own(
     callsign: str,
-    gym_env: BaseEnv,
-    value: Number | None = None,
+    gym_env: BaseEnv,  # noqa: ARG001
+    value: Number | None = None,  # noqa: ARG001
     agent: str = "Agent",
 ) -> Action:
     """Generate a simulator action to instruct an aircraft to choose own speed.
