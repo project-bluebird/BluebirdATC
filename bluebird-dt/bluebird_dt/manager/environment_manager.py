@@ -319,10 +319,8 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
             min_latitude, max_latitude, min_longitude, max_longitude
         """
         if sector_names is None:
-            # use whole airspace — also include all named fixes so that aircraft
-            # approaching along defined routes are within the penumbra from the start
-            boundary_points = list(self.environment.airspace.boundary().boundary_vertices)
-            boundary_points.extend(self.environment.airspace.fixes.places.values())
+            # use whole airspace
+            boundary_points = self.environment.airspace.boundary().boundary_vertices
         else:
             boundary_points = [
                 p for name in sector_names for p in self.environment.airspace.sectors[name].boundary().boundary_vertices
@@ -603,7 +601,9 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
             min_lat, max_lat, min_lon, max_lon = self.square_penumbra_limits()
 
             for callsign, aircraft in self.environment.aircraft.items():
-                in_airspace_penumbra = (min_lat < aircraft.lat <= max_lat) and (min_lon < aircraft.lon <= max_lon)
+                in_airspace_penumbra = (min_lat - 1 < aircraft.lat <= max_lat + 1) and (
+                    min_lon - 1 < aircraft.lon <= max_lon + 1
+                )
                 if not in_airspace_penumbra:
                     callsigns_to_remove.add(callsign)
 
