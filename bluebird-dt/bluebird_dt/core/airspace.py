@@ -1160,7 +1160,10 @@ class Airspace(Comparison):
             leg_cpa = nearest_point_on_line_segment(
                 aircraft_location, leg_start_loc, leg_end_loc, truncate_to_segment=True
             ).squeeze()
-            distance_to_legs[leg_idx_pair] = aircraft_pos2d.distance(Pos2D(*leg_cpa))
+            try:
+                distance_to_legs[leg_idx_pair] = aircraft_pos2d.distance(Pos2D(*leg_cpa))
+            except Exception as e:
+                logger.error(e)
 
         # Find the smallest distance
         min_distance_to_legs = min(distance_to_legs.values())
