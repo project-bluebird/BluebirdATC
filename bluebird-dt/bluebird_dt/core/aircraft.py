@@ -4,6 +4,7 @@ import json
 import math
 import random
 import typing
+from datetime import datetime
 from enum import Enum
 
 import typing_extensions
@@ -172,6 +173,29 @@ class Aircraft(Comparison):
     it is viewed from an air traffic control point of view.
     """
 
+    lat: float
+    lon: float
+    fl: float
+    heading: float
+    flight_plan: FlightPlan | None
+    callsign: str | None
+    ufid: str | None
+    rate_of_turn: float | None
+    aircraft_type: str | None
+    operation_params: dict | None
+    controllable: bool
+    simulated: bool
+    _current_sector: str | None
+    random_seed: int | None
+    pilot: Pilot
+    squawk: str | None
+    squawk_ident_until: float | None
+    last_passed_filed_idx: int | None
+    last_passed_current_idx: int | None
+    cleared_instructions: Instructions
+    selected_instructions: Instructions
+    _track_time: datetime | None
+
     def __init__(
         self,
         lat: float,
@@ -195,6 +219,7 @@ class Aircraft(Comparison):
         last_passed_filed_idx: int | None = None,
         last_passed_current_idx: int | None = None,
         squawk_ident_until: float | None = None,
+        track_time: datetime | None = None,
     ):
         """
         Construct a new instance.
@@ -369,6 +394,8 @@ class Aircraft(Comparison):
         # Predictor parameters
         self.predictor_params: dict[str, typing.Any] = {}
 
+        self._track_time = track_time
+
     def set_wake_vortex_category(self):
         """
         Derived classes may use data tables to set wake vortex category if none is provided.
@@ -428,6 +455,9 @@ class Aircraft(Comparison):
             for distance in range(0, max_distance + 1, ds)
         )
 
+    def last_track_datetime(self) -> datetime | None:
+        return self._track_time
+
     @property
     def cleared_fl(self) -> float:
         """Cleared Flight Level of the Aircraft"""
@@ -461,7 +491,7 @@ class Aircraft(Comparison):
     def set_squawk(self, transponder_code: int | str):
         self.squawk = str(transponder_code)
 
-    def set_position(self, lat: float, lon: float):
+    def set_position(self, lat: float, lon: float, dt: datetime | None = None):
         """
         Set the Aircraft position.
 
@@ -474,6 +504,8 @@ class Aircraft(Comparison):
         """
         self.lat = lat
         self.lon = lon
+
+        self._track_time = dt
 
     def set_attributes(self, attributes: dict[str, typing.Any]):
         """
@@ -602,6 +634,9 @@ class Aircraft(Comparison):
             last_passed_filed_idx=data.get("last_passed_filed_idx", None),
             last_passed_current_idx=data.get("last_passed_current_idx", None),
             squawk_ident_until=data.get("squawk_ident_until", None),
+            track_time=datetime.fromisoformat(track_time)
+            if (track_time := data.get("track_time", None)) is not None
+            else None,
         )
 
         # attributes
@@ -703,6 +738,7 @@ class Aircraft(Comparison):
             "selected_instructions": self.selected_instructions.data(),
             "last_passed_filed_idx": self.last_passed_filed_idx,
             "last_passed_current_idx": self.last_passed_current_idx,
+            "track_time": self._track_time.isoformat() if self._track_time is not None else None,
         }
 
         data_dict["predictor_params"] = {}

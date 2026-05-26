@@ -1593,6 +1593,7 @@ def update_from_radar(
             # after this it may be updated with partial information
             if None in (row.lat, row.lon, row.fl, row.heading):
                 continue
+
             aircraft = aircraft_class(
                 lat=row.lat,
                 lon=row.lon,
@@ -1603,11 +1604,11 @@ def update_from_radar(
                 selected_fl=row.selected_fl,
                 ufid=row.ufid if row.ufid != "" else None,
                 simulated=False,
+                track_time=episode_start,
             )
         else:  # callsign is in environment, so update aircraft
             aircraft = environment.aircraft[row.callsign]
-            aircraft.lat = row.lat
-            aircraft.lon = row.lon
+            aircraft.set_position(row.lat, row.lon, environment.datetime)
 
             # don't update values if new values are zero (originally nan, transformed to zero)
             if row.fl is not None:
@@ -1639,15 +1640,6 @@ def update_from_radar(
             aircraft.heading = row.heading
 
         all_aircraft.append(aircraft)
-
-    if ignore_simmed:
-        # filter to keep only simulated aircraft
-        environment.aircraft = {
-            callsign: aircraft for callsign, aircraft in environment.aircraft.items() if aircraft.simulated
-        }
-    else:
-        # we are NOT ignoring simmed aircraft, so filter out all aircraft
-        environment.aircraft = {}
 
     # add back in the aircraft replaying from data
     for aircraft in all_aircraft:

@@ -560,6 +560,12 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
         # resent list of actions waiting to be enacted
         self._actions_to_issue = []
 
+        removed_aircraft = self.environment.remove_obsolete_aircraft()
+
+        if len(removed_aircraft) > 0:
+            debugging_list = [f"{aircraft.callsign} at FL{aircraft.fl}" for aircraft in removed_aircraft.values()]
+            logger.debug(f"Removed aircraft {debugging_list} from environment because their track data is too old.")
+
         return self.environment
 
     def remove_aircraft_outside_airspace_penumbra(self) -> None:

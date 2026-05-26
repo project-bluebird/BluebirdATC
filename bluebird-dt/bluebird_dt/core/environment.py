@@ -4,6 +4,7 @@ import copy
 import itertools
 import json
 import typing
+from datetime import timedelta
 from typing import Generic
 
 import pandas as pd
@@ -909,3 +910,25 @@ class Environment(
         )
         # remove any coordinations internal to the sector the aircraft is about to outcommed from
         self.remove_coordinations_within_sector(aircraft.current_sector, callsign)
+
+    def remove_obsolete_aircraft(self, maximum_track_age: timedelta | None = None) -> dict[str, TAircraft]:
+        maximum_track_age = maximum_track_age or timedelta(seconds=25)
+
+        remove: dict[str, TAircraft] = {}
+        keep: dict[str, TAircraft] = {}
+
+        for callsign, aircraft in self.aircraft.items():
+            # If the aircraft is simulated, we assume that the scenario manager is removal of the aircraft
+            if aircraft.simulated:
+                keep[callsign] = aircraft
+                continue
+
+            newest_history = aircraft.last_track_datetime()
+            if newest_history is not None and self.datetime - newest_history > maximum_track_age:
+                remove[callsign] = aircraft
+            else:
+                keep[callsign] = aircraft
+
+        self.aircraft = keep
+
+        return remove
