@@ -38,6 +38,20 @@ class ClearanceLog(typing.TypedDict):
     sector: list[str] | None
 
 
+class RadarLog(typing.TypedDict):
+    datetime: pd.Timestamp
+    callsign: str
+    lat: float
+    lon: float
+    fl: float
+    heading: float
+    ufid: str
+    speed_tas: float
+    ground_speed: float
+    ground_track_angle: float
+    selected_fl: float
+
+
 class SimRateUpdate(BaseModel):
     """
     An entry for logging the sim rate, normally issued when this information may be updated.
@@ -89,6 +103,7 @@ class EventLogger:
 
     _sim_events: list[SimRateUpdate | SimStartStop]
     clearances_log: list[ClearanceLog]
+    radar_log: list[RadarLog]
 
     def __init__(self, log_name: str | None = None):
         """
