@@ -619,11 +619,11 @@ class Environment(
 
         # if multiple candidates, warn, and keep one with latest datetime
         elif len(candidate_exit_coords) > 1:
-            coordination = sorted(
+            coordination = max(
                 candidate_exit_coords,
                 # sort by datetime unless datetime is None, in which case just return -1 (smaller than any datetime)
                 key=lambda coord: coord.datetime if coord.datetime is not None else -1,
-            )[-1]
+            )
             logger.warning(
                 f"WARNING: Multiple coordinations out of a sector for {callsign},"
                 " returning the one with the latest timestamp",
