@@ -1,7 +1,7 @@
 ---
 name: BluebirdATC linting and tests
 
-on: 
+on:
   pull_request:
     branches:
       - "main"
@@ -38,22 +38,11 @@ jobs:
       - name: Display Python version
         run: uv run python -c "import sys; print(sys.version)"
 
-      - name: Check linting for bluebird-dt
-        working-directory: ./bluebird-dt/bluebird_dt
-        run: |
-          for dir in ./core/ \
-                     ./utility/ ; do
-            uv run ruff check --output-format=github $dir
-          done
+      - name: Check linting
+        run: uv run ruff check bluebird-api bluebird-dt bluebird-gymnasium docs --output-format=github
 
-      - name: Check formatting for bluebird-dt
-        working-directory: ./bluebird-dt/bluebird_dt
-        run: |
-          for dir in ./core/ \
-                     ./utility/ ; do
-            uv run ruff format --check --diff $dir
-          done
+      - name: Check formatting
+        run: uv run ruff format bluebird-api bluebird-dt bluebird-gymnasium docs --check --diff
 
       - name: Check testing
-        run: |
-          uv run pytest -n auto
+        run: uv run pytest -n auto

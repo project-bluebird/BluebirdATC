@@ -3,9 +3,9 @@
 
 ## Project Overview
 
-BluebirdATC is a Digital Twin and Agent Training Environment for Air Traffic Control.
+Project Bluebird is a £13.7m EPSRC Prosperity Partnership between NATS, The University of Exeter and The Alan Turing Institute to augment and optimise air-traffic control using multi-agent systems. Our ambition is to deliver the world’s first AI system to control a section of airspace in live shadow trials, working with Air Traffic Controllers to help manage the complexities of their role.
 
-The project is a collaboration between NATS, The University of Exeter, and the Alan Turing Institute.  The goals of the project include:
+The project has three research themes:
 
 - Building a Digital Twin of UK airspace.
 - Developing AI agents that can perform Air Traffic Control (ATC) within this digital twin environment.
@@ -25,53 +25,39 @@ The BluebirdATC repo is made up of four packages, `bluebird-dt`, `bluebird-api`,
 
 - :material-cube-outline: **bluebird-dt**
   Core digital twin package.
-  [Open docs →](bluebird-dt/index.md)
+  [Getting started →](bluebird-dt/getting-started.md)
 
 - :material-api: **bluebird-api**
   HTTP interface for the twin.
-  [Open docs →](bluebird-api/index.md)
+  [Getting started →](bluebird-api/getting-started.md)
 
 - :material-robot: **bluebird-gymnasium**
   Gym wrapper for training agents.
-  [Open docs →](bluebird-gymnasium/index.md)
+  [Getting started →](bluebird-gymnasium/getting-started.md)
 
 - :material-monitor: **bluebird-hmi**
   React UI for visualization.
-  [Open docs →](bluebird-hmi/index.md)
+  [Getting started →](bluebird-hmi/developer.md)
 
 </div>
 
-## General ATC Introduction and Definition of Terms
+If you are unfamiliar with ATC concepts, an introduction is available [here](atc/index.md).
 
-For a general introduction to ATC and the definition of useful domain-related words and phrases, please visit the [Introduction and Glossary](atc-introduction-and-glossary.md) page.
+### Versioning
 
-## Getting Started
+Development of the BluebirdATC Digital Twin is still in early stages, with new features and bug fixes causing breaking changes.
+This is why the current versions are still '0.x.x', reflecting that each 'MINOR' version could potentially have breaking changes, following the [semantic versioning](https://semver.org/#spec-item-5) conventions.
+On the other hand, 'PATCH' versions are used for bug fixes and non-breaking changes, although they may subtly change the behaviour of the models.
 
-Start with the `Examples` tab in these docs for rendered notebook walkthroughs of the Digital Twin and RL training environment. The source notebooks remain in `bluebird-dt/notebooks` and `bluebird-gymnasium/examples` if you want to run or edit them locally.
-
-## Running Tests
-
-From the repository root, you can run the workspace Python test suite for `bluebird-dt` and `bluebird-api` with:
-
-```bash
-uv run pytest
-```
-
-To run the same workspace tests in parallel:
-
-```bash
-uv run pytest -n auto
-```
-
-For package-specific test commands and frontend checks, see the documentation pages for each subproject.
+Release notes available on Github will include a list of changes, specifying if any are breaking changes.
 
 ## References
 
-- **A Probabilistic Digital Twin of UK Airspace**, AIAA SciTech Forum (2026):  https://doi.org/10.48550/arXiv.2601.03113
-- **A framework for assuring the accuracy and fidelity of an AI-enabled Digital Twin of en route UK airspace**, AIAA SciTech Forum (2026): https://doi.org/10.48550/arXiv.2601.03120
-- **Human-in-the-Loop Testing of AI Agents for Air Traffic Control with a Regulated Assessment Framework**, AIAA SciTech Forum (2026): https://doi.org/10.48550/arXiv.2601.04288
-- **Fast Surrogate Models for Adaptive Aircraft Trajectory Prediction in En route Airspace**, AIAA SciTech Forum (2026): https://doi.org/10.48550/arXiv.2601.03075
-- **Online Action-Stacking Improves Reinforcement Learning Performance for Air Traffic Control**, AIAA SciTech Forum (2026): https://doi.org/10.48550/arXiv.2601.04287
-- **Conditioning Aircraft Trajectory Prediction on Meteorological Data with a Physics-Informed Machine Learning Approach**, AIAA SciTech Forum (2026): https://doi.org/10.48550/arXiv.2601.03152
-- **A Future Capabilities Agent for Tactical Air Traffic Control**, AIAA SciTech Forum (2026): https://arxiv.org/abs/2601.04285
-- **Towards Transparent AI Agents for Air Traffic Control**, AIAA SciTech Forum (2026): http://dx.doi.org/10.2139/ssrn.6042354
+- **A Probabilistic Digital Twin of UK Airspace**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.03113)
+- **A framework for assuring the accuracy and fidelity of an AI-enabled Digital Twin of en route UK airspace**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.03120)
+- **Human-in-the-Loop Testing of AI Agents for Air Traffic Control with a Regulated Assessment Framework**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.04288)
+- **Fast Surrogate Models for Adaptive Aircraft Trajectory Prediction in En route Airspace**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.03075)
+- **Online Action-Stacking Improves Reinforcement Learning Performance for Air Traffic Control**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.04287)
+- **Conditioning Aircraft Trajectory Prediction on Meteorological Data with a Physics-Informed Machine Learning Approach**, AIAA SciTech Forum (2026): [paper](https://doi.org/10.48550/arXiv.2601.03152)
+- **A Future Capabilities Agent for Tactical Air Traffic Control**, AIAA SciTech Forum (2026): [paper](https://arxiv.org/abs/2601.04285)
+- **Towards Transparent AI Agents for Air Traffic Control**, AIAA SciTech Forum (2026): [paper](http://dx.doi.org/10.2139/ssrn.6042354)

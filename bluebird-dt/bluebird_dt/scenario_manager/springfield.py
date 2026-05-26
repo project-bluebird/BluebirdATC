@@ -458,7 +458,7 @@ class SpringfieldScenarioManager(
         # TODO: apply stars to route (there are none in the data)
         # route_fixes, route_fix_types = apply_sid_or_star(route_fixes, route_fix_types, self.df_sids, STAR_TYPE)
 
-        # initial check: the route is allowed to have one fix iif it does not spawn at that fix.
+        # initial check: the route is allowed to have one fix if it does not spawn at that fix.
         if len(route_fixes) == 1 and row.offset_range == 0:
             msg = f"WARNING: Skipping aircraft event for {self.scenario_name} - {row.callsign} because it has only one"
             msg += f" fix in the route {route_fixes} and it spawns at that fix."

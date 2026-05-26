@@ -1,5 +1,5 @@
 """
-The routes module builds the router for the proided endpoint and adds any endpoints only available for
+The routes module builds the router for the provided endpoint and adds any endpoints only available for
 BluebirdATC, including loading which is implementation dependent.
 """
 

@@ -27,6 +27,11 @@ from bluebird_gymnasium.utils.constants import (
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator import Simulator
 
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
+
 
 class SectorYEnv(BaseEnv):
     """gymnasium environment for the Y sector airspace.
@@ -35,7 +40,7 @@ class SectorYEnv(BaseEnv):
     airspace, defined in the simulation framework.
 
     Args:
-        render_mode: the mode to visualize (render) the simulator. It can
+        render_mode: the mode to visualise (render) the simulator. It can
             only be set to None or one of the following:
             'human', 'rgb_array', 'file'.
             Defaults to `None`.
@@ -50,7 +55,7 @@ class SectorYEnv(BaseEnv):
         render_mode: str | None = None,
         config: EnvConfig | None = None,
     ):
-        super(SectorYEnv, self).__init__(
+        super().__init__(
             render_mode,
             config,
         )
@@ -58,9 +63,7 @@ class SectorYEnv(BaseEnv):
         # if the `exit_window_width` value was originally None, override the
         # default set in the parent class with a new default here (based on
         # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get(
-            "exit_window_width", None
-        )
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
         if exit_window_width is None:
             self.exit_window_width = self.config.airspace_config["width"] // 2
         else:
@@ -117,34 +120,28 @@ class SectorYEnv(BaseEnv):
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
-        if suffix is None or suffix == "":
-            suffix = ""
-        else:
-            suffix = f"__{suffix}"
+        suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario}_{timestamp}{suffix}"
 
         ####### setup the sim env manager
-        sim = self.scenario_manager.to_simulator(
+        return self.scenario_manager.to_simulator(
             category=category,
             scenario_name=scenario,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,  # use the default in the scenario.
         )
-        return sim
 
     @classmethod
-    def get_default_env_config(
-        cls, view_type: ViewType | str = ViewType.CENTRALIZED
-    ) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralized (single agent) or
-                decentralized (multi-agent).
+            view_type: the type of agent view, centralised (single agent) or
+                decentralised (multi-agent).
                 Defaults to "centralized".
 
         Returns:
@@ -153,7 +150,7 @@ class SectorYEnv(BaseEnv):
 
         if view_type not in ViewType:
             raise ValueError(f"{view_type} is not a valid value of {ViewType}")
-        elif isinstance(view_type, ViewType):
+        if isinstance(view_type, ViewType):
             view_type = view_type.value
 
         # airspace
@@ -277,7 +274,7 @@ if __name__ == "__main__":
         print(obs)
         pprint(info)
         for idx in range(20):
-            actions = {callsign: 0 for callsign in obs.keys()}
+            actions = dict.fromkeys(obs.keys(), 0)
             obs, reward, done, truncated, info = env.step(actions)
             print(idx, obs)
             pprint(info)

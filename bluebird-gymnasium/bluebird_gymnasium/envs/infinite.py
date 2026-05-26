@@ -22,6 +22,11 @@ from bluebird_gymnasium.utils.types import StrEnum
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator import Simulator
 
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
+
 
 class ScenarioName(StrEnum):
     sector_i = "I-Sector"
@@ -63,7 +68,7 @@ class InfiniteEnv(BaseEnv):
     """gymnasium environment for the Air Traffic Control Game.
 
     Args:
-        render_mode: the mode to visualize (render) the simulator. It can
+        render_mode: the mode to visualise (render) the simulator. It can
             only be set to None or one of the following:
             'human', 'rgb_array', 'file'.
             Defaults to `None`.
@@ -78,7 +83,7 @@ class InfiniteEnv(BaseEnv):
         render_mode: str | None = None,
         config: EnvConfig | None = None,
     ):
-        super(InfiniteEnv, self).__init__(
+        super().__init__(
             render_mode,
             config,
         )
@@ -86,9 +91,7 @@ class InfiniteEnv(BaseEnv):
         # if the `exit_window_width` value was originally None, override the
         # default set in the parent class with a new default here (based on
         # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get(
-            "exit_window_width", None
-        )
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
         if exit_window_width is None:
             self.exit_window_width = 10
 
@@ -113,10 +116,7 @@ class InfiniteEnv(BaseEnv):
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
-        if suffix is None or suffix == "":
-            suffix = ""
-        else:
-            suffix = f"__{suffix}"
+        suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario_name}_{timestamp}{suffix}"
 
         # set up simulator manager
@@ -133,17 +133,15 @@ class InfiniteEnv(BaseEnv):
         return sim
 
     @classmethod
-    def get_default_env_config(
-        cls, view_type: ViewType | str = ViewType.CENTRALIZED
-    ) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralized (single agent) or
-                decentralized (multi-agent).
+            view_type: the type of agent view, centralised (single agent) or
+                decentralised (multi-agent).
                 Defaults to "centralized".
 
         Returns:
@@ -152,7 +150,7 @@ class InfiniteEnv(BaseEnv):
 
         if view_type not in ViewType:
             raise ValueError(f"{view_type} is not a valid value of {ViewType}")
-        elif isinstance(view_type, ViewType):
+        if isinstance(view_type, ViewType):
             view_type = view_type.value
 
         # airspace
@@ -213,9 +211,7 @@ class InfiniteEnv(BaseEnv):
                 ],
                 "coeffs": [1.0, 1.0],
             },
-            "scenario_config": {
-                "scenario_name": ScenarioName.sector_xplus.value
-            },
+            "scenario_config": {"scenario_name": ScenarioName.sector_xplus.value},
             "simulation_log_config": {
                 "save_simulation": False,
                 "log_suffix": "",
@@ -257,7 +253,7 @@ class CustomInfiniteEnv(BaseEnv):
     scenario seed.
 
     Args:
-        render_mode: the mode to visualize (render) the simulator. It can
+        render_mode: the mode to visualise (render) the simulator. It can
             only be set to None or one of the following:
             'human', 'rgb_array', 'file'.
             Defaults to `None`.
@@ -272,7 +268,7 @@ class CustomInfiniteEnv(BaseEnv):
         render_mode: str | None = None,
         config: EnvConfig | None = None,
     ):
-        super(CustomInfiniteEnv, self).__init__(
+        super().__init__(
             render_mode,
             config,
         )
@@ -280,9 +276,7 @@ class CustomInfiniteEnv(BaseEnv):
         # if the `exit_window_width` value was originally None, override the
         # default set in the parent class with a new default here (based on
         # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get(
-            "exit_window_width", None
-        )
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
         if exit_window_width is None:
             self.exit_window_width = 10
 
@@ -307,36 +301,21 @@ class CustomInfiniteEnv(BaseEnv):
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
-        if suffix is None or suffix == "":
-            suffix = ""
-        else:
-            suffix = f"__{suffix}"
+        suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario_name}_{timestamp}{suffix}"
 
         # set up simulator manager
         sim = Infinite.setup(
             scenario_name=self.config.scenario_config["scenario_name"],
             random_seed=(
-                self._reset_seed
-                if self._reset_seed is not None
-                else self.config.scenario_config["random_seed"]
+                self._reset_seed if self._reset_seed is not None else self.config.scenario_config["random_seed"]
             ),
-            num_starter_aircraft=self.config.scenario_config[
-                "num_starter_aircraft"
-            ],
-            initial_spawn_rate=self.config.scenario_config[
-                "initial_spawn_rate"
-            ],
-            spawn_rate_increment=self.config.scenario_config[
-                "spawn_rate_increment"
-            ],
-            spawn_rate_increase_interval=self.config.scenario_config[
-                "spawn_rate_increase_interval"
-            ],
+            num_starter_aircraft=self.config.scenario_config["num_starter_aircraft"],
+            initial_spawn_rate=self.config.scenario_config["initial_spawn_rate"],
+            spawn_rate_increment=self.config.scenario_config["spawn_rate_increment"],
+            spawn_rate_increase_interval=self.config.scenario_config["spawn_rate_increase_interval"],
             max_spawn_rate=self.config.scenario_config["max_spawn_rate"],
-            spawn_distance_threshold=self.config.scenario_config[
-                "spawn_distance_threshold"
-            ],
+            spawn_distance_threshold=self.config.scenario_config["spawn_distance_threshold"],
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
             autosave=False,
@@ -349,17 +328,15 @@ class CustomInfiniteEnv(BaseEnv):
         return sim
 
     @classmethod
-    def get_default_env_config(
-        cls, view_type: ViewType | str = ViewType.CENTRALIZED
-    ) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralized (single agent) or
-                decentralized (multi-agent).
+            view_type: the type of agent view, centralised (single agent) or
+                decentralised (multi-agent).
                 Defaults to "centralized".
 
         Returns:
@@ -368,7 +345,7 @@ class CustomInfiniteEnv(BaseEnv):
 
         if view_type not in ViewType:
             raise ValueError(f"{view_type} is not a valid value of {ViewType}")
-        elif isinstance(view_type, ViewType):
+        if isinstance(view_type, ViewType):
             view_type = view_type.value
 
         # airspace

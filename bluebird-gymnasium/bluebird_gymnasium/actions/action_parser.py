@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from bluebird_dt.core import Action, Pos4D
+import typing
+
+from bluebird_dt.core import Action
 
 from bluebird_gymnasium.actions import (
     ACTION_NOOP,
@@ -12,10 +14,7 @@ from bluebird_gymnasium.actions import (
     NUM_NOOP_ACTIONS,
     registry_actions,
 )
-
 from bluebird_gymnasium.utils.simulator_utils import get_aircraft_selected_cas
-
-import typing
 
 if typing.TYPE_CHECKING:
     from bluebird_gymnasium.envs import ActionConfig
@@ -43,10 +42,7 @@ def validate_action_list_route_direct(
 
     # check 1: specific to route direct. check that the highest number of
     # forward fix is less than or equal to route_direct_max_fixes
-    valid_route_direct_config = (
-        min(data_list) <= route_direct_max_fixes
-        and max(data_list) <= route_direct_max_fixes
-    )
+    valid_route_direct_config = min(data_list) <= route_direct_max_fixes and max(data_list) <= route_direct_max_fixes
     if not valid_route_direct_config:
         msg = (
             f"{action_name} in action_config: the values in the list "
@@ -57,9 +53,7 @@ def validate_action_list_route_direct(
     return True, None
 
 
-def validate_action_list(
-    action_name: str, data_list: list[Number]
-) -> tuple[bool, None | str]:
+def validate_action_list(action_name: str, data_list: list[Number]) -> tuple[bool, None | str]:
     """Validate the input values in an action list.
 
     A general validation for different action types.
@@ -76,10 +70,7 @@ def validate_action_list(
     """
 
     # check 1: the items in the list should be integers or floats
-    positive_num_status = [
-        (isinstance(v, int) or isinstance(v, float)) and (v > 0)
-        for v in data_list
-    ]
+    positive_num_status = [isinstance(v, (int, float)) and (v > 0) for v in data_list]
     positive_num_status = all(positive_num_status)
     if not positive_num_status:
         msg = (
@@ -91,17 +82,14 @@ def validate_action_list(
     # check 2: there should be no duplicates in the list
     unique_items_list = set(data_list)
     if len(unique_items_list) != len(data_list):
-        msg = (
-            f"{action_name} in action_config: the list should contain only "
-            "unique numbers."
-        )
+        msg = f"{action_name} in action_config: the list should contain only unique numbers."
         return False, msg
 
     return True, None
 
 
 class ActionParser:
-    supported_actions: list[str] = [
+    supported_actions: tuple[str, ...] = (
         # noop
         "action_noop",
         # heading
@@ -123,7 +111,7 @@ class ActionParser:
         "simple_route_direct",
         # outcomm
         "simple_outcomm",
-    ]
+    )
 
     def __init__(
         self,
@@ -146,18 +134,13 @@ class ActionParser:
 
                 # extra check, specific to route direct and route parallel
                 # actions: throws an exception if incorrect.
-                if (
-                    action_name == "simple_route_direct"
-                    or action_name == "simple_heading_route_parallel"
-                ):
-                    passed, msg = validate_action_list_route_direct(
-                        action_name, param, forward_fixes_info.num_fixes
-                    )
+                if action_name == "simple_route_direct" or action_name == "simple_heading_route_parallel":
+                    passed, msg = validate_action_list_route_direct(action_name, param, forward_fixes_info.num_fixes)
                     if not passed:
                         raise ValueError(msg)
 
                 for v in param:
-                    _name = "{0}__{1}".format(action_name, v)
+                    _name = f"{action_name}__{v}"
                     self._action_formatter_map[num_actions + 1] = _name
                     num_actions += 1
 
@@ -184,39 +167,31 @@ class ActionParser:
                 if action_name in _to_check_heading:
                     # use a default value since a list of parameter values
                     # was not specified
-                    _name = "{0}__{1}".format(
-                        action_name, DEFAULT_RELATIVE_HEADING
-                    )
+                    _name = f"{action_name}__{DEFAULT_RELATIVE_HEADING}"
                     self._action_formatter_map[num_actions + 1] = _name
 
                 elif action_name in _to_check_climb_descent:
                     # use a default value since a list of parameter values
                     # was not specified
-                    _name = "{0}__{1}".format(
-                        action_name, DEFAULT_RELATIVE_CLIMB_DESCENT
-                    )
+                    _name = f"{action_name}__{DEFAULT_RELATIVE_CLIMB_DESCENT}"
                     self._action_formatter_map[num_actions + 1] = _name
 
                 elif action_name in _to_check_speed:
                     # use a default value since a list of parameter values
                     # was not specified
-                    _name = "{0}__{1}".format(
-                        action_name, DEFAULT_RELATIVE_SPEED
-                    )
+                    _name = f"{action_name}__{DEFAULT_RELATIVE_SPEED}"
                     self._action_formatter_map[num_actions + 1] = _name
 
                 elif action_name in _to_check_route_direct:
                     # use a default value since a list of parameter values
                     # was not specified
-                    _name = "{0}__{1}".format(action_name, DEFAULT_ROUTE_DIRECT)
+                    _name = f"{action_name}__{DEFAULT_ROUTE_DIRECT}"
                     self._action_formatter_map[num_actions + 1] = _name
 
                 elif action_name in _to_check_route_parallel:
                     # use a default value since a list of parameter values
                     # was not specified
-                    _name = "{0}__{1}".format(
-                        action_name, DEFAULT_ROUTE_PARALLEL
-                    )
+                    _name = f"{action_name}__{DEFAULT_ROUTE_PARALLEL}"
                     self._action_formatter_map[num_actions + 1] = _name
 
                 else:
@@ -236,34 +211,31 @@ class ActionParser:
         self.num_actions_per_aircraft = NUM_NOOP_ACTIONS + num_actions
 
         if isinstance(num_sampled_aircraft, int) and num_sampled_aircraft > 0:
-            # centralized (single agent) action set up.
+            # centralised (single agent) action set up.
             # one global noop action rather than each aircraft
             # assigned a noop action
             self.total_num_actions = NUM_NOOP_ACTIONS + (
-                num_sampled_aircraft
-                * num_actions  # note, multiplication without noop actions
+                num_sampled_aircraft * num_actions  # note, multiplication without noop actions
             )
 
             ## (re-)format int actions received in step to the specific
             ## aircraft with the specific int action for that aircraft
             self.action_formatter = self._action_formatter_centralized
-            self.reverse_action_formatter = (
-                self._action_formatter_centralized_reversed
-            )
+            self.reverse_action_formatter = self._action_formatter_centralized_reversed
 
         elif num_sampled_aircraft is None:
-            # decentralized (multi-agent) action set up.
+            # decentralised (multi-agent) action set up.
             self.total_num_actions = self.num_actions_per_aircraft
 
-            ## dict of ints action formatter for decentralized set up
+            ## dict of ints action formatter for decentralised set up
             self.action_formatter = self._action_formatter_decentralized
-            self.reverse_action_formatter = (
-                self._action_formatter_decentralized_reversed
-            )
+            self.reverse_action_formatter = self._action_formatter_decentralized_reversed
         else:
-            _msg = "Incorrect parameter value for `num_sampled_aircraft`. "
-            "It should be set to `None` (for decentralized agent/action set "
-            "up) or an `int` > 0 (for centralized agent/action set up)."
+            _msg = (
+                "Incorrect parameter value for `num_sampled_aircraft`. "
+                "It should be set to `None` (for decentralized agent/action set "
+                "up) or an `int` > 0 (for centralized agent/action set up)."
+            )
             raise ValueError(_msg)
 
         # define buffers to hold the different categories of `int` actions
@@ -338,36 +310,28 @@ class ActionParser:
                 self.actions_outcomm.append(action_int)
 
             else:
-                raise ValueError(
-                    f"Invalid action '{action_str}'. Supported actions: \n"
-                    f"{self.supported_actions}"
-                )
+                raise ValueError(f"Invalid action '{action_str}'. Supported actions: \n{self.supported_actions}")
 
-    def get_num_actions_per_aircraft(
-        self, exclude_noop_action: bool = True
-    ) -> int:
+    def get_num_actions_per_aircraft(self, exclude_noop_action: bool = True) -> int:
         if exclude_noop_action:
             # should be minus 1
             return self.num_actions_per_aircraft - NUM_NOOP_ACTIONS
-        else:
-            return self.num_actions_per_aircraft
+        return self.num_actions_per_aircraft
 
     def get_total_num_actions(self) -> int:
         return self.total_num_actions
 
-    def _action_formatter_centralized(
-        self, action: int, sampled_aircraft: list[str]
-    ) -> dict[str, int]:
+    def _action_formatter_centralized(self, action: int, sampled_aircraft: list[str]) -> dict[str, int]:
         """Format integer action to the integer action for a specific aircraft
 
-        This is necessary for centralized (single-agent) setup because the
+        This is necessary for centralised (single-agent) setup because the
         gym environment exposes the actions to the agent based on the total
         number of actions per aircraft multiplied by the number of selected
         (sampled aircraft).
 
         For example, if there are 3 actions are
         available to each aircraft and there are 5 sampled aircraft, then
-        the action space for the centralized setup would be 16
+        the action space for the centralised setup would be 16
         (3 actions per aircraft x 5 aircraft) + 1 no-op/dummy action.
         Hence [0, 1, .... 15]. Note, no-op action is assigned as integer
         action 0 by default.
@@ -378,7 +342,7 @@ class ActionParser:
 
 
         Args:
-            action: the action selected from the gym enviornment.
+            action: the action selected from the gym environment.
             sampled_aircraft: the list of sampled/selected aircraft at the
                 current time step.
 
@@ -400,9 +364,7 @@ class ActionParser:
                     "Invalid action {0}. Valid actions are integers "
                     "between [0, {1}]. Please check `env.action_space.n`."
                 )
-                raise ValueError(
-                    _msg.format(action, self.total_num_actions - 1)
-                )
+                raise ValueError(_msg.format(action, self.total_num_actions - 1))
 
             num_actions_per_aircraft = self.get_num_actions_per_aircraft(True)
             # compute the aircraft to which the action is assigned
@@ -419,11 +381,13 @@ class ActionParser:
         return {callsign_chosen: action_rf}
 
     def _action_formatter_decentralized(
-        self, action: dict[str, int], sampled_aircraft: None | list[str] = None
+        self,
+        action: dict[str, int],
+        sampled_aircraft: None | list[str] = None,  # noqa: ARG002
     ) -> dict[str, int]:
         """Helper method for action formatting.
 
-        In the decentralized (multi-agent) setup, nothing needs to be done
+        In the decentralised (multi-agent) setup, nothing needs to be done
         as each agent/aircraft has its own action space which is number of
         actions available to it. the action argument (which is a `dict`) is
         already in the correct format.
@@ -432,12 +396,13 @@ class ActionParser:
             action: defines each key-value as an aircraft's callsign and
                 integer action for the aircraft.
             sampled_aircraft (list): the list of sampled/selected aircraft
-                at the current time step. Defaults to None in decentralized
-                setup as it is not needed.
+                at the current time step. Defaults to None in decentralised
+                set up as it is not needed. Added to retain compatibility with
+                _action_formatter_centralized method signature.
 
         Returns:
             `dict`, the action argument passed. it is left unchanged as no
-            action formatting is required in the decentralized setup.
+            action formatting is required in the decentralised setup.
         """
 
         # final action formatting based on the action types
@@ -451,7 +416,7 @@ class ActionParser:
             _msg = "`action` should be of type {0}, not {1}."
             raise ValueError(_msg.format(type({}), type(action)))
 
-        for callsign, act in action.items():
+        for act in action.values():
             if act > (self.total_num_actions - 1):
                 _msg = (
                     "Invalid action {0}. Valid actions are integers "
@@ -461,9 +426,7 @@ class ActionParser:
 
         return action
 
-    def convert_gym_action_to_simulator_action(
-        self, callsign: str, action_int: int, gym_env: BaseEnv
-    ) -> Action:
+    def convert_gym_action_to_simulator_action(self, callsign: str, action_int: int, gym_env: BaseEnv) -> Action:
         """Convert gym action (`int`) to a simulator action
 
         Args:
@@ -474,10 +437,6 @@ class ActionParser:
         Returns:
             the simulator action.
         """
-
-        ac_tracker = gym_env.get_tracked_aircraft_data()
-        active_airspace_sector = gym_env.get_active_airspace_sector()
-        simulator_env = gym_env.get_simulator_env()
 
         if action_int == ACTION_NOOP:
             # no action taken
@@ -531,10 +490,7 @@ class ActionParser:
 
     def get_heading_actions(self) -> list[int]:
         """Get all heading (absolute and relative) actions."""
-        return (
-            self.get_relative_heading_actions()
-            + self.get_absolute_heading_actions()
-        )
+        return self.get_relative_heading_actions() + self.get_absolute_heading_actions()
 
     # getter: climb/descent actions
     def get_fl_climb_actions(self) -> list[int]:
@@ -584,24 +540,15 @@ class ActionParser:
 
     def get_relative_speed_actions(self) -> list[int]:
         """Get all relative speed (increase and decrease) actions."""
-        return (
-            self.get_speed_increase_actions()
-            + self.get_speed_decrease_actions()
-        )
+        return self.get_speed_increase_actions() + self.get_speed_decrease_actions()
 
     def get_absolute_speed_actions(self) -> list[int]:
         """Get all absolute speed (increase and decrease) actions."""
-        return (
-            self.get_speed_maintain_current_actions()
-            + self.get_speed_choose_actions()
-        )
+        return self.get_speed_maintain_current_actions() + self.get_speed_choose_actions()
 
     def get_speed_actions(self) -> list[int]:
         """Get all speed (absolute and relative) actions."""
-        return (
-            self.get_relative_speed_actions()
-            + self.get_absolute_speed_actions()
-        )
+        return self.get_relative_speed_actions() + self.get_absolute_speed_actions()
 
     # getter: route direct actions
     def get_route_direct_actions(self) -> list[int]:
@@ -617,9 +564,7 @@ class ActionParser:
     def action_formatter_map(self) -> dict[int, str]:
         return self._action_formatter_map
 
-    def convert_simulator_action_to_gym_action(
-        self, action_st: Action, gym_env: BaseEnv
-    ) -> tuple[int, str] | None:
+    def convert_simulator_action_to_gym_action(self, action_st: Action, gym_env: BaseEnv) -> tuple[int, str] | None:
         """Convert simulator action to an integer (`int`) representation.
 
         This method is the reverse of `convert_gym_action_to_simulator_action`.
@@ -642,46 +587,36 @@ class ActionParser:
             tuple of two elements or `None`.
             the tuple contains the action id (`int`) and the string identifier
             of the action specified in `.action_formatter_map`.
-            if `None`, is returned it inidicates that the action is not
+            if `None`, is returned it indicates that the action is not
             supported in the current instance of the environment.
         """
 
         callsign = action_st.callsign
 
-        tracked_data = gym_env.get_tracked_aircraft_data(
-            callsign, copy_data=True
-        )
+        tracked_data = gym_env.get_tracked_aircraft_data(callsign, copy_data=True)
         simulator_env = gym_env.get_simulator_env()
-        manager = gym_env.get_manager()
         active_airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
 
-        if (
-            action_st.kind == "change_heading_by"
-            or action_st.kind == "change_heading_to"
-        ):
+        if action_st.kind == "change_heading_by" or action_st.kind == "change_heading_to":
             # threshold to decide if a heading is parallel to a route segment
             RP_THRESH = 4.0
             # threshold to decide if a heading is a relative left or right turn
             RT_THRESH = 3.0
 
-            tracked_data_p = gym_env.get_tracked_aircraft_data_previous(
-                callsign
-            )
+            tracked_data_p = gym_env.get_tracked_aircraft_data_previous(callsign)
             if action_st.kind == "change_heading_by":
                 heading_diff = action_st.value
                 heading_diff = int(round(heading_diff, 0))
                 curr_selected_heading = tracked_data.selected_heading
 
             else:
-                # difference betweeen current and previous selected headings
+                # difference between current and previous selected headings
                 curr_selected_heading = tracked_data.selected_heading
                 if curr_selected_heading != action_st.value:
                     raise ValueError("Inconsistent data: selected heading")
 
-                heading_diff = (
-                    curr_selected_heading - tracked_data_p.selected_heading
-                )
+                heading_diff = curr_selected_heading - tracked_data_p.selected_heading
                 heading_diff = int(round(heading_diff, 0))
 
             ####### first, check if action is a relative turn action
@@ -691,9 +626,7 @@ class ActionParser:
                     (_int_action, self._action_formatter_map[_int_action])
                     for _int_action in self.get_heading_left_actions()
                 ]
-                relative_headings_values = [
-                    -int(x[1].split("__")[1]) for x in _actions
-                ]
+                relative_headings_values = [-int(x[1].split("__")[1]) for x in _actions]
                 relative_headings_actions = _actions
 
             elif heading_diff > 0:
@@ -702,9 +635,7 @@ class ActionParser:
                     (_int_action, self._action_formatter_map[_int_action])
                     for _int_action in self.get_heading_right_actions()
                 ]
-                relative_headings_values = [
-                    int(x[1].split("__")[1]) for x in _actions
-                ]
+                relative_headings_values = [int(x[1].split("__")[1]) for x in _actions]
                 relative_headings_actions = _actions
 
             else:
@@ -721,12 +652,8 @@ class ActionParser:
                     break
 
             if heading_diff == 0:
-                modified_action_st = Action(
-                    callsign=callsign, kind="maintain_current_heading", value=0
-                )
-                _action = self.convert_simulator_action_to_gym_action(
-                    modified_action_st, gym_env
-                )
+                modified_action_st = Action(callsign=callsign, kind="maintain_current_heading", value=0)
+                _action = self.convert_simulator_action_to_gym_action(modified_action_st, gym_env)
 
             elif found_idx is not None:
                 # a relative (left or right) turn action
@@ -738,9 +665,7 @@ class ActionParser:
                     (_int_action, self._action_formatter_map[_int_action])
                     for _int_action in self.get_heading_route_parallel_actions()
                 ]
-                route_parallel_values = [
-                    int(x[1].split("__")[1]) for x in _actions
-                ]
+                route_parallel_values = [int(x[1].split("__")[1]) for x in _actions]
                 route_parallel_actions = _actions
 
                 from bluebird_gymnasium.actions.simple.heading import (
@@ -788,8 +713,7 @@ class ActionParser:
             _actions = {
                 _int_action: self._action_formatter_map[_int_action]
                 for _int_action in _int_actions
-                if self._action_formatter_map[_int_action]
-                == "simple_heading_maintain_current"
+                if self._action_formatter_map[_int_action] == "simple_heading_maintain_current"
             }
             assert len(_actions) == 1
             _actions = list(_actions.items())
@@ -798,32 +722,21 @@ class ActionParser:
         elif action_st.kind == "change_flight_level_by":
             if action_st.value > 0.0:
                 _int_actions = self.get_fl_climb_actions()
-                _actions = {
-                    _int_action: self._action_formatter_map[_int_action]
-                    for _int_action in _int_actions
-                }
+                _actions = {_int_action: self._action_formatter_map[_int_action] for _int_action in _int_actions}
                 _actions = list(_actions.items())
                 relative_fls = [float(x[1].split("__")[1]) for x in _actions]
 
             else:
                 _int_actions = self.get_fl_descent_actions()
-                _actions = {
-                    _int_action: self._action_formatter_map[_int_action]
-                    for _int_action in _int_actions
-                }
+                _actions = {_int_action: self._action_formatter_map[_int_action] for _int_action in _int_actions}
                 _actions = list(_actions.items())
-                relative_fls = [
-                    -float(x[1].split("__")[1]) for x in _actions
-                ]  # make value negative.
+                relative_fls = [-float(x[1].split("__")[1]) for x in _actions]  # make value negative.
 
             assert float(action_st.value) in relative_fls
             _idx = relative_fls.index(float(action_st.value))
             _action = _actions[_idx]
 
-        elif (
-            action_st.kind == "change_flight_level_to"
-            or action_st.kind == "descend_now,level_by_fix"
-        ):
+        elif action_st.kind == "change_flight_level_to" or action_st.kind == "descend_now,level_by_fix":
             # note: "change_flight_level_to" is used by climb or descend
             # clearances (to the exit or intermediate flight level). however,
             # "descend_now,level_by_fix" is strictly used by descend
@@ -858,19 +771,13 @@ class ActionParser:
             if action_fl_value == exit_fl:
                 _int_actions = self.get_fl_exit_actions()
                 assert len(_int_actions) == 1
-                _actions = {
-                    _int_action: self._action_formatter_map[_int_action]
-                    for _int_action in _int_actions
-                }
+                _actions = {_int_action: self._action_formatter_map[_int_action] for _int_action in _int_actions}
                 _actions = list(_actions.items())
 
             else:
                 _int_actions = self.get_fl_intermediate_actions()
                 assert len(_int_actions) == 1
-                _actions = {
-                    _int_action: self._action_formatter_map[_int_action]
-                    for _int_action in _int_actions
-                }
+                _actions = {_int_action: self._action_formatter_map[_int_action] for _int_action in _int_actions}
                 _actions = list(_actions.items())
 
             _action = _actions[0]
@@ -888,14 +795,9 @@ class ActionParser:
             elif relative_cas_speed > 0.0:
                 # increase speed action
                 _int_actions = self.get_speed_increase_actions()
-                _actions = {
-                    _int_action: self._action_formatter_map[_int_action]
-                    for _int_action in _int_actions
-                }
+                _actions = {_int_action: self._action_formatter_map[_int_action] for _int_action in _int_actions}
                 _actions = list(_actions.items())
-                relative_cas_speeds = [
-                    float(x[1].split("__")[1]) for x in _actions
-                ]
+                relative_cas_speeds = [float(x[1].split("__")[1]) for x in _actions]
 
             elif relative_cas_speed == 0.0:
                 # maintain current speed action
@@ -904,14 +806,9 @@ class ActionParser:
             else:
                 # decrease current speed action
                 _int_actions = self.get_speed_decrease_actions()
-                _actions = {
-                    _int_action: self._action_formatter_map[_int_action]
-                    for _int_action in _int_actions
-                }
+                _actions = {_int_action: self._action_formatter_map[_int_action] for _int_action in _int_actions}
                 _actions = list(_actions.items())
-                relative_cas_speeds = [
-                    -float(x[1].split("__")[1]) for x in _actions
-                ]  # make value negative.
+                relative_cas_speeds = [-float(x[1].split("__")[1]) for x in _actions]  # make value negative.
 
             assert relative_cas_speed in relative_cas_speeds
             _idx = relative_cas_speeds.index(relative_cas_speed)
@@ -930,8 +827,7 @@ class ActionParser:
             selected_fix = action_st.value
             selected_fix_idx = route.index(selected_fix)
 
-            assert (
-                selected_fix_idx >= next_fix_idx,
+            assert selected_fix_idx >= next_fix_idx, (
                 f"route_direct_to: {action_st.value} should be a future fix"
                 f" and not a previous fix for aircraft {action_st.callsign}",
             )
@@ -941,14 +837,9 @@ class ActionParser:
             relative_future_fix_num = (selected_fix_idx - next_fix_idx) + 1
 
             _int_actions = self.get_route_direct_actions()
-            _actions = {
-                _int_action: self._action_formatter_map[_int_action]
-                for _int_action in _int_actions
-            }
+            _actions = {_int_action: self._action_formatter_map[_int_action] for _int_action in _int_actions}
             _actions = list(_actions.items())
-            relative_future_fix_nums = [
-                int(x[1].split("__")[1]) for x in _actions
-            ]
+            relative_future_fix_nums = [int(x[1].split("__")[1]) for x in _actions]
             _idx = relative_future_fix_nums.index(relative_future_fix_num)
             _action = _actions[_idx]
 
@@ -956,10 +847,7 @@ class ActionParser:
             if gym_env.action_config["simple_outcomm"] is True:
                 _int_actions = self.get_outcomm_actions()
                 assert len(_int_actions) == 1
-                _actions = {
-                    _int_action: self._action_formatter_map[_int_action]
-                    for _int_action in _int_actions
-                }
+                _actions = {_int_action: self._action_formatter_map[_int_action] for _int_action in _int_actions}
                 _actions = list(_actions.items())
                 _action = _actions[0]
             else:
@@ -992,7 +880,7 @@ class ActionParser:
                 current time step
 
         Returns:
-            action, `int` (based on the centralized setup action space for the
+            action, `int` (based on the centralised setup action space for the
             gym environment) or `None` if the value in `action_rf_dict` is
             `None` (which indicates that the action issued for the aircraft is
             not supported in the current environment instance).
@@ -1001,7 +889,7 @@ class ActionParser:
 
         num_actions_per_aircraft = self.get_num_actions_per_aircraft(True)
         assert len(actions_rf_dict) == 1
-        callsign_chosen, action_rf = list(actions_rf_dict.items())[0]
+        callsign_chosen, action_rf = next(iter(actions_rf_dict.items()))
 
         if callsign_chosen not in sampled_aircraft:
             # the issued action is for an aircraft that is not selected for
@@ -1009,26 +897,24 @@ class ActionParser:
             # hence ignore it.
             gym_action_int = None
         elif action_rf is None:
-            # this indiciates that the action is not supported
+            # this indicates that the action is not supported
             # in the current env instannce. see the docstring of
             # `.convert_simulator_action_to_gym_action(...)` for more details
             gym_action_int = None
         else:
             aircraft_idx = sampled_aircraft.index(callsign_chosen)
-            gym_action_int = (
-                aircraft_idx * num_actions_per_aircraft
-            ) + action_rf
+            gym_action_int = (aircraft_idx * num_actions_per_aircraft) + action_rf
 
         return gym_action_int
 
     def _action_formatter_decentralized_reversed(
         self,
         actions_dict: dict[str, int],
-        sampled_aircraft: list[str] | None = None,
+        sampled_aircraft: list[str] | None = None,  # noqa: ARG002
     ) -> dict[str, int]:
         """Reverse of the `_action_formatter_decentralized(...)` method
 
-        No reverse formatting needs to be done for the decentralized setup as
+        No reverse formatting needs to be done for the decentralised setup as
         the actions from the gym env are never formatted as they're already in
         the correct format.
 
@@ -1036,15 +922,16 @@ class ActionParser:
             action_dict (dict): defines each key-value as an aircraft's
                 callsign and integer action for the aircraft.
             sampled_aircraft (list): the list of sampled/selected aircraft
-                at the current time step. Defaults to None in decentralized
-                setup as it is not needed.
+                at the current time step. Defaults to None in decentralised
+                set up as it is not needed. Added to retain compatibility with the
+                `_action_formatter_centralized_reversed` method signature.
 
         Returns:
             `dict`, the actions_int argument passed. it is left unchanged as no
-            reverse action formatting is required in the decentralized setup.
+            reverse action formatting is required in the decentralised setup.
         """
 
         # do nothing.
-        # decentralized setup does not use action formatting.
+        # decentralised setup does not use action formatting.
         # see `._action_formatter_decentralized(...)`
-        return actions_int
+        return actions_dict

@@ -2,11 +2,12 @@
 # added first before import envs module to prevent circular import
 
 ## types
-import numpy
 import typing
 from dataclasses import dataclass
-from numpy.typing import NDArray
 from typing import TypeAlias
+
+import numpy  # noqa: ICN001
+from numpy.typing import NDArray
 
 ActionConfig: TypeAlias = dict[str, bool | list[int]]
 AirspaceConfig: TypeAlias = dict[str, None | bool | str | list]
@@ -17,33 +18,30 @@ ScenarioConfig: TypeAlias = dict[str, str | dict | int | float]
 SimulationLogConfig: TypeAlias = dict[str, bool | str]
 StateReprConfig: TypeAlias = dict[str, bool | str]
 ViewConfig: TypeAlias = dict[str, str | dict]
-Config: TypeAlias = typing.Union[
-    ActionConfig,
-    AirspaceConfig,
-    ForwardFixesConfig,
-    RadarConfig,
-    RewardConfig,
-    ScenarioConfig,
-    SimulationLogConfig,
-    StateReprConfig,
-    ViewConfig,
-]
+Config: TypeAlias = (
+    ActionConfig
+    | AirspaceConfig
+    | ForwardFixesConfig
+    | RadarConfig
+    | RewardConfig
+    | ScenarioConfig
+    | SimulationLogConfig
+    | StateReprConfig
+    | ViewConfig
+)
 
-ObsType: TypeAlias = typing.Union[
-    NDArray[numpy.float32], dict[str, NDArray[numpy.float32]]
-]
-RewardType: TypeAlias = typing.Union[float, dict[str, float]]
-DoneType: TypeAlias = typing.Union[bool, dict[str, bool]]
-TruncatedType: TypeAlias = typing.Union[bool, dict[str, bool]]
-InfoType: TypeAlias = typing.Union[
-    dict[str, typing.Any], dict[str, dict[str, typing.Any]]
-]
-ActionType: TypeAlias = typing.Union[int, dict[str, int]]
+ObsType: TypeAlias = NDArray[numpy.float32] | dict[str, NDArray[numpy.float32]]
+RewardType: TypeAlias = float | dict[str, float]
+DoneType: TypeAlias = bool | dict[str, bool]
+TruncatedType: TypeAlias = bool | dict[str, bool]
+InfoType: TypeAlias = dict[str, typing.Any] | dict[str, dict[str, typing.Any]]
+ActionType: TypeAlias = int | dict[str, int]
 
 
 ## enums
-from enum import IntEnum
-from bluebird_gymnasium.utils.types import MetaEnum, StrEnum
+from enum import IntEnum  # noqa: E402
+
+from bluebird_gymnasium.utils.types import MetaEnum, StrEnum  # noqa: E402
 
 
 class SuccessMetric(IntEnum, metaclass=MetaEnum):
@@ -63,7 +61,7 @@ class ViewType(StrEnum, metaclass=MetaEnum):
 
 
 class CentralizedSampler(StrEnum, metaclass=MetaEnum):
-    """Aircraft sampler for centralized setup."""
+    """Aircraft sampler for centralised setup."""
 
     EARLIEST = "earliest_entries"
     LATEST = "latest_entries"
@@ -86,7 +84,7 @@ class EnvConfig:
             simulator.
             Defaults to `None` which leads to the use of default configuration.
         radar_config: defines the parameters for the radar instance to
-            visualize the airspace.
+            visualise the airspace.
             Defaults to `None` which leads to the use of default configuration.
         reward_config: defines the reward function(s) employed and their
             respective weight/coefficient to the total reward per step.
@@ -98,7 +96,7 @@ class EnvConfig:
             the logging of simulation to disk at the end of an episode.
             Includes a flag to switch on/off simulation logging.
             Defaults to `None` which leads to the use of default configuration.
-        state_repr_config: defines the parameters used for genrating the
+        state_repr_config: defines the parameters used for generating the
             state representation per aircraft.
             Defaults to `None` which leads to the use of default configuration.
         view_config: defines the parameters used for generating final state
@@ -153,10 +151,10 @@ class EnvConfig:
 
 
 # aircraft scenario generator class(es)
-from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.scenario_manager import (
     Custom,
     Regular,
+    ScenarioManager,
     TwoAircraft,
 )
 
@@ -168,13 +166,13 @@ SCENARIO_CLS: dict[str, ScenarioManager] = {
 
 
 # now envs module imports
-from bluebird_gymnasium.envs.base import BaseEnv
-from bluebird_gymnasium.envs.infinite import CustomInfiniteEnv, InfiniteEnv
-from bluebird_gymnasium.envs.sector_i import SectorIEnv
-from bluebird_gymnasium.envs.sector_x import SectorXEnv
-from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv
-from bluebird_gymnasium.envs.sector_y import SectorYEnv
-from bluebird_gymnasium.envs.springfield import SpringfieldEnv
+from bluebird_gymnasium.envs.base import BaseEnv  # noqa: E402
+from bluebird_gymnasium.envs.infinite import CustomInfiniteEnv, InfiniteEnv  # noqa: E402
+from bluebird_gymnasium.envs.sector_i import SectorIEnv  # noqa: E402
+from bluebird_gymnasium.envs.sector_x import SectorXEnv  # noqa: E402
+from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv  # noqa: E402
+from bluebird_gymnasium.envs.sector_y import SectorYEnv  # noqa: E402
+from bluebird_gymnasium.envs.springfield import SpringfieldEnv  # noqa: E402
 
 registry_env: dict[str, BaseEnv] = {
     "base": BaseEnv,
@@ -201,12 +199,9 @@ available_names = ", ".join(name_to_gym_key.values())
 available_gym_keys = ", ".join(name_to_gym_key.keys())
 
 
-def get_gym_key(env_name):
+def get_gym_key(env_name: str) -> str:
     for gym_key, name in name_to_gym_key.items():
-        if env_name == name:
-            return gym_key
-
-        elif env_name == gym_key:
+        if env_name in (name, gym_key):
             return gym_key
 
     raise ValueError(
@@ -216,25 +211,24 @@ def get_gym_key(env_name):
     )
 
 
-def get_default_config(env_name: str) -> Config:
-    if env_name in name_to_gym_key.keys():
+def get_default_config(env_name: str) -> EnvConfig:
+    if env_name in name_to_gym_key:
         env_cls = registry_env.get(env_name)
         return env_cls.get_default_env_config()
 
-    elif env_name in name_to_gym_key.values():
+    if env_name in name_to_gym_key.values():
         env_name = get_gym_key(env_name)
         env_cls = registry_env.get(env_name)
         return env_cls.get_default_env_config()
 
-    else:
-        raise ValueError(
-            f"Environment '{env_name}' not found. Environment name"
-            f" can be specified using a name in: {available_names}"
-            f" or a gym key in: {available_gym_keys}"
-        )
+    raise ValueError(
+        f"Environment '{env_name}' not found. Environment name"
+        f" can be specified using a name in: {available_names}"
+        f" or a gym key in: {available_gym_keys}"
+    )
 
 
-def get_env_cls_and_config(env_name):
+def get_env_cls_and_config(env_name: str) -> tuple[type[BaseEnv], EnvConfig]:
     env_name = get_gym_key(env_name)
     config = get_default_config(env_name)
 
@@ -250,11 +244,11 @@ __all__ = [
     "SectorXPlusEnv",
     "SectorYEnv",
     "SpringfieldEnv",
-    "registry_env",
-    "name_to_gym_key",
-    "available_names",
     "available_gym_keys",
-    "get_gym_key",
+    "available_names",
     "get_default_config",
     "get_env_cls_and_config",
+    "get_gym_key",
+    "name_to_gym_key",
+    "registry_env",
 ]

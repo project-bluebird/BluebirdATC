@@ -233,7 +233,7 @@ def test_change_cas_clearance(env: Environment):
 
 def test_spell_phonetically():
     """
-    Verify that the phonetic alpabet is spelled out correctly
+    Verify that the phonetic alphabet is spelled out correctly
     """
     assert spell_phonetically("A1") == "alpha wun"
     assert spell_phonetically("B2") == "bravo too"

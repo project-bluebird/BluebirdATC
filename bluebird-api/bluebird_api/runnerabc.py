@@ -75,7 +75,7 @@ class RunnerABC(ABC):
         """
         Constructor of the Runner classes.
 
-        Although the argumets of this function are currently hardcoded, if a usecase requires different ones they will
+        Although the arguments of this function are currently hardcoded, if a usecase requires different ones they will
         be replaced by args and kwargs placeholders.
 
         Arguments
