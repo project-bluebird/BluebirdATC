@@ -2127,11 +2127,7 @@ def update_coordination(
             secondary_coord_conditions=secondary_coord_conditions,
             the_datetime=the_datetime,
         )
-        # don't add coordination if already present (possibly with a different timestamp)
-        coord_already_present = environment.coordinations.contains_excluding_times(new_coordination)
-
-        if not coord_already_present:
-            environment.coordinations.add(new_coordination)
+        environment.coordinations.add(new_coordination)
     return environment
 
 
