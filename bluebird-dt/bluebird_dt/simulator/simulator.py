@@ -241,7 +241,6 @@ class Simulator:
                     autosave=autosave,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
-                    simulated_sectors=simulated_sectors,
                 )
             case "Flight School":
                 # Specify the parameters for the "Flight School" competition here
@@ -254,7 +253,6 @@ class Simulator:
                     autosave=autosave,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
-                    simulated_sectors=simulated_sectors,
                     random_seed=None,
                     num_starter_aircraft=2,
                     initial_spawn_rate=0.005,
