@@ -6,6 +6,7 @@ import shutil
 import numpy as np
 import pytest
 import scipy
+from pydantic import ValidationError
 
 from bluebird_dt.core.wind import WindField, WindVector
 from bluebird_dt.utility.paths import ROOT_DIR
@@ -478,8 +479,10 @@ def test_from_json():
     """
     Inject an invalid payload and check it's rejected
     """
+
     bad_payload = {"method": "unknown", "args": {}}
-    assert WindField.from_json(json.dumps(bad_payload)) is None
+    with pytest.raises(ValidationError):
+        WindField.from_json(json.dumps(bad_payload))
 
 
 def test_get_wind_vector_using_plevels():
@@ -585,3 +588,83 @@ def get_wind_vector_testing_implementation(
     wind_v_interp = interp_v(point)
 
     return wind_u_interp[0], wind_v_interp[0]
+
+
+def _make_artificial_wind_field(
+    interpolation_method: str = "nearest",
+) -> WindField:
+    pressure_array = np.array(
+        [90000, 80000, 70000, 60000, 50000, 40000, 30000, 25000, 20000, 7000, 3000]
+    )
+    return WindField.artificial(
+        wind_speed=20.0,
+        wind_direction=100.0,
+        pressure_array=pressure_array,
+        min_lat=-10.0,
+        max_lat=20,
+        min_lon=10,
+        max_lon=30,
+        no_grid_points=20,
+        interpolation_method=interpolation_method,
+    )
+
+
+def test_to_from_json_roundtrip_artificial() -> None:
+    """
+    A WindField produced via ``artificial`` should round-trip through
+    ``to_json`` / ``from_json`` preserving all model data.
+    """
+    orig = _make_artificial_wind_field()
+
+    payload = orig.to_json()
+
+    # Output must be valid JSON.
+    assert isinstance(payload, str)
+    parsed = json.loads(payload)
+    assert {"u_comp", "v_comp", "pressure_array", "lat_array", "lon_array", "interpolation_method", "wind_speed", "wind_direction"} <= parsed.keys()
+
+    restored = WindField.from_json(payload)
+
+    assert restored == orig
+
+    # Restored arrays must be numpy arrays (the field_validator should convert lists back).
+    assert isinstance(restored.u_comp, np.ndarray)
+    assert isinstance(restored.v_comp, np.ndarray)
+    assert isinstance(restored.pressure_array, np.ndarray)
+    assert isinstance(restored.lat_array, np.ndarray)
+    assert isinstance(restored.lon_array, np.ndarray)
+    assert isinstance(restored.wind_speed, np.ndarray) or isinstance(restored.wind_speed, float) or restored.wind_speed is None
+    assert isinstance(restored.wind_direction, np.ndarray) or isinstance(restored.wind_direction, float) or restored.wind_direction is None
+
+
+def test_to_from_json_roundtrip_uniform() -> None:
+    """
+    A WindField produced via ``uniform`` should round-trip through
+    ``to_json`` / ``from_json``.
+    """
+    orig = WindField.uniform(
+        wind_speed=20.0,
+        wind_direction=100.0,
+        min_lat=-10.0,
+        max_lat=20,
+        min_lon=10,
+        max_lon=30,
+        no_grid_points=20,
+    )
+
+    restored = WindField.from_json(orig.to_json())
+
+    assert restored == orig
+
+
+def test_to_from_json_double_roundtrip_is_stable() -> None:
+    """
+    Round-tripping twice should produce the same JSON payload, ensuring deterministic output.
+    """
+    orig = _make_artificial_wind_field()
+
+    first_payload = orig.to_json()
+    restored = WindField.from_json(first_payload)
+    second_payload = restored.to_json()
+
+    assert first_payload == second_payload

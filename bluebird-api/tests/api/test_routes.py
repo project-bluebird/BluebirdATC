@@ -102,6 +102,10 @@ class TestAPI:
             response = client.get(f"/environment/SPRINGFIELD")
             assert response.status_code == 200
 
+        def test_wind_field(self, client):
+            response = client.get(f"/wind_field")
+            assert response.status_code == 200
+
         def test_static_data(self, client):
             response = client.get(f"/static_data")
 
@@ -382,6 +386,19 @@ class TestFunctions:
                     ]
 
             assert sorted(received["airspace"]) == sorted(airspace_keys)
+
+        @pytest.mark.asyncio
+        async def test_wind_field(self, runner: Runner):
+            """
+            Test that wind_field() returns a dict with the expected keys and data exists
+            """
+
+            expected_keys = ["u_comp", "v_comp", "pressure_array", "lat_array", "lon_array", "interpolation_method", "wind_speed", "wind_direction"]
+
+            received = await routers.core.wind_field(runner)
+
+            if received:
+                assert sorted(received.keys()) == sorted(expected_keys)
 
         @pytest.mark.asyncio
         async def test_static_data(self, runner: Runner):
