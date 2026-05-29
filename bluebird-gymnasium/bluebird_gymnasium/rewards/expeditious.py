@@ -75,9 +75,9 @@ def expeditious_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -
     else:
         curr_dist = ac_tracked_state.track_dist_to_exit_cr
         prev_dist = prev_ac_tracked_state.track_dist_to_exit_cr
-        dist_diff = curr_dist - prev_dist
+        distance_improvement = prev_dist - curr_dist
 
-        reward = np.clip(dist_diff, -DIFF_THRESHOLD, DIFF_THRESHOLD)
+        reward = np.clip(distance_improvement, -DIFF_THRESHOLD, DIFF_THRESHOLD)
 
         # scale the reward based on the aircraft's speed. (i.e., it is
         # more impressive for an aircraft with a slower speed to travel
@@ -136,9 +136,9 @@ def expeditious_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> 
     else:
         curr_dist = ac_tracked_state.track_dist_to_exit_cr
         prev_dist = prev_ac_tracked_state.track_dist_to_exit_cr
-        dist_diff = curr_dist - prev_dist
+        distance_improvement = prev_dist - curr_dist
 
-        reward = np.clip(dist_diff, -DIFF_THRESHOLD, DIFF_THRESHOLD)
+        reward = np.clip(distance_improvement, -DIFF_THRESHOLD, DIFF_THRESHOLD)
         sign = np.sign(reward)
         reward = 1.5 * (reward**2)
 

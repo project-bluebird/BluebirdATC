@@ -123,4 +123,10 @@ def lateral_next_fix_proximity_dist_exp(gym_env: BaseEnv, callsign: str, action:
     pf_nf_dist = prev_fix.distance(next_fix)
     ac_nf_dist = aircraft.distance(next_fix)
 
+    # Some scenarios can yield a degenerate route segment where the previous
+    # and next fixes coincide. Fall back to a direct exponential in that case
+    # instead of dividing by zero.
+    if pf_nf_dist <= 1e-6:
+        return np.exp(-ac_nf_dist)
+
     return np.exp(-ac_nf_dist / pf_nf_dist)
