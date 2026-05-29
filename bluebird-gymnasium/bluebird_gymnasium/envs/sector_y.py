@@ -7,7 +7,7 @@ import typing
 from bluebird_dt.airspace_generator.artificial_airspace import (
     ArtificialAirspace,
 )
-from bluebird_dt.predictor import LinearPredictor
+from bluebird_dt.core import Airspace, Route
 from bluebird_dt.utility.geo_helper import GeoHelper
 
 # simulator gymnasium wrapper
@@ -60,7 +60,7 @@ class SectorYEnv(BaseEnv):
             config,
         )
 
-        self.scenario_manager = None # created in _generate_scenario
+        self.scenario_manager = None  # created in _generate_scenario
 
         ####### airspace metadata
         _configure_airspace_metadata(self, "Y-Sector")
@@ -68,7 +68,7 @@ class SectorYEnv(BaseEnv):
         ####### reset env
         self.reset()
 
-    def _setup_airspace(self):
+    def _setup_airspace(self) -> tuple[Airspace, list[Route]]:
 
         ####### airspace
         # the airspace generator expects the origin in reverse order
@@ -87,7 +87,7 @@ class SectorYEnv(BaseEnv):
         ).generate_airspace()
         airspace.geo_helper = GeoHelper(self.config.airspace_config["origin"])
         return airspace, routes
-        
+
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
         category = "Artificial"

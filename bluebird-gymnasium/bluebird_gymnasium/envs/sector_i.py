@@ -4,11 +4,10 @@ import datetime
 import typing
 
 # simulator package
-from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.airspace_generator.artificial_airspace import (
     ArtificialAirspace,
 )
-from bluebird_dt.predictor import LinearPredictor
+from bluebird_dt.core import Airspace, Route
 from bluebird_dt.utility.geo_helper import GeoHelper
 
 # simulator gymnasium wrapper
@@ -32,6 +31,7 @@ if typing.TYPE_CHECKING:
         from typing import Self
     except ImportError:
         from typing_extensions import Self
+
 
 class SectorIEnv(BaseEnv):
     """gymnasium environment for the I sector airspace.
@@ -60,7 +60,7 @@ class SectorIEnv(BaseEnv):
             config,
         )
 
-        self.scenario_manager = None # set in _generate_scenario
+        self.scenario_manager = None  # set in _generate_scenario
 
         ####### airspace metadata
         _configure_airspace_metadata(self, "I-Sector")
@@ -68,7 +68,7 @@ class SectorIEnv(BaseEnv):
         ####### reset env
         self.reset()
 
-    def _setup_airspace(self):
+    def _setup_airspace(self) -> tuple[Airspace, list[Route]]:
 
         ####### airspace
         # the airspace generator expects the origin in reverse order
@@ -88,7 +88,6 @@ class SectorIEnv(BaseEnv):
         airspace.geo_helper = GeoHelper(self.config.airspace_config["origin"])
         return airspace, routes
 
-
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
         category = "Custom"
@@ -103,10 +102,7 @@ class SectorIEnv(BaseEnv):
         airspace, routes = self._setup_airspace()
         _scenario_cls = SCENARIO_CLS[self.config.scenario_config["cls"]]
         self.scenario_manager = _scenario_cls(
-            airspace=airspace,
-            routes=routes,
-            random_seed=self._reset_seed,
-            **self.config.scenario_config["args"]
+            airspace=airspace, routes=routes, random_seed=self._reset_seed, **self.config.scenario_config["args"]
         )
         return self.scenario_manager.to_simulator(
             category=category,

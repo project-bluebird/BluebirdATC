@@ -4,8 +4,6 @@ import datetime
 import typing
 
 # simulator package
-from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
-from bluebird_dt.predictor import LinearPredictor
 from bluebird_dt.scenario_manager.infinite import Infinite
 
 # simulator gymnasium wrapper
@@ -32,8 +30,6 @@ class ScenarioName(StrEnum):
     sector_x = "X-Sector"
     sector_xplus = "Xplus-Sector"
     sector_y = "Y-Sector"
-
-
 
 
 class InfiniteEnv(BaseEnv):
