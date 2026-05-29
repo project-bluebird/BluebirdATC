@@ -5,15 +5,16 @@ plugins:
        modules: [docs.get_version]
 
 nav:
-  - Introduction:
-      - Overview: ./
-      - Installation: ./#installation
-      - Simple usage: ./#simple-usage
-      - Getting started: ./#getting-started
-      - Running tests: ./#running-tests
-  - Reward functions: rewards.md
-  - Actions: actions.md
-  - State representations: state_representations.md
-  - Agent view: agent_view.md
-  - Environment configurations: configurations.md
-  - Source code reference: source.md
+  - Getting started with bluebird-gymnasium: getting-started.md
+  - Gymnasium concepts: 
+    - Reward functions: rewards.md
+    - Actions: actions.md
+    - State representations: state_representations.md
+    - Agent view: agent_view.md
+    - Environment configurations: configurations.md
+  - Examples with bluebird-gymnasium:
+      - Simple demo: examples/simple_demo.ipynb
+      - Radar actions display demo: examples/radar_actions_display_demo.ipynb
+      - Radar scales demo: examples/radar_scales_demo.ipynb
+      - Agent demo: examples/agent_demo.ipynb
+  - Source reference: source.md

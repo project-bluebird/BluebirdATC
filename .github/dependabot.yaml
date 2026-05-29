@@ -3,6 +3,7 @@ updates:
   - package-ecosystem: "uv"
     directory: "/"
     target-branch: "dev"
+    versioning-strategy: "increase-if-necessary"
     schedule:
       interval: "weekly"
     labels:

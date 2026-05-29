@@ -3,7 +3,7 @@
 The action space for all environments in `bluebird_gymnasium` is defined as discrete. The actions are configurable and are specified using the available Air Traffic Control (ATC) instruction set defined in `bluebird_dt`.
 
 
-In the `bluebird_dt` digital twin, the simulator has been designed to reflect the real-world ATC instructions. For further information, please refer to the [bluebird_dt action page](../../bluebird-dt/action). Also, please see the basic [introduction to real-world ATC instructions](../../atc-introduction-and-glossary#atc-instructions) for more information.
+In the `bluebird_dt` digital twin, the simulator has been designed to reflect the real-world ATC instructions. For further information, please refer to the [bluebird_dt action page](../atc/clearances.md). Also, please see the basic [introduction to real-world ATC instructions](../atc/clearances.md) for more information.
 
 The ATC instructions serve as the action set exposed to an agent to perform the task of ATC.
 
@@ -47,7 +47,7 @@ The action mapping differs slightly for the single (centralised) and multi-agent
 
 The actions specification below will define the action space for a gymnasium environment instantiated using the configuration. Note that an any action not specified in the configuration is disabled by default.
 
-```
+```json
 {
     ...
     "action_config": {

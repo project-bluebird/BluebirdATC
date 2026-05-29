@@ -16,7 +16,7 @@ dependencies = [
     "matplotlib>=3.10.8,<4",
     "numpy>=2.2.6",
     "pandas>=2.2.3,<3",
-    "pyarrow>=23.0.1,<24",
+    "pyarrow>=24.0.0,<25",
     "pydantic>=2.12.5,<3",
     "pyproj>=3.7.1,<3.8",
     "python-dateutil>=2.9.0,<3",
@@ -84,9 +84,6 @@ select = [
   "PT", # flake8-pytest-style
   "RET", # flake8-return
   "ARG", # flake8-unused-arguments
-  "PD", # pandas-vet
-  "R", # refactor
-  "W", # warnings
   "PERF", #perflint
   "RUF", # ruff
   "NPY201", # numpy v2. depreciation checking
