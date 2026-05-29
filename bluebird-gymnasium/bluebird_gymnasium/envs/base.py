@@ -119,6 +119,7 @@ class ScenarioGenSeedMode(Enum):
     RESET_SEED_ATTRIBUTE = auto()
     LEGACY_MODULE_RNGS = auto()
 
+
 def _configure_airspace_metadata(env: BaseEnv, scenario_name: str) -> None:
     """Set airspace-derived metadata needed before scenario reset."""
 
