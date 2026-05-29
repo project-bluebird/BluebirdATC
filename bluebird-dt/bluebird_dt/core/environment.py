@@ -220,12 +220,8 @@ class Environment(
         ----------
         filename: str
             Path to a JSON file with an Environment definition in dictionary format.
-        typeof_airspace: type[TAirspace]
-            Type of Airspace to deserialize, defaults to bluebird_dt.core.airspace.Airspace.
         typeof_aircraft: type[TAircraft]
             Type of Aircraft to deserialize, defaults to bluebird_dt.core.aircraft.Aircraft.
-        typeof_coordination: type[TCoordination]
-            Type of Coordination to deserialize, defaults to bluebird_dt.core.coordination.Coordination,
         typeof_windfield: type[TWindField]
             Type of WindField to deserialize, defaults to bluebird_dt.core.wind.WindField,
         typeof_forecastwindfield: type[TForecastWindField]

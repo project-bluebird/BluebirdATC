@@ -30,12 +30,12 @@ from bluebird_dt.utility.airspace_data import create_sector, load_fixes
 from bluebird_dt.utility.paths import SPRINGFIELD_DIR
 from bluebird_dt.utility.scenario_utils import convert_string_to_lists
 
-TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft)
-TWindField = typing_extensions.TypeVar("TWindField", bound=WindField)
-TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField)
-TEventLogger = typing_extensions.TypeVar("TEventLogger", bound=EventLogger)
-TEventHandler = typing_extensions.TypeVar("TEventHandler", bound=EventHandler[Aircraft])
-TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
+TEventLogger = typing_extensions.TypeVar("TEventLogger", bound=EventLogger, default=EventLogger)
+TEventHandler = typing_extensions.TypeVar("TEventHandler", bound=EventHandler[Aircraft], default=EventHandler[Aircraft])
+TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator, default=Simulator)
 
 
 class SpringfieldScenarioManagerConfig(BaseModel):
