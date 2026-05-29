@@ -13,7 +13,9 @@ import numpy  # NOQA: ICN001
 import numpy as np
 
 # simulator package
+from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.core import Pos2D, Pos3D, Pos4D
+from bluebird_dt.predictor import LinearPredictor
 from bluebird_dt.render.radar import Radar
 from gymnasium import spaces
 
@@ -116,6 +118,41 @@ class ScenarioGenSeedMode(Enum):
     NONE = auto()
     RESET_SEED_ATTRIBUTE = auto()
     LEGACY_MODULE_RNGS = auto()
+
+def _configure_airspace_metadata(env: BaseEnv, scenario_name: str) -> None:
+    """Set airspace-derived metadata needed before scenario reset."""
+
+    airspace, _routes, _sector_name = AirspaceLoader.load(scenario_name)
+
+    # the airspace generator stores the origin in reverse order
+    # i.e., lon, lat
+    origin = airspace.geo_helper.origin  # format: (lon, lat)
+    origin = (origin[1], origin[0])  # format: (lat, lon)
+    env.config.airspace_config["origin"] = origin
+
+    # trajectory predictor for computing an estimated
+    # future (rollout) trajectories. used in safety reward functions.
+    env.rollout_predictor = LinearPredictor(
+        dt=12,
+        fix_proximity_threshold=2.0,
+        fixes=airspace.fixes,
+        use_turn_model=False,
+    )
+    # if the `exit_window_width` value was originally None, override the
+    # default set in the parent class with a new default here (based on
+    # the sector/airspace geometry).
+    exit_window_width = env.config.airspace_config.get("exit_window_width", None)
+    if exit_window_width is None:
+        default_width = env.config.airspace_config.get("width", 20)
+        env.exit_window_width = default_width // 2
+    else:
+        env.exit_window_width = exit_window_width
+    # set the active airspace sector.
+    airspace_sectors = list(airspace.sectors.keys())
+    if len(airspace_sectors) == 1:
+        env.active_airspace_sector = airspace_sectors[0]
+    else:
+        raise ValueError("Could not initialise Sector")
 
 
 def _concat_state_action(state: NDArray[np.float32], action: int, num_actions: int) -> NDArray[np.float32]:
@@ -498,16 +535,13 @@ class BaseEnv(gym.Env):
         Args:
             seed: seed passed to `.reset(...)`.
         """
-
         seed_attribute_mode = self.scenario_seed_mode == ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE
         legacy_rng_mode = self.scenario_seed_mode == ScenarioGenSeedMode.LEGACY_MODULE_RNGS
-
         # pass seed to scenario managers with explicit seed support
         self._reset_seed = seed if seed_attribute_mode else None
 
         # prepare seed for scenario managers using legacy module-level RNGs
         legacy_seed = seed if legacy_rng_mode else None
-
         random_state, numpy_random_state = None, None
         try:
             if legacy_seed is not None:
@@ -525,7 +559,6 @@ class BaseEnv(gym.Env):
             if random_state is not None and numpy_random_state is not None:
                 random.setstate(random_state)
                 np.random.set_state(numpy_random_state)
-
             self._reset_seed = None
 
     def _evolve_simulation(self, evolve_period: int | float) -> None:

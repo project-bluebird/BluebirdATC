@@ -3,15 +3,14 @@ from __future__ import annotations
 import datetime
 import typing
 
+# simulator package
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.predictor import LinearPredictor
-
-# simulator package
 from bluebird_dt.scenario_manager.infinite import Infinite
 
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import CentralizedSampler, EnvConfig, ViewType
-from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
+from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode, _configure_airspace_metadata
 
 # constants
 from bluebird_gymnasium.utils.constants import (
@@ -35,33 +34,6 @@ class ScenarioName(StrEnum):
     sector_y = "Y-Sector"
 
 
-def _configure_airspace_metadata(env: BaseEnv) -> None:
-    """Set airspace-derived metadata needed before scenario reset."""
-
-    airspace, _routes, _sector_name = AirspaceLoader.load(
-        env.config.scenario_config["scenario_name"],
-    )
-
-    # the airspace generator stores the origin in reverse order
-    # i.e., lon, lat
-    origin = airspace.geo_helper.origin  # format: (lon, lat)
-    origin = (origin[1], origin[0])  # format: (lat, lon)
-    env.config.airspace_config["origin"] = origin
-
-    # trajectory predictor for computing an estimated
-    # future (rollout) trajectories. used in safety reward functions.
-    env.rollout_predictor = LinearPredictor(
-        dt=12,
-        fix_proximity_threshold=2.0,
-        fixes=airspace.fixes,
-        use_turn_model=False,
-    )
-
-    airspace_sectors = list(airspace.sectors.keys())
-    if len(airspace_sectors) == 1:
-        env.active_airspace_sector = airspace_sectors[0]
-    else:
-        raise ValueError("Could not initialise Sector")
 
 
 class InfiniteEnv(BaseEnv):
@@ -88,21 +60,11 @@ class InfiniteEnv(BaseEnv):
             config,
         )
 
-        # if the `exit_window_width` value was originally None, override the
-        # default set in the parent class with a new default here (based on
-        # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
-        if exit_window_width is None:
-            self.exit_window_width = 10
-
-        else:
-            self.exit_window_width = exit_window_width
-
         ####### scenario manager
         self.scenario_manager = None  # set in `_generate_scenario`
 
         ####### airspace metadata
-        _configure_airspace_metadata(self)
+        _configure_airspace_metadata(self, self.config.scenario_config["scenario_name"])
 
         ####### reset env
         self.reset()
@@ -121,7 +83,7 @@ class InfiniteEnv(BaseEnv):
 
         # set up simulator manager
         sim = Infinite.setup(
-            scenario_name=self.config.scenario_config["scenario_name"],
+            scenario_name=scenario_name,
             random_seed=self._reset_seed,
             autosave=False,
             save_log_to_file=False,
@@ -273,21 +235,11 @@ class CustomInfiniteEnv(BaseEnv):
             config,
         )
 
-        # if the `exit_window_width` value was originally None, override the
-        # default set in the parent class with a new default here (based on
-        # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
-        if exit_window_width is None:
-            self.exit_window_width = 10
-
-        else:
-            self.exit_window_width = exit_window_width
-
         ####### scenario manager
         self.scenario_manager = None  # set in `_generate_scenario`
 
         ####### airspace metadata
-        _configure_airspace_metadata(self)
+        _configure_airspace_metadata(self, self.config.scenario_config["scenario_name"])
 
         ####### reset env
         self.reset()
