@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
+import typing_extensions
 from pydantic import BaseModel, Field
 from typing_extensions import override
 
@@ -27,14 +28,17 @@ class InfiniteScenarioManagerConfig(BaseModel):
     scenario_manager: typing.Literal["infinite"] = Field(default="infinite")
 
 
-TAircraft = typing.TypeVar("TAircraft", bound=Aircraft)
-TWindField = typing.TypeVar("TWindField", bound=WindField)
-TForecastWindField = typing.TypeVar("TForecastWindField", bound=WindField)
-TEnvironmentManager = typing.TypeVar("TEnvironmentManager", bound=EnvironmentManager[Aircraft, WindField, WindField])
-TEventHandler = typing.TypeVar("TEventHandler", bound=EventHandler[Aircraft])
-TEventLogger = typing.TypeVar("TEventLogger", bound=EventLogger)
-TSimulator = typing.TypeVar("TSimulator", bound=Simulator)
-TAirspaceLoader = typing.TypeVar("TAirspaceLoader", bound=AirspaceLoader)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
+TEnvironmentManager = typing_extensions.TypeVar(
+    "TEnvironmentManager",
+    bound=EnvironmentManager[Aircraft, WindField, WindField],
+    default=EnvironmentManager[Aircraft, WindField, WindField],
+)
+TEventHandler = typing_extensions.TypeVar("TEventHandler", bound=EventHandler[Aircraft], default=EventHandler[Aircraft])
+TEventLogger = typing_extensions.TypeVar("TEventLogger", bound=EventLogger, default=EventLogger)
+TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator, default=Simulator)
 
 
 class Infinite(

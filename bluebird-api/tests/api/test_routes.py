@@ -1,6 +1,8 @@
+from bluebird_dt.core import Environment
 import datetime
 import logging
 import os
+import json
 
 import pytest
 from pydantic import ValidationError
@@ -351,6 +353,16 @@ class TestFunctions:
             received = await routers.core.environment(runner, sector_id)
 
             assert sorted(received.keys()) == sorted(expected_keys)
+
+        @pytest.mark.parametrize("sector_id", ["SPRINGFIELD"])
+        @pytest.mark.asyncio
+        async def test_environment_no_airspace_round_trip(self, runner: Runner, sector_id: str):
+            """
+            Test that environment() with default arguments returns a
+            dict with the expected keys for each sector
+            """
+            received = await routers.core.environment(runner, sector_id, no_airspace=True)
+            Environment.from_json(json.dumps(received))
 
         @pytest.mark.parametrize("sector_id", ["SPRINGFIELD"])
         @pytest.mark.asyncio
