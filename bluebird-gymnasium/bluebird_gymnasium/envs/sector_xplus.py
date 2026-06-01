@@ -93,7 +93,7 @@ class SectorXPlusEnv(BaseEnv):
 
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
-        category = "Artificial"
+        category = "Custom"
         scenario = "XPlus-Sector"
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
