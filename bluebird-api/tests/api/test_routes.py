@@ -343,16 +343,29 @@ class TestFunctions:
         @pytest.mark.asyncio
         async def test_wind_field(self, runner: Runner):
             """
-            Test that wind_field() returns a dict with the expected keys and data exists
+            Test that wind_field() returns {"exists": True, "wind_field": <data> | None}
+            when a runner is loaded.
             """
 
-            expected_keys = ["u_comp", "v_comp", "pressure_array", "lat_array", "lon_array", "interpolation_method", "wind_speed", "wind_direction"]
+            expected_wind_keys = [
+                "u_comp",
+                "v_comp",
+                "pressure_array",
+                "lat_array",
+                "lon_array",
+                "interpolation_method",
+                "wind_speed",
+                "wind_direction",
+            ]
 
             received = await routers.core.wind_field(runner)
 
-            if received:
-                assert sorted(received.keys()) == sorted(expected_keys)
-
+            assert isinstance(received, dict)
+            assert received["exists"] is True
+            assert "wind_field" in received
+            if received["wind_field"] is not None:
+                assert sorted(received["wind_field"].keys()) == sorted(expected_wind_keys)        
+                
         @pytest.mark.asyncio
         async def test_static_data(self, runner: Runner):
             """
