@@ -327,7 +327,7 @@ class Custom(
             name of the sector for the coordinations.  If not specified, use the instance's
             `self.sector_name` value.
         """
-        if not on_route:
+        if on_route is None:
             on_route = self.aircraft_on_route
 
         if not sector_name:

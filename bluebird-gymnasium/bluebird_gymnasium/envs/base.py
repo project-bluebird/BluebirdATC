@@ -125,11 +125,12 @@ def _configure_airspace_metadata(env: BaseEnv, scenario_name: str) -> None:
 
     airspace, _routes, _sector_name = AirspaceLoader.load(scenario_name)
 
-    # the airspace generator stores the origin in reverse order
-    # i.e., lon, lat
-    origin = airspace.geo_helper.origin  # format: (lon, lat)
-    origin = (origin[1], origin[0])  # format: (lat, lon)
-    env.config.airspace_config["origin"] = origin
+    if "origin" not in env.config.airspace_config:
+        # the airspace generator stores the origin in reverse order
+        # i.e., lon, lat
+        origin = airspace.geo_helper.origin  # format: (lon, lat)
+        origin = (origin[1], origin[0])  # format: (lat, lon)
+        env.config.airspace_config["origin"] = origin
 
     # trajectory predictor for computing an estimated
     # future (rollout) trajectories. used in safety reward functions.
