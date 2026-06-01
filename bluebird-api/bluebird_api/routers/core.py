@@ -111,6 +111,7 @@ async def complete_environment(  # noqa: ANN201
         last_n_observations=last_n_observations,
     )
 
+
 @core_router.get("/wind_field", tags=["State"])
 async def wind_field(runner: RunnerDep):  # noqa: ANN201
     """
