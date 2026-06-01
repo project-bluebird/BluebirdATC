@@ -107,31 +107,9 @@ async def complete_environment(  # noqa: ANN201
 
     return runner.sim.environment(
         sim_time=runner.sim.manager.environment.time,
-        sector_id=None,
         no_airspace=no_airspace,
         last_n_observations=last_n_observations,
     )
-
-
-@core_router.get("/environment/{sector_id}", tags=["State"])
-async def environment(  # noqa: ANN201
-    runner: RunnerDep, sector_id: str | None = None, no_airspace: bool = False, last_n_observations: int = 0
-):
-    """
-    Get the environment data for a given sector.
-    """
-    if RunnerStore.current_runner is None or runner.sim is None:
-        return {"exists": False}
-    # HMI doesn't need to reload the environment again
-    runner.sim.manager.reload_environment = False
-
-    return runner.sim.environment(
-        sim_time=runner.sim.manager.environment.time,
-        sector_id=sector_id,
-        no_airspace=no_airspace,
-        last_n_observations=last_n_observations,
-    )
-
 
 @core_router.get("/wind_field", tags=["State"])
 async def wind_field(runner: RunnerDep):  # noqa: ANN201
