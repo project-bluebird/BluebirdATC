@@ -98,10 +98,6 @@ class TestAPI:
 
             assert response.status_code == 200
 
-        def test_environment(self, client):
-            response = client.get(f"/environment/SPRINGFIELD")
-            assert response.status_code == 200
-
         def test_wind_field(self, client):
             response = client.get(f"/wind_field")
             assert response.status_code == 200
@@ -343,49 +339,6 @@ class TestFunctions:
             received = await routers.core.complete_environment(runner, no_airspace=True, last_n_observations=5)
 
             assert sorted(received.keys()) == sorted(expected_keys)
-
-        @pytest.mark.parametrize("sector_id", ["SPRINGFIELD"])
-        @pytest.mark.asyncio
-        async def test_environment_default(self, runner: Runner, sector_id: str):
-            """
-            Test that environment() with default arguments returns a
-            dict with the expected keys for each sector
-            """
-            expected_keys = ["time", "start_time", "aircraft", "airspace", "wind_field", "forecast", "coordinations"]
-            received = await routers.core.environment(runner, sector_id)
-
-            assert sorted(received.keys()) == sorted(expected_keys)
-
-        @pytest.mark.parametrize("sector_id", ["SPRINGFIELD"])
-        @pytest.mark.asyncio
-        async def test_environment_params(self, runner: Runner, sector_id: str):
-            """
-            Test that environment() with additional arguments returns a
-            dict with the expected keys for each sector
-            """
-            expected_keys = [
-                "time",
-                "start_time",
-                "aircraft",
-                "airspace",
-                "wind_field",
-                "forecast",
-                "coordinations",
-                "observations",
-            ]
-
-            received = await routers.core.environment(runner, sector_id, False, 5)
-            assert sorted(received.keys()) == sorted(expected_keys)
-
-            airspace_keys = [
-                    "airspace_configuration",
-                    "airways",
-                    "fixes",
-                    "individual_sectors",
-                    "sectors"
-                    ]
-
-            assert sorted(received["airspace"]) == sorted(airspace_keys)
 
         @pytest.mark.asyncio
         async def test_wind_field(self, runner: Runner):

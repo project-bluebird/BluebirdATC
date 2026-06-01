@@ -368,20 +368,17 @@ class Simulator:
     def environment(
         self,
         sim_time: float,  # noqa: ARG002 -- time only used to enable time-based caching
-        sector_id: str | None = None,
         no_airspace: bool = False,
         last_n_observations: int = 0,
     ) -> dict[str, typing.Any]:
         """
-        Get the current environment state.
+        Get the current environment state. Excludes wind field data to reduce the size of data returned.
 
         Parameters
         ----------
         sim_time: float
             Environment time in unix time (seconds).
             Only used to enable time-based caching
-        sector_id: str, optional
-            Sector id to be used in environment manager `observe` method
         no_airspace: bool, default is False
             If true, airspace will not be included in return data
         last_n_observations: int, default is 0
@@ -392,7 +389,7 @@ class Simulator:
         dict
             Dictionary describing the current state of the environment
         """
-        env = self.manager.observe(sector_id)
+        env = self.manager.environment
 
         # only pass coordinations for aircraft in the airspace (there may be
         # coordinations for aircraft which haven't arrived yet
@@ -400,13 +397,13 @@ class Simulator:
             coord.data() for coord in env.coordinations.values() if coord.callsign in set(env.aircraft.keys())
         ]
 
-        # gather the basic env data
+        # gather the basic env data, remove wind field data to reduce the size of the data
         env_data = {
             "time": env.time,
             "start_time": env.start_time,
             "aircraft": {callsign: aircraft.data() for (callsign, aircraft) in env.aircraft.items()},
             "coordinations": coordinations,
-            "wind_field": env.wind_field,
+            "wind_field": None,
             "forecast": env.forecast_wind_field,
         }
 
@@ -528,7 +525,7 @@ class Simulator:
         """
         func_start_time = datetime.now()
         # radar displays all aircraft
-        environment = self.manager.observe()
+        environment = self.manager.environment
 
         if sector_id is not None:
             sector_id = self.manager.environment.airspace.sector_name_from_list_of_individual_sectors(
