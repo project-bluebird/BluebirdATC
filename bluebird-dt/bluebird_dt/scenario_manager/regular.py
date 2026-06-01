@@ -14,7 +14,6 @@ from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.artificial_airspace_defaults import AIRSPACE_SETTINGS
 from bluebird_dt.utility.scenario_manager_utils import create_aircraft_with_coordinations
 
 
@@ -246,6 +245,8 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         total_time: float,
         num_aircraft: int,
         random_seed: int | None = None,
+        vertical_buffer_distance: int | float = 500,
+        lateral_buffer_distance: int | float = 20,
         use_wind: bool = True,
         use_forecast: bool = True,
         autosave: bool = True,
@@ -274,6 +275,10 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             The total number of aircraft that will be generated, evenly spaced throughout total_time.
         random_seed: int | None
             Optionally set the seed for the random number generator.
+        vertical_buffer_distance: int or float, default is 500
+            Distance to expand airspace vertical boundary by - UoM: FL
+        lateral_buffer_distance: int or float, default is 20
+            Distance to expand airspace lateral boundary by - UoM: NMI
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
@@ -321,8 +326,8 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             total_time=total_time,
             num_aircraft=num_aircraft,
             random_seed=random_seed,
-            vertical_buffer_distance=AIRSPACE_SETTINGS["penumbra_fl"],
-            lateral_buffer_distance=AIRSPACE_SETTINGS["penumbra_lat"],
+            vertical_buffer_distance=vertical_buffer_distance,
+            lateral_buffer_distance=lateral_buffer_distance,
             typeof_aircraft=typeof_aircraft,
             typeof_event_handler=typeof_event_handler,
             typeof_event_logger=typeof_event_logger,

@@ -13,7 +13,6 @@ from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.artificial_airspace_defaults import AIRSPACE_SETTINGS
 from bluebird_dt.utility.scenario_manager_utils import create_aircraft_with_coordinations
 
 
@@ -360,10 +359,13 @@ Creating TwoAircraft Scenario
     def setup(
         cls,
         scenario_name: str,
+        start_time: int = 0,
         total_time: float = 100.0,
         speed_range: tuple[float, float] | None = None,
         scenario_type: typing.Literal["random", "overflier", "climber", "descender"] = "random",
         random_seed: int | None = None,
+        vertical_buffer_distance: float | int = 500,
+        lateral_buffer_distance: float | int = 20,
         use_wind: bool = True,
         use_forecast: bool = True,
         autosave: bool = True,
@@ -386,12 +388,18 @@ Creating TwoAircraft Scenario
             The scenario name
         total_time: float
             Number of seconds that the scenario should run for
+        start_time: int
+            Start time of scenario, in unix time (seconds)
         speed_range: tuple[float, float] | None
             If specified, randomly choose speeds from within the range for the aircraft.
         scenario_type: typing.Literal["random","overflier", "climber", "descender"]
             Describes the behaviour of the second aircraft in the scenario. Default is "random".
         random_seed: int | None
             If specified, set the seed for the random generator, for reproducibility.
+        vertical_buffer_distance: int or float, default is 500
+            Distance to expand airspace vertical boundary by - UoM: FL
+        lateral_buffer_distance: int or float, default is 20
+            Distance to expand airspace lateral boundary by - UoM: NMI
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
@@ -435,14 +443,15 @@ Creating TwoAircraft Scenario
         # set up the simulator for "climber" scenario using TwoAircraft scenario manager
         sim = cls(
             total_time=total_time,
+            start_time=start_time,
             speed_range=speed_range,
             scenario_type=scenario_type,
             random_seed=random_seed,
             airspace=airspace,
             routes=routes,
             sector_name=sector_name,
-            vertical_buffer_distance=AIRSPACE_SETTINGS["penumbra_fl"],
-            lateral_buffer_distance=AIRSPACE_SETTINGS["penumbra_lat"],
+            vertical_buffer_distance=vertical_buffer_distance,
+            lateral_buffer_distance=lateral_buffer_distance,
             typeof_aircraft=typeof_aircraft,
             typeof_event_logger=typeof_event_logger,
             typeof_event_handler=typeof_event_handler,

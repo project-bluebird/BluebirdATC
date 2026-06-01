@@ -525,6 +525,8 @@ class Custom(
         log_filename: str | None = None,
         predictor: Predictor | None = None,
         simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
+        vertical_buffer_distance: float | int = 500,
+        lateral_buffer_distance: float | int = 20,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -574,6 +576,10 @@ class Custom(
         simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
             The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
             the list will be simulated. Currently only applicable for real world scenarios.
+        vertical_buffer_distance: int or float, default is 500
+            Distance to expand airspace vertical boundary by - UoM: FL
+        lateral_buffer_distance: int or float, default is 20
+            Distance to expand airspace lateral boundary by - UoM: NMI
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -603,6 +609,8 @@ class Custom(
             time_entry_gap=time_entry_gap,
             start_time=start_time,
             random_seed=random_seed,
+            vertical_buffer_distance=vertical_buffer_distance,
+            lateral_buffer_distance=lateral_buffer_distance,
             typeof_aircraft=typeof_aircraft,
             typeof_event_logger=typeof_event_logger,
             typeof_event_handler=typeof_event_handler,

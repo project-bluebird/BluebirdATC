@@ -16,7 +16,6 @@ from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.outcomm_handler import OutcommHandler
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.artificial_airspace_defaults import AIRSPACE_SETTINGS
 from bluebird_dt.utility.scenario_manager_utils import create_aircraft_with_coordinations, laterally_offset_start_point
 
 
@@ -498,6 +497,13 @@ Creating Infinite Scenario
         total_time_seconds: float | None = None,
         speed_range: tuple[float, float] | None = None,
         spawn_distance_threshold: float = 10.0,
+        spawn_distance_behind_fix: float = 10.0,
+        max_spawn_attempts: int = 10,
+        min_spawn_delta: float = 6.0,
+        automatic_outcomm: bool = True,
+        aircraft_on_route: bool = False,
+        vertical_buffer_distance: float | int = 500,
+        lateral_buffer_distance: float | int = 20,
         use_wind: bool = True,
         use_forecast: bool = True,
         autosave: bool = True,
@@ -536,6 +542,22 @@ Creating Infinite Scenario
             Optional, if not set, aircraft speeds are set between 350 and 450 knots.
         spawn_distance_threshold: float
             Minimum spawn distance from nearest aircraft with overlapping fl range.
+        spawn_distance_behind_fix: float
+            Distance behind starting fix that an aircraft will spawn
+        max_spawn_attempts: int
+            How many times to try and randomly spawn an aircraft that doesn't clash with existing aircraft
+        min_spawn_delta: float
+            Minimum allowed time (in seconds) between spawns.  Default is 6.0.
+        automatic_outcomm: bool
+            Specify if the scenario manager should automatically outcomm aircraft which leave the sector meeting exit
+            coordination. Defaults to True
+        aircraft_on_route: bool
+            If True, spawned aircraft will not be laterally displaced from their starting fix,
+            and will have "on_route" set to True.  Default is False.
+        vertical_buffer_distance: int or float, default is 500
+            Distance to expand airspace vertical boundary by, in units of FL
+        lateral_buffer_distance: int or float, default is 20
+            Distance to expand airspace lateral boundary by, in units of NMI
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
@@ -582,13 +604,18 @@ Creating Infinite Scenario
             num_starter_aircraft=num_starter_aircraft,
             initial_spawn_rate=initial_spawn_rate,
             spawn_rate_increment=spawn_rate_increment,
-            spawn_rate_increase_interval=spawn_rate_increase_interval,
             max_spawn_rate=max_spawn_rate,
+            spawn_rate_increase_interval=spawn_rate_increase_interval,
+            spawn_distance_behind_fix=spawn_distance_behind_fix,
+            max_spawn_attempts=max_spawn_attempts,
+            min_spawn_delta=min_spawn_delta,
+            automatic_outcomm=automatic_outcomm,
+            aircraft_on_route=aircraft_on_route,
             total_time_seconds=total_time_seconds,
             speed_range=speed_range,
             spawn_distance_threshold=spawn_distance_threshold,
-            vertical_buffer_distance=AIRSPACE_SETTINGS["penumbra_fl"],
-            lateral_buffer_distance=AIRSPACE_SETTINGS["penumbra_lat"],
+            vertical_buffer_distance=vertical_buffer_distance,
+            lateral_buffer_distance=lateral_buffer_distance,
             typeof_aircraft=typeof_aircraft,
             typeof_event_logger=typeof_event_logger,
             typeof_event_handler=typeof_event_handler,
