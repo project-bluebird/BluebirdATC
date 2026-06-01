@@ -122,9 +122,8 @@ async def wind_field(runner: RunnerDep):  # noqa: ANN201
     # HMI doesn't need to reload the environment again
     runner.sim.manager.reload_environment = False
 
-    if not runner.sim.manager.environment.wind_field:
-        return None
-    return runner.sim.manager.environment.wind_field.data()
+    wind_field = runner.sim.manager.environment.wind_field
+    return {"exists": True, "wind_field": wind_field.data() if wind_field is not None else None}
 
 
 @core_router.get("/static_data", tags=["State"])

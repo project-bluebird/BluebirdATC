@@ -424,7 +424,7 @@ class WindField(BaseModel):
         return self.model_dump_json()
 
     @classmethod
-    def from_json(cls, s: str) -> typing_extensions.Self | None:
+    def from_json(cls, s: str) -> typing_extensions.Self:
         """
         Construct a new wind field instance from a JSON string matching the WindField model schema.
 
@@ -436,8 +436,13 @@ class WindField(BaseModel):
 
         Returns
         -------
-        WindField | None :
-            A wind field reconstructed from the serialised data, or ``None`` if validation fails.
+        WindField :
+            A wind field reconstructed from the serialised data.
+
+        Raises
+        ------
+        pydantic.ValidationError
+            If ``s`` does not match the WindField model schema.
         """
         return cls.model_validate_json(s)
 
@@ -559,10 +564,9 @@ class WindField(BaseModel):
 
                 pressure_array = self.pressure_array
 
-                wind_spd_raw = self.wind_speed.tolist() if isinstance(self.wind_speed, np.ndarray) else self.wind_speed
-                wind_dir_raw = (
-                    self.wind_direction.tolist() if isinstance(self.wind_direction, np.ndarray) else self.wind_direction
-                )
+                n_levels = len(pressure_array)
+                wind_spd_raw = np.broadcast_to(np.asarray(self.wind_speed, dtype=float), (n_levels,)).tolist()
+                wind_dir_raw = np.broadcast_to(np.asarray(self.wind_direction, dtype=float), (n_levels,)).tolist()
 
                 # Find the index of the nearest pressure level at or below the target
                 # and obtain matching wind speed and direction
