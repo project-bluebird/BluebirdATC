@@ -6,9 +6,10 @@ from datetime import datetime, timedelta, timezone
 from os import listdir
 from os.path import isfile
 from pathlib import Path
-from typing import Generic, TypeVar
+from typing import Generic
 
 import pandas as pd
+import typing_extensions
 from pydantic import BaseModel
 from typing_extensions import override
 
@@ -29,12 +30,12 @@ from bluebird_dt.utility.airspace_data import create_sector, load_fixes
 from bluebird_dt.utility.paths import SPRINGFIELD_DIR
 from bluebird_dt.utility.scenario_utils import convert_string_to_lists
 
-TAircraft = TypeVar("TAircraft", bound=Aircraft)
-TWindField = TypeVar("TWindField", bound=WindField)
-TForecastWindField = TypeVar("TForecastWindField", bound=WindField)
-TEventLogger = TypeVar("TEventLogger", bound=EventLogger)
-TEventHandler = TypeVar("TEventHandler", bound=EventHandler[Aircraft])
-TSimulator = TypeVar("TSimulator", bound=Simulator)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
+TEventLogger = typing_extensions.TypeVar("TEventLogger", bound=EventLogger, default=EventLogger)
+TEventHandler = typing_extensions.TypeVar("TEventHandler", bound=EventHandler[Aircraft], default=EventHandler[Aircraft])
+TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator, default=Simulator)
 
 
 class SpringfieldScenarioManagerConfig(BaseModel):
