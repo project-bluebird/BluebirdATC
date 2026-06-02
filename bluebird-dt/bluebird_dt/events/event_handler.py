@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel
+import typing_extensions
 from typing_extensions import Self
 
 from bluebird_dt.core import (
@@ -44,9 +45,9 @@ def pd_concat_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([df1, df2])
 
 
-TAircraft = typing.TypeVar("TAircraft", bound=Aircraft)
-TWindField = typing.TypeVar("TWindField", bound=WindField)
-TForecastWindField = typing.TypeVar("TForecastWindField", bound=WindField)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
 
 
 class FlightPlanEvent(BaseModel):

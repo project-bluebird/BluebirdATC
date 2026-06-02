@@ -18,9 +18,9 @@ from bluebird_dt.logger import logger
 from bluebird_dt.mixin import Comparison
 from bluebird_dt.utility import convert
 
-TAircraft = typing.TypeVar("TAircraft", bound=Aircraft)
-TWindField = typing.TypeVar("TWindField", bound=WindField)
-TForecastWindField = typing.TypeVar("TForecastWindField", bound=WindField)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
 
 
 class Environment(
@@ -146,9 +146,7 @@ class Environment(
     def from_json(
         cls,
         s: str,
-        typeof_airspace: type[TAirspace] = Airspace,
         typeof_aircraft: type[TAircraft] = Aircraft,
-        typeof_coordination: type[TCoordination] = Coordination,
         typeof_windfield: type[TWindField] = WindField,
         typeof_forecastwindfield: type[TForecastWindField] = WindField,
     ) -> typing_extensions.Self:
@@ -159,12 +157,8 @@ class Environment(
         ----------
         s: str
             A string representation of an Environment in a JSON/dictionary structure.
-        typeof_airspace: type[TAirspace]
-            Type of Airspace to deserialize, defaults to bluebird_dt.core.airspace.Airspace.
         typeof_aircraft: type[TAircraft]
             Type of Aircraft to deserialize, defaults to bluebird_dt.core.aircraft.Aircraft.
-        typeof_coordination: type[TCoordination]
-            Type of Coordination to deserialize, defaults to bluebird_dt.core.coordination.Coordination,
         typeof_windfield: type[TWindField]
             Type of WindField to deserialize, defaults to bluebird_dt.core.wind.WindField,
         typeof_forecastwindfield: type[TForecastWindField]
@@ -180,7 +174,7 @@ class Environment(
         start_time = data["start_time"]
 
         # Allow possibility that airspace was omitted from the environment
-        airspace = typeof_airspace.from_json(json.dumps(data["airspace"])) if "airspace" in data else None
+        airspace = Airspace.from_json(json.dumps(data["airspace"])) if "airspace" in data else None
 
         aircraft: dict[str, TAircraft] = {}
         for callsign, aircraft_data in data["aircraft"].items():
@@ -194,10 +188,10 @@ class Environment(
         if "forecast_wind_field" in data and data["forecast_wind_field"] is not None:
             forecast_wind_field = typeof_forecastwindfield.from_json(json.dumps(data["forecast_wind_field"]))
 
-        coordinations: list[TCoordination] | None = data.get("coordinations", None)
+        coordinations: list[Coordination] | None = data.get("coordinations", None)
 
         if coordinations is not None:
-            loaded_coordinations = [typeof_coordination.from_json(json.dumps(coord)) for coord in coordinations]
+            loaded_coordinations = [Coordination.from_json(json.dumps(coord)) for coord in coordinations]
             coordinations = [coord for coord in loaded_coordinations if coord is not None]
 
         env = cls(
@@ -216,9 +210,7 @@ class Environment(
     def load(
         cls,
         filename: str,
-        typeof_airspace: type[TAirspace] = Airspace,
         typeof_aircraft: type[TAircraft] = Aircraft,
-        typeof_coordination: type[TCoordination] = Coordination,
         typeof_windfield: type[TWindField] = WindField,
         typeof_forecastwindfield: type[TForecastWindField] = WindField,
     ) -> typing_extensions.Self:
@@ -229,12 +221,8 @@ class Environment(
         ----------
         filename: str
             Path to a JSON file with an Environment definition in dictionary format.
-        typeof_airspace: type[TAirspace]
-            Type of Airspace to deserialize, defaults to bluebird_dt.core.airspace.Airspace.
         typeof_aircraft: type[TAircraft]
             Type of Aircraft to deserialize, defaults to bluebird_dt.core.aircraft.Aircraft.
-        typeof_coordination: type[TCoordination]
-            Type of Coordination to deserialize, defaults to bluebird_dt.core.coordination.Coordination,
         typeof_windfield: type[TWindField]
             Type of WindField to deserialize, defaults to bluebird_dt.core.wind.WindField,
         typeof_forecastwindfield: type[TForecastWindField]
@@ -247,9 +235,7 @@ class Environment(
         with open(filename) as fd:
             return cls.from_json(
                 fd.read(),
-                typeof_airspace,
                 typeof_aircraft,
-                typeof_coordination,
                 typeof_windfield,
                 typeof_forecastwindfield,
             )
