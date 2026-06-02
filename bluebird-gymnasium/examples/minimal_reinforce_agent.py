@@ -205,6 +205,7 @@ class SharedPolicyAgent:
         for action_log_probability, discounted_return in zip(
             log_probability_per_step,
             returns_tensor,
+            strict=False,
         ):
             policy_loss_terms.append(
                 -action_log_probability * discounted_return,

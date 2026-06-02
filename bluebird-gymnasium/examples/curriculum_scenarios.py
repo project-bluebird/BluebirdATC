@@ -28,8 +28,8 @@ class FixedSequenceTactical(Tactical):
 
     def __init__(
         self,
-        airspace,
-        routes,
+        airspace: object,
+        routes: list[Route],
         aircraft_specs: list[dict],
         start_time: int = 0,
         vertical_buffer_distance: float | int = 500,

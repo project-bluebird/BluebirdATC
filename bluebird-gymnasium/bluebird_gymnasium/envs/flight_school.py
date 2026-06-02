@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any
+
+from bluebird_dt.simulator import Simulator
 
 from bluebird_gymnasium.envs import EnvConfig, ViewType
 from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv
@@ -10,16 +11,13 @@ from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv
 class FlightSchoolEnv(SectorXPlusEnv):
     """Gymnasium environment for the Flight School scenario."""
 
-    def _generate_scenario(self): Any
+    def _generate_scenario(self) -> Simulator:
         category = "Flight School"
         scenario = "Xplus-Sector"
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
-        if suffix is None or suffix == "":
-            suffix = ""
-        else:
-            suffix = f"__{suffix}"
+        suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario}_{timestamp}{suffix}"
 
         return self.scenario_manager.to_simulator(

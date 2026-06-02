@@ -169,7 +169,7 @@ SCENARIO_CLS: dict[str, ScenarioManager] = {
 
 # now envs module imports
 from bluebird_gymnasium.envs.base import BaseEnv  # noqa: E402
-from bluebird_gymnasium.envs.flight_school import FlightSchoolEnv
+from bluebird_gymnasium.envs.flight_school import FlightSchoolEnv  # noqa: E402
 from bluebird_gymnasium.envs.infinite import CustomInfiniteEnv, InfiniteEnv  # noqa: E402
 from bluebird_gymnasium.envs.sector_i import SectorIEnv  # noqa: E402
 from bluebird_gymnasium.envs.sector_x import SectorXEnv  # noqa: E402
