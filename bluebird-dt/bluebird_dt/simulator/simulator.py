@@ -397,14 +397,12 @@ class Simulator:
             coord.data() for coord in env.coordinations.values() if coord.callsign in set(env.aircraft.keys())
         ]
 
-        # gather the basic env data, remove wind field data to reduce the size of the data
+        # gather the basic env data, remove wind fields data to reduce the size of the data
         env_data = {
             "time": env.time,
             "start_time": env.start_time,
             "aircraft": {callsign: aircraft.data() for (callsign, aircraft) in env.aircraft.items()},
             "coordinations": coordinations,
-            "wind_field": None,
-            "forecast": env.forecast_wind_field,
         }
 
         # include the airspace if requested

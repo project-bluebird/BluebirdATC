@@ -8,6 +8,7 @@ from bluebird_api import routers
 from bluebird_api import routes
 from bluebird_api.models import ActionInput
 from bluebird_api.runner import Runner
+from bluebird_dt.core.wind import WindField
 from bluebird_dt.utility.paths import LOG_DIR as REPLAY_DIR
 
 class TestAPI:
@@ -93,7 +94,7 @@ class TestAPI:
         Test API calls corresponding to 'State' metadata tag
         """
 
-        def test_complete_environment(self, client):
+        def test_environment(self, client):
             response = client.get(f"/environment")
 
             assert response.status_code == 200
@@ -311,32 +312,30 @@ class TestFunctions:
         """
 
         @pytest.mark.asyncio
-        async def test_complete_environment_default(self, runner: Runner):
+        async def test_environment_default(self, runner: Runner):
             """
-            Test that complete_environment() with default arguments
+            Test that environment() with default arguments
             returns a dict with the expected keys
             """
-            expected_keys = ["time", "start_time", "aircraft", "airspace", "coordinations", "wind_field", "forecast"]
-            received = await routers.core.complete_environment(runner)
+            expected_keys = ["time", "start_time", "aircraft", "airspace", "coordinations"]
+            received = await routers.core.environment(runner)
 
             assert sorted(received.keys()) == sorted(expected_keys)
 
         @pytest.mark.asyncio
-        async def test_complete_environment_params(self, runner: Runner):
+        async def test_environment_params(self, runner: Runner):
             """
-            Test that complete_environment() with additional arguments
+            Test that environment() with additional arguments
             returns a dict with the expected keys
             """
             expected_keys = [
                 "time",
                 "start_time",
                 "aircraft",
-                "wind_field",
-                "forecast",
                 "coordinations",
                 "observations",
             ]
-            received = await routers.core.complete_environment(runner, no_airspace=True, last_n_observations=5)
+            received = await routers.core.environment(runner, no_airspace=True, last_n_observations=5)
 
             assert sorted(received.keys()) == sorted(expected_keys)
 
@@ -366,6 +365,37 @@ class TestFunctions:
             if received["wind_field"] is not None:
                 assert sorted(received["wind_field"].keys()) == sorted(expected_wind_keys)        
                 
+        @pytest.mark.asyncio
+        async def test_wind_field_with_seeded_wind(self, runner: Runner):
+            """
+            Seed the environment with a known WindField and verify that wind_field()
+            returns the full serialised payload (not None) with all expected model fields.
+            """
+            expected_wind_keys = [
+                "u_comp",
+                "v_comp",
+                "pressure_array",
+                "lat_array",
+                "lon_array",
+                "interpolation_method",
+                "wind_speed",
+                "wind_direction",
+            ]
+
+            seeded = WindField.uniform(wind_speed=10.0, wind_direction=90.0)
+            original = runner.sim.manager.environment.wind_field
+            runner.sim.manager.environment.wind_field = seeded
+            try:
+                received = await routers.core.wind_field(runner)
+            finally:
+                runner.sim.manager.environment.wind_field = original
+
+            assert isinstance(received, dict)
+            assert received["exists"] is True
+            assert received["wind_field"] is not None
+            assert sorted(received["wind_field"].keys()) == sorted(expected_wind_keys)
+            assert received["wind_field"] == seeded.data()
+
         @pytest.mark.asyncio
         async def test_static_data(self, runner: Runner):
             """

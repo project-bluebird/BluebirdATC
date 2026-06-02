@@ -120,11 +120,11 @@ class WindField(BaseModel):
 
     # Validation and serialisation methods for numpy arrays, since these aren't natively supported by Pydantic
     @field_validator("u_comp", "v_comp", "pressure_array", "lat_array", "lon_array")
-    def convert_to_array(cls, v: list | np.ndarray) -> np.typing.NDArray[np.float64]:
+    def convert_to_array(cls, v: list | np.ndarray) -> np.typing.NDArray[np.floating]:
         return np.asarray(v, dtype=np.float64)
 
     @field_validator("wind_speed", "wind_direction")
-    def convert_optional_to_array(cls, v: list | np.ndarray | float | None) -> np.typing.NDArray[np.float64] | None:
+    def convert_optional_to_array(cls, v: list | np.ndarray | float | None) -> np.typing.NDArray[np.floating] | None:
         return None if v is None else np.asarray(v, dtype=np.float64)
 
     @field_serializer("u_comp", "v_comp", "pressure_array", "lat_array", "lon_array")

@@ -94,7 +94,7 @@ async def start(runner: RunnerDep, tick_frequency_period: float) -> bool:
 
 
 @core_router.get("/environment", tags=["State"])
-async def complete_environment(  # noqa: ANN201
+async def environment(  # noqa: ANN201
     runner: RunnerDep, no_airspace: bool = False, last_n_observations: int = 0
 ):
     """
@@ -115,12 +115,8 @@ async def complete_environment(  # noqa: ANN201
 @core_router.get("/wind_field", tags=["State"])
 async def wind_field(runner: RunnerDep):  # noqa: ANN201
     """
-    Get the wind field data for the environment.
+    Get the wind field data for current environment.
     """
-    if RunnerStore.current_runner is None or runner.sim is None:
-        return {"exists": False}
-    # HMI doesn't need to reload the environment again
-    runner.sim.manager.reload_environment = False
 
     wind_field = runner.sim.manager.environment.wind_field
     return {"exists": True, "wind_field": wind_field.data() if wind_field is not None else None}

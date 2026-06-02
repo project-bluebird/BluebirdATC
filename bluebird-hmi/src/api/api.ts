@@ -33,26 +33,17 @@ const injectedRtkApi = api.injectEndpoints({
         method: "POST",
       }),
     }),
-    completeEnvironment: build.query<
-      CompleteEnvironmentApiResponse,
-      CompleteEnvironmentApiArg
-    >({
-      query: (queryArg) => ({
-        url: `/environment`,
-        // params: {
-        //   no_airspace: queryArg.noAirspace,
-        //   last_n_observations: queryArg.lastNObservations,
-        // },
-      }),
-    }),
     environment: build.query<EnvironmentApiResponse, EnvironmentApiArg>({
       query: (queryArg) => ({
-        url: `/environment/${queryArg.sectorId}`,
-        // params: {
-        //   no_airspace: queryArg.noAirspace,
-        //   last_n_observations: queryArg.lastNObservations,
-        // },
+        url: `/environment`,
+        params: {
+          no_airspace: queryArg.noAirspace,
+          last_n_observations: queryArg.lastNObservations,
+        },
       }),
+    }),
+    windField: build.query<WindFieldApiResponse, WindFieldApiArg>({
+      query: () => ({ url: `/wind_field` }),
     }),
     staticData: build.query<StaticDataApiResponse, StaticDataApiArg>({
       query: () => ({ url: `/static_data` }),
@@ -100,6 +91,12 @@ const injectedRtkApi = api.injectEndpoints({
         method: "POST",
       }),
     }),
+    getSelectedAircraft: build.query<
+      GetSelectedAircraftApiResponse,
+      GetSelectedAircraftApiArg
+    >({
+      query: (queryArg) => ({ url: `/selected_aircraft/${queryArg.sectorId}` }),
+    }),
     load: build.mutation<LoadApiResponse, LoadApiArg>({
       query: (queryArg) => ({
         url: `/load/${queryArg.category}/${queryArg.scenarioName}`,
@@ -135,18 +132,13 @@ export type StartApiResponse = /** status 200 Successful Response */ boolean;
 export type StartApiArg = {
   tickFrequencyPeriod: number;
 };
-export type CompleteEnvironmentApiResponse =
-  /** status 200 Successful Response */ EnvironmentRead;
-export type CompleteEnvironmentApiArg = {
-  noAirspace?: boolean;
-  lastNObservations?: number;
-};
 export type EnvironmentApiResponse = /** status 200 Successful Response */ any;
 export type EnvironmentApiArg = {
-  sectorId: string | null;
   noAirspace?: boolean;
   lastNObservations?: number;
 };
+export type WindFieldApiResponse = /** status 200 Successful Response */ any;
+export type WindFieldApiArg = void;
 export type StaticDataApiResponse = /** status 200 Successful Response */ any;
 export type StaticDataApiArg = void;
 export type DynamicDataApiResponse = /** status 200 Successful Response */ any;
@@ -177,6 +169,13 @@ export type RewindApiResponse = /** status 200 Successful Response */ boolean;
 export type RewindApiArg = {
   newTime: string;
 };
+export type GetSelectedAircraftApiResponse =
+  /** status 200 Successful Response */ {
+    [key: string]: any;
+  };
+export type GetSelectedAircraftApiArg = {
+  sectorId: string;
+};
 export type LoadApiResponse = /** status 200 Successful Response */ boolean;
 export type LoadApiArg = {
   category: string;
@@ -186,6 +185,8 @@ export type ValidationError = {
   loc: (string | number)[];
   msg: string;
   type: string;
+  input?: any;
+  ctx?: object;
 };
 export type HttpValidationError = {
   detail?: ValidationError[];
@@ -396,8 +397,8 @@ export const {
   useCloseMutation,
   useEvolveMutation,
   useStartMutation,
-  useCompleteEnvironmentQuery,
   useEnvironmentQuery,
+  useWindFieldQuery,
   useStaticDataQuery,
   useDynamicDataQuery,
   useActionsMutation,
@@ -407,5 +408,6 @@ export const {
   useSetTickFrequencyMutation,
   usePauseMutation,
   useRewindMutation,
+  useGetSelectedAircraftQuery,
   useLoadMutation,
 } = injectedRtkApi;

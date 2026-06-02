@@ -1,8 +1,8 @@
 import ErrorIcon from "@mui/icons-material/Error";
 import MapIcon from "@mui/icons-material/Map";
 import MenuList from "@mui/material/MenuList";
-import { AirspaceRead, useCompleteEnvironmentQuery } from "api/api";
-import { useAppDispatch, useAppSelector } from "app/hooks";
+import { AirspaceRead, useEnvironmentQuery } from "api/api";
+import { useAppDispatch } from "app/hooks";
 import PanelData from "components/panel/items/PanelData";
 import PanelProgress from "components/panel/items/PanelProgress";
 import PanelSelect from "components/panel/items/PanelSelect";
@@ -99,14 +99,11 @@ export default function SectorPanel(props: SectorPanelProps) {
 
   const dispatch = useAppDispatch();
   const [sector, setSector] = useState<string[]>([]);
-  const { data, isError, isLoading, refetch } = useCompleteEnvironmentQuery(
-    undefined,
-    {
-      refetchOnMountOrArgChange: true,
-      refetchOnReconnect: true,
-      pollingInterval: 12000,
-    },
-  );
+  const { data, isError, isLoading, refetch } = useEnvironmentQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnReconnect: true,
+    pollingInterval: 12000,
+  });
 
   const toggleSectors = useCallback(
     (individualSectors: string[]) => {
