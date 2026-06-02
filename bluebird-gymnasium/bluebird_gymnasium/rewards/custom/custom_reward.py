@@ -25,9 +25,7 @@ def custom_reward_fn(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> 
     return 0.0
 
 
-def route_progress_terminal_reward(
-    gym_env: BaseEnv, callsign: str
-) -> float:
+def route_progress_terminal_reward(gym_env: BaseEnv, callsign: str) -> float:
     """Reward progress toward exit and penalize stalling at episode end.
 
     This reward is intended for the PPO curriculum notebooks where the agent
@@ -104,10 +102,7 @@ def lateral_termination_check_mac_env(
     """Notebook-safe wrapper for the MAC lateral termination reward."""
 
     ac_tracked_state = gym_env.get_tracked_aircraft_data(callsign)
-    transferred = (
-        ac_tracked_state is not None
-        and ac_tracked_state.pos_status == PositionStatus.EXIT_REACHED
-    )
+    transferred = ac_tracked_state is not None and ac_tracked_state.pos_status == PositionStatus.EXIT_REACHED
 
     return float(
         lateral_termination_check_mac(
@@ -122,9 +117,7 @@ def lateral_termination_check_mac_env(
     )
 
 
-def anti_loiter_route_rejoin_reward(
-    gym_env: BaseEnv, callsign: str, action: int
-) -> float:
+def anti_loiter_route_rejoin_reward(gym_env: BaseEnv, callsign: str, action: int) -> float:
     """Reward progress and route rejoin, penalize stalling near the entry.
 
     This is used by the PPO curriculum notebook to address a specific failure

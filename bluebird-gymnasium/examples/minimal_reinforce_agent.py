@@ -131,9 +131,7 @@ class SharedPolicyAgent:
             )
 
             action_by_callsign[callsign] = sampled_action.item()
-            log_probability_by_callsign[callsign] = (
-                sampled_action_log_probability.squeeze()
-            )
+            log_probability_by_callsign[callsign] = sampled_action_log_probability.squeeze()
 
         return action_by_callsign, log_probability_by_callsign
 
@@ -176,9 +174,7 @@ class SharedPolicyAgent:
         # Compute discounted returns in reverse:
         # G_t = r_t + gamma*r_{t+1} + gamma^2*r_{t+2} + ...
         for reward in reversed(reward_per_step):
-            running_discounted_return = (
-                reward + discount_factor_gamma * running_discounted_return
-            )
+            running_discounted_return = reward + discount_factor_gamma * running_discounted_return
             discounted_return_per_step.append(running_discounted_return)
 
         discounted_return_per_step.reverse()
@@ -193,10 +189,7 @@ class SharedPolicyAgent:
         if returns_tensor.numel() > 1:
             returns_std = returns_tensor.std(unbiased=False)
             if returns_std > 1e-8:
-                returns_tensor = (
-                    (returns_tensor - returns_tensor.mean())
-                    / (returns_std + 1e-8)
-                )
+                returns_tensor = (returns_tensor - returns_tensor.mean()) / (returns_std + 1e-8)
 
         # REINFORCE objective:
         # - If return is high, increase probability of the sampled action.
@@ -296,9 +289,7 @@ def run_one_training_episode(
     reward_per_step: list[float] = []
 
     while not episode_is_done:
-        action_by_callsign, log_probability_by_callsign = (
-            agent.sample_training_actions(observation_by_callsign)
-        )
+        action_by_callsign, log_probability_by_callsign = agent.sample_training_actions(observation_by_callsign)
 
         (
             next_observation_by_callsign,
@@ -311,11 +302,7 @@ def run_one_training_episode(
         # For this simple example, aggregate per-aircraft rewards into one
         # scalar reward for the timestep. With one aircraft, this is just that
         # aircraft's reward.
-        timestep_reward = (
-            float(sum(reward_by_callsign.values()))
-            if reward_by_callsign
-            else 0.0
-        )
+        timestep_reward = float(sum(reward_by_callsign.values())) if reward_by_callsign else 0.0
 
         # Aggregate log-probabilities for all aircraft active this step. With
         # one aircraft, this is just that aircraft's sampled action log-prob.
@@ -332,9 +319,7 @@ def run_one_training_episode(
         # truncated_by_callsign is not used separately here because Bluebird
         # sets done when the episode is time-truncated in this path.
         _ = truncated_by_callsign
-        episode_is_done = (
-            all(done_by_callsign.values()) if done_by_callsign else True
-        )
+        episode_is_done = all(done_by_callsign.values()) if done_by_callsign else True
 
         observation_by_callsign = next_observation_by_callsign
         episode_step_count += 1
@@ -378,14 +363,8 @@ def run_one_evaluation_episode(
         ) = environment.step(action_by_callsign)
 
         _ = truncated_by_callsign
-        episode_total_reward += (
-            float(sum(reward_by_callsign.values()))
-            if reward_by_callsign
-            else 0.0
-        )
-        episode_is_done = (
-            all(done_by_callsign.values()) if done_by_callsign else True
-        )
+        episode_total_reward += float(sum(reward_by_callsign.values())) if reward_by_callsign else 0.0
+        episode_is_done = all(done_by_callsign.values()) if done_by_callsign else True
         observation_by_callsign = next_observation_by_callsign
         episode_step_count += 1
 

@@ -29,9 +29,7 @@ class FlightSchoolEnv(SectorXPlusEnv):
         )
 
     @classmethod
-    def get_default_env_config(
-        cls, view_type: ViewType | str = ViewType.CENTRALIZED
-    ) -> EnvConfig:
+    def get_default_env_config(cls, view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         config = super().get_default_env_config(view_type)
         config.scenario_config = {
             "cls": "infinite",
