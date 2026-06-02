@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+from typing import Any
 
 from bluebird_gymnasium.envs import EnvConfig, ViewType
 from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv
@@ -9,7 +10,7 @@ from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv
 class FlightSchoolEnv(SectorXPlusEnv):
     """Gymnasium environment for the Flight School scenario."""
 
-    def _generate_scenario(self):
+    def _generate_scenario(self): Any
         category = "Flight School"
         scenario = "Xplus-Sector"
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")

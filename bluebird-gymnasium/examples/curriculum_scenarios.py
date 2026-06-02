@@ -4,12 +4,12 @@ from datetime import timedelta
 from typing import Literal
 
 import pandas as pd
-from pydantic import BaseModel, Field
-from typing_extensions import override
-
 from bluebird_dt.core import Aircraft, Coordination, FlightPlan, Route
 from bluebird_dt.events.event_handler import EventHandler
 from bluebird_dt.scenario_manager.tactical import Tactical
+from pydantic import BaseModel, Field
+from typing_extensions import override
+
 from bluebird_gymnasium.envs import SCENARIO_CLS
 
 

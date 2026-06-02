@@ -26,7 +26,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-
 # Allow this example to be run from the monorepo without installing packages.
 THIS_FILE = Path(__file__).resolve()
 BLUEBIRD_GYMNASIUM_ROOT = THIS_FILE.parents[1]

@@ -1,9 +1,11 @@
+from typing import Any
+
 from bluebird_gymnasium.envs.base import BaseEnv
-from bluebird_gymnasium.utils.types import PositionStatus
 from bluebird_gymnasium.rewards.lateral_termination_check import (
     lateral_termination_check_mac,
     lateral_termination_check_sac,
 )
+from bluebird_gymnasium.utils.types import PositionStatus
 
 
 def custom_reward_fn(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
@@ -20,13 +22,11 @@ def custom_reward_fn(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> 
     """
 
     # implement reward function here.
-    reward = 0.0
-
-    return reward
+    return 0.0
 
 
 def route_progress_terminal_reward(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
+    gym_env: BaseEnv, callsign: str
 ) -> float:
     """Reward progress toward exit and penalize stalling at episode end.
 
@@ -77,7 +77,7 @@ def route_progress_terminal_reward(
 
 
 def lateral_termination_check_sac_env(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
+    gym_env: BaseEnv, callsign: str, action: int, **kwargs: dict[str, dict[str, Any]]
 ) -> float:
     """Notebook-safe wrapper for the SAC lateral termination reward.
 
@@ -99,7 +99,7 @@ def lateral_termination_check_sac_env(
 
 
 def lateral_termination_check_mac_env(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
+    gym_env: BaseEnv, callsign: str, action: int, **kwargs: dict[str, dict[str, Any]]
 ) -> float:
     """Notebook-safe wrapper for the MAC lateral termination reward."""
 
@@ -123,7 +123,7 @@ def lateral_termination_check_mac_env(
 
 
 def anti_loiter_route_rejoin_reward(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
+    gym_env: BaseEnv, callsign: str, action: int
 ) -> float:
     """Reward progress and route rejoin, penalize stalling near the entry.
 

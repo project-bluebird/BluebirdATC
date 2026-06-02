@@ -169,13 +169,13 @@ SCENARIO_CLS: dict[str, ScenarioManager] = {
 
 # now envs module imports
 from bluebird_gymnasium.envs.base import BaseEnv  # noqa: E402
+from bluebird_gymnasium.envs.flight_school import FlightSchoolEnv
 from bluebird_gymnasium.envs.infinite import CustomInfiniteEnv, InfiniteEnv  # noqa: E402
 from bluebird_gymnasium.envs.sector_i import SectorIEnv  # noqa: E402
 from bluebird_gymnasium.envs.sector_x import SectorXEnv  # noqa: E402
 from bluebird_gymnasium.envs.sector_xplus import SectorXPlusEnv  # noqa: E402
 from bluebird_gymnasium.envs.sector_y import SectorYEnv  # noqa: E402
 from bluebird_gymnasium.envs.springfield import SpringfieldEnv  # noqa: E402
-from bluebird_gymnasium.envs.flight_school import FlightSchoolEnv
 
 registry_env: dict[str, BaseEnv] = {
     "base": BaseEnv,
@@ -243,13 +243,13 @@ def get_env_cls_and_config(env_name: str) -> tuple[type[BaseEnv], EnvConfig]:
 __all__ = [
     "BaseEnv",
     "CustomInfiniteEnv",
+    "FlightSchoolEnv",
     "InfiniteEnv",
     "SectorIEnv",
     "SectorXEnv",
     "SectorXPlusEnv",
     "SectorYEnv",
     "SpringfieldEnv",
-    "FlightSchoolEnv",
     "available_gym_keys",
     "available_names",
     "get_default_config",
