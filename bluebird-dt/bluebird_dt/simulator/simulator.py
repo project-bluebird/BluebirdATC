@@ -790,9 +790,6 @@ class Simulator:
         self.dynamic_data.cache_clear()
         self.static_data.cache_clear()
 
-        if self.autosave:
-            self.save()
-
     def save(self, autosave: bool = False) -> bool:
         """
         Save simulator state to JSON.
@@ -820,9 +817,3 @@ class Simulator:
             logger.info(f"Log saved to {self.manager.event_logger.log_name + '.tar.gz'}")
 
         return True
-
-    def __del__(self):
-        """
-        Clean up after the simulator, otherwise it doesn't get garbage collected.
-        """
-        self.close()

@@ -177,10 +177,20 @@ def test_simulator_gets_garbage_collected():
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
     sim_ref = weakref.ref(sim)
 
-    # Remove the last strong reference
+    _ = sim.environment(
+            sim.manager.environment.datetime
+            )
+    _ = sim.dynamic_data(
+            sim.manager.environment.datetime
+            )
+    _ = sim.static_data(
+            sim.manager.environment.datetime
+            )
+
+    sim.close()
+
     del sim
 
-    # Force garbage collection
     gc.collect()
 
     assert sim_ref() is None
