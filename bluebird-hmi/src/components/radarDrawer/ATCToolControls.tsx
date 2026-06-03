@@ -88,7 +88,7 @@ export default function ATCToolControls(props: ATCToolControlsProps) {
           sx={{
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
+            alignItems: "flex-start",
             gap: 1,
             px: 2,
           }}

@@ -19,7 +19,7 @@ export default function DrawerBlockDropdown<E>(
 
   return (
     <Box
-      sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+      sx={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}
     >
       <FormControl
         sx={{

@@ -14,7 +14,7 @@ interface DrawerButtonProps {
 export default function DrawerButton(props: DrawerButtonProps) {
   return (
     <Box
-      sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+      sx={{ display: "flex", justifyContent: "flex-start", alignItems: "center", ml: 2 }}
     >
       <MenuList>
         <MenuItem
