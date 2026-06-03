@@ -1,9 +1,11 @@
 import copy
+import gc
 from datetime import date, datetime, timedelta
 
 from pydantic import ValidationError
 import pandas as pd
 import pytest
+import weakref
 
 from bluebird_dt.core import Action, Coordination
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
@@ -170,3 +172,16 @@ def test_save_autosave_skips_if_interval_not_elapsed():
     sim.last_save_time = datetime.now()
     sim.save_interval = timedelta(minutes=10)
     assert sim.save(autosave=True) is False
+
+def test_simulator_gets_garbage_collected():
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
+    sim_ref = weakref.ref(sim)
+
+    # Remove the last strong reference
+    del sim
+
+    # Force garbage collection
+    gc.collect()
+
+    assert sim_ref() is None
+
