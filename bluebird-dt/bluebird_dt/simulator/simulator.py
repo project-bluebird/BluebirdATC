@@ -769,6 +769,22 @@ class Simulator:
             environment_manager=self.manager.config(),
         )
 
+    def close(self):
+        """
+        Clean up after the simulator, otherwise it doesn't get garbage collected.
+        """
+        self.scenario_manager.close()
+
+        if self.logging_context:
+            logger.removeFilter(self.logging_context)
+
+        if self.logging_file_handler:
+            logger.removeHandler(self.logging_file_handler)
+
+        self.environment.cache_clear()
+        self.dynamic_data.cache_clear()
+        self.static_data.cache_clear()
+
     def save(self, autosave: bool = False) -> bool:
         """
         Save simulator state to JSON.
@@ -796,9 +812,3 @@ class Simulator:
             logger.info(f"Log saved to {self.manager.event_logger.log_name + '.tar.gz'}")
 
         return True
-
-    def __del__(self):
-        if self.logging_context is not None:
-            logger.removeFilter(self.logging_context)
-        if self.logging_file_handler is not None:
-            logger.removeHandler(self.logging_file_handler)

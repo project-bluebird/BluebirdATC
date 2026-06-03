@@ -23,5 +23,6 @@ class Runner(RunnerABC):
     async def delete(self):
         self.kill = True
         self.sim.save()
+        self.sim.close()
         self.sim = None
         await asyncio.sleep(3)
