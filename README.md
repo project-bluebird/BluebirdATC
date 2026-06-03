@@ -1,42 +1,58 @@
-# BluebirdATC
-A Digital Twin for use in ATC simulations, and a training environment for AI agents.
+# BluebirdATC <img src="images/BBATC_logo.png" alt="BluebirdATC logo" align="right" height="160" />
+
+BluebirdATC is an open-source digital twin of en route airspace, developed by [Project Bluebird](https://www.turing.ac.uk/science-innovation/defence-and-national-security/project-bluebird), a collaboration between the Alan Turing Institute, the University of Exeter and NATS. It provides a safe, reproducible sandbox to simulate realistic air traffic scenarios, develop autonomous ATC agents, and benchmark their performance.
+
+![RouteFollowPredictor](images/auto_pilot.gif)
+
+## Packages
 
 This repository contains the following packages:
- * [![PyPI version](https://img.shields.io/pypi/v/bluebird-dt?logo=pypi&logoColor=white&label=bluebird-dt)](https://pypi.org/project/bluebird-dt/) - the digital twin.  See [here](bluebird-dt/README.md) for more information.
- * [![PyPI version](https://img.shields.io/pypi/v/bluebird-api.svg?logo=pypi&logoColor=white&label=bluebird-api)](https://pypi.org/project/bluebird-api/) - A REST API for the digital twin.  See [here](bluebird-api/README.md) for more information.
- * [![PyPI version](https://img.shields.io/pypi/v/bluebird-gymnasium.svg?logo=pypi&logoColor=white&label=bluebird-gymnasium)](https://pypi.org/project/bluebird-gymnasium/) - a gym environment for AI agents.  See [here](bluebird-gymnasium/README.md) for more details. 
- * `bluebird-hmi` - an optional web-based visualisation package.  See [here](bluebird-hmi/README.md) for details.
-  
-## (AI)r traffic controller challenge
-Information relating to the (AI)r traffic controller challenge can be found [here](https://docs.projectbluebird.ai/examples/competition/Competition-Intro/) to get started with the competition specific setup.
 
-## Running the digital twin
+| Package | Purpose |
+| --- | --- |
+| [![PyPI version](https://img.shields.io/pypi/v/bluebird-dt?logo=pypi&logoColor=white&label=bluebird-dt)](https://pypi.org/project/bluebird-dt/) | The digital twin — simulate airspace, aircraft, and actions. [Docs](bluebird-dt/README.md) |
+| [![PyPI version](https://img.shields.io/pypi/v/bluebird-api.svg?logo=pypi&logoColor=white&label=bluebird-api)](https://pypi.org/project/bluebird-api/) | A REST API server for the digital twin. [Docs](bluebird-api/README.md) |
+| [![PyPI version](https://img.shields.io/pypi/v/bluebird-gymnasium.svg?logo=pypi&logoColor=white&label=bluebird-gymnasium)](https://pypi.org/project/bluebird-gymnasium/) | Gymnasium environments — train RL agents, single & multi-agent. [Docs](bluebird-gymnasium/README.md) |
+| `bluebird-hmi` | An optional web-based visualisation package. [Docs](bluebird-hmi/README.md) |
 
-For quick start, please make sure uv is installed [(installation guide)](https://docs.astral.sh/uv/getting-started/installation/) and run the following command in a terminal:
+## AI(r) Traffic Controller Challenge
+
+Project Bluebird are hosting a AI agent development competition, the *AI(r) Traffic Controller Challenge*.
+
+To get started with the competition specific setup see the docs [here](https://docs.projectbluebird.ai/examples/competition/Competition-Intro/).
+
+## Quick start
+
+To get started with viewing a scenario in the HMI - make sure uv is installed [(installation guide)](https://docs.astral.sh/uv/getting-started/installation/) and then run the following command in a terminal:
 
 ```bash
 uvx bluebird-api@latest
 ```
 
-then navigate to [http://localhost:8000/hmi/](http://localhost:8000/hmi/).
+Then navigate to [http://localhost:8000/hmi/](http://localhost:8000/hmi/).
 
-This site will open a radar HMI, initially with no scenario loaded.
-To load a scenario, the top left of the window select `Load new scenario`.
-A window will appear in the middle of the screen, select `Artificial`, then `I-Sector Two Aircraft` and finally, `Load`.
+You'll see a radar HMI with no scenario loaded. To load a simple I-Sector scenario:
 
-With the scenario loaded, the aircraft and sector should now be visible in the radar. Clicking the play icon in the top left of the screen will make the simulation evolve making the aircraft move.
+1. Select **Load new scenario** in the top left
+2. Choose **Artificial** → **I-Sector Two Aircraft** → **Load**
+3. Press the **play** icon in the top left
 
-## Quick start examples for developing agents
+Aircraft will appear in the sector and begin moving. Each label shows the callsign, current flight level, groundspeed, and cleared and exit flight levels - the same information a real ATCO sees on their radar display.
 
-Examples for interfacing with the digital twin to make agents are available:
+## Developing agents
+
+To get started with agent development, we have provides some examples for interfacing with the digital twin:
+
+* [here](bluebird-dt/README.md#getting-started) to directly interact with the digital twin
 * [here](bluebird-gymnasium/README.md#getting-started) for using the gymnasium
 * [here](bluebird-api/README.md#getting-started) for using the REST API from any language
-* [here](bluebird-dt/README.md#getting-started) to directly interact with the digital twin
 
 ## Documentation
 
-The documentation of the latest release is available at [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai).
+Full documentation for the latest release is at [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai).
 
 ## Contributing
 
-Please see the guidelines [here](CONTRIBUTING.md) if you would like to contribute to BluebirdATC.
+Please see the [contribution guidelines](CONTRIBUTING.md) if you would like to contribute to BluebirdATC.
+
+<div align="center"><img src="images/BB_logo.png" alt="ProjectBluebird"></div>
