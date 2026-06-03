@@ -103,6 +103,10 @@ class TestAPI:
             response = client.get(f"/wind_field")
             assert response.status_code == 200
 
+        def test_forecast_wind_field(self, client):
+            response = client.get(f"/forecast_wind_field")
+            assert response.status_code == 200
+
         def test_static_data(self, client):
             response = client.get(f"/static_data")
 
@@ -369,7 +373,7 @@ class TestFunctions:
         async def test_wind_field_with_seeded_wind(self, runner: Runner):
             """
             Seed the environment with a known WindField and verify that wind_field()
-            returns the full serialised payload (not None) with all expected model fields.
+            returns the full serialised payload with all expected model fields.
             """
             expected_wind_keys = [
                 "u_comp",
@@ -395,6 +399,64 @@ class TestFunctions:
             assert received["wind_field"] is not None
             assert sorted(received["wind_field"].keys()) == sorted(expected_wind_keys)
             assert received["wind_field"] == seeded.data()
+
+        @pytest.mark.asyncio
+        async def test_forecast_wind_field(self, runner: Runner):
+            """
+            Test that forecast_wind_field() returns
+            {"exists": True, "forecast_wind_field": <data> | None} when a runner is loaded.
+            """
+
+            expected_wind_keys = [
+                "u_comp",
+                "v_comp",
+                "pressure_array",
+                "lat_array",
+                "lon_array",
+                "interpolation_method",
+                "wind_speed",
+                "wind_direction",
+            ]
+
+            received = await routers.core.forecast_wind_field(runner)
+
+            assert isinstance(received, dict)
+            assert received["exists"] is True
+            assert "forecast_wind_field" in received
+            if received["forecast_wind_field"] is not None:
+                assert sorted(received["forecast_wind_field"].keys()) == sorted(expected_wind_keys)
+
+        @pytest.mark.asyncio
+        async def test_forecast_wind_field_with_seeded_wind(self, runner: Runner):
+            """
+            Seed the environment with a known forecast WindField and verify that
+            forecast_wind_field() returns the full serialised payload with all
+            expected model fields.
+            """
+            expected_wind_keys = [
+                "u_comp",
+                "v_comp",
+                "pressure_array",
+                "lat_array",
+                "lon_array",
+                "interpolation_method",
+                "wind_speed",
+                "wind_direction",
+            ]
+
+            seeded = WindField.uniform(wind_speed=10.0, wind_direction=90.0)
+            original = runner.sim.manager.environment.forecast_wind_field
+            runner.sim.manager.environment.forecast_wind_field = seeded
+            try:
+                received = await routers.core.forecast_wind_field(runner)
+            finally:
+                runner.sim.manager.environment.forecast_wind_field = original
+
+            assert isinstance(received, dict)
+            assert received["exists"] is True
+            assert received["forecast_wind_field"] is not None
+            assert sorted(received["forecast_wind_field"].keys()) == sorted(expected_wind_keys)
+            assert received["forecast_wind_field"] == seeded.data()
 
         @pytest.mark.asyncio
         async def test_static_data(self, runner: Runner):

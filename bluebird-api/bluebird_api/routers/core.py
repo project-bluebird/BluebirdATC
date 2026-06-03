@@ -98,7 +98,7 @@ async def environment(  # noqa: ANN201
     runner: RunnerDep, no_airspace: bool = False, last_n_observations: int = 0
 ):
     """
-    Get the all of the environment data.
+    Get all of the environment data excluding wind fields.
     """
     if RunnerStore.current_runner is None or runner.sim is None:
         return {"exists": False}
@@ -120,6 +120,19 @@ async def wind_field(runner: RunnerDep):  # noqa: ANN201
 
     wind_field = runner.sim.manager.environment.wind_field
     return {"exists": True, "wind_field": wind_field.data() if wind_field is not None else None}
+
+
+@core_router.get("/forecast_wind_field", tags=["State"])
+async def forecast_wind_field(runner: RunnerDep):  # noqa: ANN201
+    """
+    Get the forecast wind field data for current environment.
+    """
+
+    forecast_wind_field = runner.sim.manager.environment.forecast_wind_field
+    return {
+        "exists": True,
+        "forecast_wind_field": (forecast_wind_field.data() if forecast_wind_field is not None else None),
+    }
 
 
 @core_router.get("/static_data", tags=["State"])
