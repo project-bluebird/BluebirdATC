@@ -565,7 +565,7 @@ class TestPredictorInFullMode:
         aircraft.selected_fl = 230.0
         assert predictor.vertical_speed_from_tables(aircraft) == pytest.approx(1400.0)
 
-    def test_full_mode_applies_user_supplied_mach_uncertainty(
+    def test_user_supplied_mach_uncertainty_is_applied(
         self, generate_simple_environment: Environment, full_mode_type_a_paths
     ):
         performance_profile_path, performance_uncertainty_path, synonym_map_path = full_mode_type_a_paths
