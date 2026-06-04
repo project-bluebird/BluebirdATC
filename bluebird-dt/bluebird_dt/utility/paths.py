@@ -1,9 +1,9 @@
-import importlib.resources
 import os
+from pathlib import Path
 
 import platformdirs
 
-ROOT_DIR = importlib.resources.files("bluebird_dt")
+ROOT_DIR = Path(__file__).resolve().parent.parent
 # We have the data in the bluebird_dt package itself.
 BASE_DATA_DIR = ROOT_DIR.joinpath("scenario_data")
 SPRINGFIELD_DIR: str = os.path.join(BASE_DATA_DIR, "Springfield")
