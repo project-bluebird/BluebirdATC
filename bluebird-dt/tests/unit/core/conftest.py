@@ -90,6 +90,10 @@ def make_random_heading() -> float:
     """Return a random heading between -180 and +180 to 2 decimal places"""
     return round(random.uniform(-180.00, 180.00), 2)
 
+def make_random_ground_track() -> float:
+    """Return a random ground track between -180 and +180 to 2 decimal places"""
+    return round(random.uniform(-180.00, 180.00), 2)
+
 def make_random_callsign() -> str:
     """Return a random callsign AIRXYZ where XYZ are digits"""
     return "AIR" + "".join(random.choice(string.digits) for _ in range(3))
@@ -337,8 +341,12 @@ def make_random_adjacent_volumes() -> tuple[Volume, Volume]:
     return volume_1, volume_2
 
 def make_random_rate_of_turn() -> float:
-    """Return a random float - range is pure guesswork"""
-    return round(random.uniform(10.00, 20.00), 2)
+    """Return a random rate of turn between 1 and 5 degrees per second"""
+    return round(random.uniform(1.00, 5.00), 2)
+
+def make_random_radius_of_turn() -> float:
+    """Return a random radius of turn between 5 and 15 nautical miles"""
+    return round(random.uniform(5.00, 15.00), 2)
 
 def make_random_coordination(callsign=None, the_datetime=None) -> Coordination:
     """Return a coordination object with random parameters"""
@@ -552,6 +560,12 @@ def make_action(kind: str) -> Action:
         value = make_random_heading()
     if kind == "heading_turn_segment":
         value = make_random_heading()
+    if kind == "track_segment":
+        value = make_random_ground_track()
+    if kind == "fixed_radius_turn":
+        value = (make_random_radius_of_turn(), make_random_ground_track())
+    if kind == "fixed_rate_turn":
+        value = (make_random_rate_of_turn(), make_random_heading())
     if kind == "message":
         value = make_random_message()
     agent = random.choice(["Smith", "Bond", "Powers", "J"])

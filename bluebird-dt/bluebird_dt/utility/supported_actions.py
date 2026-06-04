@@ -26,6 +26,9 @@ SUPPORTED_ACTIONS = {
         "route_turn_segment",
         "heading_segment",
         "heading_turn_segment",
+        "track_segment",
+        "fixed_radius_turn",
+        "fixed_rate_turn",
     ],
     "message": ["message"],
 }

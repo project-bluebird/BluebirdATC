@@ -162,6 +162,9 @@ class Action(Comparison):
             "route_turn_segment",
             "heading_segment",
             "heading_turn_segment",
+            "track_segment",
+            "fixed_rate_turn",
+            "fixed_radius_turn",
             "message",
             "change_heading_to_by_direction",
         ]:
@@ -179,6 +182,18 @@ class Action(Comparison):
             if not isinstance(value[1], str):
                 raise ValueError(f"Action value[1] must be a string for {self.kind}. Got {type(value[1])}.")
             self._value = value
+        if self.kind in ["fixed_rate_turn", "fixed_radius_turn"]:
+            # first, check if it is a string (from the clearance df) and convert it back to a tuple.
+            # the string should be of the form "(int/float, int/float)"
+            if isinstance(value, str):
+                value = ast.literal_eval(value)
+            if not isinstance(value, tuple):
+                raise ValueError(f"Action value must be a tuple for {self.kind}. Got {type(value)}.")
+            if not isinstance(value[0], int | float | np.integer | np.floating):
+                raise ValueError(f"Action value[0] must be an float or int for {self.kind}. Got {type(value[0])}.")
+            if not isinstance(value[1], int | float | np.integer | np.floating):
+                raise ValueError(f"Action value[1] must be a float or int for {self.kind}. Got {type(value[1])}.")
+            self._value = value
         elif self.kind in ["route_direct_to", "route_segment", "route_turn_segment"]:
             # allow single fix or list of fixes, and for route_direct_to value
             # to be a string representing a list
@@ -193,6 +208,9 @@ class Action(Comparison):
             self._value = int(float(value))  # accepts e.g "300.0" as input
         elif self.kind == "heading_segment" or self._kind == "heading_turn_segment":
             # system generated heading so allow for floating point headings
+            self._value = float(value)
+        elif self.kind == "track_segment":
+            # system generated ground track so allow for floating point headings
             self._value = float(value)
         elif self.kind == "maintain_current_heading":
             # value is irrelevant. Always set to zero for consistency
@@ -333,7 +351,7 @@ class Action(Comparison):
         kind = data["kind"]
         value = data["value"]
 
-        if "level_by_fix" in kind or kind == "change_heading_to_by_direction":
+        if "level_by_fix" in kind or kind in ["change_heading_to_by_direction", "fixed_rate_turn", "fixed_radius_turn"]:
             value = tuple(value)
 
         voice_representation: str | None = data.get("voice_representation", None)
