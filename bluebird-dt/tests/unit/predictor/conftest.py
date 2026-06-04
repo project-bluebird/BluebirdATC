@@ -32,6 +32,9 @@ def full_mode_type_a_paths(tmp_path) -> tuple[str, str, str]:
                 "cas_cl": {"sigma": 5.0, "minimum": None, "maximum": None, "norm_mean": 260.0},
                 "cas_cr": {"sigma": 5.0, "minimum": None, "maximum": None, "norm_mean": 270.0},
                 "cas_des": {"sigma": 5.0, "minimum": None, "maximum": None, "norm_mean": 250.0},
+                "mach_cl": {"sigma": 0.02, "minimum": 0.56, "maximum": 0.64, "norm_mean": 0.60},
+                "mach_cr": {"sigma": 0.02, "minimum": 0.61, "maximum": 0.69, "norm_mean": 0.65},
+                "mach_des": {"sigma": 0.02, "minimum": 0.56, "maximum": 0.64, "norm_mean": 0.60},
                 "rocd_cl": {"sigma": 100.0, "minimum": 500.0, "maximum": None, "norm_mean": 1400.0},
                 "rocd_des": {"sigma": 100.0, "minimum": 500.0, "maximum": None, "norm_mean": 1100.0},
             }
@@ -73,6 +76,9 @@ def full_mode_b753_paths(tmp_path) -> tuple[str, str, str]:
                 "cas_cl": {"sigma": 8.0, "minimum": None, "maximum": None, "norm_mean": 260.0},
                 "cas_cr": {"sigma": 8.0, "minimum": None, "maximum": None, "norm_mean": 280.0},
                 "cas_des": {"sigma": 8.0, "minimum": None, "maximum": None, "norm_mean": 270.0},
+                "mach_cl": {"sigma": 0.02, "minimum": 0.51, "maximum": 0.59, "norm_mean": 0.55},
+                "mach_cr": {"sigma": 0.02, "minimum": 0.54, "maximum": 0.62, "norm_mean": 0.58},
+                "mach_des": {"sigma": 0.02, "minimum": 0.50, "maximum": 0.58, "norm_mean": 0.54},
                 "rocd_cl": {"sigma": 120.0, "minimum": 500.0, "maximum": None, "norm_mean": 1900.0},
                 "rocd_des": {"sigma": 120.0, "minimum": 500.0, "maximum": None, "norm_mean": 1400.0},
             }

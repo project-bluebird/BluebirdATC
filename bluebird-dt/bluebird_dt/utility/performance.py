@@ -222,6 +222,19 @@ def cas_and_mach_from_table(
     else:
         mach = (1.0 - interp_weight) * mach_lo + interp_weight * mach_hi
 
+    if (
+        mach is not None
+        and percentile_rank_table is not None
+        and speed_uncertainty_table is not None
+        and mach_key in speed_uncertainty_table
+        and speed_uncertainty_table[mach_key] is not None
+    ):
+        percentile_rank = percentile_rank_table.get(mach_key)
+        if percentile_rank is None:
+            percentile_rank = percentile_rank_table.get(cas_key)
+
+        mach = apply_speed_uncertainty(mach, speed_uncertainty_table[mach_key], percentile_rank)
+
     return cas, mach
 
 

@@ -183,7 +183,8 @@ def test_data():
     cas_percentile_rank = random.uniform(0, 100.0)
     rocd_percentile_rank = random.uniform(0, 100.0)
     assert data["random_seed"] == random_seed
-    assert all(data["percentile_rank_dict"][key] == cas_percentile_rank for key in ["cas_des", "cas_cr", "cas_cl"])
+    lateral_keys = ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl"]
+    assert all(data["percentile_rank_dict"][key] == cas_percentile_rank for key in lateral_keys)
     assert all(data["percentile_rank_dict"][key] == rocd_percentile_rank for key in ["rocd_des", "rocd_cl"])
 
 
@@ -274,7 +275,8 @@ def test_randomise_performance():
     # Call randomise speed performance method and check
     a.randomise_performance(random_seed)
     assert a.random_seed == random_seed
-    assert all([a.percentile_rank_dict[key] == 62.29016948897019 for key in ["cas_des", "cas_cr", "cas_cl"]])
+    lateral_keys = ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl"]
+    assert all([a.percentile_rank_dict[key] == 62.29016948897019 for key in lateral_keys])
     assert all([a.percentile_rank_dict[key] == 74.17869892607294 for key in ["rocd_des", "rocd_cl"]])
 
     # De-randomise speed performance and check the performance characteristic values and
@@ -307,20 +309,21 @@ def test_set_performance():
     # Call setter method to only set CAS percentile rank, and check values as correctly set
     cas_pr = 20.0
     a.set_performance(cas_pr=cas_pr)
-    assert all([a.percentile_rank_dict[key] == cas_pr for key in ["cas_des", "cas_cr", "cas_cl"]])
+    lateral_keys = ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl"]
+    assert all([a.percentile_rank_dict[key] == cas_pr for key in lateral_keys])
     assert all([a.percentile_rank_dict[key] is None for key in ["rocd_des", "rocd_cl"]])
 
     # Call setter method to only set ROCD percentile rank, and check values as correctly set
     rocd_pr = 80.0
     a.set_performance(rocd_pr=rocd_pr)
-    assert all([a.percentile_rank_dict[key] is None for key in ["cas_des", "cas_cr", "cas_cl"]])
+    assert all([a.percentile_rank_dict[key] is None for key in lateral_keys])
     assert all([a.percentile_rank_dict[key] == rocd_pr for key in ["rocd_des", "rocd_cl"]])
 
     # Call setter method to set all percentile ranks, and check values as correctly set
     cas_pr = 95.0
     rocd_pr = 45.0
     a.set_performance(cas_pr=cas_pr, rocd_pr=rocd_pr)
-    assert all([a.percentile_rank_dict[key] == cas_pr for key in ["cas_des", "cas_cr", "cas_cl"]])
+    assert all([a.percentile_rank_dict[key] == cas_pr for key in lateral_keys])
     assert all([a.percentile_rank_dict[key] == rocd_pr for key in ["rocd_des", "rocd_cl"]])
 
     # Check an exception is raised when trying to use an invalid percentile rank

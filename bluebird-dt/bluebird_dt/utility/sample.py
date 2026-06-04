@@ -85,7 +85,7 @@ def apply_rocd_uncertainty(
 
 
 def apply_speed_uncertainty(
-    nominal_cas: float, speed_uncertainty: dict[str, float], percentile_rank: float | None
+    nominal_speed: float, speed_uncertainty: dict[str, float], percentile_rank: float | None
 ) -> float:
     sd = speed_uncertainty["sigma"]
 
@@ -95,7 +95,7 @@ def apply_speed_uncertainty(
         # Else apply shift to the observed minimum score since we are using the observed speed
         # distribution but with a mean/mode equal to the nominal speed value obtained from
         # the speed profile data (e.g. from BADA).
-        else nominal_cas - speed_uncertainty["norm_mean"] + speed_uncertainty["minimum"]
+        else nominal_speed - speed_uncertainty["norm_mean"] + speed_uncertainty["minimum"]
     )
 
     max_score = (
@@ -104,12 +104,12 @@ def apply_speed_uncertainty(
         # Else apply shift to the observed maximum score since we are using the observed speed
         # distribution but with a mean/mode equal to the nominal speed value obtained from
         # the speed profile data (e.g. from BADA).
-        else nominal_cas - speed_uncertainty["norm_mean"] + speed_uncertainty["maximum"]
+        else nominal_speed - speed_uncertainty["norm_mean"] + speed_uncertainty["maximum"]
     )
 
     return score_from_rank(
         percentile_rank,
-        nominal=nominal_cas,
+        nominal=nominal_speed,
         standard_deviation=sd,
         min_score=min_score,
         max_score=max_score,
