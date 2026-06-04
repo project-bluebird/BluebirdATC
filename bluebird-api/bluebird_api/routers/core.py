@@ -2,6 +2,7 @@ import typing
 from datetime import datetime, timezone
 
 import pandas as pd
+from bluebird_dt.core import WindField
 from bluebird_dt.events.event_logger import SimStartStop
 from bluebird_dt.simulator.common import list_sim_scenario_categories, list_sim_scenarios
 from fastapi import APIRouter
@@ -100,8 +101,6 @@ async def environment(  # noqa: ANN201
     """
     Get all of the environment data excluding wind fields.
     """
-    if RunnerStore.current_runner is None or runner.sim is None:
-        return {"exists": False}
     # HMI doesn't need to reload the environment again
     runner.sim.manager.reload_environment = False
 
@@ -113,26 +112,19 @@ async def environment(  # noqa: ANN201
 
 
 @core_router.get("/wind_field", tags=["State"])
-async def wind_field(runner: RunnerDep):  # noqa: ANN201
+async def wind_field(runner: RunnerDep) -> WindField | None:
     """
     Get the wind field data for current environment.
     """
-
-    wind_field = runner.sim.manager.environment.wind_field
-    return {"exists": True, "wind_field": wind_field.data() if wind_field is not None else None}
+    return runner.sim.manager.environment.wind_field
 
 
 @core_router.get("/forecast_wind_field", tags=["State"])
-async def forecast_wind_field(runner: RunnerDep):  # noqa: ANN201
+async def forecast_wind_field(runner: RunnerDep) -> WindField | None:  # noqa: ANN201
     """
     Get the forecast wind field data for current environment.
     """
-
-    forecast_wind_field = runner.sim.manager.environment.forecast_wind_field
-    return {
-        "exists": True,
-        "forecast_wind_field": (forecast_wind_field.data() if forecast_wind_field is not None else None),
-    }
+    return runner.sim.manager.environment.forecast_wind_field
 
 
 @core_router.get("/static_data", tags=["State"])

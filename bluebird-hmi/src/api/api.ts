@@ -45,6 +45,12 @@ const injectedRtkApi = api.injectEndpoints({
     windField: build.query<WindFieldApiResponse, WindFieldApiArg>({
       query: () => ({ url: `/wind_field` }),
     }),
+    forecastWindField: build.query<
+      ForecastWindFieldApiResponse,
+      ForecastWindFieldApiArg
+    >({
+      query: () => ({ url: `/forecast_wind_field` }),
+    }),
     staticData: build.query<StaticDataApiResponse, StaticDataApiArg>({
       query: () => ({ url: `/static_data` }),
     }),
@@ -137,8 +143,12 @@ export type EnvironmentApiArg = {
   noAirspace?: boolean;
   lastNObservations?: number;
 };
-export type WindFieldApiResponse = /** status 200 Successful Response */ any;
+export type WindFieldApiResponse =
+  /** status 200 Successful Response */ WindField | null;
 export type WindFieldApiArg = void;
+export type ForecastWindFieldApiResponse =
+  /** status 200 Successful Response */ WindField | null;
+export type ForecastWindFieldApiArg = void;
 export type StaticDataApiResponse = /** status 200 Successful Response */ any;
 export type StaticDataApiArg = void;
 export type DynamicDataApiResponse = /** status 200 Successful Response */ any;
@@ -340,12 +350,14 @@ export type Aircraft = {
   } | null;
 };
 export type WindField = {
-  u_comp: number[];
-  v_comp: number[];
-  pressure_array: number[];
-  lat_array: number[];
-  lon_array: number[];
+  u_comp: any[];
+  v_comp: any[];
+  pressure_array: any[];
+  lat_array: any[];
+  lon_array: any[];
   interpolation_method?: "trilinear" | "nearest" | "fl_interpolation";
+  wind_speed?: any[] | number | null;
+  wind_direction?: any[] | number | null;
 };
 export type Environment = {
   time: number;
@@ -399,6 +411,7 @@ export const {
   useStartMutation,
   useEnvironmentQuery,
   useWindFieldQuery,
+  useForecastWindFieldQuery,
   useStaticDataQuery,
   useDynamicDataQuery,
   useActionsMutation,
