@@ -554,6 +554,51 @@ def test_fl_interpolation_mode():
     assert wind_vector.v_comp == pytest.approx(expected_v, abs=1e-6)
 
 
+def test_fl_interpolation_requires_wind_speed_and_direction() -> None:
+    """
+    A WindField with interpolation_method='fl_interpolation' must carry both
+    wind_speed and wind_direction. Constructing or deserialising one without
+    them must raise a ValidationError.
+    """
+    common_kwargs = dict(
+        u_comp=np.zeros((2, 2, 2)),
+        v_comp=np.zeros((2, 2, 2)),
+        pressure_array=np.array([100.0, 200.0]),
+        lat_array=np.array([0.0, 1.0]),
+        lon_array=np.array([0.0, 1.0]),
+        interpolation_method="fl_interpolation",
+    )
+
+    # Both missing.
+    with pytest.raises(ValidationError):
+        WindField(**common_kwargs)
+
+    # Only wind_direction missing.
+    with pytest.raises(ValidationError):
+        WindField(**common_kwargs, wind_speed=[10.0, 20.0])
+
+    # Only wind_speed missing.
+    with pytest.raises(ValidationError):
+        WindField(**common_kwargs, wind_direction=[90.0, 180.0])
+
+    # Deserialisation path enforces the same invariant.
+    payload = {
+        "u_comp": np.zeros((2, 2, 2)).tolist(),
+        "v_comp": np.zeros((2, 2, 2)).tolist(),
+        "pressure_array": [100.0, 200.0],
+        "lat_array": [0.0, 1.0],
+        "lon_array": [0.0, 1.0],
+        "interpolation_method": "fl_interpolation",
+        "wind_speed": None,
+        "wind_direction": None,
+    }
+    with pytest.raises(ValidationError):
+        WindField.from_json(json.dumps(payload))
+
+    # Other interpolation methods are unaffected by the optional fields being missing.
+    WindField(**{**common_kwargs, "interpolation_method": "nearest"})
+
+
 def get_wind_vector_testing_implementation(
     pressure_levels,
     latitudes,

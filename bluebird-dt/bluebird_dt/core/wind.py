@@ -5,7 +5,7 @@ import typing
 
 import numpy as np
 import typing_extensions
-from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator, model_validator
 from typing_extensions import override
 
 from bluebird_dt.logger import logger
@@ -138,6 +138,14 @@ class WindField(BaseModel):
     @field_serializer("wind_speed", "wind_direction")
     def serialise_optional_ndarray(self, v: np.typing.NDArray[np.floating] | float | None) -> list | float | None:
         return None if v is None else (v.tolist() if isinstance(v, np.ndarray) else v)
+
+    @model_validator(mode="after")
+    def require_fl_interpolation_inputs(self) -> typing_extensions.Self:
+        if self.interpolation_method == "fl_interpolation" and (self.wind_speed is None or self.wind_direction is None):
+            raise ValueError(
+                "interpolation_method='fl_interpolation' requires both wind_speed and wind_direction to be provided"
+            )
+        return self
 
     @property
     def pressure_min(self) -> float:

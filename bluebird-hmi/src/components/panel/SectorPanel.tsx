@@ -99,11 +99,14 @@ export default function SectorPanel(props: SectorPanelProps) {
 
   const dispatch = useAppDispatch();
   const [sector, setSector] = useState<string[]>([]);
-  const { data, isError, isLoading, refetch } = useEnvironmentQuery(undefined, {
-    refetchOnMountOrArgChange: true,
-    refetchOnReconnect: true,
-    pollingInterval: 12000,
-  });
+  const { data, isError, isLoading, refetch } = useEnvironmentQuery(
+    {},
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnReconnect: true,
+      pollingInterval: 12000,
+    },
+  );
 
   const toggleSectors = useCallback(
     (individualSectors: string[]) => {
