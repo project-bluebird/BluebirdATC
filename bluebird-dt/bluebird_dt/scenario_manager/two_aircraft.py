@@ -3,6 +3,7 @@ import typing
 from datetime import datetime, timezone
 
 import numpy as np
+import typing_extensions
 from pydantic import BaseModel, Field
 from typing_extensions import override
 
@@ -25,13 +26,17 @@ class TwoAircraftScenarioManagerConfig(BaseModel):
     scenario_manager: typing.Literal["two_aircraft"] = Field(default="two_aircraft")
 
 
-TAircraft = typing.TypeVar("TAircraft", bound=Aircraft)
-TWindField = typing.TypeVar("TWindField", bound=WindField)
-TForecastWindField = typing.TypeVar("TForecastWindField", bound=WindField)
-TEnvironmentManager = typing.TypeVar("TEnvironmentManager", bound=EnvironmentManager[Aircraft, WindField, WindField])
-TEventHandler = typing.TypeVar("TEventHandler", bound=EventHandler[Aircraft])
-TEventLogger = typing.TypeVar("TEventLogger", bound=EventLogger)
-TSimulator = typing.TypeVar("TSimulator", bound=Simulator)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
+TEnvironmentManager = typing_extensions.TypeVar(
+    "TEnvironmentManager",
+    bound=EnvironmentManager[Aircraft, WindField, WindField],
+    default=EnvironmentManager[Aircraft, WindField, WindField],
+)
+TEventHandler = typing_extensions.TypeVar("TEventHandler", bound=EventHandler[Aircraft], default=EventHandler[Aircraft])
+TEventLogger = typing_extensions.TypeVar("TEventLogger", bound=EventLogger, default=EventLogger)
+TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator, default=Simulator)
 
 
 class TwoAircraft(
@@ -53,7 +58,7 @@ class TwoAircraft(
     total_time: float
     speed_range: list[float] | None
     scenario_type: typing.Literal["random", "overflier", "climber", "descender"]
-    env_manager_class: type[EnvironmentManager] | None
+    env_manager_class: type[TEnvironmentManager] | None
     start_time: int
     vertical_buffer_distance: float | int
     lateral_buffer_distance: float | int
@@ -262,7 +267,7 @@ class TwoAircraft(
             coordinations_rev = self.get_descender_coordination_FLs(overflier_fl, allowed_FLs)
         coordinations = [coordinations_fwd, coordinations_rev]
 
-        # create emtpy event handler
+        # create empty event handler
         event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
 
         for i in range(2):

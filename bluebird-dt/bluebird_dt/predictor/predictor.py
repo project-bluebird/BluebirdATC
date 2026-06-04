@@ -42,7 +42,7 @@ class Predictor(ABC):
         fix_proximity_threshold: float,
         fixes: Fixes | None,
         aircraft_mapping_path: str | None = None,
-        ignore_synonym_data: bool = False
+        ignore_synonym_data: bool = False,
     ):
         """
         Construct a new instance.
@@ -63,7 +63,8 @@ class Predictor(ABC):
             Fixes from the airspace that aircraft are flying in. If None, the predictor will not be able to predict
             the trajectory of on-route aircraft.
         aircraft_mapping_path: str | None
-            The path to an aircraft mapping file, either an aircraft type synonym data table or an aircraft weight mapping fallback
+            The path to an aircraft mapping file, either an aircraft type synonym data table or an aircraft weight
+            mapping fallback.
         ignore_synonym_data: bool
             Defaults to False but if True it tells this constructor to not read the aircraft_mapping_path file.
 
@@ -74,7 +75,8 @@ class Predictor(ABC):
         performance_data: dict
             A general dict object to hold aircraft performance data used in different predictors.
         synonym_data: dict
-            A map between an aircraft type and a key value used for performance data lookups (either aircraft synonym or a weight category).
+            A map between an aircraft type and a key value used for performance data lookups (either aircraft synonym
+            or a weight category).
         """
 
         if dt <= 0.0:

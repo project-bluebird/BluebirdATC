@@ -5,17 +5,25 @@ from bluebird_gymnasium.utils.types import PositionStatus
 
 
 @pytest.fixture
-def gym_env():
+def gym_env() -> SectorXEnv:
     """Sample environment instantiator for testing."""
 
     # default env config
     config = SectorXEnv.get_default_env_config()
     config.action_config = {
-        "simple_heading_left": [10,],
-        "simple_heading_right": [10,],
+        "simple_heading_left": [
+            10,
+        ],
+        "simple_heading_right": [
+            10,
+        ],
         "simple_heading_route_parallel": True,
-        "simple_fl_descent": [10,],
-        "simple_fl_climb": [10,],
+        "simple_fl_descent": [
+            10,
+        ],
+        "simple_fl_climb": [
+            10,
+        ],
         "simple_fl_intermediate": True,
         "simple_fl_exit": True,
         "simple_speed_increase": False,
@@ -36,14 +44,14 @@ def gym_env():
 
     # simulate a few steps forward before return
     # action 0 denotes no action taken to alter aircraft trajectory
-    action = 0  
+    action = 0
     num_steps = 100
     at_least_one_ac_in_sector = False
     for _ in range(num_steps):
         env.step(action)
 
         tracked_aircraft = env.get_tracked_aircraft_data()
-        for callsign, ac_data in tracked_aircraft.items():
+        for ac_data in tracked_aircraft.values():
             if ac_data.pos_status == PositionStatus.IN_SECTOR:
                 at_least_one_ac_in_sector = True
                 break

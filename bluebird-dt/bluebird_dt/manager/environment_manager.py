@@ -7,6 +7,7 @@ from typing import Generic, NamedTuple
 
 import numpy as np
 import pandas as pd
+import typing_extensions
 from pydantic import BaseModel
 
 import bluebird_dt.predictor
@@ -59,9 +60,9 @@ class CoordRequest(NamedTuple):
     coord: Coordination
 
 
-TAircraft = typing.TypeVar("TAircraft", bound=Aircraft)
-TWindField = typing.TypeVar("TWindField", bound=WindField)
-TForecastWindField = typing.TypeVar("TForecastWindField", bound=WindField)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
 
 
 class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
@@ -716,7 +717,7 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
         ----------
         bandboxed_sector_name: str
             Name of the bandboxed sector. Only aircraft which have this sector as their current sector
-            will be re-assigned ot individual sectors
+            will be re-assigned to individual sectors
         """
         # assign all aircraft in a bandboxed sector to the individual sector containing it
         # or else to the individual sector nearest to it
@@ -908,7 +909,7 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
             The event logger save EnvironmentManager parameters automatically but attributes of
             the Simulator class need to be explicitly added to the save log.
         save_csv: bool
-            A flag to determine if csv should be saved, deafult yes.
+            A flag to determine if csv should be saved, default yes.
 
         Returns
         -------
