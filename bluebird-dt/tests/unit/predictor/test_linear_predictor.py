@@ -605,16 +605,16 @@ class TestPredictorInSimpleMode:
             _, _ = predictor.speed_from_tables(aircraft)
 
     @pytest.mark.parametrize(
-        ("aircraft_type", "expected_cas"),
+        ("aircraft_type", "expected_cas", "expected_mach"),
         [
-            ("A320", 310.0),
-            ("B789", 320.0),
-            ("C172", 200.0),
-            ("A388", 320.0),
+            ("A320", 310.0, 0.63),
+            ("B789", 320.0, 0.67),
+            ("C172", 200.0, 0.30),
+            ("A388", 320.0, 0.67),
         ],
     )
-    def test_builtin_tables_used_with_mach_in_default_operation(
-        self, aircraft_type: str, expected_cas: float, generate_simple_environment: Environment
+    def test_builtin_simple_tables_return_cas_and_mach(
+        self, aircraft_type: str, expected_cas: float, expected_mach: float, generate_simple_environment: Environment
     ):
         predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
         aircraft = generate_simple_environment.aircraft["AIR1"]
@@ -628,7 +628,7 @@ class TestPredictorInSimpleMode:
         cas, mach = predictor.speed_from_tables(aircraft)
 
         assert cas == pytest.approx(expected_cas)
-        assert mach is not None
+        assert mach == pytest.approx(expected_mach)
 
     def test_simple_speed_uncertainty_applied_for_percentile_rank(
         self, generate_simple_environment: Environment
@@ -667,16 +667,16 @@ class TestPredictorInSimpleMode:
         assert mach == pytest.approx(apply_speed_uncertainty(0.63, mach_uncertainty, 75.0))
 
     @pytest.mark.parametrize(
-        ("aircraft_type", "expected_cas"),
+        ("aircraft_type", "expected_cas", "expected_mach"),
         [
-            ("A320", 310.0),
-            ("B789", 320.0),
-            ("C172", 200.0),
-            ("A388", 320.0),
+            ("A320", 310.0, 0.63),
+            ("B789", 320.0, 0.67),
+            ("C172", 200.0, 0.30),
+            ("A388", 320.0, 0.67),
         ],
     )
     def test_selected_cas_and_table_mach_use_transition_regime(
-        self, aircraft_type: str, expected_cas: float, generate_simple_environment: Environment
+        self, aircraft_type: str, expected_cas: float, expected_mach: float, generate_simple_environment: Environment
     ):
         predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
         aircraft = generate_simple_environment.aircraft["AIR1"]
@@ -692,8 +692,8 @@ class TestPredictorInSimpleMode:
         if predictor.is_aircraft_below_transition(aircraft):
             expected_tas = cas_to_tas(aircraft.fl, cas * KT_TO_MPS, 0.0) * MPS_TO_KT
         else:
-            assert mach is not None
-            expected_tas = mach_to_tas(aircraft.fl, mach, 0.0) * MPS_TO_KT
+            assert mach == pytest.approx(expected_mach)
+            expected_tas = mach_to_tas(aircraft.fl, expected_mach, 0.0) * MPS_TO_KT
 
         assert evolved.speed_tas == pytest.approx(expected_tas)
 
