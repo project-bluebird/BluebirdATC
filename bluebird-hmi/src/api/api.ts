@@ -33,26 +33,23 @@ const injectedRtkApi = api.injectEndpoints({
         method: "POST",
       }),
     }),
-    completeEnvironment: build.query<
-      CompleteEnvironmentApiResponse,
-      CompleteEnvironmentApiArg
-    >({
-      query: (queryArg) => ({
-        url: `/environment`,
-        // params: {
-        //   no_airspace: queryArg.noAirspace,
-        //   last_n_observations: queryArg.lastNObservations,
-        // },
-      }),
-    }),
     environment: build.query<EnvironmentApiResponse, EnvironmentApiArg>({
       query: (queryArg) => ({
-        url: `/environment/${queryArg.sectorId}`,
-        // params: {
-        //   no_airspace: queryArg.noAirspace,
-        //   last_n_observations: queryArg.lastNObservations,
-        // },
+        url: `/environment`,
+        params: {
+          no_airspace: queryArg.noAirspace,
+          last_n_observations: queryArg.lastNObservations,
+        },
       }),
+    }),
+    windField: build.query<WindFieldApiResponse, WindFieldApiArg>({
+      query: () => ({ url: `/wind_field` }),
+    }),
+    forecastWindField: build.query<
+      ForecastWindFieldApiResponse,
+      ForecastWindFieldApiArg
+    >({
+      query: () => ({ url: `/forecast_wind_field` }),
     }),
     staticData: build.query<StaticDataApiResponse, StaticDataApiArg>({
       query: () => ({ url: `/static_data` }),
@@ -100,6 +97,12 @@ const injectedRtkApi = api.injectEndpoints({
         method: "POST",
       }),
     }),
+    getSelectedAircraft: build.query<
+      GetSelectedAircraftApiResponse,
+      GetSelectedAircraftApiArg
+    >({
+      query: (queryArg) => ({ url: `/selected_aircraft/${queryArg.sectorId}` }),
+    }),
     load: build.mutation<LoadApiResponse, LoadApiArg>({
       query: (queryArg) => ({
         url: `/load/${queryArg.category}/${queryArg.scenarioName}`,
@@ -135,18 +138,17 @@ export type StartApiResponse = /** status 200 Successful Response */ boolean;
 export type StartApiArg = {
   tickFrequencyPeriod: number;
 };
-export type CompleteEnvironmentApiResponse =
-  /** status 200 Successful Response */ EnvironmentRead;
-export type CompleteEnvironmentApiArg = {
-  noAirspace?: boolean;
-  lastNObservations?: number;
-};
 export type EnvironmentApiResponse = /** status 200 Successful Response */ any;
 export type EnvironmentApiArg = {
-  sectorId: string | null;
   noAirspace?: boolean;
   lastNObservations?: number;
 };
+export type WindFieldApiResponse =
+  /** status 200 Successful Response */ WindField | null;
+export type WindFieldApiArg = void;
+export type ForecastWindFieldApiResponse =
+  /** status 200 Successful Response */ WindField | null;
+export type ForecastWindFieldApiArg = void;
 export type StaticDataApiResponse = /** status 200 Successful Response */ any;
 export type StaticDataApiArg = void;
 export type DynamicDataApiResponse = /** status 200 Successful Response */ any;
@@ -177,6 +179,13 @@ export type RewindApiResponse = /** status 200 Successful Response */ boolean;
 export type RewindApiArg = {
   newTime: string;
 };
+export type GetSelectedAircraftApiResponse =
+  /** status 200 Successful Response */ {
+    [key: string]: any;
+  };
+export type GetSelectedAircraftApiArg = {
+  sectorId: string;
+};
 export type LoadApiResponse = /** status 200 Successful Response */ boolean;
 export type LoadApiArg = {
   category: string;
@@ -186,6 +195,8 @@ export type ValidationError = {
   loc: (string | number)[];
   msg: string;
   type: string;
+  input?: any;
+  ctx?: object;
 };
 export type HttpValidationError = {
   detail?: ValidationError[];
@@ -339,12 +350,14 @@ export type Aircraft = {
   } | null;
 };
 export type WindField = {
-  u_comp: number[];
-  v_comp: number[];
-  pressure_array: number[];
-  lat_array: number[];
-  lon_array: number[];
+  u_comp: any[];
+  v_comp: any[];
+  pressure_array: any[];
+  lat_array: any[];
+  lon_array: any[];
   interpolation_method?: "trilinear" | "nearest" | "fl_interpolation";
+  wind_speed?: any[] | number | null;
+  wind_direction?: any[] | number | null;
 };
 export type Environment = {
   time: number;
@@ -396,8 +409,9 @@ export const {
   useCloseMutation,
   useEvolveMutation,
   useStartMutation,
-  useCompleteEnvironmentQuery,
   useEnvironmentQuery,
+  useWindFieldQuery,
+  useForecastWindFieldQuery,
   useStaticDataQuery,
   useDynamicDataQuery,
   useActionsMutation,
@@ -407,5 +421,6 @@ export const {
   useSetTickFrequencyMutation,
   usePauseMutation,
   useRewindMutation,
+  useGetSelectedAircraftQuery,
   useLoadMutation,
 } = injectedRtkApi;
