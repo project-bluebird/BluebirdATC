@@ -188,20 +188,20 @@ def cas_and_mach_from_table(
     else:
         cas = (1.0 - interp_weight) * cas_lo + interp_weight * cas_hi
 
-        # If percentile rank has been specified, use the uncertainty data to draw a speed score
-        # from the speed probability distribution.
-        if (
-            percentile_rank_table is not None
-            and cas_key in percentile_rank_table
-            and percentile_rank_table[cas_key] is not None
-            and speed_uncertainty_table is not None
-            and cas_key in speed_uncertainty_table
-            and speed_uncertainty_table[cas_key] is not None
-        ):
-            speed_uncertainty = speed_uncertainty_table[cas_key]
-            percentile_rank = percentile_rank_table[cas_key]
+    # If percentile rank has been specified, use the uncertainty data to draw a speed score
+    # from the speed probability distribution.
+    if (
+        percentile_rank_table is not None
+        and cas_key in percentile_rank_table
+        and percentile_rank_table[cas_key] is not None
+        and speed_uncertainty_table is not None
+        and cas_key in speed_uncertainty_table
+        and speed_uncertainty_table[cas_key] is not None
+    ):
+        speed_uncertainty = speed_uncertainty_table[cas_key]
+        percentile_rank = percentile_rank_table[cas_key]
 
-            cas = apply_speed_uncertainty(cas, speed_uncertainty, percentile_rank)
+        cas = apply_speed_uncertainty(cas, speed_uncertainty, percentile_rank)
 
     # same edge cases as for cas
     if mach_lo is None and mach_hi is not None:
@@ -233,7 +233,8 @@ def cas_and_mach_from_table(
         if percentile_rank is None:
             percentile_rank = percentile_rank_table.get(cas_key)
 
-        mach = apply_speed_uncertainty(mach, speed_uncertainty_table[mach_key], percentile_rank)
+        if percentile_rank is not None:
+            mach = apply_speed_uncertainty(mach, speed_uncertainty_table[mach_key], percentile_rank)
 
     return cas, mach
 
