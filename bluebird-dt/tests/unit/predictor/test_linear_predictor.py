@@ -21,22 +21,22 @@ from bluebird_dt.utility.convert import (
 from bluebird_dt.utility.sample import apply_speed_uncertainty
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
 
-class TestPredictorInFullMode:
-    def test_initialisation_flags(self, build_full_mode_predictor):
-        predictor = build_full_mode_predictor()
+class TestPredictorWithUserSuppliedPerformanceData:
+    def test_initialisation_flags(self, build_linear_predictor_with_user_supplied_performance_data):
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
         assert predictor.use_cas_as_tas is False
         assert predictor.use_turn_model is True
 
-        predictor_2 = build_full_mode_predictor(use_cas_as_tas=True, use_turn_model=False)
+        predictor_2 = build_linear_predictor_with_user_supplied_performance_data(use_cas_as_tas=True, use_turn_model=False)
         assert predictor_2.use_cas_as_tas is True
         assert predictor_2.use_turn_model is False
 
     @pytest.mark.parametrize("callsign, fix_name", [("AIR0", "EARTH"), ("AIR1", "AIR")])
-    def test_get_target_pos(self, callsign: str, fix_name: str, generate_simple_environment: Environment, build_full_mode_predictor):
+    def test_get_target_pos(self, callsign: str, fix_name: str, generate_simple_environment: Environment, build_linear_predictor_with_user_supplied_performance_data):
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
         selected_aircraft = environment.aircraft[callsign]
-        predictor = build_full_mode_predictor()
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
 
         _ = predictor.predict_aircraft(selected_aircraft, 1.0, environment_time=environment.time)
         pos = predictor.get_target_pos(selected_aircraft)
@@ -61,11 +61,11 @@ class TestPredictorInFullMode:
         cleared_heading: float | None,
         check_heading: float,
         generate_simple_environment: Environment,
-        build_full_mode_predictor,
+        build_linear_predictor_with_user_supplied_performance_data,
     ):
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
-        predictor = build_full_mode_predictor()
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
 
         aircraft = environment.aircraft[callsign]
         aircraft.rate_of_turn = 1.5
@@ -100,10 +100,10 @@ class TestPredictorInFullMode:
         cleared_cas: float | None,
         cleared_mach: float | None,
         generate_simple_environment: Environment,
-        build_full_mode_predictor,
+        build_linear_predictor_with_user_supplied_performance_data,
     ):
         environment = generate_simple_environment
-        predictor = build_full_mode_predictor()
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
         aircraft = environment.aircraft[callsign]
         aircraft.aircraft_type = "B753"
         aircraft.fl = 140.0
@@ -128,9 +128,9 @@ class TestPredictorInFullMode:
         selected_fl: float,
         expected_state: FlightState,
         generate_simple_environment: Environment,
-        build_full_mode_predictor,
+        build_linear_predictor_with_user_supplied_performance_data,
     ):
-        predictor = build_full_mode_predictor()
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
         aircraft = generate_simple_environment.aircraft["AIR1"]
         aircraft.aircraft_type = "B753"
         aircraft.fl = 200.0
@@ -148,10 +148,10 @@ class TestPredictorInFullMode:
 
     @pytest.mark.parametrize("action_value", [180.0, 250.0, 340.0])
     def test_update_cas_as_tas_speeds(
-        self, action_value: float, generate_simple_environment: Environment, build_full_mode_predictor
+        self, action_value: float, generate_simple_environment: Environment, build_linear_predictor_with_user_supplied_performance_data
     ):
         environment = generate_simple_environment
-        predictor = build_full_mode_predictor(use_cas_as_tas=True)
+        predictor = build_linear_predictor_with_user_supplied_performance_data(use_cas_as_tas=True)
         aircraft = environment.aircraft["AIR0"]
         pilot = aircraft.pilot
 
@@ -185,7 +185,7 @@ class TestPredictorInFullMode:
         initial_cas_check: None,
         initial_mach_check: None,
         generate_simple_environment: Environment,
-        build_full_mode_predictor,
+        build_linear_predictor_with_user_supplied_performance_data,
     ):
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
@@ -197,7 +197,7 @@ class TestPredictorInFullMode:
         assert aircraft.speed_tas == pytest.approx(initial_tas_to_check)
         assert aircraft.vertical_speed == pytest.approx(0.0)
 
-        predictor = build_full_mode_predictor()
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
         _ = predictor.predict_aircraft(aircraft, 1.0, environment_time=environment.time)
 
         action = Action(callsign, action_kind, action_value)
@@ -239,11 +239,11 @@ class TestPredictorInFullMode:
         vspeed: float,
         change_fl: float,
         generate_simple_environment: Environment,
-        build_full_mode_predictor,
+        build_linear_predictor_with_user_supplied_performance_data,
     ):
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
-        predictor = build_full_mode_predictor()
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
 
         aircraft = environment.aircraft[callsign]
         pilot = aircraft.pilot
@@ -286,11 +286,11 @@ class TestPredictorInFullMode:
         action_kind: str,
         action_value: float | str,
         generate_simple_environment: Environment,
-        build_full_mode_predictor,
+        build_linear_predictor_with_user_supplied_performance_data,
     ):
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
-        predictor = build_full_mode_predictor(use_turn_model=turn_model_flag)
+        predictor = build_linear_predictor_with_user_supplied_performance_data(use_turn_model=turn_model_flag)
         aircraft = environment.aircraft[callsign]
         pilot = aircraft.pilot
 
@@ -312,11 +312,11 @@ class TestPredictorInFullMode:
         action_kind: str,
         action_value: tuple[int, str],
         generate_simple_environment: Environment,
-        build_full_mode_predictor,
+        build_linear_predictor_with_user_supplied_performance_data,
     ):
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
-        predictor = build_full_mode_predictor()
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
         aircraft = environment.aircraft[callsign]
         pilot = aircraft.pilot
 
@@ -351,11 +351,11 @@ class TestPredictorInFullMode:
         check_cleared_fl: float,
         n_step: float,
         generate_simple_environment: Environment,
-        build_full_mode_predictor,
+        build_linear_predictor_with_user_supplied_performance_data,
     ):
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
-        predictor = build_full_mode_predictor()
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
         aircraft = environment.aircraft[callsign]
         pilot = aircraft.pilot
 
@@ -391,13 +391,13 @@ class TestPredictorInFullMode:
         else:
             assert predictor_aircraft.fl == pytest.approx(start_fl)
 
-    def test_predict_aircraft(self, generate_simple_environment: Environment, build_full_mode_predictor):
+    def test_predict_aircraft(self, generate_simple_environment: Environment, build_linear_predictor_with_user_supplied_performance_data):
         dt = random.choice([1.0, 3.0, 5.0])
         n_step = random.choice([15, 30, 45])
 
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
-        predictor = build_full_mode_predictor(dt=dt)
+        predictor = build_linear_predictor_with_user_supplied_performance_data(dt=dt)
         aircraft = environment.aircraft["AIR0"]
         pilot = aircraft.pilot
         start_pos = aircraft.pos2d()
@@ -438,11 +438,11 @@ class TestPredictorInFullMode:
         next_fix_index: int | None,
         on_route: bool,
         generate_simple_environment: Environment,
-        build_full_mode_predictor,
+        build_linear_predictor_with_user_supplied_performance_data,
     ):
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
-        predictor = build_full_mode_predictor(dt=delta_t, fix_proximity_threshold=2.0)
+        predictor = build_linear_predictor_with_user_supplied_performance_data(dt=delta_t, fix_proximity_threshold=2.0)
 
         selected_aircraft = environment.aircraft[callsign]
         pilot = selected_aircraft.pilot
@@ -454,8 +454,8 @@ class TestPredictorInFullMode:
         assert predictor_aircraft.next_fix_index == next_fix_index
         assert predictor_aircraft.on_route == on_route
 
-    def test_speed_from_tables(self, generate_simple_environment: Environment, build_full_mode_predictor):
-        predictor = build_full_mode_predictor()
+    def test_speed_from_tables(self, generate_simple_environment: Environment, build_linear_predictor_with_user_supplied_performance_data):
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
         aircraft = generate_simple_environment.aircraft["AIR0"]
         aircraft.aircraft_type = "B753"
 
@@ -471,8 +471,8 @@ class TestPredictorInFullMode:
         assert cas_hi >= cas
         assert mach_hi >= mach
 
-    def test_vertical_speed_from_tables(self, generate_simple_environment: Environment, build_full_mode_predictor):
-        predictor = build_full_mode_predictor()
+    def test_vertical_speed_from_tables(self, generate_simple_environment: Environment, build_linear_predictor_with_user_supplied_performance_data):
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
         aircraft = generate_simple_environment.aircraft["AIR0"]
         aircraft.aircraft_type = "B753"
 
@@ -484,10 +484,10 @@ class TestPredictorInFullMode:
         assert vs_climb > 0.0
         assert vs_des < 0.0
 
-    def test_predict_trajectory_distances(self, generate_simple_environment: Environment, build_full_mode_predictor):
+    def test_predict_trajectory_distances(self, generate_simple_environment: Environment, build_linear_predictor_with_user_supplied_performance_data):
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
-        predictor = build_full_mode_predictor()
+        predictor = build_linear_predictor_with_user_supplied_performance_data()
         aircraft = environment.aircraft["AIR1"]
         n_step = 15.0
 
@@ -521,10 +521,10 @@ class TestPredictorInFullMode:
             distance = current_cp.pos3d().distance(next_cp.pos3d())
             assert distance == pytest.approx(current_groundspeed * (dt / 3600), rel=5e-2)
 
-    def test_predict_trajectory_alignment(self, generate_simple_environment: Environment, build_full_mode_predictor):
+    def test_predict_trajectory_alignment(self, generate_simple_environment: Environment, build_linear_predictor_with_user_supplied_performance_data):
         environment = generate_simple_environment
         environment.wind_field = WindField.uniform(wind_speed=30.0, wind_direction=60.0)
-        predictor = build_full_mode_predictor(dt=2.0)
+        predictor = build_linear_predictor_with_user_supplied_performance_data(dt=2.0)
         aircraft = environment.aircraft["AIR0"]
 
         for new_time in [0.5, 1.0, 1.5]:
@@ -538,10 +538,10 @@ class TestPredictorInFullMode:
         traj_times = np.array([cp.time for cp in traj])
         assert np.array_equal(traj_times, np.array([1.5, 3.5, 5.5, 7.5, 9.5]))
 
-    def test_full_mode_uses_user_supplied_data_files(
-        self, generate_simple_environment: Environment, full_mode_type_a_paths
+    def test_speed_from_tables(
+        self, generate_simple_environment: Environment, type_a_performance_files
     ):
-        performance_profile_path, performance_uncertainty_path, synonym_map_path = full_mode_type_a_paths
+        performance_profile_path, performance_uncertainty_path, synonym_map_path = type_a_performance_files
         predictor = LinearPredictor(
             1.0,
             2.0,
@@ -566,9 +566,9 @@ class TestPredictorInFullMode:
         assert predictor.vertical_speed_from_tables(aircraft) == pytest.approx(1400.0)
 
     def test_user_supplied_mach_uncertainty_is_applied(
-        self, generate_simple_environment: Environment, full_mode_type_a_paths
+        self, generate_simple_environment: Environment, type_a_performance_files
     ):
-        performance_profile_path, performance_uncertainty_path, synonym_map_path = full_mode_type_a_paths
+        performance_profile_path, performance_uncertainty_path, synonym_map_path = type_a_performance_files
         predictor = LinearPredictor(
             1.0,
             2.0,
@@ -590,7 +590,7 @@ class TestPredictorInFullMode:
         assert cas == pytest.approx(273.3724487509804)
         assert mach == pytest.approx(0.6627822382174254)
 
-class TestPredictorInSimpleMode:
+class TestPredictorUsingFallbackFiles:
     def test_unknown_aircraft_type_raises(self, generate_simple_environment: Environment):
         predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
         aircraft = generate_simple_environment.aircraft["AIR1"]
@@ -613,7 +613,7 @@ class TestPredictorInSimpleMode:
             ("A388", 320.0, 0.67),
         ],
     )
-    def test_builtin_simple_tables_return_cas_and_mach(
+    def test_speed_from_tables(
         self, aircraft_type: str, expected_cas: float, expected_mach: float, generate_simple_environment: Environment
     ):
         predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)

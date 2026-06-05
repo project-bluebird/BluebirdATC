@@ -6,7 +6,7 @@ from bluebird_dt.predictor import LinearPredictor
 
 
 @pytest.fixture
-def full_mode_type_a_paths(tmp_path) -> tuple[str, str, str]:
+def type_a_performance_files(tmp_path) -> tuple[str, str, str]:
     performance_profile_path = tmp_path / "performance_profile.json"
     performance_uncertainty_path = tmp_path / "performance_uncertainty.json"
     synonym_map_path = tmp_path / "synonyms.json"
@@ -50,7 +50,7 @@ def full_mode_type_a_paths(tmp_path) -> tuple[str, str, str]:
 
 
 @pytest.fixture
-def full_mode_b753_paths(tmp_path) -> tuple[str, str, str]:
+def b753_performance_files(tmp_path) -> tuple[str, str, str]:
     speed_profile_path = tmp_path / "speed_profile_legacy.json"
     speed_uncertainty_path = tmp_path / "speed_uncertainty_legacy.json"
     synonym_map_path = tmp_path / "synonyms_legacy.json"
@@ -94,8 +94,8 @@ def full_mode_b753_paths(tmp_path) -> tuple[str, str, str]:
 
 
 @pytest.fixture
-def build_full_mode_predictor(generate_simple_environment, full_mode_b753_paths):
-    performance_profile_path, performance_uncertainty_path, synonym_map_path = full_mode_b753_paths
+def build_linear_predictor_with_user_supplied_performance_data(generate_simple_environment, b753_performance_files):
+    performance_profile_path, performance_uncertainty_path, synonym_map_path = b753_performance_files
 
     def _build(dt: float = 1.0, fix_proximity_threshold: float = 2.0, **kwargs) -> LinearPredictor:
         return LinearPredictor(
