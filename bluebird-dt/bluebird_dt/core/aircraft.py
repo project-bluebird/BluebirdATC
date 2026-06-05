@@ -875,7 +875,7 @@ class Aircraft(Comparison):
             # set random seed of random generator
             random.seed(self.random_seed)
 
-            # Select a CAS percentile rank
+            # Select a lateral speed percentile rank, shared by the CAS and Mach speeds
             cas_percentile_rank = random.uniform(0, 100.0)
             for key in ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl"]:
                 self.percentile_rank_dict[key] = cas_percentile_rank

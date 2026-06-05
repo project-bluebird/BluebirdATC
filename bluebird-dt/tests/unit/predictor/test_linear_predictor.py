@@ -538,7 +538,7 @@ class TestPredictorWithUserSuppliedPerformanceData:
         traj_times = np.array([cp.time for cp in traj])
         assert np.array_equal(traj_times, np.array([1.5, 3.5, 5.5, 7.5, 9.5]))
 
-    def test_speed_from_tables(
+    def test_speed_from_tables_user_supplied_files(
         self, generate_simple_environment: Environment, type_a_performance_files
     ):
         performance_profile_path, performance_uncertainty_path, synonym_map_path = type_a_performance_files
