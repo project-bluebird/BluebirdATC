@@ -1084,12 +1084,12 @@ class EventLogger:
 
         self.radar_log = [log for log in self.radar_log if not comp(log["datetime"], comparison_datetime)]
         self.clearances_log = [log for log in self.clearances_log if not comp(log["datetime"], comparison_datetime)]
-        self.sectors_log = [log for log in self.sectors_log if not comp(log["datetime"], comparison_datetime)]
-        self.incomm_log = [log for log in self.incomm_log if not comp(log["datetime"], comparison_datetime)]
-        self.coordination_log = [log for log in self.coordination_log if not comp(log["datetime"], comparison_datetime)]
-        self.aircraft_internals_log = [
-            log for log in self.aircraft_internals_log if not comp(log["datetime"], comparison_datetime)
-        ]
+        # self.sectors_log = [log for log in self.sectors_log if not comp(log["datetime"], comparison_datetime)]
+        # self.incomm_log = [log for log in self.incomm_log if not comp(log["datetime"], comparison_datetime)]
+        # self.coordination_log = [log for log in self.coordination_log if not comp(log["datetime"], comparison_datetime)]
+        # self.aircraft_internals_log = [
+        #    log for log in self.aircraft_internals_log if not comp(log["datetime"], comparison_datetime)
+        # ]
         #        self.strips_log = [log for log in self.strips_log if not comp(log["datetime"], comparison_datetime)]
 
         return self
