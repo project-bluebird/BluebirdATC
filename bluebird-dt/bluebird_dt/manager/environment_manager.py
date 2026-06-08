@@ -414,49 +414,6 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
 
             self.environment.airspace.fixes.visibility[fix] = within_penumbra and should_be_visible
 
-    def observe(
-        self,
-        sector_name: str | None = None,  # noqa: ARG002
-        local_fixes: bool = False,
-    ) -> Environment[TAircraft, TWindField, TForecastWindField]:
-        """
-        Get the current state of the observable Environment (Airspace or a Sector).
-        Note that there might be Aircraft in the Environment that are not observable.
-        To access full environment with everything, use `self.environment`.
-
-        Parameters
-        ----------
-        sector_name: str, optional
-            Name of Sector to return current state of. If not provided, returns
-            state of the entire Airspace.
-        local_fixes: bool, default False
-            Limit the returned environment's airspace to only include fixes that are within its penumbra.
-
-        Returns
-        ----------
-        Environment
-            The simulation environment
-        """
-
-        start_time = self.environment.start_time
-
-        if local_fixes:
-            sector_names = list(self.environment.airspace.sectors)
-            airspace = self.get_sector_airspace(sector_names, local_fixes)
-        else:
-            airspace = self.environment.airspace
-
-        # make sure we keep the original start_time
-        env = self.typeof_environment()(
-            time=self.environment.time,
-            airspace=airspace,
-            aircraft=self.environment.aircraft,
-            coordinations=self.environment.coordinations.values(),
-        )
-        env.start_time = start_time
-
-        return env
-
     def _evolve_simulated_aircraft(self, step_time: float):
         """
         Evolve the simulated aircraft by a specified amount of time.
