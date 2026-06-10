@@ -199,14 +199,14 @@ def expeditious_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> f
     else:
         curr_dist = ac_tracked_state.track_dist_to_exit_cr
         prev_dist = prev_ac_tracked_state.track_dist_to_exit_cr
-        dist_diff = curr_dist - prev_dist
+        distance_improvement = prev_dist - curr_dist
 
-        if dist_diff < 0:
+        if distance_improvement > 0:
             # clip difference to a minimum of -1.0
-            dist_diff = max(dist_diff, -DIFF_THRESHOLD)
+            distance_improvement = min(distance_improvement, DIFF_THRESHOLD)
 
-            # the closer `dist_diff` is to -1.0, the higher the reward
-            reward = np.exp(dist_diff + DIFF_THRESHOLD)
+            # the closer `distance_improvement` is to 1.0, the higher the reward
+            reward = np.exp(distance_improvement - DIFF_THRESHOLD)
 
             # scale the reward based on the aircraft's speed. (i.e., it is
             # more impressive for an aircraft with a slower speed to travel
