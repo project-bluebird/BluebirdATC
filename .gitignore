@@ -175,6 +175,9 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
+# mutmut mutation-testing working directory (generated source copy + state)
+mutants/
+
 # PyPI configuration file
 .pypirc
 
