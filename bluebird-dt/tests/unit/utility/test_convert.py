@@ -1,3 +1,6 @@
+import os
+import time
+
 import pytest
 
 from bluebird_dt.core.wind import WindVector
@@ -11,6 +14,27 @@ def test_time_str() -> None:
     assert convert.string_to_timestamp("1970-01-01T00:00:02") == 2.0
     assert convert.string_to_timestamp("1980-03-24T12:50:33") == 322750233.0
     assert convert.string_to_timestamp("2023-01-01T03:12:44.456772") == 1672542764.456772
+
+
+def test_string_to_timestamp_assumes_utc() -> None:
+    """
+    Naive ISO strings (with no timezone offset) must be interpreted as UTC, regardless
+    of the host's local timezone. Forcing a non-UTC TZ guards the explicit
+    ``tzinfo=timezone.utc`` in the implementation: a naive-local interpretation would
+    give a different epoch.
+    """
+    original_tz = os.environ.get("TZ")
+    try:
+        os.environ["TZ"] = "America/New_York"
+        time.tzset()
+        assert convert.string_to_timestamp("1970-01-01T00:00:00") == 0.0
+        assert convert.string_to_timestamp("2023-01-01T03:12:44.456772") == 1672542764.456772
+    finally:
+        if original_tz is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = original_tz
+        time.tzset()
 
 
 def test_pressure_from_fl() -> None:
@@ -149,6 +173,17 @@ def test_ground_speed_from_tas(
     ) == pytest.approx((ground_speed, ground_track_angle))
 
 
+def test_ground_speed_from_tas_no_wind() -> None:
+    """
+    With no wind, ground speed equals horizontal TAS and ground track angle equals heading.
+    """
+    ground_speed, ground_track_angle = convert.ground_speed_from_tas(
+        horizontal_tas=240.0, heading=123.0, wind_vector=None
+    )
+    assert ground_speed == pytest.approx(240.0)
+    assert ground_track_angle == pytest.approx(123.0)
+
+
 @pytest.mark.parametrize(
     ("ground_track_angle", "horizontal_tas", "wind_speed_kts", "wind_direction", "heading"),
     [
@@ -170,3 +205,43 @@ def test_heading_from_ground_track(
     assert convert.heading_from_ground_track(
         ground_track_angle=ground_track_angle, horizontal_tas=horizontal_tas, wind_vector=wind_vector
     ) == pytest.approx(heading)
+
+
+def test_heading_from_ground_track_no_wind() -> None:
+    """
+    With no wind, the required heading equals the requested ground track angle.
+    """
+    assert convert.heading_from_ground_track(
+        ground_track_angle=123.0, horizontal_tas=240.0, wind_vector=None
+    ) == pytest.approx(123.0)
+
+
+def test_heading_from_ground_track_wind_too_large() -> None:
+    """
+    When the wind is too strong to achieve the requested ground track angle, the
+    aircraft flies directly into the wind (heading equals the direction the wind is
+    coming from). Here a 150 m/s wind against 240 kt TAS makes the correction angle
+    unachievable (|sin(correction_angle)| > 1).
+    """
+    wind_vector = WindVector.from_polar(wind_speed=150.0, wind_direction=270.0)
+    assert convert.heading_from_ground_track(
+        ground_track_angle=0.0, horizontal_tas=240.0, wind_vector=wind_vector
+    ) == pytest.approx(wind_vector.direction_wind_from)
+
+def test_heading_from_ground_track_at_correction_limit() -> None:
+    """
+    At the boundary where the crosswind component exactly equals the TAS, the correction
+    angle is exactly +/-90 degrees and the ground track is *still achievable* -- so the
+    strict ``> 1.0`` guard must NOT fall back to flying into the wind.
+
+    Ground track due north with an eastward crosswind equal to the TAS requires a heading
+    of due west (270), cancelling the crosswind, regardless of the (along-track) northward
+    wind component. A non-zero northward component is included specifically so the result
+    differs from ``direction_wind_from`` (which the fallback branch would return).
+    """
+    tas = 240.0
+    component = tas * convert.KT_TO_MPS  # eastward crosswind == |TAS| => |sin(correction)| == 1 exactly
+    wind_vector = WindVector(u_comp=component, v_comp=component)
+    assert convert.heading_from_ground_track(
+        ground_track_angle=0.0, horizontal_tas=tas, wind_vector=wind_vector
+    ) == pytest.approx(270.0)
