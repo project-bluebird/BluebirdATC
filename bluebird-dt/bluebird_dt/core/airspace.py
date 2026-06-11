@@ -813,18 +813,21 @@ class Airspace(Comparison):
         # remove fixes we do not have the location of
         route = [fix for fix in route if fix in places]
 
+        # filter route fixes to next on route fix given aircraft position
+        # remove fixes that the aircraft has already passed
+        next_fix = self.closest_forward_fix(aircraft, 0.0, route)
+        next_fix_index = route.index(next_fix)
+
         # pos2D locations of the aircraft's position and each route fix
-        # NOTE: this assumes that the aircraft is yet to fly the full route
-        # if aircraft is already on route, the first window might be wrong
-        # TODO: filter route fixes to next on route fix given aircraft position
-        point_locations = [aircraft.pos2d(), *[places[fix] for fix in route]]
+        point_locations = [places[fix] for fix in route]
+
+        # insert the aircraft position in the correct position relative to the next fix.
+        point_locations.insert(next_fix_index, aircraft.pos2d())
+        route.insert(next_fix_index, "START_LOC")
 
         # find out which fixes on the route are in or out of the sector laterally
         # do not use any buffer around boundary - it's fine if fixes aren't exactly on it
         point_in_sector = [airspace.contains_laterally(location, epsilon=0) for location in point_locations]
-
-        # name the initial  position of the aircraft in the route
-        route = ["START_LOC", *route]
 
         # we need to go through each consecutive pair of fixes on the route
         # and find which ones cross the sector boundary
