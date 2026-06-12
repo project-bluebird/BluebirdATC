@@ -808,6 +808,8 @@ class Simulator:
 
         sim_config = self.config()
 
+        # Guard against the unlikely event that autosave true but save_logs_to_file is false
+        os.makedirs(LOG_DIR, exist_ok=True)
         with open(os.path.join(LOG_DIR, self.manager.event_logger.log_name + ".tar.gz"), "wb") as tar:
             tar.write(self.manager.write_logs_to_buffer(sim_config).getvalue())
             logger.info(f"Log saved to {self.manager.event_logger.log_name + '.tar.gz'}")
