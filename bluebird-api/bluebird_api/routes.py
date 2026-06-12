@@ -1,5 +1,5 @@
 """
-The routes module builds the router for the proided endpoint and adds any endpoints only available for
+The routes module builds the router for the provided endpoint and adds any endpoints only available for
 BluebirdATC, including loading which is implementation dependent.
 """
 
@@ -16,7 +16,7 @@ from .routers import (
 )
 
 
-async def simulator(request: Request):
+async def simulator(request: Request) -> None:
     """
     The simulator dependency, available to endpoints using the RunnerDep dependency, provides access to the runner.
     """
@@ -24,7 +24,7 @@ async def simulator(request: Request):
     request.state.runner = RunnerStore.current_runner
 
 
-router = APIRouter(dependencies=[Depends(simulator)])
+router: APIRouter = APIRouter(dependencies=[Depends(simulator)])
 
 router.include_router(core_router)
 
@@ -41,7 +41,7 @@ async def load(category: str, scenario_name: str) -> bool:  # noqa: ARG001
     RunnerStore.current_runner = Runner(category, scenario_name)
 
     # start the task
-    task = asyncio.create_task(RunnerStore.current_runner.run_main())
+    task: asyncio.Task = asyncio.create_task(RunnerStore.current_runner.run_main())
 
     # add the task to the background tasks set and have it auto-remove its reference from the set when done
     background_tasks.add(task)
