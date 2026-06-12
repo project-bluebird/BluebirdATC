@@ -156,12 +156,13 @@ class Simulator:
         """
         The location of the base logfile directory can be overridden by derived classes.
         """
-        os.makedirs(os.path.join(LOG_DIR, self.log_filename), exist_ok=True)
-        self.logging_file_handler = logging.FileHandler(
-            os.path.join(LOG_DIR, self.log_filename, self.log_filename + ".log")
-        )
+        log_dir = os.path.join(LOG_DIR, self.log_filename)
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, self.log_filename + ".log")
+        self.logging_file_handler = logging.FileHandler(log_file)
         self.logging_file_handler.setFormatter(CustomFormatter())
         logger.addHandler(self.logging_file_handler)
+        logger.info(f"Saving logs to {log_dir}")
 
     @classmethod
     def from_category(
