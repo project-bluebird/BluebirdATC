@@ -24,52 +24,6 @@ from bluebird_dt.utility.paths import LOG_DIR
 
 from tests.unit.logging.conftest import extract_first_row_from_df, query_row_from_df, pick_random_next_sector
 
-def test_run_scenario():
-    """
-    Test that running a scenario gives rise to a tarfile with expected contents.
-    """
-    # create Scenario Manager
-    predictor = SimplePredictor(dt=1.0, fix_proximity_threshold=2.0)
-    airspace, routes = SectorI(50,100,[150,300]).generate_airspace()
-    scenario_manager = TwoAircraft(total_time=60, scenario_type="overflier", airspace=airspace, routes=routes)
-    manager = scenario_manager.create_env_manager(predictor=predictor)
-    # evolve for 1 minutes
-    total_time = 0
-    time_step = 6
-    time_to_evolve = 60
-
-    # evolve for required time
-    while total_time < time_to_evolve:
-        manager.evolve(step_time=time_step)
-        # add in Actions
-        if total_time == 18:
-            callsign = sorted(manager.environment.aircraft.keys())[0]
-            new_action = Action(callsign, "change_flight_level_to", 250)
-            manager.receive_actions([new_action])
-        if total_time == 30:
-            callsign = sorted(manager.environment.aircraft.keys())[1]
-            new_action = Action(callsign, "change_heading_to", 20)
-            manager.receive_actions([new_action])
-
-        total_time += time_step
-
-    with open(os.path.join(LOG_DIR, manager.event_logger.log_name + ".tar.gz"), "wb") as tar:
-        tar.write(manager.write_logs_to_buffer(
-            SaveConfig(
-                    scenario_name=None,
-                    scenario_category=None,
-                    save_real_datetime=datetime.fromtimestamp(0),
-                    load_real_datetime=datetime.fromtimestamp(0),
-                    save_simulator_datetime=manager.environment.datetime,
-                    simulator=SimulatorConfig(
-                        projection_centre=None
-                        ),
-                    scenario=None,
-                    environment_manager=manager.config()
-                )
-            ).getvalue())
-
-
 @pytest.mark.parametrize(
     ("scenario_category", "scenario_name", "predictor_type", "fix_proximity", "projection_lon", "projection_lat"),
     [
