@@ -383,7 +383,6 @@ def test_trim(unique_log_name: str):
     em.event_handler.add_coordination_event(event_time, callsign, current_sector, to_sector, fl, fix, direction)
     em.event_handler.add_incomm_event(event_time, callsign, to_sector)
     sim.evolve(2)
-    sim.save()
     del sim
 
     assert em.environment.aircraft[callsign].current_sector == to_sector
