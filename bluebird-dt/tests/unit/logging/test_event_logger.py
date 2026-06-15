@@ -360,11 +360,54 @@ def test_sectors_log_as_df(generate_two_sector):
     logged_sectors = [key for key, _ in log_entry["sectors_configuration"]]
     assert all(sector in logged_sectors for sector in sectors)
 
-def test_trim(unique_log_name: str):
+
+
+@pytest.mark.parametrize(
+    ("time_period", "ticks_to_evolve", "ticks_to_trim"),
+    [
+        (6, 20, 9),
+        (3, 20, 10),
+        (3, 11, 10),
+        (6, 20, 12)
+    ],
+)
+def test_trim_and_clip(time_period: int, ticks_to_evolve: int, ticks_to_trim: int):
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
+
+    for _ in range(0, ticks_to_evolve):
+        sim.evolve(time_period)
+
+    sim.manager.event_logger.trim_and_clip("<=", pd.Timestamp(year=1970, month=1, day=1, hour=9, minute=0, second=0) + pd.Timedelta(seconds=ticks_to_trim * time_period))
+
+    # Sectorisation in Springfield is constant, so we need to ensure that after trimming the event is still there
+    assert len(sim.manager.event_logger.sectors_log) == 1
+    assert sim.manager.event_logger.sectors_log[0]["datetime"] == pd.Timestamp(year=1970, month=1, day=1, hour=9, minute=0, second=0)
+
+
+    log = sim.manager.event_logger
+    
+    # Aircraft will appear with time, so this is dependent to where we trim. The following should always be trye as the radar log should get trimmed as it gets updated every tick
+    assert len(log.radar_log) <= len(sim.manager.environment.aircraft) * (ticks_to_evolve - ticks_to_trim)
+
+    # The tests don't have any aircraft disappear, so we expect at least an equal set of initialisers of aircraft internals as aircraft we have in the airspace
+    assert set(log["callsign"] for log in log.aircraft_internals_log) == set(sim.manager.environment.aircraft.keys())
+
+
+    # The tests don't have any aircraft disappear, so we expect at least an equal set of initialisers of aircraft incomms as aircraft we have in the airspace
+    assert len(log.incomm_log) == len(sim.manager.environment.aircraft)
+
+    # We inject zero clearances so expect zero of these
+    assert len(log.clearances_log) == 0
+
+    # Expect two coordinations per aircraft in the airspace
+    assert len(log.coordination_log) == 2 * len(sim.manager.environment.aircraft)
+
+
+def test_trim():
     """
     Test that trimming a simulation run removes events
     """
-    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", log_filename=unique_log_name)
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
     em = sim.manager
 
     # Prepare inputs for incomm and coordination
