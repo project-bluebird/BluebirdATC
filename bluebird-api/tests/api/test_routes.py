@@ -1,8 +1,6 @@
-from bluebird_dt.core import Environment
 import datetime
 import logging
 import os
-import json
 
 import pytest
 from pydantic import ValidationError
@@ -10,6 +8,7 @@ from bluebird_api import routers
 from bluebird_api import routes
 from bluebird_api.models import ActionInput
 from bluebird_api.runner import Runner
+from bluebird_dt.core.wind import WindField
 from bluebird_dt.utility.paths import LOG_DIR as REPLAY_DIR
 
 class TestAPI:
@@ -95,13 +94,17 @@ class TestAPI:
         Test API calls corresponding to 'State' metadata tag
         """
 
-        def test_complete_environment(self, client):
+        def test_environment(self, client):
             response = client.get(f"/environment")
 
             assert response.status_code == 200
 
-        def test_environment(self, client):
-            response = client.get(f"/environment/SPRINGFIELD")
+        def test_wind_field(self, client):
+            response = client.get(f"/wind_field")
+            assert response.status_code == 200
+
+        def test_forecast_wind_field(self, client):
+            response = client.get(f"/forecast_wind_field")
             assert response.status_code == 200
 
         def test_static_data(self, client):
@@ -313,87 +316,88 @@ class TestFunctions:
         """
 
         @pytest.mark.asyncio
-        async def test_complete_environment_default(self, runner: Runner):
+        async def test_environment_default(self, runner: Runner):
             """
-            Test that complete_environment() with default arguments
+            Test that environment() with default arguments
             returns a dict with the expected keys
             """
-            expected_keys = ["time", "start_time", "aircraft", "airspace", "coordinations", "wind_field", "forecast"]
-            received = await routers.core.complete_environment(runner)
+            expected_keys = ["time", "start_time", "aircraft", "airspace", "coordinations"]
+            received = await routers.core.environment(runner)
 
             assert sorted(received.keys()) == sorted(expected_keys)
 
         @pytest.mark.asyncio
-        async def test_complete_environment_params(self, runner: Runner):
+        async def test_environment_params(self, runner: Runner):
             """
-            Test that complete_environment() with additional arguments
+            Test that environment() with additional arguments
             returns a dict with the expected keys
             """
             expected_keys = [
                 "time",
                 "start_time",
                 "aircraft",
-                "wind_field",
-                "forecast",
                 "coordinations",
                 "observations",
             ]
-            received = await routers.core.complete_environment(runner, no_airspace=True, last_n_observations=5)
+            received = await routers.core.environment(runner, no_airspace=True, last_n_observations=5)
 
             assert sorted(received.keys()) == sorted(expected_keys)
 
-        @pytest.mark.parametrize("sector_id", ["SPRINGFIELD"])
         @pytest.mark.asyncio
-        async def test_environment_default(self, runner: Runner, sector_id: str):
+        async def test_wind_field(self, runner: Runner):
             """
-            Test that environment() with default arguments returns a
-            dict with the expected keys for each sector
+            Test that wind_field() returns a ``WindField`` instance (or ``None``)
+            when a runner is loaded.
             """
-            expected_keys = ["time", "start_time", "aircraft", "airspace", "wind_field", "forecast", "coordinations"]
-            received = await routers.core.environment(runner, sector_id)
 
-            assert sorted(received.keys()) == sorted(expected_keys)
+            received = await routers.core.wind_field(runner)
 
-        @pytest.mark.parametrize("sector_id", ["SPRINGFIELD"])
+            assert received is None or isinstance(received, WindField)
+
         @pytest.mark.asyncio
-        async def test_environment_no_airspace_round_trip(self, runner: Runner, sector_id: str):
+        async def test_wind_field_with_seeded_wind(self, runner: Runner):
             """
-            Test that environment() with default arguments returns a
-            dict with the expected keys for each sector
+            Seed the environment with a known WindField and verify that wind_field()
+            returns the same instance.
             """
-            received = await routers.core.environment(runner, sector_id, no_airspace=True)
-            Environment.from_json(json.dumps(received))
+            seeded = WindField.uniform(wind_speed=10.0, wind_direction=90.0)
+            original = runner.sim.manager.environment.wind_field
+            runner.sim.manager.environment.wind_field = seeded
+            try:
+                received = await routers.core.wind_field(runner)
+            finally:
+                runner.sim.manager.environment.wind_field = original
 
-        @pytest.mark.parametrize("sector_id", ["SPRINGFIELD"])
+            assert isinstance(received, WindField)
+            assert received == seeded
+
         @pytest.mark.asyncio
-        async def test_environment_params(self, runner: Runner, sector_id: str):
+        async def test_forecast_wind_field(self, runner: Runner):
             """
-            Test that environment() with additional arguments returns a
-            dict with the expected keys for each sector
+            Test that forecast_wind_field() returns a ``WindField`` instance (or
+            ``None``) when a runner is loaded.
             """
-            expected_keys = [
-                "time",
-                "start_time",
-                "aircraft",
-                "airspace",
-                "wind_field",
-                "forecast",
-                "coordinations",
-                "observations",
-            ]
 
-            received = await routers.core.environment(runner, sector_id, False, 5)
-            assert sorted(received.keys()) == sorted(expected_keys)
+            received = await routers.core.forecast_wind_field(runner)
 
-            airspace_keys = [
-                    "airspace_configuration",
-                    "airways",
-                    "fixes",
-                    "individual_sectors",
-                    "sectors"
-                    ]
+            assert received is None or isinstance(received, WindField)
 
-            assert sorted(received["airspace"]) == sorted(airspace_keys)
+        @pytest.mark.asyncio
+        async def test_forecast_wind_field_with_seeded_wind(self, runner: Runner):
+            """
+            Seed the environment with a known forecast WindField and verify that
+            forecast_wind_field() returns the same instance.
+            """
+            seeded = WindField.uniform(wind_speed=10.0, wind_direction=90.0)
+            original = runner.sim.manager.environment.forecast_wind_field
+            runner.sim.manager.environment.forecast_wind_field = seeded
+            try:
+                received = await routers.core.forecast_wind_field(runner)
+            finally:
+                runner.sim.manager.environment.forecast_wind_field = original
+
+            assert isinstance(received, WindField)
+            assert received == seeded
 
         @pytest.mark.asyncio
         async def test_static_data(self, runner: Runner):
