@@ -828,7 +828,6 @@ class Airspace(Comparison):
             point_locations = [aircraft.pos2d(), *point_locations]
             point_in_sector = [airspace.contains_laterally(aircraft.pos2d(), epsilon=0.0), *point_in_sector]
 
-
         # we need to go through each consecutive pair of fixes on the route
         # and find which ones cross the sector boundary
 
