@@ -351,9 +351,10 @@ class LinearPredictor(Predictor):
 
         To calculate the transition altitude, we need to find cas_trans and mach_trans. These are equal to the cleared
         values if set (i.e. not None). Otherwise (i.e. when None), cas_trans and mach_trans are found from the speed
-        tables as the max cas_cr value, and the max mach_cr value respectively, with the aircraft's speed uncertainty
-        offset applied so the transition altitude is consistent with the (uncertainty-perturbed) speeds the aircraft
-        actually flies. Cleared values are exact commanded speeds, so no uncertainty is applied to them.
+        tables for the aircraft's current flight phase as the max cas value, and the max mach value respectively, with
+        the aircraft's speed uncertainty offset applied so the transition altitude is consistent with the
+        (uncertainty-perturbed) speeds the aircraft actually flies. Cleared values are exact commanded speeds, so no
+        uncertainty is applied to them.
 
         A vertical distance is used to calculate the is_below_transition boolean. If this transition_delta is negative,
         the aircraft is flying below the Mach/CAS transition altitude, and True is returned. If positive, the aircraft
@@ -372,8 +373,9 @@ class LinearPredictor(Predictor):
         ac_lookup_key = self._get_aircraft_lookup_key(aircraft.aircraft_type)
         performance_table = self._get_performance_profile(ac_lookup_key)
 
-        # The transition altitude is a property of the cruise speed schedule.
-        cas_key, mach_key = lateral_speed_keys(FlightState.CRUISE)
+        # Use the speed schedule for the aircraft's current flight phase, so the transition altitude is consistent
+        # with the speeds it is actually flying.
+        cas_key, mach_key = lateral_speed_keys(aircraft.flight_state)
         ranks = aircraft.percentile_rank_dict
 
         if aircraft.selected_instructions.cas is None:
