@@ -214,27 +214,6 @@ def cas_and_mach_from_table(
     return cas, mach
 
 
-@functools.lru_cache(maxsize=10000)
-def _cached_speed_offset(
-    sigma: float | None,
-    norm_mean: float | None,
-    minimum: float | None,
-    maximum: float | None,
-    percentile_rank: float | None,
-) -> float:
-    """
-    Return the additive speed uncertainty offset for the given uncertainty parameters and percentile rank.
-
-    The offset is flight-level-independent for speeds, so it is cached on the (hashable) uncertainty parameters
-    and percentile rank to avoid recomputing the truncated-normal draw on every prediction step.
-    """
-    return apply_speed_uncertainty(
-        0.0,
-        {"sigma": sigma, "norm_mean": norm_mean, "minimum": minimum, "maximum": maximum},
-        percentile_rank,
-    )
-
-
 def lateral_speed_offset(
     speed_uncertainty_table: dict[str, dict[str, float]] | None,
     speed_key: str,
@@ -244,19 +223,16 @@ def lateral_speed_offset(
     Return the (flight-level-independent) speed uncertainty offset, in the speed's own units, for a given speed
     key (e.g. "cas_cr", "mach_cl") and percentile rank. Returns 0.0 when no uncertainty applies (no percentile
     rank, or no uncertainty data for the key).
+
+    The offset is additive and flight-level-independent for speeds, so evaluating apply_speed_uncertainty at a
+    nominal of 0.0 yields the offset to add to any nominal speed at any flight level.
     """
     if percentile_rank is None or speed_uncertainty_table is None:
         return 0.0
     speed_uncertainty = speed_uncertainty_table.get(speed_key)
     if speed_uncertainty is None:
         return 0.0
-    return _cached_speed_offset(
-        speed_uncertainty["sigma"],
-        speed_uncertainty["norm_mean"],
-        speed_uncertainty["minimum"],
-        speed_uncertainty["maximum"],
-        percentile_rank,
-    )
+    return apply_speed_uncertainty(0.0, speed_uncertainty, percentile_rank)
 
 
 def apply_lateral_speed_uncertainty(
