@@ -351,7 +351,9 @@ class LinearPredictor(Predictor):
 
         To calculate the transition altitude, we need to find cas_trans and mach_trans. These are equal to the cleared
         values if set (i.e. not None). Otherwise (i.e. when None), cas_trans and mach_trans are found from the speed
-        tables as the max cas_cr value, and the max mach_cr value respectively.
+        tables as the max cas_cr value, and the max mach_cr value respectively, with the aircraft's speed uncertainty
+        offset applied so the transition altitude is consistent with the (uncertainty-perturbed) speeds the aircraft
+        actually flies. Cleared values are exact commanded speeds, so no uncertainty is applied to them.
 
         A vertical distance is used to calculate the is_below_transition boolean. If this transition_delta is negative,
         the aircraft is flying below the Mach/CAS transition altitude, and True is returned. If positive, the aircraft
@@ -370,13 +372,18 @@ class LinearPredictor(Predictor):
         ac_lookup_key = self._get_aircraft_lookup_key(aircraft.aircraft_type)
         performance_table = self._get_performance_profile(ac_lookup_key)
 
+        # The transition altitude is a property of the cruise speed schedule.
+        cas_key, mach_key = lateral_speed_keys(FlightState.CRUISE)
+        ranks = aircraft.percentile_rank_dict
+
         if aircraft.selected_instructions.cas is None:
-            cas_trans = max(value for value in performance_table["cas_cr"] if value is not None)
+            cas_trans = max(value for value in performance_table[cas_key] if value is not None)
+            cas_trans += self._speed_offset(ac_lookup_key, cas_key, ranks.get(cas_key))
         else:
             cas_trans = aircraft.selected_instructions.cas
 
         if aircraft.selected_instructions.mach is None:
-            mach_data = performance_table.get("mach_cr")
+            mach_data = performance_table.get(mach_key)
             if not isinstance(mach_data, list):
                 return True
 
@@ -385,6 +392,11 @@ class LinearPredictor(Predictor):
                 return True
 
             mach_trans = max(valid_mach_values)
+            # Mach falls back to the CAS percentile rank when it has no rank of its own (as in speed_from_tables).
+            mach_rank = ranks.get(mach_key)
+            if mach_rank is None:
+                mach_rank = ranks.get(cas_key)
+            mach_trans += self._speed_offset(ac_lookup_key, mach_key, mach_rank)
         else:
             mach_trans = aircraft.selected_instructions.mach
 
