@@ -17,6 +17,7 @@ from bluebird_dt.utility.convert import (
     heading_from_ground_track,
     horizontal_tas,
     mach_to_tas,
+    tas_to_mach,
 )
 from bluebird_dt.utility.sample import apply_speed_uncertainty
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
@@ -605,16 +606,16 @@ class TestPredictorUsingFallbackFiles:
             _, _ = predictor.speed_from_tables(aircraft)
 
     @pytest.mark.parametrize(
-        ("aircraft_type", "expected_cas", "expected_mach"),
+        ("aircraft_type", "expected_cas"),
         [
-            ("A320", 310.0, 0.63),
-            ("B789", 320.0, 0.67),
-            ("C172", 200.0, 0.30),
-            ("A388", 320.0, 0.67),
+            ("A320", 310.0),
+            ("B789", 320.0),
+            ("C172", 200.0),
+            ("A388", 320.0),
         ],
     )
     def test_speed_from_tables(
-        self, aircraft_type: str, expected_cas: float, expected_mach: float, generate_simple_environment: Environment
+        self, aircraft_type: str, expected_cas: float, generate_simple_environment: Environment
     ):
         predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
         aircraft = generate_simple_environment.aircraft["AIR1"]
@@ -628,7 +629,8 @@ class TestPredictorUsingFallbackFiles:
         cas, mach = predictor.speed_from_tables(aircraft)
 
         assert cas == pytest.approx(expected_cas)
-        assert mach == pytest.approx(expected_mach)
+        # Mach is stored as the TAS-equivalent of CAS at each flight level.
+        assert mach_to_tas(aircraft.fl, mach, 0.0) == pytest.approx(cas_to_tas(aircraft.fl, expected_cas * KT_TO_MPS, 0.0))
 
     def test_simple_speed_uncertainty_applied_for_percentile_rank(
         self, generate_simple_environment: Environment
@@ -645,8 +647,12 @@ class TestPredictorUsingFallbackFiles:
 
         cas, mach = predictor.speed_from_tables(aircraft)
 
+        # Nominal mach is the TAS-equivalent of the nominal cruise CAS (310 kt for MEDIUM at FL200).
+        nominal_mach = tas_to_mach(aircraft.fl, cas_to_tas(aircraft.fl, 310.0 * KT_TO_MPS, 0.0), 0.0)
+        mach_uncertainty = predictor.uncertainty_data["MEDIUM"]["mach_cr"]
+
         assert cas == pytest.approx(314.84626264893353)
-        assert mach == pytest.approx(0.6523689168804946)
+        assert mach == pytest.approx(apply_speed_uncertainty(nominal_mach, mach_uncertainty, 75.0))
 
     def test_simple_mach_uncertainty_uses_cas_percentile_fallback(
         self, generate_simple_environment: Environment
@@ -664,7 +670,10 @@ class TestPredictorUsingFallbackFiles:
         _, mach = predictor.speed_from_tables(aircraft)
         mach_uncertainty = predictor.uncertainty_data["MEDIUM"]["mach_cr"]
 
-        assert mach == pytest.approx(apply_speed_uncertainty(0.63, mach_uncertainty, 75.0))
+        # Nominal mach is the TAS-equivalent of the nominal cruise CAS (310 kt for MEDIUM at FL200).
+        nominal_mach = tas_to_mach(aircraft.fl, cas_to_tas(aircraft.fl, 310.0 * KT_TO_MPS, 0.0), 0.0)
+
+        assert mach == pytest.approx(apply_speed_uncertainty(nominal_mach, mach_uncertainty, 75.0))
 
     @pytest.mark.parametrize(
         ("aircraft_type", "expected_cas", "expected_mach"),
