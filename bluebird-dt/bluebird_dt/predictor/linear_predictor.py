@@ -25,13 +25,14 @@ from bluebird_dt.utility.paths import (
     SIMPLE_PERFORMANCE_UNCERTAINTY_FILE,
 )
 from bluebird_dt.utility.performance import (
+    apply_lateral_speed_uncertainty,
     cas_and_mach_from_table,
     get_performance_table,
     get_performance_uncertainty_table,
     lateral_speed_keys,
+    lateral_speed_offset,
     rocd_from_table,
 )
-from bluebird_dt.utility.sample import apply_speed_uncertainty
 
 
 class LinearPredictor(Predictor):
@@ -372,6 +373,7 @@ class LinearPredictor(Predictor):
         """
         ac_lookup_key = self._get_aircraft_lookup_key(aircraft.aircraft_type)
         performance_table = self._get_performance_profile(ac_lookup_key)
+        speed_uncertainty = self._get_performance_uncertainty(ac_lookup_key)
 
         # Use the speed schedule for the aircraft's current flight phase, so the transition altitude is consistent
         # with the speeds it is actually flying.
@@ -380,7 +382,7 @@ class LinearPredictor(Predictor):
 
         if aircraft.selected_instructions.cas is None:
             cas_trans = max(value for value in performance_table[cas_key] if value is not None)
-            cas_trans += self._speed_offset(ac_lookup_key, cas_key, ranks.get(cas_key))
+            cas_trans += lateral_speed_offset(speed_uncertainty, cas_key, ranks.get(cas_key))
         else:
             cas_trans = aircraft.selected_instructions.cas
 
@@ -398,7 +400,7 @@ class LinearPredictor(Predictor):
             mach_rank = ranks.get(mach_key)
             if mach_rank is None:
                 mach_rank = ranks.get(cas_key)
-            mach_trans += self._speed_offset(ac_lookup_key, mach_key, mach_rank)
+            mach_trans += lateral_speed_offset(speed_uncertainty, mach_key, mach_rank)
         else:
             mach_trans = aircraft.selected_instructions.mach
 
@@ -406,28 +408,6 @@ class LinearPredictor(Predictor):
         current_altitude_Hp = aircraft.fl * FL_TO_M
         transition_delta = current_altitude_Hp - mach_cas_transition_altitude
         return transition_delta < 0
-
-    @functools.lru_cache
-    def _speed_offset(self, lookup_key: str | None, speed_key: str, percentile_rank: float | None) -> float:
-        """
-        Return the speed uncertainty offset (in the speed's own units) for a given aircraft lookup key, speed key
-        (e.g. "cas_cr", "mach_cl") and percentile rank.
-
-        The offset is additive and flight-level-independent, so it is cached per
-        (lookup_key, speed_key, percentile_rank) to avoid recomputing the truncated-normal draw on every step.
-        Returns 0.0 when no uncertainty applies (no percentile rank, or no uncertainty data for the key).
-        """
-        if percentile_rank is None:
-            return 0.0
-        uncertainty = self._get_performance_uncertainty(lookup_key)
-        if uncertainty is None:
-            return 0.0
-        speed_uncertainty = uncertainty.get(speed_key)
-        if speed_uncertainty is None:
-            return 0.0
-        # apply_speed_uncertainty is additive and flight-level-independent for speeds, so evaluating it at a
-        # nominal of 0.0 yields the offset to add to any nominal speed at any flight level.
-        return apply_speed_uncertainty(0.0, speed_uncertainty, percentile_rank)
 
     def speed_from_tables(self, aircraft: Aircraft) -> tuple[float, float | None]:
         """
@@ -447,23 +427,13 @@ class LinearPredictor(Predictor):
 
         ac_lookup_key = self._get_aircraft_lookup_key(aircraft.aircraft_type)
         performance_profile = self._get_performance_profile(ac_lookup_key)
+        speed_uncertainty = self._get_performance_uncertainty(ac_lookup_key)
 
         cas, mach = cas_and_mach_from_table(performance_profile, aircraft.fl, aircraft.flight_state)
 
-        cas_key, mach_key = lateral_speed_keys(aircraft.flight_state)
-        ranks = aircraft.percentile_rank_dict
-
-        # Apply the flight-level-independent uncertainty offset to the nominal speeds.
-        cas += self._speed_offset(ac_lookup_key, cas_key, ranks.get(cas_key))
-
-        if mach is not None:
-            # Mach falls back to the CAS percentile rank when it has no rank of its own.
-            mach_rank = ranks.get(mach_key)
-            if mach_rank is None:
-                mach_rank = ranks.get(cas_key)
-            mach += self._speed_offset(ac_lookup_key, mach_key, mach_rank)
-
-        return cas, mach
+        return apply_lateral_speed_uncertainty(
+            cas, mach, speed_uncertainty, aircraft.percentile_rank_dict, aircraft.flight_state
+        )
 
     def vertical_speed_from_tables(self, aircraft: Aircraft) -> float:
         """
