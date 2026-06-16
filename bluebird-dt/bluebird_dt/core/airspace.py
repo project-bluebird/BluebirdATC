@@ -821,9 +821,9 @@ class Airspace(Comparison):
         point_in_sector = [airspace.contains_laterally(location, epsilon=0) for location in point_locations]
 
         # if the first fix in the route is in the sector (which implies the route start within the sector)
-        # and the aircraft is on route, and its next fix is the first fix, then insert the aircraft position
-        # at the start of the route.
-        if point_in_sector[0] and aircraft.on_route and self.closest_forward_fix(aircraft, 0.0, route) == route[0]:
+        # and the aircraft's next fix is the first fix, then insert the aircraft position at the start of
+        # the route.
+        if point_in_sector[0] and self.closest_forward_fix(aircraft, 0.0, route) == route[0]:
             route = ["START_LOC", *route]
             point_locations = [aircraft.pos2d(), *point_locations]
             point_in_sector = [airspace.contains_laterally(aircraft.pos2d(), epsilon=0.0), *point_in_sector]
