@@ -6,7 +6,7 @@ class EventDtypes:
 
     # specify expected datatypes for each EventHandler dataframe
     radar_dtypes: ClassVar[dict[str, str]] = {
-        # ufid, speed_tas, ground_speed, ground_track angle and selected_fl
+        # ufid, speed_cas, speed_tas, ground_speed, ground_track angle and selected_fl
         # are all optional columns and values and will be added automatically
         # if required
         "datetime": "datetime64[us]",  # datetime in utc
@@ -16,6 +16,7 @@ class EventDtypes:
         "fl": "float64",
         "heading": "float64",
         "ufid": "category",  # optional
+        "speed_cas": "float64",  # optional
         "speed_tas": "float64",  # optional
         "ground_speed": "float64",  # optional
         "ground_track_angle": "float64",  # optional

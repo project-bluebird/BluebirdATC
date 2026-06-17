@@ -18,6 +18,7 @@ from bluebird_dt.utility.convert import (
     cas_to_tas,
     mach_cas_trans_altitude,
     mach_to_tas,
+    tas_to_cas,
 )
 from bluebird_dt.utility.paths import (
     AIRCRAFT_WEIGHT_MAPPING_FILE,
@@ -234,6 +235,9 @@ class LinearPredictor(Predictor):
         # Set the aircraft TAS
         aircraft.speed_tas = tas_KT
 
+        # Set the aircraft CAS
+        aircraft.speed_cas = tas_to_cas(aircraft.fl, aircraft.speed_tas * KT_TO_MPS, self.delta_T) * MPS_TO_KT
+
     def update_total_speeds_cas_is_tas(self, aircraft: Aircraft):
         """
         Updates total speeds of a selected aircraft by writing the selected_instructions.cas value directly to the true
@@ -251,6 +255,7 @@ class LinearPredictor(Predictor):
             raise ValueError("Aircraft.selected_instructions.cas must be set to use cas_is_tas speed modelling.")
 
         aircraft.speed_tas = cas
+        aircraft.speed_cas = cas
 
     @functools.lru_cache
     def _get_performance_profile(self, key: str | None) -> dict[str, list[float | None] | float]:

@@ -88,6 +88,7 @@ def test_data():
     assert data["cleared_instructions"]["cas"] is None
     assert data["cleared_instructions"]["mach"] is None
     assert data["cleared_instructions"]["vertical_speed"] is None
+    assert data["speed_cas"] is None
     assert data["speed_tas"] is None
     assert data["vertical_speed"] == pytest.approx(0.0)
     assert data["ground_speed"] is None
@@ -173,6 +174,7 @@ def test_data():
     assert data["selected_instructions"]["mach"] == cleared_mach
     assert data["selected_instructions"]["vertical_speed"] == cleared_vertical_speed
     assert data["selected_instructions"]["on_route"] == on_route
+    assert data["speed_cas"] is None
     assert data["speed_tas"] is None
     assert data["vertical_speed"] == vertical_speed
     assert data["ground_speed"] is None
