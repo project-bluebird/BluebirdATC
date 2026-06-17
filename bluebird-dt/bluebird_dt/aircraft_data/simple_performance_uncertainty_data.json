@@ -33,21 +33,21 @@
             },
             "mach_cl": {
                 "norm_mean": 0.815,
-                "sigma": 0.035,
-                "minimum": 0.745,
-                "maximum": 0.885
+                "sigma": 0.0315,
+                "minimum": 0.752,
+                "maximum": 0.878
             },
             "mach_cr": {
                 "norm_mean": 0.82,
-                "sigma": 0.035,
-                "minimum": 0.75,
-                "maximum": 0.89
+                "sigma": 0.0315,
+                "minimum": 0.757,
+                "maximum": 0.883
             },
             "mach_des": {
                 "norm_mean": 0.82,
-                "sigma": 0.035,
-                "minimum": 0.75,
-                "maximum": 0.89
+                "sigma": 0.0315,
+                "minimum": 0.757,
+                "maximum": 0.883
             }
         },
         "MEDIUM": {
@@ -83,21 +83,21 @@
             },
             "mach_cl": {
                 "norm_mean": 0.7,
-                "sigma": 0.035,
-                "minimum": 0.63,
-                "maximum": 0.77
+                "sigma": 0.0315,
+                "minimum": 0.637,
+                "maximum": 0.763
             },
             "mach_cr": {
                 "norm_mean": 0.75,
-                "sigma": 0.035,
-                "minimum": 0.68,
-                "maximum": 0.82
+                "sigma": 0.0315,
+                "minimum": 0.687,
+                "maximum": 0.813
             },
             "mach_des": {
                 "norm_mean": 0.74,
-                "sigma": 0.035,
-                "minimum": 0.67,
-                "maximum": 0.81
+                "sigma": 0.0315,
+                "minimum": 0.677,
+                "maximum": 0.803
             }
         },
         "REGIONAL": {
@@ -133,21 +133,21 @@
             },
             "mach_cl": {
                 "norm_mean": 0.7325,
-                "sigma": 0.035,
-                "minimum": 0.6625,
-                "maximum": 0.8025
+                "sigma": 0.0315,
+                "minimum": 0.6695,
+                "maximum": 0.7955
             },
             "mach_cr": {
                 "norm_mean": 0.77,
-                "sigma": 0.035,
-                "minimum": 0.7,
-                "maximum": 0.84
+                "sigma": 0.0315,
+                "minimum": 0.707,
+                "maximum": 0.833
             },
             "mach_des": {
                 "norm_mean": 0.765,
-                "sigma": 0.035,
-                "minimum": 0.695,
-                "maximum": 0.835
+                "sigma": 0.0315,
+                "minimum": 0.702,
+                "maximum": 0.828
             }
         },
         "TURBOPROP": {
@@ -183,21 +183,21 @@
             },
             "mach_cl": {
                 "norm_mean": 0.44,
-                "sigma": 0.022,
-                "minimum": 0.396,
-                "maximum": 0.484
+                "sigma": 0.0198,
+                "minimum": 0.4004,
+                "maximum": 0.4796
             },
             "mach_cr": {
                 "norm_mean": 0.505,
-                "sigma": 0.0253,
-                "minimum": 0.4545,
-                "maximum": 0.5555
+                "sigma": 0.02277,
+                "minimum": 0.45955,
+                "maximum": 0.55045
             },
             "mach_des": {
                 "norm_mean": 0.5525,
-                "sigma": 0.0276,
-                "minimum": 0.4972,
-                "maximum": 0.6078
+                "sigma": 0.02484,
+                "minimum": 0.50273,
+                "maximum": 0.60227
             }
         },
         "LIGHT": {
@@ -233,21 +233,21 @@
             },
             "mach_cl": {
                 "norm_mean": 0.23,
-                "sigma": 0.0115,
-                "minimum": 0.207,
-                "maximum": 0.253
+                "sigma": 0.01035,
+                "minimum": 0.2093,
+                "maximum": 0.2507
             },
             "mach_cr": {
                 "norm_mean": 0.28,
-                "sigma": 0.014,
-                "minimum": 0.252,
-                "maximum": 0.308
+                "sigma": 0.0126,
+                "minimum": 0.2548,
+                "maximum": 0.3052
             },
             "mach_des": {
                 "norm_mean": 0.34,
-                "sigma": 0.017,
-                "minimum": 0.306,
-                "maximum": 0.374
+                "sigma": 0.0153,
+                "minimum": 0.3094,
+                "maximum": 0.3706
             }
         },
         "SLOW": {
@@ -283,21 +283,21 @@
             },
             "mach_cl": {
                 "norm_mean": 0.1675,
-                "sigma": 0.01,
-                "minimum": 0.1475,
-                "maximum": 0.1875
+                "sigma": 0.009,
+                "minimum": 0.1495,
+                "maximum": 0.1855
             },
             "mach_cr": {
                 "norm_mean": 0.24,
-                "sigma": 0.012,
-                "minimum": 0.216,
-                "maximum": 0.264
+                "sigma": 0.0108,
+                "minimum": 0.2184,
+                "maximum": 0.2616
             },
             "mach_des": {
                 "norm_mean": 0.25,
-                "sigma": 0.0125,
-                "minimum": 0.225,
-                "maximum": 0.275
+                "sigma": 0.01125,
+                "minimum": 0.2275,
+                "maximum": 0.2725
             }
         }
     }
