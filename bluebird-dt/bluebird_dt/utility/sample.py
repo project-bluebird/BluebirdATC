@@ -1,9 +1,32 @@
 from __future__ import annotations
 
 import functools
+import random
 
 import numpy as np
 from scipy.stats import truncnorm
+
+__MAXSIZE = 9223372036854775807  # maximum value for a 64-bit signed integer
+
+
+def random_seed_from_string(hash_string: str) -> int:
+    """
+    This function hashes a string to an integer. The latter
+    can be used as a seed to a random number generator for
+    instance.
+
+    Parameters
+    ----------
+    hash_string: str
+        Input string to hash.
+
+    Return
+    ------
+    Int:
+        A new random seed
+    """
+    random.seed(hash_string)
+    return random.randrange(__MAXSIZE)
 
 
 @functools.lru_cache(maxsize=16384)
