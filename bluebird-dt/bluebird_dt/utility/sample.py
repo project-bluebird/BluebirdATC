@@ -1,7 +1,22 @@
 from __future__ import annotations
 
+import functools
+
 import numpy as np
 from scipy.stats import truncnorm
+
+
+@functools.lru_cache(maxsize=16384)
+def _truncnorm_ppf(percentile_rank: float, lower: float, upper: float) -> float:
+    """
+    Cached inverse-CDF (percent-point function) of the standard truncated normal.
+
+    This is the expensive part of the uncertainty calculation. The (percentile_rank, lower, upper) triple is
+    constant for a given aircraft type, flight phase and percentile across an entire simulation, yet it is
+    evaluated on every prediction step, so caching avoids repeated scipy evaluations. The result is purely a
+    function of these three scalars, so caching is exact (not an approximation).
+    """
+    return float(truncnorm.ppf(percentile_rank / 100.0, lower, upper))
 
 
 def score_from_rank(
@@ -42,7 +57,7 @@ def score_from_rank(
         a = (min_score - nominal) / standard_deviation if min_score is not None else -np.inf
         b = (max_score - nominal) / standard_deviation if max_score is not None else np.inf
 
-        return nominal + standard_deviation * float(truncnorm.ppf(percentile_rank / 100.0, a, b))
+        return nominal + standard_deviation * _truncnorm_ppf(percentile_rank, a, b)
 
     raise ValueError(f"Percentile rank value of {percentile_rank} is outside the allowed range (0, 100)")
 

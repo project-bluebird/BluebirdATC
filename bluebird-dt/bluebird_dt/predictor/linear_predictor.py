@@ -301,15 +301,16 @@ class LinearPredictor(Predictor):
             The aircraft Mach value, dimensionless. If unavailable from performance tables, None is returned.
         """
 
-        if aircraft.selected_instructions.cas is None:
-            cas, _ = self.speed_from_tables(aircraft)
-        else:
-            cas = aircraft.selected_instructions.cas
+        cas = aircraft.selected_instructions.cas
+        mach = aircraft.selected_instructions.mach
 
-        if aircraft.selected_instructions.mach is None:
-            _, mach = self.speed_from_tables(aircraft)
-        else:
-            mach = aircraft.selected_instructions.mach
+        # Only consult the speed tables (a single lookup covers both speeds) if either is unset.
+        if cas is None or mach is None:
+            table_cas, table_mach = self.speed_from_tables(aircraft)
+            if cas is None:
+                cas = table_cas
+            if mach is None:
+                mach = table_mach
 
         return cas, mach
 
