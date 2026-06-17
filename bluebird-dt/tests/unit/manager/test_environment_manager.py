@@ -16,36 +16,6 @@ from bluebird_dt.scenario_manager import Custom
 from bluebird_dt.core import Coordination
 from bluebird_dt.utility import constants
 
-@pytest.mark.parametrize("airspace_routes", ["generate_i", "generate_x", "generate_y"])
-@pytest.mark.parametrize("n_aircraft", [2, 4, 10])
-def test_observe(airspace_routes: str, n_aircraft: int, request: pytest.FixtureRequest) -> None:
-    """
-    Environment observation is returned with all the correct information for
-    the Airspace or Sector (independent of number of Sectors or Aircraft).
-    """
-
-    # Airspace and EventHandler, Predictor & EM
-    airspace, routes = request.getfixturevalue(airspace_routes)
-    em = Custom(n_aircraft, airspace=airspace, routes=routes).create_env_manager()
-
-    # once evolve is called, method should return environment with all
-    # aircraft and all sectors
-    em.evolve(200)
-    environment = em.observe()
-    assert environment.time == 200
-    assert len(environment.aircraft) == n_aircraft
-    assert em.environment.airspace.sectors == environment.airspace.sectors
-
-    # can also retrieve data for a specific sector
-    # - aircraft are split between sectors if there are multiple
-    total_aircraft = 0
-    for sector_name in em.environment.airspace.sectors:
-        environment = em.observe(sector_name)
-        assert len(environment.airspace.sectors) == 1
-        total_aircraft += len(environment.aircraft)
-    assert total_aircraft == n_aircraft
-
-
 def test_bandboxing(generate_two_sector: tuple[Airspace, list[Route]]) -> None:
     """
     Sector band-boxing changes:

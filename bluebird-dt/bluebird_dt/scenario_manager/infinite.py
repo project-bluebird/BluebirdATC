@@ -289,6 +289,7 @@ class Infinite(
             sector_name=self.sector_name,
             entry_fl=entry_flight_level,
             exit_fl=exit_flight_level,
+            airspace=self.airspace,
             on_route=on_route,
             prev_sector="background",
             next_sector="background",

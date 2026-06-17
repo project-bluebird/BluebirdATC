@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 from numpy.random import Generator
 
@@ -71,10 +71,11 @@ def create_aircraft_with_coordinations(
     sector_name: str,
     entry_fl: float,
     exit_fl: float,
+    airspace: Airspace,
     on_route: bool = False,
-    airspace: Airspace | None = None,
     prev_sector: str = "background",
     next_sector: str = "background",
+    coord_direction: Literal["Horizontal", "Down", "Up"] = "Horizontal",
     typeof_aircraft: type[TAircraft] = Aircraft,
 ) -> tuple[TAircraft, Coordination, Coordination]:
     """
@@ -99,14 +100,16 @@ def create_aircraft_with_coordinations(
         Flight Level for entry coordination
     exit_fl: float
         Flight Level for exit coordination
-    on_route: bool
-        Whether the created aircraft will have "on_route" flag set
     airspace: Airspace
-        optionally specify the airspace containing the sector being controlled.
+        specify the airspace containing the sector being controlled.
+    on_route: bool
+        Setting for  "on_route" flag on created aircraft. Default is False.
     prev_sector: str
         "from_sector" for entry coordination. Default is "background".
     next_sector: str
         "to_sector" for exit coordination. Default is "background".
+    coord_direction: Literal["Horizontal", "Down", "Up"]
+        whether the coordination is horizontal or vertical.  Default is "Horizontal".
     typeof_aircraft: type[TAircraft]
         if derived class of Aircraft is to be created, specify here.
 
@@ -115,20 +118,17 @@ def create_aircraft_with_coordinations(
     tuple[TAircraft, Coordination, Coordination]
         Newly instantiated Aircraft, with Entry Coordination and Exit Coordination.
     """
-    # If airspace is not provided, fall back on first and last fixes on route
-    # for the entry and exit fixes
-    if not airspace:
-        entry_fix, exit_fix = route.filed[0], route.filed[-1]
-    else:
-        entry_fix, exit_fix = find_entry_exit_fixes(airspace, route, sector_name)
-    flight_plan = FlightPlan(route)
+    # find the entry and exit fixes for the coordinations.
+    entry_fix, exit_fix = find_entry_exit_fixes(airspace, route, sector_name)
+
+    # create entry and exit coordinations
     coordination_entry = Coordination(
         callsign=callsign,
         from_sector=prev_sector,
         to_sector=sector_name,
         fl=entry_fl,
         fix=entry_fix,
-        direction="Horizontal",
+        direction=coord_direction,
     )
 
     coordination_exit = Coordination(
@@ -137,10 +137,11 @@ def create_aircraft_with_coordinations(
         to_sector=next_sector,
         fl=exit_fl,
         fix=exit_fix,
-        direction="Horizontal",
+        direction=coord_direction,
     )
 
     # generate the Aircraft instance
+    flight_plan = FlightPlan(route)
     aircraft = typeof_aircraft(
         pos.lat,
         pos.lon,
@@ -189,13 +190,14 @@ def find_entry_exit_fixes(airspace: Airspace, route: Route, sector_name: str) ->
 
     if entry_fix and exit_fix:
         return entry_fix, exit_fix
-    # If we start or end outside the sector, use the `airspace.route_boundary_fixes` method
-    boundary_fixes = list(airspace.route_boundary_fixes(route).places.keys())
+    # If we start or end outside the sector, find fixes on the boundary
+    sector_boundary = sector.boundary()
 
     if not entry_fix:
         # start from the beginning of the route
         for fix in route.filed:
-            if fix in boundary_fixes:
+            fix_pos = airspace.fixes.places[fix]
+            if sector_boundary.on_boundary(fix_pos):
                 entry_fix = fix
                 break
         # if no match, revert to first fix in route
@@ -203,7 +205,8 @@ def find_entry_exit_fixes(airspace: Airspace, route: Route, sector_name: str) ->
     if not exit_fix:
         # start from the end of the route
         for fix in reversed(route.filed):
-            if fix in boundary_fixes:
+            fix_pos = airspace.fixes.places[fix]
+            if sector_boundary.on_boundary(fix_pos) and fix is not entry_fix:
                 exit_fix = fix
                 break
         # if no match, use last fix in route

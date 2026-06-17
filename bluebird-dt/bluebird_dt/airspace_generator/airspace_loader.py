@@ -32,3 +32,7 @@ class AirspaceLoader:
                 return airspace, routes, "SPRINGFIELD"
             case _:
                 raise ValueError(f"Scenario name {scenario_name} not recognized.")
+
+    @staticmethod
+    def list_airspaces() -> list[str]:
+        return ["I-Sector", "X-Sector", "Xplus-Sector", "Y-Sector", "Two Sector", "Springfield"]

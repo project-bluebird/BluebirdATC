@@ -46,3 +46,8 @@ jobs:
 
       - name: Check testing
         run: uv run pytest -n auto
+
+      - name: Run notebooks
+        if: github.base_ref == 'main'
+        working-directory: bluebird-dt
+        run: uv run pytest --nbmake examples/

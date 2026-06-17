@@ -27,6 +27,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+  "nbmake>=1.5.5",
   "pre-commit>=4.2.0",
   "ruff>=0.15.11,<0.16",
   "pytest>=9.0.3,<10",

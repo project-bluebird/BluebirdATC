@@ -1,5 +1,6 @@
 import os
 
+from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager
 from bluebird_dt.utility.paths import LOG_DIR
 
@@ -24,7 +25,8 @@ def list_sim_scenarios(category: str) -> list[str]:
         return SpringfieldScenarioManager.list_scenarios()
 
     if category in ["Two Aircraft", "Regular", "Custom", "Infinite"]:
-        return ["I-Sector", "X-Sector", "Xplus-Sector", "Y-Sector", "Two Sector", "Springfield"]
+        # These scenario categories can use any of the artificial airspaces.
+        return AirspaceLoader.list_airspaces()
 
     if category == "Flight School":
         return ["Xplus-Sector"]

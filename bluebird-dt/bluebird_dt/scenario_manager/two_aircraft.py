@@ -296,6 +296,7 @@ class TwoAircraft(
                 sector_name=self.sector_name,
                 entry_fl=entry_fl,
                 exit_fl=exit_fl,
+                airspace=self.airspace,
                 typeof_aircraft=self.typeof_aircraft,
             )
 

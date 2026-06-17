@@ -168,6 +168,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
                 sector_name=self.sector_name,
                 entry_fl=entry_fl,
                 exit_fl=exit_fl,
+                airspace=self.airspace,
                 on_route=False,
                 typeof_aircraft=self.typeof_aircraft,
             )
