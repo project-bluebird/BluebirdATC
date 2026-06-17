@@ -685,6 +685,73 @@ class TestPredictorUsingFallbackFiles:
 
         assert evolved.speed_tas == pytest.approx(expected_tas)
 
+    def test_tas_continuous_across_mach_cas_transition(self, generate_simple_environment: Environment):
+        """
+        Fly a climbing aircraft (with speed uncertainty applied) up through its Mach/CAS transition altitude and
+        confirm the true airspeed (TAS) does not jump as the speed regime switches from constant-CAS (below the
+        transition) to constant-Mach (above it).
+
+        The Mach schedule is stored as the TAS-equivalent of the CAS schedule at each flight level, and the Mach
+        speed-uncertainty is truncated at +/-0.5 sigma to match CAS, so the perturbed CAS and Mach offsets are
+        comparable in TAS terms. Switching regime should therefore be (near-)continuous in TAS. A "big"
+        discontinuity is defined here as >= 5 knots.
+        """
+        predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
+        aircraft = generate_simple_environment.aircraft["AIR1"]
+        aircraft.aircraft_type = "B789"  # HEAVY schedule; Mach/CAS transition near FL370
+        aircraft.selected_fl = 400.0
+        aircraft.selected_instructions.cas = None
+        aircraft.selected_instructions.mach = None
+        # Apply speed uncertainty: a single percentile rank is shared by the CAS and Mach schedules, as in
+        # production (set_performance / randomise_performance).
+        aircraft.set_performance(cas_pr=75.0)
+
+        # Climb through the transition in fine flight-level steps, recording the flown TAS and the active speed
+        # regime at each level. The aircraft is climbing throughout, as fl < selected_fl.
+        samples: list[tuple[float, float, bool]] = []
+        for fl_tenths in range(3300, 3996, 5):  # FL330.0 .. FL399.5 in 0.5 FL steps
+            aircraft.fl = fl_tenths / 10.0
+            predictor.update_total_speeds(aircraft)
+            assert aircraft.flight_state is FlightState.CLIMB
+            samples.append((aircraft.fl, aircraft.speed_tas, predictor.is_aircraft_below_transition(aircraft)))
+
+        # The aircraft must actually cross the transition (sampled both below and above it).
+        assert any(below for *_, below in samples)
+        assert not all(below for *_, below in samples)
+
+        # No big discontinuity in TAS at the regime switch (the "during" step), comparing TAS just before and
+        # just after the constant-CAS -> constant-Mach transition.
+        transition_index = next(i for i in range(1, len(samples)) if samples[i][2] != samples[i - 1][2])
+        tas_below = samples[transition_index - 1][1]
+        tas_above = samples[transition_index][1]
+        assert abs(tas_above - tas_below) < 5.0
+
+        # TAS is also smooth before and after the transition (no >= 5 kt jump between any adjacent levels).
+        max_jump = max(abs(samples[i][1] - samples[i - 1][1]) for i in range(1, len(samples)))
+        assert max_jump < 5.0
+
+    def test_transition_altitude_shifts_with_speed_uncertainty(self, generate_simple_environment: Environment):
+        """
+        The Mach/CAS transition altitude is derived from the aircraft's schedule speeds with its speed-uncertainty
+        offset applied. A faster-than-nominal aircraft (high CAS percentile rank) flies a higher CAS, so its
+        constant-CAS TAS reaches the (barely-perturbed) Mach TAS at a lower altitude - it crosses over lower. So
+        at a flight level just below the nominal crossover it has already switched to Mach while a nominal
+        aircraft of the same type is still flying on CAS.
+        """
+        predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
+        aircraft = generate_simple_environment.aircraft["AIR1"]
+        aircraft.aircraft_type = "B789"
+        aircraft.fl = 368.0  # just below the nominal HEAVY climb crossover (~FL370)
+        aircraft.selected_fl = 400.0
+        aircraft.selected_instructions.cas = None
+        aircraft.selected_instructions.mach = None
+
+        aircraft.set_performance(cas_pr=None)
+        assert predictor.is_aircraft_below_transition(aircraft) is True
+
+        aircraft.set_performance(cas_pr=95.0)
+        assert predictor.is_aircraft_below_transition(aircraft) is False
+
     @pytest.mark.parametrize(
         ("aircraft_type", "expected_climb_rocd", "expected_descent_rocd"),
         [

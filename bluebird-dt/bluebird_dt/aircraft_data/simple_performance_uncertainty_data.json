@@ -34,20 +34,20 @@
             "mach_cl": {
                 "norm_mean": 0.815,
                 "sigma": 0.0315,
-                "minimum": 0.752,
-                "maximum": 0.878
+                "minimum": 0.79925,
+                "maximum": 0.83075
             },
             "mach_cr": {
                 "norm_mean": 0.82,
                 "sigma": 0.0315,
-                "minimum": 0.757,
-                "maximum": 0.883
+                "minimum": 0.80425,
+                "maximum": 0.83575
             },
             "mach_des": {
                 "norm_mean": 0.82,
                 "sigma": 0.0315,
-                "minimum": 0.757,
-                "maximum": 0.883
+                "minimum": 0.80425,
+                "maximum": 0.83575
             }
         },
         "MEDIUM": {
@@ -84,20 +84,20 @@
             "mach_cl": {
                 "norm_mean": 0.7,
                 "sigma": 0.0315,
-                "minimum": 0.637,
-                "maximum": 0.763
+                "minimum": 0.68425,
+                "maximum": 0.71575
             },
             "mach_cr": {
                 "norm_mean": 0.75,
                 "sigma": 0.0315,
-                "minimum": 0.687,
-                "maximum": 0.813
+                "minimum": 0.73425,
+                "maximum": 0.76575
             },
             "mach_des": {
                 "norm_mean": 0.74,
                 "sigma": 0.0315,
-                "minimum": 0.677,
-                "maximum": 0.803
+                "minimum": 0.72425,
+                "maximum": 0.75575
             }
         },
         "REGIONAL": {
@@ -134,20 +134,20 @@
             "mach_cl": {
                 "norm_mean": 0.7325,
                 "sigma": 0.0315,
-                "minimum": 0.6695,
-                "maximum": 0.7955
+                "minimum": 0.71675,
+                "maximum": 0.74825
             },
             "mach_cr": {
                 "norm_mean": 0.77,
                 "sigma": 0.0315,
-                "minimum": 0.707,
-                "maximum": 0.833
+                "minimum": 0.75425,
+                "maximum": 0.78575
             },
             "mach_des": {
                 "norm_mean": 0.765,
                 "sigma": 0.0315,
-                "minimum": 0.702,
-                "maximum": 0.828
+                "minimum": 0.74925,
+                "maximum": 0.78075
             }
         },
         "TURBOPROP": {
@@ -184,20 +184,20 @@
             "mach_cl": {
                 "norm_mean": 0.44,
                 "sigma": 0.0198,
-                "minimum": 0.4004,
-                "maximum": 0.4796
+                "minimum": 0.4301,
+                "maximum": 0.4499
             },
             "mach_cr": {
                 "norm_mean": 0.505,
                 "sigma": 0.02277,
-                "minimum": 0.45955,
-                "maximum": 0.55045
+                "minimum": 0.493615,
+                "maximum": 0.516385
             },
             "mach_des": {
                 "norm_mean": 0.5525,
                 "sigma": 0.02484,
-                "minimum": 0.50273,
-                "maximum": 0.60227
+                "minimum": 0.54008,
+                "maximum": 0.56492
             }
         },
         "LIGHT": {
@@ -234,20 +234,20 @@
             "mach_cl": {
                 "norm_mean": 0.23,
                 "sigma": 0.01035,
-                "minimum": 0.2093,
-                "maximum": 0.2507
+                "minimum": 0.224825,
+                "maximum": 0.235175
             },
             "mach_cr": {
                 "norm_mean": 0.28,
                 "sigma": 0.0126,
-                "minimum": 0.2548,
-                "maximum": 0.3052
+                "minimum": 0.2737,
+                "maximum": 0.2863
             },
             "mach_des": {
                 "norm_mean": 0.34,
                 "sigma": 0.0153,
-                "minimum": 0.3094,
-                "maximum": 0.3706
+                "minimum": 0.33235,
+                "maximum": 0.34765
             }
         },
         "SLOW": {
@@ -284,20 +284,20 @@
             "mach_cl": {
                 "norm_mean": 0.1675,
                 "sigma": 0.009,
-                "minimum": 0.1495,
-                "maximum": 0.1855
+                "minimum": 0.163,
+                "maximum": 0.172
             },
             "mach_cr": {
                 "norm_mean": 0.24,
                 "sigma": 0.0108,
-                "minimum": 0.2184,
-                "maximum": 0.2616
+                "minimum": 0.2346,
+                "maximum": 0.2454
             },
             "mach_des": {
                 "norm_mean": 0.25,
                 "sigma": 0.01125,
-                "minimum": 0.2275,
-                "maximum": 0.2725
+                "minimum": 0.244375,
+                "maximum": 0.255625
             }
         }
     }
