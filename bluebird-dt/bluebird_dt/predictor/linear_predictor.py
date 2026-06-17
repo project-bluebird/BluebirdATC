@@ -387,20 +387,8 @@ class LinearPredictor(Predictor):
             cas_trans = aircraft.selected_instructions.cas
 
         if aircraft.selected_instructions.mach is None:
-            mach_data = performance_table.get(mach_key)
-            if not isinstance(mach_data, list):
-                return True
-
-            valid_mach_values = [value for value in mach_data if value is not None]
-            if not valid_mach_values:
-                return True
-
-            mach_trans = max(valid_mach_values)
-            # Mach falls back to the CAS percentile rank when it has no rank of its own (as in speed_from_tables).
-            mach_rank = ranks.get(mach_key)
-            if mach_rank is None:
-                mach_rank = ranks.get(cas_key)
-            mach_trans += lateral_speed_offset(speed_uncertainty, mach_key, mach_rank)
+            mach_trans = max([value for value in performance_table.get(mach_key) if value is not None])
+            mach_trans += lateral_speed_offset(speed_uncertainty, mach_key, ranks.get(mach_key))
         else:
             mach_trans = aircraft.selected_instructions.mach
 
