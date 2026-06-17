@@ -218,21 +218,15 @@ class LinearPredictor(Predictor):
         # Get aircraft CAS and Mach speeds
         cas_KT, mach = self.get_aircraft_cas_mach_speeds(aircraft)
 
-        # Simple-mode tables may not include Mach values.
-        if mach is None:
-            tas_KT = cas_to_tas(aircraft.fl, cas_KT * KT_TO_MPS, self.delta_T) * MPS_TO_KT
+        # Determine aircraft location relative to Mach/CAS transition altitude
+        is_below_transition = self.is_aircraft_below_transition(aircraft)
 
-        else:
-            # Determine aircraft location relative to Mach/CAS transition altitude
-            is_below_transition = self.is_aircraft_below_transition(aircraft)
-
+        if is_below_transition or mach is None:
             # If below transition, aircraft is flying on cleared_cas
-            if is_below_transition:
-                tas_KT = cas_to_tas(aircraft.fl, cas_KT * KT_TO_MPS, self.delta_T) * MPS_TO_KT
-
+            tas_KT = cas_to_tas(aircraft.fl, cas_KT * KT_TO_MPS, self.delta_T) * MPS_TO_KT
+        else:
             # If above transition, aircraft is flying on cleared_mach
-            else:
-                tas_KT = mach_to_tas(aircraft.fl, mach, self.delta_T) * MPS_TO_KT
+            tas_KT = mach_to_tas(aircraft.fl, mach, self.delta_T) * MPS_TO_KT
 
         # Set the aircraft TAS
         aircraft.speed_tas = tas_KT
