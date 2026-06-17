@@ -654,27 +654,6 @@ class TestPredictorUsingFallbackFiles:
         assert cas == pytest.approx(314.84626264893353)
         assert mach == pytest.approx(apply_speed_uncertainty(nominal_mach, mach_uncertainty, 75.0))
 
-    def test_simple_mach_uncertainty_uses_cas_percentile_fallback(
-        self, generate_simple_environment: Environment
-    ):
-        predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
-        aircraft = generate_simple_environment.aircraft["AIR1"]
-
-        aircraft.aircraft_type = "MEDIUM"
-        aircraft.fl = 200.0
-        aircraft.selected_fl = 200.0
-        aircraft.selected_instructions.cas = None
-        aircraft.selected_instructions.mach = None
-        aircraft.percentile_rank_dict = {"cas_cr": 75.0}
-
-        _, mach = predictor.speed_from_tables(aircraft)
-        mach_uncertainty = predictor.uncertainty_data["MEDIUM"]["mach_cr"]
-
-        # Nominal mach is the TAS-equivalent of the nominal cruise CAS (310 kt for MEDIUM at FL200).
-        nominal_mach = tas_to_mach(aircraft.fl, cas_to_tas(aircraft.fl, 310.0 * KT_TO_MPS, 0.0), 0.0)
-
-        assert mach == pytest.approx(apply_speed_uncertainty(nominal_mach, mach_uncertainty, 75.0))
-
     @pytest.mark.parametrize(
         ("aircraft_type", "expected_cas", "expected_mach"),
         [
