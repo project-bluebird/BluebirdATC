@@ -43,9 +43,7 @@ def get_performance_table(
     for aircraft_type, table in data.items():
         fls = table.get("flight_level", [])
         if any(fls[i] >= fls[i + 1] for i in range(len(fls) - 1)):
-            raise ValueError(
-                f"flight_level for '{aircraft_type}' in {path} must be strictly increasing, got {fls}"
-            )
+            raise ValueError(f"flight_level for '{aircraft_type}' in {path} must be strictly increasing, got {fls}")
 
     return data
 
