@@ -2,22 +2,22 @@
     "aircraft": {
         "HEAVY": {
             "cas_cl": {
-                "norm_mean": 286,
+                "norm_mean": 300,
                 "sigma": 20,
-                "minimum": 276,
-                "maximum": 296
+                "minimum": 290,
+                "maximum": 310
             },
             "cas_cr": {
-                "norm_mean": 303,
+                "norm_mean": 320,
                 "sigma": 20,
-                "minimum": 293,
-                "maximum": 313
+                "minimum": 310,
+                "maximum": 330
             },
             "cas_des": {
-                "norm_mean": 294,
+                "norm_mean": 290,
                 "sigma": 20,
-                "minimum": 284,
-                "maximum": 304
+                "minimum": 280,
+                "maximum": 300
             },
             "rocd_cl": {
                 "norm_mean": 1750,
@@ -32,42 +32,42 @@
                 "maximum": 2000
             },
             "mach_cl": {
-                "norm_mean": 0.815,
+                "norm_mean": 0.83,
                 "sigma": 0.0315,
-                "minimum": 0.79925,
-                "maximum": 0.83075
+                "minimum": 0.81425,
+                "maximum": 0.84575
             },
             "mach_cr": {
-                "norm_mean": 0.82,
+                "norm_mean": 0.85,
                 "sigma": 0.0315,
-                "minimum": 0.80425,
-                "maximum": 0.83575
+                "minimum": 0.83425,
+                "maximum": 0.86575
             },
             "mach_des": {
-                "norm_mean": 0.82,
+                "norm_mean": 0.83,
                 "sigma": 0.0315,
-                "minimum": 0.80425,
-                "maximum": 0.83575
+                "minimum": 0.81425,
+                "maximum": 0.84575
             }
         },
         "MEDIUM": {
             "cas_cl": {
-                "norm_mean": 279,
+                "norm_mean": 290,
                 "sigma": 20,
-                "minimum": 269,
-                "maximum": 289
+                "minimum": 280,
+                "maximum": 300
             },
             "cas_cr": {
-                "norm_mean": 294,
+                "norm_mean": 300,
                 "sigma": 20,
-                "minimum": 284,
-                "maximum": 304
+                "minimum": 290,
+                "maximum": 310
             },
             "cas_des": {
-                "norm_mean": 288,
+                "norm_mean": 280,
                 "sigma": 20,
-                "minimum": 278,
-                "maximum": 298
+                "minimum": 270,
+                "maximum": 290
             },
             "rocd_cl": {
                 "norm_mean": 2500,
@@ -82,42 +82,42 @@
                 "maximum": 3000
             },
             "mach_cl": {
-                "norm_mean": 0.7,
+                "norm_mean": 0.79,
                 "sigma": 0.0315,
-                "minimum": 0.68425,
-                "maximum": 0.71575
+                "minimum": 0.77425,
+                "maximum": 0.80575
             },
             "mach_cr": {
-                "norm_mean": 0.75,
+                "norm_mean": 0.8,
                 "sigma": 0.0315,
-                "minimum": 0.73425,
-                "maximum": 0.76575
+                "minimum": 0.78425,
+                "maximum": 0.81575
             },
             "mach_des": {
-                "norm_mean": 0.74,
+                "norm_mean": 0.78,
                 "sigma": 0.0315,
-                "minimum": 0.72425,
-                "maximum": 0.75575
+                "minimum": 0.76425,
+                "maximum": 0.79575
             }
         },
         "REGIONAL": {
             "cas_cl": {
-                "norm_mean": 259,
+                "norm_mean": 270,
                 "sigma": 20,
-                "minimum": 249,
-                "maximum": 269
+                "minimum": 260,
+                "maximum": 280
             },
             "cas_cr": {
-                "norm_mean": 276,
+                "norm_mean": 280,
                 "sigma": 20,
-                "minimum": 266,
-                "maximum": 286
+                "minimum": 270,
+                "maximum": 290
             },
             "cas_des": {
-                "norm_mean": 269,
+                "norm_mean": 265,
                 "sigma": 20,
-                "minimum": 259,
-                "maximum": 279
+                "minimum": 255,
+                "maximum": 275
             },
             "rocd_cl": {
                 "norm_mean": 3500,
@@ -132,10 +132,10 @@
                 "maximum": 4000
             },
             "mach_cl": {
-                "norm_mean": 0.7325,
+                "norm_mean": 0.75,
                 "sigma": 0.0315,
-                "minimum": 0.71675,
-                "maximum": 0.74825
+                "minimum": 0.73425,
+                "maximum": 0.76575
             },
             "mach_cr": {
                 "norm_mean": 0.77,
@@ -144,30 +144,30 @@
                 "maximum": 0.78575
             },
             "mach_des": {
-                "norm_mean": 0.765,
+                "norm_mean": 0.75,
                 "sigma": 0.0315,
-                "minimum": 0.74925,
-                "maximum": 0.78075
+                "minimum": 0.73425,
+                "maximum": 0.76575
             }
         },
         "TURBOPROP": {
             "cas_cl": {
-                "norm_mean": 188,
+                "norm_mean": 185,
                 "sigma": 20,
-                "minimum": 178,
-                "maximum": 198
+                "minimum": 175,
+                "maximum": 195
             },
             "cas_cr": {
-                "norm_mean": 215,
+                "norm_mean": 220,
                 "sigma": 20,
-                "minimum": 205,
-                "maximum": 225
+                "minimum": 210,
+                "maximum": 230
             },
             "cas_des": {
-                "norm_mean": 208,
+                "norm_mean": 210,
                 "sigma": 20,
-                "minimum": 198,
-                "maximum": 218
+                "minimum": 200,
+                "maximum": 220
             },
             "rocd_cl": {
                 "norm_mean": 1500,
@@ -202,22 +202,22 @@
         },
         "LIGHT": {
             "cas_cl": {
-                "norm_mean": 160,
+                "norm_mean": 155,
                 "sigma": 20,
-                "minimum": 150,
-                "maximum": 170
+                "minimum": 145,
+                "maximum": 165
             },
             "cas_cr": {
-                "norm_mean": 180,
+                "norm_mean": 175,
                 "sigma": 20,
-                "minimum": 170,
-                "maximum": 190
+                "minimum": 165,
+                "maximum": 185
             },
             "cas_des": {
-                "norm_mean": 170,
+                "norm_mean": 165,
                 "sigma": 20,
-                "minimum": 160,
-                "maximum": 180
+                "minimum": 155,
+                "maximum": 175
             },
             "rocd_cl": {
                 "norm_mean": 1000,
@@ -252,22 +252,22 @@
         },
         "SLOW": {
             "cas_cl": {
+                "norm_mean": 90,
+                "sigma": 20,
+                "minimum": 80,
+                "maximum": 100
+            },
+            "cas_cr": {
                 "norm_mean": 115,
                 "sigma": 20,
                 "minimum": 105,
                 "maximum": 125
             },
-            "cas_cr": {
-                "norm_mean": 135,
-                "sigma": 20,
-                "minimum": 125,
-                "maximum": 145
-            },
             "cas_des": {
-                "norm_mean": 135,
+                "norm_mean": 110,
                 "sigma": 20,
-                "minimum": 125,
-                "maximum": 145
+                "minimum": 100,
+                "maximum": 120
             },
             "rocd_cl": {
                 "norm_mean": 1000,
