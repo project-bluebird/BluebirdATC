@@ -233,7 +233,8 @@ def rocd_from_table(
     aircraft_flight_state: FlightState,
 ) -> float:
     """
-    Return the predicted aircraft vertical speed using linear interpolation on the ROCD table data
+    Return the predicted aircraft vertical speed using linear interpolation on the ROCD table data.
+    Returns 0.0 when climbing at or above the table ceiling (aircraft has reached its performance limit).
 
     Parameters
     ----------
@@ -257,6 +258,9 @@ def rocd_from_table(
     flight_levels = aircraft_speed_table["flight_level"]
     min_fl = flight_levels[0]
     max_fl = flight_levels[-1]
+
+    if aircraft_fl > max_fl and aircraft_flight_state is FlightState.CLIMB:
+        return 0.0
 
     # behave appropriately for each edge case of fl vs available speed profile flight levels
     # NOTE: fl_index corresponds to the lower of the two indices in the flight level array that bounds
