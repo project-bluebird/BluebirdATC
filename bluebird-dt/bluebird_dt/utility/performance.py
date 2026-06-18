@@ -259,7 +259,7 @@ def rocd_from_table(
     min_fl = flight_levels[0]
     max_fl = flight_levels[-1]
 
-    if aircraft_fl > max_fl and aircraft_flight_state is FlightState.CLIMB:
+    if aircraft_fl >= max_fl and aircraft_flight_state is FlightState.CLIMB:
         return 0.0
 
     # behave appropriately for each edge case of fl vs available speed profile flight levels
