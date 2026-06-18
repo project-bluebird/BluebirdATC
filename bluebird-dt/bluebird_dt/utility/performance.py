@@ -270,7 +270,8 @@ def apply_lateral_speed_uncertainty(
     cas_key, mach_key = lateral_speed_keys(aircraft_flight_state)
     ranks = percentile_rank_table or {}
     cas += lateral_speed_offset(speed_uncertainty_table, cas_key, ranks.get(cas_key))
-    mach += lateral_speed_offset(speed_uncertainty_table, mach_key, ranks.get(mach_key))
+    if mach is not None:
+        mach += lateral_speed_offset(speed_uncertainty_table, mach_key, ranks.get(mach_key))
 
     return cas, mach
 

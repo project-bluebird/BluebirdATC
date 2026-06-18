@@ -606,16 +606,16 @@ class TestPredictorUsingFallbackFiles:
             _, _ = predictor.speed_from_tables(aircraft)
 
     @pytest.mark.parametrize(
-        ("aircraft_type", "expected_cas"),
+        ("aircraft_type", "expected_cas", "expected_mach"),
         [
-            ("A320", 310.0),
-            ("B789", 320.0),
-            ("C172", 200.0),
-            ("A388", 320.0),
+            ("A320", 300.0, 0.8),    # MEDIUM
+            ("B789", 320.0, 0.85),   # HEAVY
+            ("C172", 175.0, None),   # LIGHT: all-null mach table
+            ("A388", 320.0, 0.85),   # HEAVY
         ],
     )
     def test_speed_from_tables(
-        self, aircraft_type: str, expected_cas: float, generate_simple_environment: Environment
+        self, aircraft_type: str, expected_cas: float, expected_mach: float | None, generate_simple_environment: Environment
     ):
         predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
         aircraft = generate_simple_environment.aircraft["AIR1"]
@@ -629,8 +629,10 @@ class TestPredictorUsingFallbackFiles:
         cas, mach = predictor.speed_from_tables(aircraft)
 
         assert cas == pytest.approx(expected_cas)
-        # Mach is stored as the TAS-equivalent of CAS at each flight level.
-        assert mach_to_tas(aircraft.fl, mach, 0.0) == pytest.approx(cas_to_tas(aircraft.fl, expected_cas * KT_TO_MPS, 0.0))
+        if expected_mach is None:
+            assert mach is None
+        else:
+            assert mach == pytest.approx(expected_mach)
 
     def test_simple_speed_uncertainty_applied_for_percentile_rank(
         self, generate_simple_environment: Environment
@@ -647,11 +649,11 @@ class TestPredictorUsingFallbackFiles:
 
         cas, mach = predictor.speed_from_tables(aircraft)
 
-        # Nominal mach is the TAS-equivalent of the nominal cruise CAS (310 kt for MEDIUM at FL200).
-        nominal_mach = tas_to_mach(aircraft.fl, cas_to_tas(aircraft.fl, 310.0 * KT_TO_MPS, 0.0), 0.0)
+        # Nominal mach is the MEDIUM cruise table value (0.8).
+        nominal_mach = 0.8
         mach_uncertainty = predictor.uncertainty_data["MEDIUM"]["mach_cr"]
 
-        assert cas == pytest.approx(314.84626264893353)
+        assert cas == pytest.approx(304.84626264893353)
         assert mach == pytest.approx(apply_speed_uncertainty(nominal_mach, mach_uncertainty, 75.0))
 
     @pytest.mark.parametrize(
@@ -698,7 +700,7 @@ class TestPredictorUsingFallbackFiles:
         """
         predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
         aircraft = generate_simple_environment.aircraft["AIR1"]
-        aircraft.aircraft_type = "B789"  # HEAVY schedule; Mach/CAS transition near FL370
+        aircraft.aircraft_type = "B789"  # HEAVY schedule; Mach/CAS transition near FL325
         aircraft.selected_fl = 400.0
         aircraft.selected_instructions.cas = None
         aircraft.selected_instructions.mach = None
@@ -709,7 +711,7 @@ class TestPredictorUsingFallbackFiles:
         # Climb through the transition in fine flight-level steps, recording the flown TAS and the active speed
         # regime at each level. The aircraft is climbing throughout, as fl < selected_fl.
         samples: list[tuple[float, float, bool]] = []
-        for fl_tenths in range(3300, 3996, 5):  # FL330.0 .. FL399.5 in 0.5 FL steps
+        for fl_tenths in range(3000, 3596, 5):  # FL300.0 .. FL359.5 in 0.5 FL steps
             aircraft.fl = fl_tenths / 10.0
             predictor.update_total_speeds(aircraft)
             assert aircraft.flight_state is FlightState.CLIMB
@@ -741,7 +743,7 @@ class TestPredictorUsingFallbackFiles:
         predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
         aircraft = generate_simple_environment.aircraft["AIR1"]
         aircraft.aircraft_type = "B789"
-        aircraft.fl = 368.0  # just below the nominal HEAVY climb crossover (~FL370)
+        aircraft.fl = 322.0  # just below the nominal HEAVY climb crossover (~FL325)
         aircraft.selected_fl = 400.0
         aircraft.selected_instructions.cas = None
         aircraft.selected_instructions.mach = None
