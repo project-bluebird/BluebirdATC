@@ -36,10 +36,18 @@ def get_performance_table(
 
     try:
         with open(path) as aircraft_speed_profile:
-            return json.load(aircraft_speed_profile)["aircraft"]
-
+            data = json.load(aircraft_speed_profile)["aircraft"]
     except FileNotFoundError as e:
         raise FileNotFoundError("Speed profile data file could not be found!") from e
+
+    for aircraft_type, table in data.items():
+        fls = table.get("flight_level", [])
+        if any(fls[i] >= fls[i + 1] for i in range(len(fls) - 1)):
+            raise ValueError(
+                f"flight_level for '{aircraft_type}' in {path} must be strictly increasing, got {fls}"
+            )
+
+    return data
 
 
 @functools.cache
