@@ -49,6 +49,9 @@ while not done:
     action = env.action_space.sample()
     obs, reward, done, truncated, info = env.step(action)
 ```
+
+Various examples of using the `bluebird-gymnasium` package can be found in the form of Jupyter notebooks in the [examples](https://github.com/project-bluebird/BluebirdATC/tree/main/bluebird-gymnasium/examples) directory or in the [documentation](https://docs.projectbluebird.ai/examples/competition/Competition-Intro/) for the AI(r) Traffic Controller Challenge.
+
 ## Documentation
 
 The documentation of the latest release is available at [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai).
