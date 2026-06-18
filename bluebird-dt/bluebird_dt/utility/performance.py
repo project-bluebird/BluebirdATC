@@ -245,8 +245,7 @@ def apply_lateral_speed_uncertainty(
     """
     Apply the speed uncertainty offset to nominal CAS and mach speeds for the given flight phase.
 
-    The nominal speeds come from cas_and_mach_from_table. CAS uses its own percentile rank; mach falls back to the
-    CAS percentile rank when it has no rank of its own. Speeds without a rank or without uncertainty data are
+    The nominal speeds come from cas_and_mach_from_table. Speeds without a rank or without uncertainty data are
     returned unchanged.
 
     Parameters
