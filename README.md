@@ -1,12 +1,12 @@
 # BluebirdATC <img src="images/BBATC_logo.png" alt="BluebirdATC logo" align="right" height="160" />
 
-BluebirdATC is an open-source digital twin of en route airspace, developed by [Project Bluebird](https://www.turing.ac.uk/science-innovation/defence-and-national-security/project-bluebird), a collaboration between the Alan Turing Institute, the University of Exeter and NATS. It provides a safe, reproducible sandbox to simulate realistic air traffic scenarios, develop autonomous ATC agents, and benchmark their performance.
+BluebirdATC is an open-source digital twin of en route airspace, developed by [Project Bluebird](https://www.projectbluebird.ai), a collaboration between the Alan Turing Institute, the University of Exeter and NATS. It provides a safe, reproducible sandbox to simulate realistic air traffic scenarios, develop autonomous ATC agents, and benchmark their performance.
 
 ![RouteFollowPredictor](images/auto_pilot.gif)
 
 ## Packages
 
-This repository contains the following packages:
+This repository contains the following packages, each with their own README for more information:
 
 | Package | Purpose |
 | --- | --- |
@@ -17,7 +17,7 @@ This repository contains the following packages:
 
 ## AI(r) Traffic Controller Challenge
 
-Project Bluebird are hosting a AI agent development competition, the *AI(r) Traffic Controller Challenge*.
+Project Bluebird are hosting an AI agent development competition, the *AI(r) Traffic Controller Challenge*.
 
 To get started with the competition specific setup see the docs [here](https://docs.projectbluebird.ai/examples/competition/Competition-Intro/).
 
