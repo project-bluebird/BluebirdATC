@@ -654,7 +654,7 @@ class TestPredictorInSimpleMode:
         [
             ("A320", 2500.0, -2500.0),
             ("B789", 1750.0, -1750.0),
-            ("C172", 1000.0, -1000.0),
+            ("C172", 0.0, -1000.0),
             ("A388", 1750.0, -1750.0),
         ],
     )
@@ -717,3 +717,15 @@ class TestPredictorInSimpleMode:
 
         with pytest.raises(ValueError):
             predictor.predict_aircraft(aircraft, 1.0, deepcopy_aircraft=True)
+
+
+def test_shipped_performance_profiles_have_increasing_flight_levels():
+    from bluebird_dt.utility.performance import get_performance_table
+    from bluebird_dt.utility.paths import SIMPLE_PERFORMANCE_PROFILE_FILE
+
+    table = get_performance_table(None)
+    for aircraft_type, data in table.items():
+        fls = data["flight_level"]
+        assert fls == sorted(fls) and len(fls) == len(set(fls)), (
+            f"{aircraft_type}: flight_level must be strictly increasing, got {fls}"
+        )
