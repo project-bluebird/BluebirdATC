@@ -19,8 +19,8 @@ uvx bluebird-api@latest
 ```
 
 1. Open [http://localhost:8000](http://localhost:8000) — you should see `"Hello, BluebirdATC!"`.
-1. Navigate to [http://localhost:8000/hmi](http://localhost:8000/hmi) to open the radar visualisation.
-1. Select **Load new scenario** in the top left, choose a scenario type (eg. `Springfield`) and scenario (eg `test1`), and press **Load**.
+2. Navigate to [http://localhost:8000/hmi](http://localhost:8000/hmi) to open the radar visualisation.
+3. Select **Load new scenario** in the top left, choose a scenario type (eg. `Springfield`) and scenario (eg `test1`), and press **Load**.
 
 > **Note: Running on a remote machine/cloud?**
 Currently, the built version of the app is configured to look for the API running on `localhost`.  For deploying on remote machines, or a cloud service, it will be necessary to modify `src/api/config.ts` accordingly, and rebuild via `npm run build`.
