@@ -689,14 +689,12 @@ class TestPredictorUsingFallbackFiles:
 
     def test_tas_continuous_across_mach_cas_transition(self, generate_simple_environment: Environment):
         """
-        Fly a climbing aircraft (with speed uncertainty applied) up through its Mach/CAS transition altitude and
-        confirm the true airspeed (TAS) does not jump as the speed regime switches from constant-CAS (below the
-        transition) to constant-Mach (above it).
-
-        The Mach schedule is stored as the TAS-equivalent of the CAS schedule at each flight level, and the Mach
-        speed-uncertainty is truncated at +/-0.5 sigma to match CAS, so the perturbed CAS and Mach offsets are
-        comparable in TAS terms. Switching regime should therefore be (near-)continuous in TAS. A "big"
-        discontinuity is defined here as >= 5 knots.
+        The aircraft flies a constant-CAS / constant-Mach schedule (one cruise CAS and one cruise Mach per phase). 
+        The transition altitude is, by definition, the flight level where the constant-CAS TAS equals the constant-Mach TAS, 
+        so TAS is continuous across the regime switch by construction. Under uncertainty the same flight-level-independent 
+        offset is added to both the speed that defines the crossover and the speed actually flown, and the Mach offset is 
+        truncated at +/-0.5 sigma to match CAS, so the crossover shifts consistently with the flown speed and the 
+        perturbation stays small - keeping TAS (near-)continuous.
         """
         predictor = LinearPredictor(1.0, 2.0, fixes=generate_simple_environment.airspace.fixes)
         aircraft = generate_simple_environment.aircraft["AIR1"]

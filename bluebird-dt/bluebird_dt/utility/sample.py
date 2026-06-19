@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import functools
-import random
 
 import numpy as np
 from scipy.stats import truncnorm
+
 
 @functools.lru_cache(maxsize=16384)
 def _truncnorm_ppf(percentile_rank: float, lower: float, upper: float) -> float:

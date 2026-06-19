@@ -21,6 +21,8 @@ from bluebird_dt.utility.convert import nan_to_none
 if typing.TYPE_CHECKING:
     from bluebird_dt.core import Airspace
 
+LATERAL_SPEED_RANK_KEYS = ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl"]
+
 
 class FlightState(Enum):
     CLIMB = "climb"
@@ -877,7 +879,7 @@ class Aircraft(Comparison):
 
             # Select a lateral speed percentile rank, shared by the CAS and Mach speeds
             cas_percentile_rank = random.uniform(0, 100.0)
-            for key in ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl"]:
+            for key in LATERAL_SPEED_RANK_KEYS:
                 self.percentile_rank_dict[key] = cas_percentile_rank
 
             # Select a ROCD percentile rank
@@ -903,10 +905,10 @@ class Aircraft(Comparison):
         if cas_pr:
             if cas_pr < 0.0 or cas_pr > 100.0:
                 raise ValueError("Trying to set aircraft performance using a invalid CAS percentile rank")
-            for key in ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl"]:
+            for key in LATERAL_SPEED_RANK_KEYS:
                 self.percentile_rank_dict[key] = cas_pr
         else:
-            for key in ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl"]:
+            for key in LATERAL_SPEED_RANK_KEYS:
                 self.percentile_rank_dict[key] = None
 
         if rocd_pr:
