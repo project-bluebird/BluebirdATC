@@ -256,7 +256,7 @@ class Sector(Comparison):
 
     def get_volume(self, position: Pos3D | Pos4D, epsilon: float = 1e-10) -> Volume | None:
         """
-        Returns the sector volume that conatins the given poisition, otherwise None.
+        Returns the sector volume that contains the given position, otherwise None.
 
         Parameters
         ----------

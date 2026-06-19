@@ -80,7 +80,7 @@ class ContextFilter(logging.Filter):
     The context filter is a Filter that appends context to the logger and doesn't do any filtering, but is named as such
     because it is registered as a filter.
 
-    Once registered, all logs emmited with the logger this filter has been added to will consider this context through a
+    Once registered, all logs emitted with the logger this filter has been added to will consider this context through a
     reference to the original object. Future modifications to the object will be automatically applied.
 
     Adding new attributes which want to be displayed need modifications in the CustomFormatter type, adding the key to

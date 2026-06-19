@@ -154,7 +154,7 @@ class Simulator:
 
     def setup_logging(self):
         """
-        The location of the base logfile directory can be overriden by derived classes.
+        The location of the base logfile directory can be overridden by derived classes.
         """
         os.makedirs(os.path.join(LOG_DIR, self.log_filename), exist_ok=True)
         self.logging_file_handler = logging.FileHandler(
@@ -368,20 +368,17 @@ class Simulator:
     def environment(
         self,
         sim_time: float,  # noqa: ARG002 -- time only used to enable time-based caching
-        sector_id: str | None = None,
         no_airspace: bool = False,
         last_n_observations: int = 0,
     ) -> dict[str, typing.Any]:
         """
-        Get the current environment state.
+        Get the current environment state. Excludes wind field data to reduce the size of data returned.
 
         Parameters
         ----------
         sim_time: float
             Environment time in unix time (seconds).
             Only used to enable time-based caching
-        sector_id: str, optional
-            Sector id to be used in environment manager `observe` method
         no_airspace: bool, default is False
             If true, airspace will not be included in return data
         last_n_observations: int, default is 0
@@ -392,7 +389,7 @@ class Simulator:
         dict
             Dictionary describing the current state of the environment
         """
-        env = self.manager.observe(sector_id)
+        env = self.manager.environment
 
         # only pass coordinations for aircraft in the airspace (there may be
         # coordinations for aircraft which haven't arrived yet
@@ -400,14 +397,12 @@ class Simulator:
             coord.data() for coord in env.coordinations.values() if coord.callsign in set(env.aircraft.keys())
         ]
 
-        # gather the basic env data
+        # gather the basic env data, remove wind fields data to reduce the size of the data
         env_data = {
             "time": env.time,
             "start_time": env.start_time,
             "aircraft": {callsign: aircraft.data() for (callsign, aircraft) in env.aircraft.items()},
             "coordinations": coordinations,
-            "wind_field": env.wind_field,
-            "forecast": env.forecast_wind_field,
         }
 
         # include the airspace if requested
@@ -528,7 +523,7 @@ class Simulator:
         """
         func_start_time = datetime.now()
         # radar displays all aircraft
-        environment = self.manager.observe()
+        environment = self.manager.environment
 
         if sector_id is not None:
             sector_id = self.manager.environment.airspace.sector_name_from_list_of_individual_sectors(
@@ -774,6 +769,22 @@ class Simulator:
             environment_manager=self.manager.config(),
         )
 
+    def close(self):
+        """
+        Clean up after the simulator, otherwise it doesn't get garbage collected.
+        """
+        self.scenario_manager.close()
+
+        if self.logging_context:
+            logger.removeFilter(self.logging_context)
+
+        if self.logging_file_handler:
+            logger.removeHandler(self.logging_file_handler)
+
+        self.environment.cache_clear()
+        self.dynamic_data.cache_clear()
+        self.static_data.cache_clear()
+
     def save(self, autosave: bool = False) -> bool:
         """
         Save simulator state to JSON.
@@ -801,9 +812,3 @@ class Simulator:
             logger.info(f"Log saved to {self.manager.event_logger.log_name + '.tar.gz'}")
 
         return True
-
-    def __del__(self):
-        if self.logging_context is not None:
-            logger.removeFilter(self.logging_context)
-        if self.logging_file_handler is not None:
-            logger.removeHandler(self.logging_file_handler)

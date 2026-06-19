@@ -88,7 +88,7 @@ def test_landing():
 
 def test_to_simulator():
     """
-    Test the SpringfieldScenarioManager.to_simulator() method creates the required components and sets the appropriate variables correectly.
+    Test the SpringfieldScenarioManager.to_simulator() method creates the required components and sets the appropriate variables correctly.
     """
     
     simulator = SpringfieldScenarioManager(scenario_name="example-scenario",).to_simulator(

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import numpy as np
 import typing
 
+import numpy as np
 from bluebird_dt.utility import convert
 
-from bluebird_gymnasium.envs.base import BaseEnv
 from bluebird_gymnasium.state_repr import (
     StateReprClipper as SRC,
+)
+from bluebird_gymnasium.state_repr import (
     StateReprScaler as SRS,
 )
 from bluebird_gymnasium.state_repr.base import BaseRepresentation
@@ -18,16 +19,19 @@ from bluebird_gymnasium.utils.geo_utils import (
     segment_in_sector_interp,
 )
 from bluebird_gymnasium.utils.simulator_utils import (
-    aircraft_entry_coordination,
-    aircraft_exit_coordination,
     distance_to_target_pos_along_route,
     get_n_forward_fixes,
+)
+from bluebird_gymnasium.utils.simulator_utils import (
     get_aircraft_selected_heading as _selected_heading,
 )
 from bluebird_gymnasium.utils.types import PositionStatus
 
 if typing.TYPE_CHECKING:
     import numpy.typing as npt
+
+    from bluebird_gymnasium.envs.base import BaseEnv
+    from bluebird_gymnasium.utils.types import Line
 
 
 class RelativeRepresentationRaw(BaseRepresentation):
@@ -52,7 +56,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
     |     | filed route centreline        |      |      |                     |
     |   5 | Aircraft distance from the    | -inf |  inf | Nautical Miles (NM) |
     |     | current route centreline      |      |      |                     |
-    |   6 | Difference betweeen aircraft  | -inf |  inf | Nautical Miles (NM) |
+    |   6 | Difference between aircraft  | -inf |  inf | Nautical Miles (NM) |
     |     | track distance (current route)|      |      |                     |
     |     | to its exit position and its  |      |      |                     |
     |     | track distance to its exit    |      |      |                     |
@@ -196,7 +200,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
     |   8 | difference between aircraft   |  0.0| inf | Nautical Miles (NM)   |
     |     | pair relative centreline      |     |     |                       |
     |     | distance, depending on the    |     |     |                       |
-    |     | interaction cateogry          |     |     |                       |
+    |     | interaction category          |     |     |                       |
     |     |                               |     |     |                       |
     +-----+------------------------------ +-----+-----+-----------------------+
 
@@ -212,10 +216,10 @@ class RelativeRepresentationRaw(BaseRepresentation):
             `None` if it is not used in the aircraft's state representation.
 
     Note for users when training agents based on neural network policies:
-    while this representation could be proccessed directly by a neural network,
+    while this representation could be processed directly by a neural network,
     only consider using it only when additional pre-processing has been
     done before it is fed to a network as input. This is because the scales
-    and the range of values for each feature is signficantly different.
+    and the range of values for each feature is significantly different.
     An example of an additional processing is the use of normalization (and
     clipping) strategies to standardize the input based on running mean and
     standard deviation. This dynamically adjusts the scaling metrics unlike
@@ -230,9 +234,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(RelativeRepresentationRaw, self).__init__(
-            knn, num_forward_fixes, use_filed_route, num_actions
-        )
+        super().__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [
@@ -370,18 +372,17 @@ class RelativeRepresentationRaw(BaseRepresentation):
         airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
         airspace = simulator_env.airspace
-        obs = []
 
         ####### utils: get useful information for computing base features
         # get entry and exit flight levels from coordination data
         entry_fl = tracked_data[callsign].entry_coords[airspace_sector].fl
         exit_fl = tracked_data[callsign].exit_coords[airspace_sector].fl
 
-        # relative flight level: difference beween aircraft flight level
+        # relative flight level: difference between aircraft flight level
         # and exit flight level
         fl_diff_ac_exit = aircraft.fl - exit_fl
 
-        # relative flight level: difference beween aircraft
+        # relative flight level: difference between aircraft
         # selected flight level and exit flight level
         fl_diff_ac_exit_selected = aircraft.selected_fl - exit_fl
 
@@ -411,10 +412,8 @@ class RelativeRepresentationRaw(BaseRepresentation):
 
         # difference between the previous and current track (current route)
         # distance to exit
-        if callsign in prev_tracked_data.keys():
-            prev_dist_ac_exit = prev_tracked_data[
-                callsign
-            ].track_dist_to_exit_cr
+        if callsign in prev_tracked_data:
+            prev_dist_ac_exit = prev_tracked_data[callsign].track_dist_to_exit_cr
         else:
             # aircraft tracking just started (either was just spawned or
             # arrived at the point before sector entry where tracking begins).
@@ -433,23 +432,15 @@ class RelativeRepresentationRaw(BaseRepresentation):
         # aircraft distance away from the sector exit (after outcomm)
         # only measured after the aircraft has exited the sector.
         # if aircraft is still in the sector, then it set to 0.0
-        dist_away_sector_exit = tracked_data[
-            callsign
-        ].dist_away_from_sector_exit
+        dist_away_sector_exit = tracked_data[callsign].dist_away_from_sector_exit
 
         # aircraft route following status: indicates whether or not the
         # aircraft is following its defined flight plan route, or not (in this
         # case, flying on a heading issued by the agent).
-        if aircraft.on_route is True:
-            route_ff_status = 1.0
-        else:
-            route_ff_status = -1.0
+        route_ff_status = 1.0 if aircraft.on_route else -1.0
 
         # aircraft position indicator: in-sector or out of sector
-        if tracked_data[callsign].pos_status == PositionStatus.IN_SECTOR:
-            pos_status = 1.0
-        else:
-            pos_status = -1.0
+        pos_status = 1.0 if tracked_data[callsign].pos_status == PositionStatus.IN_SECTOR else -1.0
 
         # aircraft position status measurement:
         bearing_ac_nb_360 = tracked_data[callsign].nearest_360_boundary_bear
@@ -462,12 +453,8 @@ class RelativeRepresentationRaw(BaseRepresentation):
 
         # 2. difference between aircraft selected heading and the bearing from
         # the aircraft position to the nearest boundary (nb) point.
-        angle_diff_ac_nb_360_sh = angle_diff(
-            _selected_heading(aircraft), bearing_ac_nb_360
-        )
-        turn_dir = left_right_check(
-            _selected_heading(aircraft), bearing_ac_nb_360
-        )
+        angle_diff_ac_nb_360_sh = angle_diff(_selected_heading(aircraft), bearing_ac_nb_360)
+        turn_dir = left_right_check(_selected_heading(aircraft), bearing_ac_nb_360)
         angle_diff_ac_nb_360_sh *= turn_dir
 
         # aircraft position status measurements:
@@ -487,9 +474,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
         if tracked_data[callsign].pos_status == PositionStatus.IN_SECTOR:
             dist_ac_nb_360 = tracked_data[callsign].nearest_360_boundary_dist
             # it could be None
-            dist_ac_nb_fwd = tracked_data[
-                callsign
-            ].nearest_forward_boundary_dist
+            dist_ac_nb_fwd = tracked_data[callsign].nearest_forward_boundary_dist
             if dist_ac_nb_fwd is None:
                 # set it to an arbitrarily large feature value
                 dist_ac_nb_fwd = 1e3
@@ -501,9 +486,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
             airspace = simulator_env.airspace
             _sector = airspace.sectors[airspace_sector]
             main_volumes = _sector.volumes
-            cond_volumes = _sector.get_conditional_volumes_for_aircraft(
-                aircraft
-            )
+            cond_volumes = _sector.get_conditional_volumes_for_aircraft(aircraft)
             cond_volumes = list(cond_volumes.values())
             volumes = main_volumes + cond_volumes
 
@@ -522,9 +505,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
         else:
             dist_ac_nb_360 = -tracked_data[callsign].nearest_360_boundary_dist
             # it could be None
-            dist_ac_nb_fwd = tracked_data[
-                callsign
-            ].nearest_forward_boundary_dist
+            dist_ac_nb_fwd = tracked_data[callsign].nearest_forward_boundary_dist
             if dist_ac_nb_fwd is None:
                 # set it to an arbitrarily large feature value
                 dist_ac_nb_fwd = -1e3
@@ -567,12 +548,10 @@ class RelativeRepresentationRaw(BaseRepresentation):
         ####### neighbours features
         neighbours_feats = self.generate_neighbours_features(gym_env, callsign)
 
-        feats_list = [base_feats] + fixes_feats + neighbours_feats
+        feats_list = [base_feats, *fixes_feats, *neighbours_feats]
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -617,28 +596,18 @@ class RelativeRepresentationRaw(BaseRepresentation):
         # forward fixes position: in *current route* (cr)
         route = aircraft.flight_plan.route.current
         _next_fix = tracked_data[callsign].next_fix_cr
-        fixes = get_n_forward_fixes(
-            route, start_from=_next_fix, n=self.num_forward_fixes
-        )
-        next_fixes_pos = [
-            simulator_env.airspace.fixes.places[fix]
-            for fix in fixes
-            if fix is not None
-        ]
+        fixes = get_n_forward_fixes(route, start_from=_next_fix, n=self.num_forward_fixes)
+        next_fixes_pos = [simulator_env.airspace.fixes.places[fix] for fix in fixes if fix is not None]
         num_none_fixes = self.num_forward_fixes - len(next_fixes_pos)
 
         # previous fixes position (relative to each forward fix): in
         # *current route* (cr)
         _next_fix_idx = route.index(_next_fix)
         if _next_fix_idx == 0:
-            prev_fixes_pos = [
-                tracked_data[callsign].pos_at_last_route_direct,
-            ] + next_fixes_pos[:-1]
+            prev_fixes_pos = [tracked_data[callsign].pos_at_last_route_direct, *next_fixes_pos[:-1]]
         else:
             _prev_fix = route[_next_fix_idx - 1]
-            prev_fixes_pos = [
-                simulator_env.airspace.fixes.places[_prev_fix],
-            ] + next_fixes_pos[:-1]
+            prev_fixes_pos = [simulator_env.airspace.fixes.places[_prev_fix], *next_fixes_pos[:-1]]
 
         # generate the features for each forward fix
         curr_route_start_pos = tracked_data[callsign].pos_at_last_route_direct
@@ -651,7 +620,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
         linear_dists_ac_nfs = []
         track_dists_ac_nfs = []
         in_sector_segments_ac_nfs = []
-        for prev_fix_pos, fix_pos in zip(prev_fixes_pos, next_fixes_pos):
+        for prev_fix_pos, fix_pos in zip(prev_fixes_pos, next_fixes_pos, strict=True):
             # relative angular diff b/w heading and bearing to next fix
             bearing_ac_nf = ac_pos.bearing_to(fix_pos)
             angle_diff_ac_nf = angle_diff(aircraft.heading, bearing_ac_nf)
@@ -660,12 +629,8 @@ class RelativeRepresentationRaw(BaseRepresentation):
             angles_diff_ac_nfs.append(angle_diff_ac_nf)
 
             # relative angular diff b/w selected heading and bearing to next fix
-            angle_diff_ac_sh_nf = angle_diff(
-                _selected_heading(aircraft), bearing_ac_nf
-            )
-            turn_dir = left_right_check(
-                _selected_heading(aircraft), bearing_ac_nf
-            )
+            angle_diff_ac_sh_nf = angle_diff(_selected_heading(aircraft), bearing_ac_nf)
+            turn_dir = left_right_check(_selected_heading(aircraft), bearing_ac_nf)
             angle_diff_ac_sh_nf *= turn_dir
             angles_diff_ac_sh_nfs.append(angle_diff_ac_sh_nf)
 
@@ -679,12 +644,8 @@ class RelativeRepresentationRaw(BaseRepresentation):
 
             # relative angular diff b/w selected heading and
             # bearing from prev to next fix
-            angle_diff_ac_sh_pf_nf = angle_diff(
-                _selected_heading(aircraft), bearing_pf_nf
-            )
-            turn_dir = left_right_check(
-                _selected_heading(aircraft), bearing_pf_nf
-            )
+            angle_diff_ac_sh_pf_nf = angle_diff(_selected_heading(aircraft), bearing_pf_nf)
+            turn_dir = left_right_check(_selected_heading(aircraft), bearing_pf_nf)
             angle_diff_ac_sh_pf_nf *= turn_dir
             angles_diff_ac_sh_pf_nfs.append(angle_diff_ac_sh_pf_nf)
 
@@ -735,15 +696,13 @@ class RelativeRepresentationRaw(BaseRepresentation):
             fixes_feats.append(tmp)
 
         # zero padding
-        for idx in range(num_none_fixes):
+        for _ in range(num_none_fixes):
             tmp = np.zeros(self.num_features_per_fix, dtype=np.float32)
             fixes_feats.append(tmp)
 
         return fixes_feats
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -758,9 +717,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
         if self.knn == 0:
             return []
 
-        simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -785,15 +742,13 @@ class RelativeRepresentationRaw(BaseRepresentation):
             turn_dir_ac_other_sh = interactions[i].turn_dir_ac_other_sh
             dist_type_ac_other = interactions[i].dist_type_ac_other
             fl_diff_ac_other = interactions[i].fl_diff_ac_other
-            selected_fl_diff_ac_other = interactions[
-                i
-            ].selected_fl_diff_ac_other
+            selected_fl_diff_ac_other = interactions[i].selected_fl_diff_ac_other
             speed_diff_ac_other = interactions[i].speed_diff_ac_other
             pair_distance = interactions[i].centreline_dist_diff_cr
 
             controllable = None
             _cs = callsign_other
-            if _cs not in tracked_data.keys():
+            if _cs not in tracked_data:
                 controllable = -1.0
             elif (
                 tracked_data[_cs].pos_status == PositionStatus.IN_SECTOR
@@ -806,16 +761,8 @@ class RelativeRepresentationRaw(BaseRepresentation):
 
             tmp = np.asarray(
                 [
-                    (
-                        angle_diff_ac_other
-                        * convert.DEG_TO_RAD
-                        * turn_dir_ac_other
-                    ),
-                    (
-                        angle_diff_ac_other_sh
-                        * convert.DEG_TO_RAD
-                        * turn_dir_ac_other_sh
-                    ),
+                    (angle_diff_ac_other * convert.DEG_TO_RAD * turn_dir_ac_other),
+                    (angle_diff_ac_other_sh * convert.DEG_TO_RAD * turn_dir_ac_other_sh),
                     dist_type_ac_other,
                     dist_ac_other,
                     fl_diff_ac_other,
@@ -829,7 +776,7 @@ class RelativeRepresentationRaw(BaseRepresentation):
             interactions_features.append(tmp)
 
         # zero padding
-        for i in range(balance_count):
+        for _ in range(balance_count):
             tmp = np.zeros(self.num_features_per_neighbour, dtype=np.float32)
             interactions_features.append(tmp)
 
@@ -859,7 +806,7 @@ class RelativeRepresentation(BaseRepresentation):
     |     | filed route centreline        |      |      |                     |
     |   5 | Aircraft distance from the    | -3.0 |  3.0 | Nautical Miles (NM) |
     |     | current route centreline      |      |      |                     |
-    |   6 | Difference betweeen aircraft  | -3.0 |  3.0 | Nautical Miles (NM) |
+    |   6 | Difference between aircraft  | -3.0 |  3.0 | Nautical Miles (NM) |
     |     | track distance (current route)|      |      |                     |
     |     | to its exit position and its  |      |      |                     |
     |     | track distance to its exit    |      |      |                     |
@@ -1002,7 +949,7 @@ class RelativeRepresentation(BaseRepresentation):
     |   8 | difference between aircraft   |  0.0| 3.0 | Nautical Miles (NM)   |
     |     | pair relative centreline      |     |     |                       |
     |     | distance, depending on the    |     |     |                       |
-    |     | interaction cateogry          |     |     |                       |
+    |     | interaction category          |     |     |                       |
     |     |                               |     |     |                       |
     +-----+------------------------------ +-----+-----+-----------------------+
 
@@ -1025,9 +972,7 @@ class RelativeRepresentation(BaseRepresentation):
         use_filed_route: bool = True,
         num_actions: int | None = None,
     ):
-        super(RelativeRepresentation, self).__init__(
-            knn, num_forward_fixes, use_filed_route, num_actions
-        )
+        super().__init__(knn, num_forward_fixes, use_filed_route, num_actions)
 
         ####### base features range
         base_feats_low = [
@@ -1164,18 +1109,17 @@ class RelativeRepresentation(BaseRepresentation):
         airspace_sector = gym_env.get_active_airspace_sector()
         aircraft = simulator_env.aircraft[callsign]
         airspace = simulator_env.airspace
-        obs = []
 
         ####### utils: get useful information for computing base features
         # get entry and exit flight levels from coordination data
         entry_fl = tracked_data[callsign].entry_coords[airspace_sector].fl
         exit_fl = tracked_data[callsign].exit_coords[airspace_sector].fl
 
-        # relative flight level: difference beween aircraft flight level
+        # relative flight level: difference between aircraft flight level
         # and exit flight level
         fl_diff_ac_exit = aircraft.fl - exit_fl
 
-        # relative flight level: difference beween aircraft
+        # relative flight level: difference between aircraft
         # selected flight level and exit flight level
         fl_diff_ac_exit_selected = aircraft.selected_fl - exit_fl
 
@@ -1207,10 +1151,8 @@ class RelativeRepresentation(BaseRepresentation):
 
         # difference between the previous and current track (current route)
         # distance to exit
-        if callsign in prev_tracked_data.keys():
-            prev_dist_ac_exit = prev_tracked_data[
-                callsign
-            ].track_dist_to_exit_cr
+        if callsign in prev_tracked_data:
+            prev_dist_ac_exit = prev_tracked_data[callsign].track_dist_to_exit_cr
         else:
             # aircraft tracking just started (either was just spawned or
             # arrived at the point before sector entry where tracking begins).
@@ -1229,23 +1171,15 @@ class RelativeRepresentation(BaseRepresentation):
         # aircraft distance away from the sector exit (after outcomm)
         # only measured after the aircraft has exited the sector.
         # if aircraft is still in the sector, then it set to 0.0
-        dist_away_sector_exit = tracked_data[
-            callsign
-        ].dist_away_from_sector_exit
+        dist_away_sector_exit = tracked_data[callsign].dist_away_from_sector_exit
 
         # aircraft route following status: indicates whether or not the
         # aircraft is following its defined flight plan route, or not (in this
         # case, flying on a heading issued by the agent).
-        if aircraft.on_route is True:
-            route_ff_status = 1.0
-        else:
-            route_ff_status = -1.0
+        route_ff_status = 1.0 if aircraft.on_route else -1.0
 
         # aircraft position indicator: in-sector or out of sector
-        if tracked_data[callsign].pos_status == PositionStatus.IN_SECTOR:
-            pos_status = 1.0
-        else:
-            pos_status = -1.0
+        pos_status = 1.0 if tracked_data[callsign].pos_status == PositionStatus.IN_SECTOR else -1.0
 
         # aircraft position status measurement:
         bearing_ac_nb_360 = tracked_data[callsign].nearest_360_boundary_bear
@@ -1259,12 +1193,8 @@ class RelativeRepresentation(BaseRepresentation):
 
         # 2. difference between aircraft selected heading and the bearing from
         # the aircraft position to the nearest boundary (nb) point.
-        angle_diff_ac_nb_360_sh = angle_diff(
-            _selected_heading(aircraft), bearing_ac_nb_360
-        )
-        turn_dir = left_right_check(
-            _selected_heading(aircraft), bearing_ac_nb_360
-        )
+        angle_diff_ac_nb_360_sh = angle_diff(_selected_heading(aircraft), bearing_ac_nb_360)
+        turn_dir = left_right_check(_selected_heading(aircraft), bearing_ac_nb_360)
         angle_diff_ac_nb_360_sh *= turn_dir
 
         # aircraft position status measurements:
@@ -1284,9 +1214,7 @@ class RelativeRepresentation(BaseRepresentation):
         if tracked_data[callsign].pos_status == PositionStatus.IN_SECTOR:
             dist_ac_nb_360 = tracked_data[callsign].nearest_360_boundary_dist
             # it could be None
-            dist_ac_nb_fwd = tracked_data[
-                callsign
-            ].nearest_forward_boundary_dist
+            dist_ac_nb_fwd = tracked_data[callsign].nearest_forward_boundary_dist
             if dist_ac_nb_fwd is None:
                 # set it to an arbitrarily large feature value
                 dist_ac_nb_fwd = 1e3
@@ -1298,9 +1226,7 @@ class RelativeRepresentation(BaseRepresentation):
             airspace = simulator_env.airspace
             _sector = airspace.sectors[airspace_sector]
             main_volumes = _sector.volumes
-            cond_volumes = _sector.get_conditional_volumes_for_aircraft(
-                aircraft
-            )
+            cond_volumes = _sector.get_conditional_volumes_for_aircraft(aircraft)
             cond_volumes = list(cond_volumes.values())
             volumes = main_volumes + cond_volumes
 
@@ -1319,9 +1245,7 @@ class RelativeRepresentation(BaseRepresentation):
         else:
             dist_ac_nb_360 = -tracked_data[callsign].nearest_360_boundary_dist
             # it could be None
-            dist_ac_nb_fwd = tracked_data[
-                callsign
-            ].nearest_forward_boundary_dist
+            dist_ac_nb_fwd = tracked_data[callsign].nearest_forward_boundary_dist
             if dist_ac_nb_fwd is None:
                 # set it to an arbitrarily large feature value
                 dist_ac_nb_fwd = -1e3
@@ -1335,14 +1259,9 @@ class RelativeRepresentation(BaseRepresentation):
 
         ####### base features: the current aircraft state
         base_feats = [
-            np.clip(fl_diff_ac_exit, -SRC.CLIP_FL_DIFF, SRC.CLIP_FL_DIFF)
-            / SRS.SCALER_FL_DIFF,
-            np.clip(
-                fl_diff_ac_exit_selected, -SRC.CLIP_FL_DIFF, SRC.CLIP_FL_DIFF
-            )
-            / SRS.SCALER_FL_DIFF,
-            np.clip(fl_diff_ac_entry_exit, -SRC.CLIP_FL_DIFF, SRC.CLIP_FL_DIFF)
-            / SRS.SCALER_FL_DIFF,
+            np.clip(fl_diff_ac_exit, -SRC.CLIP_FL_DIFF, SRC.CLIP_FL_DIFF) / SRS.SCALER_FL_DIFF,
+            np.clip(fl_diff_ac_exit_selected, -SRC.CLIP_FL_DIFF, SRC.CLIP_FL_DIFF) / SRS.SCALER_FL_DIFF,
+            np.clip(fl_diff_ac_entry_exit, -SRC.CLIP_FL_DIFF, SRC.CLIP_FL_DIFF) / SRS.SCALER_FL_DIFF,
             np.clip(aircraft.speed_tas, 0.0, SRC.CLIP_SPEED) / SRS.SCALER_SPEED,
             ac_centre_dist_fr / SRS.SCALER_CENTRELINE_DIST,  # already clipped
             ac_centre_dist_cr / SRS.SCALER_CENTRELINE_DIST,  # already clipped
@@ -1369,10 +1288,8 @@ class RelativeRepresentation(BaseRepresentation):
             pos_status,  # a discrete feature, no scale/clip required
             angle_diff_ac_nb_360 * convert.DEG_TO_RAD,
             angle_diff_ac_nb_360_sh * convert.DEG_TO_RAD,
-            np.clip(dist_ac_nb_360, -SRC.CLIP_AC_NB_DIST, SRC.CLIP_AC_NB_DIST)
-            / SRS.SCALER_AC_NB_DIST,
-            np.clip(dist_ac_nb_fwd, -SRC.CLIP_AC_NB_DIST, SRC.CLIP_AC_NB_DIST)
-            / SRS.SCALER_AC_NB_DIST,
+            np.clip(dist_ac_nb_360, -SRC.CLIP_AC_NB_DIST, SRC.CLIP_AC_NB_DIST) / SRS.SCALER_AC_NB_DIST,
+            np.clip(dist_ac_nb_fwd, -SRC.CLIP_AC_NB_DIST, SRC.CLIP_AC_NB_DIST) / SRS.SCALER_AC_NB_DIST,
             np.clip(
                 fl_diff_ac_selected_sector_min,
                 -SRC.CLIP_FL_DIFF,
@@ -1406,12 +1323,10 @@ class RelativeRepresentation(BaseRepresentation):
         ####### neighbours features
         neighbours_feats = self.generate_neighbours_features(gym_env, callsign)
 
-        feats_list = [base_feats] + fixes_feats + neighbours_feats
+        feats_list = [base_feats, *fixes_feats, *neighbours_feats]
         return np.concatenate(feats_list, dtype=np.float32)
 
-    def generate_forward_fixes_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -1456,28 +1371,18 @@ class RelativeRepresentation(BaseRepresentation):
         # forward fixes position: in *current route* (cr)
         route = aircraft.flight_plan.route.current
         _next_fix = tracked_data[callsign].next_fix_cr
-        fixes = get_n_forward_fixes(
-            route, start_from=_next_fix, n=self.num_forward_fixes
-        )
-        next_fixes_pos = [
-            simulator_env.airspace.fixes.places[fix]
-            for fix in fixes
-            if fix is not None
-        ]
+        fixes = get_n_forward_fixes(route, start_from=_next_fix, n=self.num_forward_fixes)
+        next_fixes_pos = [simulator_env.airspace.fixes.places[fix] for fix in fixes if fix is not None]
         num_none_fixes = self.num_forward_fixes - len(next_fixes_pos)
 
         # previous fixes position (relative to each forward fix): in
         # *current route* (cr)
         _next_fix_idx = route.index(_next_fix)
         if _next_fix_idx == 0:
-            prev_fixes_pos = [
-                tracked_data[callsign].pos_at_last_route_direct,
-            ] + next_fixes_pos[:-1]
+            prev_fixes_pos = [tracked_data[callsign].pos_at_last_route_direct, *next_fixes_pos[:-1]]
         else:
             _prev_fix = route[_next_fix_idx - 1]
-            prev_fixes_pos = [
-                simulator_env.airspace.fixes.places[_prev_fix],
-            ] + next_fixes_pos[:-1]
+            prev_fixes_pos = [simulator_env.airspace.fixes.places[_prev_fix], *next_fixes_pos[:-1]]
 
         # generate the features for each forward fix
         curr_route_start_pos = tracked_data[callsign].pos_at_last_route_direct
@@ -1490,7 +1395,7 @@ class RelativeRepresentation(BaseRepresentation):
         linear_dists_ac_nfs = []
         track_dists_ac_nfs = []
         in_sector_segments_ac_nfs = []
-        for prev_fix_pos, fix_pos in zip(prev_fixes_pos, next_fixes_pos):
+        for prev_fix_pos, fix_pos in zip(prev_fixes_pos, next_fixes_pos, strict=True):
             # relative angular diff b/w heading and bearing to next fix
             bearing_ac_nf = ac_pos.bearing_to(fix_pos)
             angle_diff_ac_nf = angle_diff(aircraft.heading, bearing_ac_nf)
@@ -1499,12 +1404,8 @@ class RelativeRepresentation(BaseRepresentation):
             angles_diff_ac_nfs.append(angle_diff_ac_nf)
 
             # relative angular diff b/w selected heading and bearing to next fix
-            angle_diff_ac_sh_nf = angle_diff(
-                _selected_heading(aircraft), bearing_ac_nf
-            )
-            turn_dir = left_right_check(
-                _selected_heading(aircraft), bearing_ac_nf
-            )
+            angle_diff_ac_sh_nf = angle_diff(_selected_heading(aircraft), bearing_ac_nf)
+            turn_dir = left_right_check(_selected_heading(aircraft), bearing_ac_nf)
             angle_diff_ac_sh_nf *= turn_dir
             angles_diff_ac_sh_nfs.append(angle_diff_ac_sh_nf)
 
@@ -1518,12 +1419,8 @@ class RelativeRepresentation(BaseRepresentation):
 
             # relative angular diff b/w selected heading and
             # bearing from prev to next fix
-            angle_diff_ac_sh_pf_nf = angle_diff(
-                _selected_heading(aircraft), bearing_pf_nf
-            )
-            turn_dir = left_right_check(
-                _selected_heading(aircraft), bearing_pf_nf
-            )
+            angle_diff_ac_sh_pf_nf = angle_diff(_selected_heading(aircraft), bearing_pf_nf)
+            turn_dir = left_right_check(_selected_heading(aircraft), bearing_pf_nf)
             angle_diff_ac_sh_pf_nf *= turn_dir
             angles_diff_ac_sh_pf_nfs.append(angle_diff_ac_sh_pf_nf)
 
@@ -1565,14 +1462,8 @@ class RelativeRepresentation(BaseRepresentation):
                     angles_diff_ac_sh_nfs[idx] * convert.DEG_TO_RAD,
                     angles_diff_ac_pf_nfs[idx] * convert.DEG_TO_RAD,
                     angles_diff_ac_sh_pf_nfs[idx] * convert.DEG_TO_RAD,
-                    (
-                        np.clip(linear_dists_ac_nfs[idx], 0.0, SRC.CLIP_DIST)
-                        / SRS.SCALER_AC_NF_DIST
-                    ),
-                    (
-                        np.clip(track_dists_ac_nfs[idx], 0.0, SRC.CLIP_DIST)
-                        / SRS.SCALER_AC_NF_DIST
-                    ),
+                    (np.clip(linear_dists_ac_nfs[idx], 0.0, SRC.CLIP_DIST) / SRS.SCALER_AC_NF_DIST),
+                    (np.clip(track_dists_ac_nfs[idx], 0.0, SRC.CLIP_DIST) / SRS.SCALER_AC_NF_DIST),
                     # a discrete feature, no scale/clip required
                     in_sector_segments_ac_nfs[idx],
                 ],
@@ -1582,15 +1473,13 @@ class RelativeRepresentation(BaseRepresentation):
             fixes_feats.append(tmp)
 
         # zero padding
-        for idx in range(num_none_fixes):
+        for _ in range(num_none_fixes):
             tmp = np.zeros(self.num_features_per_fix, dtype=np.float32)
             fixes_feats.append(tmp)
 
         return fixes_feats
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:
@@ -1605,9 +1494,7 @@ class RelativeRepresentation(BaseRepresentation):
         if self.knn == 0:
             return []
 
-        simulator_env = gym_env.get_simulator_env()
         tracked_data = gym_env.get_tracked_aircraft_data()
-        airspace_sector = gym_env.get_active_airspace_sector()
 
         ####### utils: get useful information for neighbour features
         # sorted based on aircraft distance to other aircraft
@@ -1632,15 +1519,13 @@ class RelativeRepresentation(BaseRepresentation):
             turn_dir_ac_other_sh = interactions[i].turn_dir_ac_other_sh
             dist_type_ac_other = interactions[i].dist_type_ac_other
             fl_diff_ac_other = interactions[i].fl_diff_ac_other
-            selected_fl_diff_ac_other = interactions[
-                i
-            ].selected_fl_diff_ac_other
+            selected_fl_diff_ac_other = interactions[i].selected_fl_diff_ac_other
             speed_diff_ac_other = interactions[i].speed_diff_ac_other
             pair_distance = interactions[i].centreline_dist_diff_cr
 
             controllable = None
             _cs = callsign_other
-            if _cs not in tracked_data.keys():
+            if _cs not in tracked_data:
                 controllable = -1.0
             elif (
                 tracked_data[_cs].pos_status == PositionStatus.IN_SECTOR
@@ -1653,19 +1538,10 @@ class RelativeRepresentation(BaseRepresentation):
 
             tmp = np.asarray(
                 [
-                    (
-                        angle_diff_ac_other
-                        * convert.DEG_TO_RAD
-                        * turn_dir_ac_other
-                    ),
-                    (
-                        angle_diff_ac_other_sh
-                        * convert.DEG_TO_RAD
-                        * turn_dir_ac_other_sh
-                    ),
+                    (angle_diff_ac_other * convert.DEG_TO_RAD * turn_dir_ac_other),
+                    (angle_diff_ac_other_sh * convert.DEG_TO_RAD * turn_dir_ac_other_sh),
                     dist_type_ac_other,
-                    np.clip(dist_ac_other, 0.0, SRC.CLIP_DIST)
-                    / SRS.SCALER_AC_OTHER_DIST,
+                    np.clip(dist_ac_other, 0.0, SRC.CLIP_DIST) / SRS.SCALER_AC_OTHER_DIST,
                     np.clip(
                         fl_diff_ac_other,
                         -SRC.CLIP_FL_DIFF,
@@ -1685,15 +1561,14 @@ class RelativeRepresentation(BaseRepresentation):
                     )
                     / SRS.SCALER_SPEED_DIFF,
                     controllable,  # a discrete feature, no scale/clip required
-                    np.clip(pair_distance, 0.0, SRC.CLIP_CENTRELINE_DIST_DIFF)
-                    / SRS.SCALER_CENTRELINE_DIST_DIFF,
+                    np.clip(pair_distance, 0.0, SRC.CLIP_CENTRELINE_DIST_DIFF) / SRS.SCALER_CENTRELINE_DIST_DIFF,
                 ],
                 dtype=np.float32,
             )
             interactions_features.append(tmp)
 
         # zero padding
-        for i in range(balance_count):
+        for _ in range(balance_count):
             tmp = np.zeros(self.num_features_per_neighbour, dtype=np.float32)
             interactions_features.append(tmp)
 
