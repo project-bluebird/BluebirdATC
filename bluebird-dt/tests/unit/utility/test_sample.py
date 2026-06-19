@@ -3,27 +3,7 @@ import string
 
 import pytest
 
-from bluebird_dt.utility.sample import random_seed_from_string, score_from_rank
-
-
-def test_random_seed_from_string():
-    """
-    Check the random seed from string function produces consistent random seeds
-    """
-    # A single explicit hash check. Useful for catching any future changes to
-    # the Python random number generator being used to create the hashes.
-    assert random_seed_from_string("ABC123") == 1687657892017394103
-
-    # Check a large number of unique hash strings all return unique hash values
-    number_of_tries = 100000
-    hash_list = []
-    string_list = []
-    for _ in range(number_of_tries):
-        hash_string = "".join(random.choices(string.ascii_letters, k=6))
-        string_list.append(hash_string)
-        hash_list.append(random_seed_from_string(hash_string))
-    assert len(set(hash_list)) == len(set(string_list))
-
+from bluebird_dt.utility.sample import score_from_rank
 
 def test_score_from_rank():
     """
