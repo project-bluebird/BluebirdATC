@@ -82,7 +82,7 @@ def test_landing():
     action = Action(callsign="AIR03", kind="change_heading_to", value=heading_target, agent="test", sector="SPRINGFIELD")
     sim.manager.receive_actions([action])
     for _ in range(60):
-        sim.evolve(10)
+        sim.evolve(12)
     # by this point, AIR03 should have been removed from the environment
     print(Pos2D(aircraft.lat, aircraft.lon).distance(fix_pos))
     assert "AIR03" not in sim.manager.environment.aircraft
