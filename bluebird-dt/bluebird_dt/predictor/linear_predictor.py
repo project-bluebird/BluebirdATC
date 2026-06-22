@@ -236,7 +236,7 @@ class LinearPredictor(Predictor):
         aircraft.speed_tas = tas_KT
 
         # Set the aircraft CAS
-        aircraft.speed_cas = tas_to_cas(aircraft.fl, aircraft.speed_tas * KT_TO_MPS, self.delta_T) * MPS_TO_KT
+        aircraft._speed_cas = tas_to_cas(aircraft.fl, aircraft.speed_tas * KT_TO_MPS, self.delta_T) * MPS_TO_KT
 
     def update_total_speeds_cas_is_tas(self, aircraft: Aircraft):
         """
@@ -255,7 +255,7 @@ class LinearPredictor(Predictor):
             raise ValueError("Aircraft.selected_instructions.cas must be set to use cas_is_tas speed modelling.")
 
         aircraft.speed_tas = cas
-        aircraft.speed_cas = cas
+        aircraft._speed_cas = cas
 
     @functools.lru_cache
     def _get_performance_profile(self, key: str | None) -> dict[str, list[float | None] | float]:

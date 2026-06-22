@@ -1644,7 +1644,7 @@ def update_from_radar(
             aircraft.speed_tas = tas_from_ground_speed(aircraft.ground_speed, aircraft.ground_track_angle, wind_vector)
 
         if row.speed_cas is not None:
-            aircraft.speed_cas = row.speed_cas
+            aircraft._speed_cas = row.speed_cas
 
         if row.heading is not None:
             aircraft.heading = row.heading

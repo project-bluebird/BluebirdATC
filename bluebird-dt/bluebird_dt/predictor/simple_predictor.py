@@ -165,7 +165,7 @@ class SimplePredictor(Predictor):
         cas = aircraft.selected_instructions.cas
 
         aircraft.speed_tas = cas
-        aircraft.speed_cas = cas
+        aircraft._speed_cas = cas
 
     def update_vertical_speeds(self, aircraft: Aircraft):
         """

@@ -375,7 +375,7 @@ class Aircraft(Comparison):
         self.selected_instructions = Instructions(fl=use_fl, on_route=True)
 
         self.vertical_speed: float = 0.0
-        self.speed_cas: float | None = None
+        self._speed_cas: float | None = None
         self.speed_tas: float | None = None
         self.ground_speed: float | None = None
 
@@ -643,7 +643,7 @@ class Aircraft(Comparison):
         )
 
         # attributes
-        aircraft.speed_cas = data.get("speed_cas", None)
+        aircraft._speed_cas = data.get("speed_cas", None)
         aircraft.speed_tas = data.get("speed_tas", None)
         aircraft.ground_speed = data.get("ground_speed", None)
         aircraft.ground_track_angle = data.get("ground_track_angle", None)
@@ -958,6 +958,11 @@ class Aircraft(Comparison):
         else:
             for key in ["rocd_des", "rocd_cl"]:
                 self.percentile_rank_dict[key] = None
+
+    @property
+    def speed_cas(self) -> float | None:
+        """The calibrated airspeed of the aircraft, set by the predictors or livestream"""
+        return self._speed_cas
 
     @property
     def current_sector(self) -> str:
