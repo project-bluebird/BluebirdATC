@@ -45,3 +45,23 @@ def test_empty_env_override_falls_back_to_default(monkeypatch):
 
     expected = os.path.join(platformdirs.user_data_dir("bluebird"), "scenario_logs")
     assert get_log_dir() == expected
+
+
+def test_get_log_dir_app_subdir_is_nested_under_base(monkeypatch):
+    """
+    An app_subdir is placed underneath the shared base so that each application's
+    logs are co-located (same base) but distinguishable (own subdirectory).
+    """
+    monkeypatch.delenv(LOG_DIR_ENV_VAR, raising=False)
+
+    base = os.path.join(platformdirs.user_data_dir("bluebird"), "scenario_logs")
+    assert get_log_dir("starling") == os.path.join(base, "starling")
+    assert get_log_dir("bluebird_dt") == os.path.join(base, "bluebird_dt")
+
+
+def test_get_log_dir_app_subdir_respects_env_override(tmp_path, monkeypatch):
+    """The app_subdir is nested under BLUEBIRD_LOG_DIR when the override is set."""
+    override = str(tmp_path / "shared_logs")
+    monkeypatch.setenv(LOG_DIR_ENV_VAR, override)
+
+    assert get_log_dir("starling") == os.path.join(override, "starling")
