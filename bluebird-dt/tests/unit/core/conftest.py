@@ -566,6 +566,9 @@ def make_action(kind: str) -> Action:
         value = (make_random_radius_of_turn(), make_random_ground_track())
     if kind == "fixed_rate_turn":
         value = (make_random_rate_of_turn(), make_random_heading())
+    if kind == "intercept_radial":
+        intercept_type = random.choice(["immediate", "when_ready", "target_fix"])
+        value = (intercept_type, make_random_fix_name(), make_random_ground_track())
     if kind == "message":
         value = make_random_message()
     agent = random.choice(["Smith", "Bond", "Powers", "J"])

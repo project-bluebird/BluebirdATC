@@ -13,6 +13,7 @@ SUPPORTED_ACTIONS = {
         "change_heading_to_by_direction",
         "change_heading_by",
         "maintain_current_heading",
+        "intercept_radial",
     ],
     "speed": [
         "change_cas_to",
