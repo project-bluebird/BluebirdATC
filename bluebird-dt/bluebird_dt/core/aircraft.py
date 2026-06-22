@@ -21,6 +21,8 @@ from bluebird_dt.utility.convert import nan_to_none
 if typing.TYPE_CHECKING:
     from bluebird_dt.core import Airspace
 
+LATERAL_SPEED_RANK_KEYS = ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl"]
+
 
 class FlightState(Enum):
     CLIMB = "climb"
@@ -254,8 +256,8 @@ class Aircraft(Comparison):
             The instructions enacted by the Pilot.
         percentile_rank_dict: dict[str, [float, None]], optional
             The percentile rank dictionary of the aircraft. The allowed keys in the dict are: "cas_cr", "cas_cl",
-            "cas_des", "rocd_cl" and "rocd_des". The values to these keys are used to assign the aircraft a horizontal
-            and vertical speed scores from a probability distribution.
+            "cas_des", "mach_cr", "mach_cl", "mach_des", "rocd_cl" and "rocd_des". The values to these keys are used
+            to assign the aircraft horizontal and vertical speed scores from a probability distribution.
         cleared_fl: float, multiple of 10.
             Last-cleared flight level.
             Upon instantiation this is set to the current flight level.
@@ -875,9 +877,9 @@ class Aircraft(Comparison):
             # set random seed of random generator
             random.seed(self.random_seed)
 
-            # Select a CAS percentile rank
+            # Select a lateral speed percentile rank, shared by the CAS and Mach speeds
             cas_percentile_rank = random.uniform(0, 100.0)
-            for key in ["cas_des", "cas_cr", "cas_cl"]:
+            for key in LATERAL_SPEED_RANK_KEYS:
                 self.percentile_rank_dict[key] = cas_percentile_rank
 
             # Select a ROCD percentile rank
@@ -886,7 +888,7 @@ class Aircraft(Comparison):
                 self.percentile_rank_dict[key] = rocd_percentile_rank
 
         else:
-            for key in ["cas_des", "cas_cr", "cas_cl", "rocd_des", "rocd_cl"]:
+            for key in ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl", "rocd_des", "rocd_cl"]:
                 self.percentile_rank_dict[key] = None
 
     def set_performance(self, cas_pr: float | None = None, rocd_pr: float | None = None):
@@ -903,10 +905,10 @@ class Aircraft(Comparison):
         if cas_pr:
             if cas_pr < 0.0 or cas_pr > 100.0:
                 raise ValueError("Trying to set aircraft performance using a invalid CAS percentile rank")
-            for key in ["cas_des", "cas_cr", "cas_cl"]:
+            for key in LATERAL_SPEED_RANK_KEYS:
                 self.percentile_rank_dict[key] = cas_pr
         else:
-            for key in ["cas_des", "cas_cr", "cas_cl"]:
+            for key in LATERAL_SPEED_RANK_KEYS:
                 self.percentile_rank_dict[key] = None
 
         if rocd_pr:
