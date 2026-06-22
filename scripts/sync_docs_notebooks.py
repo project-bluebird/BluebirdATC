@@ -36,7 +36,6 @@ def main() -> None:
         REPO_ROOT / "bluebird-api" / "examples",
         REPO_ROOT / "bluebird-api" / "docs" / "examples",
     )
-    copy_tree(REPO_ROOT / "competition", DOCS_EXAMPLES_ROOT / "competition")
 
 
 if __name__ == "__main__":
