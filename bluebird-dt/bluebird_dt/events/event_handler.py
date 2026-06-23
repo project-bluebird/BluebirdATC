@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import operator
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -47,6 +47,36 @@ def pd_concat_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
 TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
 TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
 TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
+
+
+@dataclass
+class EventHandlerArgs:
+    radar_df: pd.DataFrame | None = None
+    flight_df: pd.DataFrame | None = None
+    clearances_df: pd.DataFrame | None = None
+    coordination_df: pd.DataFrame | None = None
+    sectors_df: pd.DataFrame | None = None
+    incomm_df: pd.DataFrame | None = None
+    aircraft_internals_df: pd.DataFrame | None = None
+    ac_attribute_update_df: pd.DataFrame | None = None
+    ignore: EventHandler.IgnoreFlags | None = None
+    typeof_aircraft: TAircraft = Aircraft
+
+    @classmethod
+    def from_data(
+        cls,
+        data: dict[str, pd.DataFrame],
+        *,  # keyword args only after this
+        ignore: EventHandler.IgnoreFlags | None = None,
+        typeof_aircraft: type[Aircraft] = Aircraft,
+    ) -> EventHandlerArgs:
+        members = {f.name for f in fields(cls)}
+        kwargs: dict[str, Any] = {f"{k}_df": v for k, v in data.items() if f"{k}_df" in members}
+        return cls(**kwargs, ignore=ignore, typeof_aircraft=typeof_aircraft)
+
+    def build(self) -> EventHandler:
+        # only pass fields this args class actually has
+        return EventHandler(**{k: v for k, v in self.__dict__.items() if v is not None})
 
 
 class EventHandler(typing.Generic[TAircraft]):
@@ -102,7 +132,7 @@ class EventHandler(typing.Generic[TAircraft]):
 
     def __init__(
         self,
-        radar_dataframe: pd.DataFrame | None = None,
+        radar_df: pd.DataFrame | None = None,
         flight_df: pd.DataFrame | None = None,
         clearances_df: pd.DataFrame | None = None,
         coordination_df: pd.DataFrame | None = None,
@@ -118,7 +148,7 @@ class EventHandler(typing.Generic[TAircraft]):
 
         Parameters
         ----------
-        radar_dataframe: pd.DataFrame, optional
+        radar_df: pd.DataFrame, optional
             Each row is a radar event
         flight_df: pd.DataFrame, optional
             Each row is a flight plan event
@@ -155,9 +185,7 @@ class EventHandler(typing.Generic[TAircraft]):
         # This way we can have code in the base class create instances of types
         # from derived classes.
         # create empty dataframes if dataframe not present
-        self.radar_df = (
-            radar_dataframe if radar_dataframe is not None else pd.DataFrame(columns=EventDtypes.radar_dtypes)
-        )
+        self.radar_df = radar_df if radar_df is not None else pd.DataFrame(columns=EventDtypes.radar_dtypes)
 
         self.flight_df = flight_df if flight_df is not None else pd.DataFrame(columns=EventDtypes.flight_dtypes)
 

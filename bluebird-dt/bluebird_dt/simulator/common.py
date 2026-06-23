@@ -10,7 +10,7 @@ def list_sim_scenario_categories() -> list[str]:
     List the available scenario categories.
     """
 
-    return ["Two Aircraft", "Regular", "Custom", "Infinite", "Springfield", "Flight School"]
+    return ["Two Aircraft", "Regular", "Custom", "Infinite", "Springfield", "Flight School", "Replay"]
 
 
 def list_sim_scenarios(category: str) -> list[str]:
@@ -30,5 +30,14 @@ def list_sim_scenarios(category: str) -> list[str]:
 
     if category == "Flight School":
         return ["Xplus-Sector"]
+
+    if category == "Replay":
+        return sorted(
+            [
+                file.removesuffix(".tar.gz")
+                for file in os.listdir(LOG_DIR)
+                if file.endswith(".tar.gz") and not file.startswith(".")
+            ]
+        )
 
     raise ValueError(f"Unknown scenario category: {category}")

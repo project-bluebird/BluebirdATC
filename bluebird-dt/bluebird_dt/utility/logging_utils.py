@@ -119,7 +119,7 @@ def read_tar_json_to_dict(tar: tarfile.TarFile, file_name: str) -> dict:
     tar: TarFile
         The tar file of the log.
     file_name: str
-        The specific parquet file to read
+        The specific json file to read, minus the suffix
 
     Returns
     -------
@@ -132,3 +132,31 @@ def read_tar_json_to_dict(tar: tarfile.TarFile, file_name: str) -> dict:
         return json.load(file)
     except KeyError:
         raise FileNotFoundError(f"{file_name}.json not found in the log archive") from None
+
+
+def read_logs_from_tar(tar: tarfile.TarFile) -> dict[str, pd.DataFrame | dict]:
+    """
+    Read all the parquet or json files from a tarfile.
+
+    Parameters
+    ----------
+    tar: tarfile.Tarfile
+        path to tarfile containing logs
+
+    Returns
+    -------
+    dict[str, pd.DataFrame]
+        dictionary of resulting dataframes, keyed by the base name of
+        the input file (e.g. "radar").
+    """
+    data = {}
+    for m in tar.getmembers():
+        if not m.isfile():
+            continue
+        if m.name.endswith(".parquet"):
+            key = m.name.removesuffix(".parquet")
+            data[key] = read_tar_parquet_to_df(tar, key)
+        elif m.name.endswith(".json"):
+            key = m.name.removesuffix(".json")
+            data[key] = read_tar_json_to_dict(tar, key)
+    return data

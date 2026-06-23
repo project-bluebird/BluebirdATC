@@ -13,7 +13,7 @@ from bluebird_dt.core import Action, Aircraft, Coordination, WindField
 from bluebird_dt.logger import ContextFilter, CustomFormatter, logger
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor
-from bluebird_dt.simulator.simconfig import SaveConfig, SimulatorConfig
+from bluebird_dt.utility.config_models import SaveConfig, SimulatorConfig
 from bluebird_dt.utility.convert import timestamp_to_string
 from bluebird_dt.utility.paths import LOG_DIR
 
@@ -21,6 +21,7 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.scenario_manager.custom import Custom, CustomScenarioManagerConfig
     from bluebird_dt.scenario_manager.infinite import Infinite, InfiniteScenarioManagerConfig
     from bluebird_dt.scenario_manager.regular import Regular, RegularScenarioManagerConfig
+    from bluebird_dt.scenario_manager.replayer_from_logs import ReplayerFromLogs, ReplayScenarioConfig
     from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
     from bluebird_dt.scenario_manager.two_aircraft import TwoAircraft, TwoAircraftScenarioManagerConfig
 
@@ -49,7 +50,7 @@ class Simulator:
 
     def __init__(
         self,
-        scenario_manager: SpringfieldScenarioManager | Infinite | TwoAircraft | Custom | Regular,
+        scenario_manager: SpringfieldScenarioManager | Infinite | TwoAircraft | Custom | Regular | ReplayerFromLogs,
         env_manager: EnvironmentManager,
         projection_centre: tuple[float, float] | None = None,
         category: str | None = None,
@@ -214,6 +215,7 @@ class Simulator:
         from bluebird_dt.scenario_manager.custom import Custom
         from bluebird_dt.scenario_manager.infinite import Infinite
         from bluebird_dt.scenario_manager.regular import Regular
+        from bluebird_dt.scenario_manager.replayer_from_logs import ReplayerFromLogs
         from bluebird_dt.scenario_manager.springfield import (
             SpringfieldScenarioManager,
         )
@@ -306,6 +308,17 @@ class Simulator:
                     max_spawn_rate=0.1,
                     total_time_seconds=3600.0,
                 )
+            case "Replay":
+                return ReplayerFromLogs.setup(
+                    scenario_name=scenario_name,
+                    use_wind=use_wind,
+                    use_forecast=use_forecast,
+                    autosave=autosave,
+                    attach_context_to_logger=attach_context_to_logger,
+                    save_log_to_file=save_log_to_file,
+                    log_filename=log_filename,
+                    predictor=predictor,
+                )  # TODO: add use_wind as parameter
             case _:
                 raise ValueError(f"Unknown scenario category: {category}")
 
@@ -773,6 +786,7 @@ class Simulator:
         | SpringfieldScenarioManagerConfig
         | TwoAircraftScenarioManagerConfig
         | InfiniteScenarioManagerConfig
+        | ReplayScenarioConfig
     ]:
         """
         Obtain the configuration this instance of a simulator is running with.
