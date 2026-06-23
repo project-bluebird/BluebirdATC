@@ -12,7 +12,8 @@ SPRINGFIELD_DIR: str = os.path.join(BASE_DATA_DIR, "Springfield")
 LOG_DIR_ENV_VAR = "BLUEBIRD_LOG_DIR"
 
 # The application name used to derive the per-user data directory via platformdirs.
-_APP_NAME = "bluebird"
+# This is the shared base directory under which each application gets its own subdirectory.
+_APP_LOG_ROOT = "bluebird-scenario-logs"
 
 
 def get_log_dir(app_subdir: str = "") -> str:
@@ -36,9 +37,7 @@ def get_log_dir(app_subdir: str = "") -> str:
     str
         The absolute path to the directory in which scenario logs should be written/read.
     """
-    base = os.environ.get(LOG_DIR_ENV_VAR) or os.path.join(
-        platformdirs.user_data_dir(_APP_NAME), "scenario_logs"
-    )
+    base = os.environ.get(LOG_DIR_ENV_VAR) or platformdirs.user_data_dir(_APP_LOG_ROOT)
     return os.path.join(base, app_subdir) if app_subdir else base
 
 

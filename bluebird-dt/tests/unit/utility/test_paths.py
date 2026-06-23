@@ -22,7 +22,7 @@ def test_get_log_dir_defaults_to_user_data_dir(monkeypatch):
     """
     monkeypatch.delenv(LOG_DIR_ENV_VAR, raising=False)
 
-    expected = os.path.join(platformdirs.user_data_dir("bluebird"), "scenario_logs")
+    expected = platformdirs.user_data_dir("bluebird-scenario-logs")
     assert get_log_dir() == expected
 
 
@@ -43,7 +43,7 @@ def test_empty_env_override_falls_back_to_default(monkeypatch):
     """ Test that an empty BLUEBIRD_LOG_DIR is ignored in favour of the default location."""
     monkeypatch.setenv(LOG_DIR_ENV_VAR, "")
 
-    expected = os.path.join(platformdirs.user_data_dir("bluebird"), "scenario_logs")
+    expected = platformdirs.user_data_dir("bluebird-scenario-logs")
     assert get_log_dir() == expected
 
 
@@ -54,7 +54,7 @@ def test_get_log_dir_app_subdir_is_nested_under_base(monkeypatch):
     """
     monkeypatch.delenv(LOG_DIR_ENV_VAR, raising=False)
 
-    base = os.path.join(platformdirs.user_data_dir("bluebird"), "scenario_logs")
+    base = platformdirs.user_data_dir("bluebird-scenario-logs")
     assert get_log_dir("starling") == os.path.join(base, "starling")
     assert get_log_dir("bluebird_dt") == os.path.join(base, "bluebird_dt")
 
