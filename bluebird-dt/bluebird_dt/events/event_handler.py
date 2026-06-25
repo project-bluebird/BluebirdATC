@@ -2339,6 +2339,9 @@ def update_aircraft_internals(
         )
 
         if aircraft.flight_plan is not None:
-            aircraft.flight_plan.route.current = list(row.route_current)
+            if row.route_current is None:
+                aircraft.flight_plan.route.current = None
+            else:
+                aircraft.flight_plan.route.current = list(row.route_current)
 
     return environment
