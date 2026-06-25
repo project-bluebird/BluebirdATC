@@ -2247,7 +2247,7 @@ def update_aircraft_internals(
             None if pd.isna(row.last_passed_current_idx) else int(row.last_passed_current_idx)
         )
 
-        if aircraft.flight_plan is not None:
+        if aircraft.flight_plan is not None and isinstance(row.route_current, list):
             aircraft.flight_plan.route.current = list(row.route_current)
 
     return environment
