@@ -25,7 +25,7 @@ def custom_reward_fn(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> 
     return 0.0
 
 
-def route_progress_terminal_reward(gym_env: BaseEnv, callsign: str) -> float:
+def route_progress_terminal_reward(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward progress toward exit and penalize stalling at episode end.
 
     This reward is intended for the PPO curriculum notebooks where the agent
