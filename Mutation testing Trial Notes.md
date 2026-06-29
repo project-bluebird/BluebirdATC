@@ -15,22 +15,25 @@ Mutation testing addresses this and provides a measure for it.
 
 The mechanism:
 
-1. The tool makes a small change to your source — a mutant (e.g. `a < b` → `a <= b`, `+` → `-`, `return x` → `return None`,
-   `== "up"` → `!= "up"`, deleting a line).
+1. The tool makes a small change to your source — a mutant. Examples:
+	* `a < b` → `a <= b`
+	*  `+` → `-`
+	*  return x` → `return None
+	*   `== "up"` → `!= "up"`
+	* deleting a line
 2. It runs your test suite against the mutated code.
-3. **Killed** = a test failed, this is good, the tests caught the change.
-   **Survived** = all tests passed, this might be bad, the tests can't tell correct code from this deliberately broken variant.
+3. Killed: a test failed, this is good, the tests caught the change.
+   Survived: all tests passed, this might be bad, the tests can't tell correct code from this deliberately broken variant.
 4. Repeat for hundreds of mutants. The score is `killed / total`.
 
 Survivors fall into three buckets:
 
-- A missing assertion or test case
+- A missing (or insufficient) assertion or test case
 - An equivalent mutant — the change doesn't alter observable behaviour
   (e.g. mutating a value only used in a log string).
 - Dead/unreachable code.
 
-The cost is `mutants × test-time-per-mutant`, so mutation testing is a targeted tool, not something you run
-over a whole repo on every commit.
+The cost is `mutants × test-time-per-mutant`, so mutation testing is a targeted tool, not something you run over a whole repo on every commit.
 
 ### 1.1 What the developer does with the information
 
@@ -38,12 +41,12 @@ The tool finds weak spots; it does not write tests. A developer must read each s
 
 ## 2. Available tools — brief analysis
 
-| Tool                        | Model                                                                                                                                                                                   | Notes                                                                                                                                                                                                                             |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| mutmut (used in this trial) | Copies source into a generated `mutants/` dir, rewrites each function into a trampoline that selects a mutant via an env var, runs pytest from the copy. Most popular, lowest friction. |                                                                                                                                                                                                                                   |
-| **cosmic-ray**              | Mutates via import hooks / a session database rather than copy-and-shadow.                                                                                                              | More configurable (TOML, explicit operator selection), resumable, can distribute work. Heavier setup. Sidesteps mutmut's full-package-copy problem — a real plus for a monorepo. Best long-term/CI choice if adoption is serious. |
-| **mutatest**                | Random sampling of mutants, no source copying.                                                                                                                                          | Simplest for quick exploratory runs. Less actively maintained; no coverage-guided incremental cache.                                                                                                                              |
-| **mutpy**                   | The original.                                                                                                                                                                           | Largely superseded; skip.                                                                                                                                                                                                         |
+| Tool                        | Model                                                                                                                                                                                   | Notes                                                                                                                                                 |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| mutmut (used in this trial) | Copies source into a generated `mutants/` dir, rewrites each function into a trampoline that selects a mutant via an env var, runs pytest from the copy. Most popular, lowest friction. |                                                                                                                                                       |
+| **cosmic-ray**              | Mutates via import hooks / a session database rather than copy-and-shadow.                                                                                                              | More configurable (TOML, explicit operator selection), resumable, can distribute work. Heavier setup. Sidesteps mutmut's full-package-copy problem .  |
+| **mutatest**                | Random sampling of mutants, no source copying.                                                                                                                                          | Simplest for quick exploratory runs. Less actively maintained; no coverage-guided incremental cache.                                                  |
+| **mutpy**                   | The original.                                                                                                                                                                           | Largely superseded; skip.                                                                                                                             |
 
 **Trial choices:** mutmut and cosmic ray.
 
@@ -60,24 +63,24 @@ The tool finds weak spots; it does not write tests. A developer must read each s
 
 **Cons**
 - Expensive: `mutants × test-time`. Must be scoped; not a per-commit whole-repo gate.
-- Equivalent mutants can produce un-killable survivors.
+- Equivalent mutants can produce unkillable survivors.
 - Friction can lead to developer annoyance.
 
 ## 4. Suitability: BluebirdATC (public) vs Starling (private)
 
 | Dimension                 | BluebirdATC                                                                                                                  | Starling                                                                                                             |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **Contributors**          | It could be a slow or confusing gate that rejects PRs over equivalent mutants quietly kills contributions                    | Employed engineers; process can be mandated, equivalent-mutant triage owned by a person → a blocking gate is viable. |
+| **Contributors**          | It could be a slow or confusing gate that rejects PRs over equivalent mutants and quietly kills contributions                | Employed engineers; process can be mandated, equivalent-mutant triage owned by a person → a blocking gate is viable. |
 | **Threat model**          | PRs from untrusted forks; running mutation in CI executes contributor code could lead to lots of compute on un-trusted input | Internal/trusted code; concern largely evaporates.                                                                   |
 | **Governance**            | Config and process must be legible to newcomers and documented, or it rots.                                                  | Can centralise ownership (QA/platform team), a score dashboard, a whitelist.                                         |
 | **What the score is for** | Better tests                                                                                                                 | Evidence of test adequacy for audit/compliance/KPIs — a stronger justification.                                      |
 ## 5. What type of code it suits best
 
 Mutation testing works best on pure, deterministic, numeric
-logic such as bluebird-dt's utility modules (conversions, geometry, projection, rounding),
+logic such as bluebird_dt's utility modules (conversions, geometry, projection, rounding),
 predictors, uncertainty/sampling.
 
-Where it's wasted: 
+Where it's likely to be wasted: 
 * glue/framework wiring
 * (API routes, runner/serve)
 * Rendering/GUI 
@@ -89,7 +92,7 @@ Where it's wasted:
 
 All run with mutmut 3.5.0, scoped to a single module's test file. Score is
 `killed / total`
-### 5.1 utility/number.py
+### 6.1 utility/number.py
 
 | total |      killed |  survived | no tests |
 | ----: | ----------: | --------: | -------: |
@@ -105,7 +108,7 @@ The test asserted `pytest.raises(ValueError)` but never checked the message. The
 message is part of the contract (it tells the caller the valid options), so the fix
 asserts on it via `pytest.raises(ValueError, match=...)`. After the fix: **100%**.
 
-### 5.2 utility/convert.py (unit/physics conversions (CAS/TAS/Mach, etc.)
+### 6.2 utility/convert.py (unit/physics conversions (CAS/TAS/Mach, etc.)
 
 |                      | total | killed | survived | no tests |
 | -------------------- | ----: | -----: | -------: | -------: |
@@ -113,16 +116,16 @@ asserts on it via `pytest.raises(ValueError, match=...)`. After the fix: **100%*
 | after adding 4 tests |    98 |     65 |    **1** |       32 |
 Score ≈ 60% Representative survivors (weak assertions in tested code):
 
-### 5.3 Acting on the 7 survivors
+### 6.3 Acting on the 7 survivors
 
 Four new tests in `test_convert.py` killed 6 of them:
 
-| Survivor | Mutation | Killing test |
-|----------|----------|--------------|
-| `string_to_timestamp` | `tzinfo=timezone.utc` → `tzinfo=None` | `test_string_to_timestamp_assumes_utc` — forces `TZ=America/New_York` (with restore) so naive strings must still map to the UTC epoch |
-| `ground_speed_from_tas` (×2) | `ground_speed`/`ground_track_angle` → `None` | `test_ground_speed_from_tas_no_wind` — asserts the no-wind return values |
-| `heading_from_ground_track` | `required_heading = ground_track_angle` → `None` | `test_heading_from_ground_track_no_wind` |
-| `heading_from_ground_track` | `> 1.0` → `> 2.0`, and `direction_wind_from` → `None` | `test_heading_from_ground_track_wind_too_large` — strong wind makes the mutant either `asin`-error or return `None` |
+| Survivor                     | Mutation                                              | Killing test                                                                                                                          |
+| ---------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `string_to_timestamp`        | `tzinfo=timezone.utc` → `tzinfo=None`                 | `test_string_to_timestamp_assumes_utc` — forces `TZ=America/New_York` (with restore) so naive strings must still map to the UTC epoch |
+| `ground_speed_from_tas` (×2) | `ground_speed`/`ground_track_angle` → `None`          | `test_ground_speed_from_tas_no_wind` — asserts the no-wind return values                                                              |
+| `heading_from_ground_track`  | `required_heading = ground_track_angle` → `None`      | `test_heading_from_ground_track_no_wind`                                                                                              |
+| `heading_from_ground_track`  | `> 1.0` → `> 2.0`, and `direction_wind_from` → `None` | `test_heading_from_ground_track_wind_too_large` — strong wind makes the mutant either `asin`-error or return `None`                   |
 The 7th survivor is an equivalent mutant (left alive, by design):
 
 ```diff
@@ -146,7 +149,24 @@ To avoid the full copy you would make the shared conftest import lazily
 
 ## 8. How to run
 
-### Locally
+### Configuration
+
+In the pyproject.toml file under bluebird-dt the following configuration was added.  "tests_dir" defines the tests to be examined with mutations, "do_not_mutate" defines exclusions:
+
+```
+[tool.mutmut]
+paths_to_mutate = ["bluebird_dt"]
+tests_dir = [
+	"tests/unit/utility/test_number.py",
+	"tests/unit/utility/test_convert.py"
+]
+do_not_mutate = [
+	# everything except the modules under test are copied but not mutated
+	...
+]
+```
+
+### Commands to run locally
 ```bash
 uv sync                     # installs mutmut (bluebird-dt dev group)
 cd bluebird-dt              # config + paths are CWD-relative
@@ -164,24 +184,22 @@ existing test job, and full dev deps. Never cache/commit `mutants/`.
 ## 9. Summary & recommendation
 
 Mutation testing earns its cost on `bluebird-dt`'s pure numeric core and has already,
-in a one-day trial, surfaced real gaps (untested functions, non asserted branches, loose numeric tolerance) that a coverage tool would not.
+in a one-day trial of a couple of toy examples, surfaced some gaps (untested functions, non asserted branches, loose numeric tolerance) that a coverage tool would not.
 
-**Recommendation:**
-
+### Recommendation:**
 - Start on Starling adopt mutation testing there first, as a
   per-PR check over a whitelist of core numeric modules. 
 - On BluebirdATC: keep it off the per-PR critical path.  If successful on Starling, could start with a nightly/scheduled job over the same kind of curated module whitelist, track the score, and surface survivors as advisory output.
-- **Tooling:** continue with mutmut for trials; evaluate cosmic-ray before committing
+- Tooling: continue with mutmut for trials; evaluate cosmic-ray before committing
   to a CI gate, given the mono-repo import friction.
 ## Appendix A: Cosmic ray trial
 
 After trialling Mutmut, I trialled cosmic ray brief details below:
 
-### What is Cosmic-Ray
-Cosmic Ray is a mutation-testing tool: it makes small changes ("mutants") to your code and checks whether the tests catch them. We trialled it on the same two bluebird-dt modules as mutmut — number.py and convert.py — with
-the tests reverted to their original (weak) state.
+We trialled it on the same two bluebird-dt modules as mutmut — number.py and convert.py — with the tests reverted to their original (weak) state.
 ### Trial results
 
 Results: on number.py it generated 71 mutants (3 survived); on convert.py it generated 2,276 mutants — about 23× more than mutmut's 98. It found genuinely different weaknesses from mutmut, but ran far slower (~2.5 s per mutant, so a full convert.py run would take ~1.5 hours, versus seconds for mutmut).
 ### Summary
-In short: Cosmic Ray is slower and more complex to configure than mutmut, but because it mutates files in place rather than copying the whole package, it avoids the import friction that makes mutmut awkward here.
+In short: Cosmic Ray is slower and more complex to configure than mutmut but because it mutates files in place rather than copying the whole package, it avoids the import friction that makes mutmut awkward here.
+Cosmic Ray appears to identify a much higher number of possible mutants which might be a drawback for initial adoption (many of the identified mutants might be equivalent mutants which could cause developer friction).
