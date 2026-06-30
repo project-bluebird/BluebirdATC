@@ -37,7 +37,7 @@ def get_log_dir(app_subdir: str = "") -> str:
     str
         The absolute path to the directory in which scenario logs should be written/read.
     """
-    base = os.environ.get(LOG_DIR_ENV_VAR) or platformdirs.user_data_dir(_APP_LOG_ROOT)
+    base = os.environ.get(LOG_DIR_ENV_VAR) or platformdirs.user_data_dir(_APP_LOG_ROOT, appauthor=False)
     return os.path.join(base, app_subdir) if app_subdir else base
 
 
