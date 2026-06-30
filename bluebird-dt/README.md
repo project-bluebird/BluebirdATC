@@ -50,6 +50,20 @@ sim.manager.receive_actions(
 
 This example is very simple, various examples of using the `bluebird_dt` package can be found in the form of Jupyter notebooks in the [examples](https://github.com/project-bluebird/BluebirdATC/tree/main/bluebird-dt/examples) directory.
 
+## Where logs are saved
+
+When a simulation saves its logs (the per-run `.log` file and the replay `.tar.gz` archive), they are written to a per-user data directory rather than inside the installed package, so they are not lost when the virtual environment is rebuilt.
+
+The location is resolved with [`platformdirs`](https://pypi.org/project/platformdirs/), a small cross-platform library that returns each operating system's conventional per-user data directory. The logs live under a `bluebird-scenario-logs/bluebird_dt` folder inside that directory:
+
+| Platform | Default log location |
+| --- | --- |
+| Linux   | `~/.local/share/bluebird-scenario-logs/bluebird_dt` (or `$XDG_DATA_HOME/...`) |
+| macOS   | `~/Library/Application Support/bluebird-scenario-logs/bluebird_dt` |
+| Windows | `%LOCALAPPDATA%\bluebird-scenario-logs\bluebird_dt` |
+
+To use a different location, set the `BLUEBIRD_LOG_DIR` environment variable before importing `bluebird_dt`; its value is used as the base directory instead of the platformdirs default.
+
 ## Documentation
 
 The online documentation for the `bluebird_dt` package can be found at in [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai)
