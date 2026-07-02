@@ -188,8 +188,5 @@ cython_debug/
 # emacs autosave
 *~
 
-# BluebirdATC files
-bluebird-dt/bluebird_dt/scenario_data/scenario_logs/*
-
 # MacOS files
 .DS_store

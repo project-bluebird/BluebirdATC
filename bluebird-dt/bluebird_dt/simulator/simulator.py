@@ -157,12 +157,13 @@ class Simulator:
         """
         The location of the base logfile directory can be overridden by derived classes.
         """
-        os.makedirs(os.path.join(LOG_DIR, self.log_filename), exist_ok=True)
-        self.logging_file_handler = logging.FileHandler(
-            os.path.join(LOG_DIR, self.log_filename, self.log_filename + ".log")
-        )
+        log_dir = os.path.join(LOG_DIR, self.log_filename)
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, self.log_filename + ".log")
+        self.logging_file_handler = logging.FileHandler(log_file)
         self.logging_file_handler.setFormatter(CustomFormatter())
         logger.addHandler(self.logging_file_handler)
+        logger.info(f"Saving logs to {log_dir}")
 
     @classmethod
     def from_category(
@@ -852,8 +853,11 @@ class Simulator:
 
         sim_config = self.config()
 
-        with open(os.path.join(LOG_DIR, self.manager.event_logger.log_name + ".tar.gz"), "wb") as tar:
+        # Guard against the unlikely event that autosave true but save_logs_to_file is false
+        os.makedirs(LOG_DIR, exist_ok=True)
+        log_path = os.path.join(LOG_DIR, self.manager.event_logger.log_name + ".tar.gz")
+        with open(log_path, "wb") as tar:
             tar.write(self.manager.write_logs_to_buffer(sim_config).getvalue())
-            logger.info(f"Log saved to {self.manager.event_logger.log_name + '.tar.gz'}")
+            logger.info(f"Log saved to {log_path}")
 
         return True
