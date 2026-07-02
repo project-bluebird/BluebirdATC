@@ -393,7 +393,9 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
         min_lat, max_lat, min_lon, max_lon = self.square_penumbra_limits(sector_names)
 
         # extract the fixes from all aircraft that are in the scenario
-        all_aircraft_fixes = {fix for route_filed in self.event_handler.flight_df.route_filed for fix in route_filed}
+        all_aircraft_fixes = {
+            fix for route_filed in self.event_handler.flight_plan_df.route_filed for fix in route_filed
+        }
 
         # If we replaced environment via the API, we might not have Events, but
         # still have aircraft - add fixes from their routes as well.

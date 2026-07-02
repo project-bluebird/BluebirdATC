@@ -52,7 +52,7 @@ TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindF
 @dataclass
 class EventHandlerArgs:
     radar_df: pd.DataFrame | None = None
-    flight_df: pd.DataFrame | None = None
+    flight_plan_df: pd.DataFrame | None = None
     clearances_df: pd.DataFrame | None = None
     coordination_df: pd.DataFrame | None = None
     sectors_df: pd.DataFrame | None = None
@@ -72,6 +72,7 @@ class EventHandlerArgs:
     ) -> EventHandlerArgs:
         members = {f.name for f in fields(cls)}
         kwargs: dict[str, Any] = {f"{k}_df": v for k, v in data.items() if f"{k}_df" in members}
+
         return cls(**kwargs, ignore=ignore, typeof_aircraft=typeof_aircraft)
 
     def build(self) -> EventHandler:
@@ -86,7 +87,7 @@ class EventHandler(typing.Generic[TAircraft]):
 
     typeof_aircraft: type[TAircraft]
     radar_df: pd.DataFrame
-    flight_df: pd.DataFrame
+    flight_plan_df: pd.DataFrame
     clearances_df: pd.DataFrame
     coordination_df: pd.DataFrame
     sectors_df: pd.DataFrame
@@ -99,7 +100,7 @@ class EventHandler(typing.Generic[TAircraft]):
         """
         radar_if_simmed: bool, Default True
             If True, radar events will be ignored for simmed aircraft
-        flight_if_simmed: bool, Default True
+        flight_plan_if_simmed: bool, Default True
             If True, flight plan events will be ignored for simmed aircraft
         clearance_if_simmed: bool, Default True
             If True, clearance events will be ignored for simmed aircraft
@@ -119,7 +120,7 @@ class EventHandler(typing.Generic[TAircraft]):
         """
 
         radar_if_simmed: bool = True
-        flight_if_simmed: bool = True
+        flight_plan_if_simmed: bool = True
         clearance_if_simmed: bool = True
         coordination_if_simmed: bool = True
         sectors_if_simmed: bool = True
@@ -133,7 +134,7 @@ class EventHandler(typing.Generic[TAircraft]):
     def __init__(
         self,
         radar_df: pd.DataFrame | None = None,
-        flight_df: pd.DataFrame | None = None,
+        flight_plan_df: pd.DataFrame | None = None,
         clearances_df: pd.DataFrame | None = None,
         coordination_df: pd.DataFrame | None = None,
         sectors_df: pd.DataFrame | None = None,
@@ -150,7 +151,7 @@ class EventHandler(typing.Generic[TAircraft]):
         ----------
         radar_df: pd.DataFrame, optional
             Each row is a radar event
-        flight_df: pd.DataFrame, optional
+        flight_plan_df: pd.DataFrame, optional
             Each row is a flight plan event
         clearances_df: pd.DataFrame, optional
             Each row is a clearance event
@@ -187,7 +188,9 @@ class EventHandler(typing.Generic[TAircraft]):
         # create empty dataframes if dataframe not present
         self.radar_df = radar_df if radar_df is not None else pd.DataFrame(columns=EventDtypes.radar_dtypes)
 
-        self.flight_df = flight_df if flight_df is not None else pd.DataFrame(columns=EventDtypes.flight_dtypes)
+        self.flight_plan_df = (
+            flight_plan_df if flight_plan_df is not None else pd.DataFrame(columns=EventDtypes.flight_dtypes)
+        )
 
         self.clearances_df = (
             clearances_df if clearances_df is not None else pd.DataFrame(columns=EventDtypes.clearance_dtypes)
@@ -228,7 +231,7 @@ class EventHandler(typing.Generic[TAircraft]):
     def reset_events(self) -> None:
         """Reset events by creating empty DataFrames for each event type"""
         self.radar_df = pd.DataFrame(columns=EventDtypes.radar_dtypes)
-        self.flight_df = pd.DataFrame(columns=EventDtypes.flight_dtypes)
+        self.flight_plan_df = pd.DataFrame(columns=EventDtypes.flight_dtypes)
         self.clearances_df = pd.DataFrame(columns=EventDtypes.clearance_dtypes)
         self.coordination_df = pd.DataFrame(columns=EventDtypes.coord_dtypes)
         self.sectors_df = pd.DataFrame(columns=EventDtypes.sectors_dtypes)
@@ -273,7 +276,7 @@ class EventHandler(typing.Generic[TAircraft]):
     def set_dataframe_indices_to_datetime(self) -> None:
         """Set all event DataFrame indices to a datetime column"""
         self.radar_df = self.radar_df.set_index("datetime")
-        self.flight_df = self.flight_df.set_index("datetime")
+        self.flight_plan_df = self.flight_plan_df.set_index("datetime")
         self.clearances_df = self.clearances_df.set_index("datetime")
         self.coordination_df = self.coordination_df.set_index("datetime")
         self.sectors_df = self.sectors_df.set_index("datetime")
@@ -291,7 +294,7 @@ class EventHandler(typing.Generic[TAircraft]):
 
     def fillna_for_specific_columns(self) -> None:
         """Replace NA with empty strings for specific columns."""
-        self.flight_df["sector_crossing_seq"] = self.flight_df["sector_crossing_seq"].fillna("")
+        self.flight_plan_df["sector_crossing_seq"] = self.flight_plan_df["sector_crossing_seq"].fillna("")
         self.coordination_df["level_by_details"] = self.coordination_df["level_by_details"].fillna("")
         self.coordination_df["secondary_coord_conditions"] = self.coordination_df["secondary_coord_conditions"].fillna(
             ""
@@ -300,7 +303,7 @@ class EventHandler(typing.Generic[TAircraft]):
     def ensure_dataframe_data_types(self) -> None:
         """Convert DataFrame columns to correct data types if required."""
         self.radar_df = self.radar_df.astype(EventDtypes.radar_dtypes)
-        self.flight_df = self.flight_df.astype(EventDtypes.flight_dtypes)
+        self.flight_plan_df = self.flight_plan_df.astype(EventDtypes.flight_dtypes)
         self.clearances_df = self.clearances_df.astype(EventDtypes.clearance_dtypes)
         self.coordination_df = self.coordination_df.astype(EventDtypes.coord_dtypes)
         self.sectors_df = self.sectors_df.astype(EventDtypes.sectors_dtypes)
@@ -312,8 +315,8 @@ class EventHandler(typing.Generic[TAircraft]):
         """Sort each dataframe by date order."""
         if not self.radar_df.index.is_monotonic_increasing:
             self.radar_df = self.radar_df.sort_index()
-        if not self.flight_df.index.is_monotonic_increasing:
-            self.flight_df = self.flight_df.sort_index()
+        if not self.flight_plan_df.index.is_monotonic_increasing:
+            self.flight_plan_df = self.flight_plan_df.sort_index()
         if not self.clearances_df.index.is_monotonic_increasing:
             self.clearances_df = self.clearances_df.sort_index()
         if not self.coordination_df.index.is_monotonic_increasing:
@@ -649,9 +652,11 @@ class EventHandler(typing.Generic[TAircraft]):
         }
 
         new_row = pd.Series(new_row, name=the_datetime)
-        self.flight_df = pd_concat_two_dfs(self.flight_df, new_row.to_frame().T.astype(EventDtypes.flight_dtypes))
+        self.flight_plan_df = pd_concat_two_dfs(
+            self.flight_plan_df, new_row.to_frame().T.astype(EventDtypes.flight_dtypes)
+        )
         # ensure date ordering is preserved
-        self.flight_df = self.flight_df.sort_index()
+        self.flight_plan_df = self.flight_plan_df.sort_index()
 
     def add_clearance_event(
         self,
@@ -1058,7 +1063,7 @@ class EventHandler(typing.Generic[TAircraft]):
 
         environment = update_from_flight_plans(
             environment,
-            self.flight_df,
+            self.flight_plan_df,
             episode_start=new_time - timedelta(days=1),
             episode_end=new_time.normalize() + timedelta(days=1),
             ignore_simmed=False,
@@ -1177,15 +1182,15 @@ class EventHandler(typing.Generic[TAircraft]):
 
         all_aircraft_are_simmed = all(aircraft.simulated for aircraft in environment.aircraft.values())
 
-        if not (all_aircraft_are_simmed and self.ignore.flight_if_simmed):
+        if not (all_aircraft_are_simmed and self.ignore.flight_plan_if_simmed):
             # bypass if simmed aircraft are being ignored and all aircraft are simulated
             # for now use whole day's data to update flight plan as not time based
             environment = update_from_flight_plans(
                 environment,
-                self.flight_df,
+                self.flight_plan_df,
                 episode_start,
                 episode_end,
-                ignore_simmed=self.ignore.flight_if_simmed,
+                ignore_simmed=self.ignore.flight_plan_if_simmed,
             )
 
         if not (all_aircraft_are_simmed and self.ignore.clearance_if_simmed):
@@ -1282,7 +1287,7 @@ class EventHandler(typing.Generic[TAircraft]):
             The original instance concatenated with other_event_handler
         """
         self.radar_df = pd_concat_two_dfs(self.radar_df, other_event_handler.radar_df)
-        self.flight_df = pd_concat_two_dfs(self.flight_df, other_event_handler.flight_df)
+        self.flight_plan_df = pd_concat_two_dfs(self.flight_plan_df, other_event_handler.flight_plan_df)
         self.clearances_df = pd_concat_two_dfs(self.clearances_df, other_event_handler.clearances_df)
         self.coordination_df = pd_concat_two_dfs(self.coordination_df, other_event_handler.coordination_df)
         self.sectors_df = pd_concat_two_dfs(self.sectors_df, other_event_handler.sectors_df)
@@ -1331,7 +1336,7 @@ class EventHandler(typing.Generic[TAircraft]):
 
         if False:
             # for now, we don't trim the flight_plans as these can be at any time in the day
-            self.flight_df = self.flight_df[~comp(self.flight_df.start_datetime, a_datetime)]
+            self.flight_plan_df = self.flight_plan_df[~comp(self.flight_plan_df.start_datetime, a_datetime)]
 
         self.radar_df = self.radar_df[~comp(self.radar_df.index, a_datetime)]
         self.clearances_df = self.clearances_df[~comp(self.clearances_df.index, a_datetime)]

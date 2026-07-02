@@ -10,7 +10,7 @@ import weakref
 from bluebird_dt.core import Action, Coordination
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.simulator.simconfig import SaveConfig
+from bluebird_dt.utility.config_models import SaveConfig
 from bluebird_dt.utility import convert
 from bluebird_dt.simulator import Simulator
 from typing import Any
