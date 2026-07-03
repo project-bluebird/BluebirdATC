@@ -652,14 +652,14 @@ class EventLogger:
         """
         # transform flight log to dataframe
         if self.flight_log:
-            flight_df = pd.DataFrame.from_records([v for vals in self.flight_log.values() for v in vals]).astype(
+            flight_plan_df = pd.DataFrame.from_records([v for vals in self.flight_log.values() for v in vals]).astype(
                 EventDtypes.flight_dtypes
             )
         else:
             # else create empty dataframe with correct columns
-            flight_df = pd.DataFrame(columns=EventDtypes.flight_dtypes)
+            flight_plan_df = pd.DataFrame(columns=EventDtypes.flight_dtypes)
 
-        return flight_df
+        return flight_plan_df
 
     def clearance_log_as_df(self) -> pd.DataFrame:
         """
@@ -787,13 +787,13 @@ class EventLogger:
         save_csv: bool
             A flag to determine if csv should be saved
         """
-        flight_df = self.flight_log_as_df()
+        flight_plan_df = self.flight_log_as_df()
 
         # save flight plans log
         if save_csv:
-            save_df_to_csv_tar(flight_df, tar, "flight_plan")
+            save_df_to_csv_tar(flight_plan_df, tar, "flight_plan")
 
-        save_df_to_parquet_tar(flight_df, tar, "flight_plan")
+        save_df_to_parquet_tar(flight_plan_df, tar, "flight_plan")
 
     def _save_clearances(self, tar: tarfile.TarFile, save_csv: bool | None = True):
         """
@@ -1089,8 +1089,8 @@ class EventLogger:
             The logged events as an EventHandler
         """
         return EventHandler(
-            radar_dataframe=self.radar_log_as_df(),
-            flight_df=self.flight_log_as_df(),
+            radar_df=self.radar_log_as_df(),
+            flight_plan_df=self.flight_log_as_df(),
             clearances_df=self.clearance_log_as_df(),
             coordination_df=self.coordination_log_as_df(),
             sectors_df=self.sectors_log_as_df(),

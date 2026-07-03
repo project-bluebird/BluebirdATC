@@ -492,7 +492,7 @@ class Simulator:
 
         # extract the fixes from all aircraft that are in the scenario
         all_aircraft_fixes = {
-            fix for route_filed in self.manager.event_handler.flight_df.route_filed for fix in route_filed
+            fix for route_filed in self.manager.event_handler.flight_plan_df.route_filed for fix in route_filed
         }
 
         # If we replaced environment via the API, we might not have Events, but

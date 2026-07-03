@@ -50,7 +50,7 @@ def test_all_airspaces(airspace_routes, num_starter_aircraft, request):
     sector_name = list(airspace.sectors.keys())[0]
     em = Infinite(airspace=airspace, routes=routes, num_starter_aircraft=num_starter_aircraft).create_env_manager()
 
-    flight_plans = em.event_handler.flight_df
+    flight_plans = em.event_handler.flight_plan_df
 
     assert len(em.event_handler.radar_df) == num_starter_aircraft
     # evolve the simulation a few steps to allow all starter aircraft to spawn

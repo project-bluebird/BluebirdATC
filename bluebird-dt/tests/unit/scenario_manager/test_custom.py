@@ -247,10 +247,10 @@ def test_aircraft_entry_spawn_point(generate_i):
 
     entries = defaultdict(list)
 
-    flight_plans = em.event_handler.flight_df.groupby("callsign").last()
+    flight_plans = em.event_handler.flight_plan_df.groupby("callsign").last()
 
     # check there is a unique callsign per flight plan entry
-    assert len(flight_plans) == len(em.event_handler.flight_df)
+    assert len(flight_plans) == len(em.event_handler.flight_plan_df)
 
     for _, radar_row in em.event_handler.radar_df.iterrows():
         start_fix = flight_plans.loc[radar_row.callsign].route_filed[0]

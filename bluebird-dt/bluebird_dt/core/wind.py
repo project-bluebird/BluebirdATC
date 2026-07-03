@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import json
 import math
 import typing
 
 import numpy as np
 import typing_extensions
-from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator, model_validator
 from typing_extensions import override
 
 from bluebird_dt.logger import logger
@@ -88,40 +87,65 @@ class WindField(BaseModel):
 
     Parameters
     ----------
-    u_comp: np.ndarray
+    u_comp : np.typing.NDArray[np.floating]
         3D array containing u (eastward wind) component values. The three coordinate axis are
-        [pressure_level, latitude, longitude] and in that order. Units are m/s
-    v_comp: np.ndarray
+        [pressure_level, latitude, longitude] and in that order. Units are m/s.
+    v_comp : np.typing.NDArray[np.floating]
         3D array containing v (northward wind) component values. The three coordinate axis are
         [pressure_level, latitude, longitude] and in that order. Units are m/s.
-    pressure_array: np.ndarray, list
+    pressure_array : np.typing.NDArray[np.floating]
         1D array containing pressure level grid coordinate values. Units are Pa.
-    lat_array: np.ndarray, list
+    lat_array : np.typing.NDArray[np.floating]
         1D array containing latitude grid coordinate values. Units are degrees.
-    lon_array: np.ndarray, list
+    lon_array : np.typing.NDArray[np.floating]
         1D array containing longitude grid coordinate values. Units are degrees.
-    interpolation_method: str
+    interpolation_method : Literal["trilinear", "nearest", "fl_interpolation"]
         The interpolation method used to estimate wind vector at a given point.
-        Can be either "trilinear" or "nearest".
-
+    wind_speed : np.typing.NDArray[np.floating] | float | None
+        Optional 1D array or scalar of wind speed values per pressure level (in m/s).
+    wind_direction : np.typing.NDArray[np.floating] | float | None
+        Optional 1D array or scalar of wind direction values per pressure level (in degrees).
     """
 
     # This line allows us to use numpy arrays as fields.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    u_comp: np.ndarray
-    v_comp: np.ndarray
-    pressure_array: np.ndarray | list[float]
-    lat_array: np.ndarray | list[float]
-    lon_array: np.ndarray | list[float]
+    u_comp: np.typing.NDArray[np.floating]
+    v_comp: np.typing.NDArray[np.floating]
+    pressure_array: np.typing.NDArray[np.floating]
+    lat_array: np.typing.NDArray[np.floating]
+    lon_array: np.typing.NDArray[np.floating]
     interpolation_method: typing.Literal["trilinear", "nearest", "fl_interpolation"] = "nearest"
-    # Instantiation method information. Will be None if using the default constructor
-    __construct_data: dict = PrivateAttr(default={"method": None, "args": None})
 
-    # Always use numpy arrays internally
-    @field_validator("pressure_array", "lat_array", "lon_array")
-    def convert_to_array(cls, v: list[float] | np.ndarray) -> np.typing.NDArray[np.float64]:
-        return np.asarray(v, dtype=np.float64)
+    wind_speed: np.typing.NDArray[np.floating] | float | None = None
+    wind_direction: np.typing.NDArray[np.floating] | float | None = None
+
+    # Validation and serialisation methods for numpy arrays, since these aren't natively supported by Pydantic.
+    @field_validator("u_comp", "v_comp", "pressure_array", "lat_array", "lon_array", mode="before")
+    def convert_to_array(cls, v: list | np.typing.NDArray[np.floating]) -> np.typing.NDArray[np.floating]:
+        return np.asarray(v, dtype=float)
+
+    @field_validator("wind_speed", "wind_direction", mode="before")
+    def convert_optional_to_array(
+        cls, v: list | np.typing.NDArray[np.floating] | float | None
+    ) -> np.typing.NDArray[np.floating] | None:
+        return None if v is None else np.asarray(v, dtype=float)
+
+    @field_serializer("u_comp", "v_comp", "pressure_array", "lat_array", "lon_array")
+    def serialise_ndarray(self, v: np.typing.NDArray[np.floating]) -> list:
+        return v.tolist()
+
+    @field_serializer("wind_speed", "wind_direction")
+    def serialise_optional_ndarray(self, v: np.typing.NDArray[np.floating] | float | None) -> list | float | None:
+        return None if v is None else (v.tolist() if isinstance(v, np.ndarray) else v)
+
+    @model_validator(mode="after")
+    def require_fl_interpolation_inputs(self) -> typing_extensions.Self:
+        if self.interpolation_method == "fl_interpolation" and (self.wind_speed is None or self.wind_direction is None):
+            raise ValueError(
+                "interpolation_method='fl_interpolation' requires both wind_speed and wind_direction to be provided"
+            )
+        return self
 
     @property
     def pressure_min(self) -> float:
@@ -193,7 +217,8 @@ class WindField(BaseModel):
             and self.pressure_indexing == other.pressure_indexing
             and self.lat_indexing == other.lat_indexing
             and self.lon_indexing == other.lon_indexing
-            and self.__construct_data == other.__construct_data
+            and np.array_equal(self.wind_speed, other.wind_speed)
+            and np.array_equal(self.wind_direction, other.wind_direction)
         )
 
     @classmethod
@@ -229,13 +254,12 @@ class WindField(BaseModel):
             The maximum grid longitude (in degrees)
         no_grid_points : int
             The number of grid points in latitude and longitude
-        interpolation_method: str
+        interpolation_method : Literal["trilinear", "nearest"]
             The interpolation method used to estimate wind vector at a given point.
-            Can be either "trilinear" or "nearest".
 
         Returns
         -------
-        Wind :
+        WindField :
             A uniform wind field
         """
 
@@ -256,9 +280,9 @@ class WindField(BaseModel):
     @classmethod
     def artificial(
         cls,
-        wind_speed: np.ndarray | list | float,
-        wind_direction: np.ndarray | list | float,
-        pressure_array: np.ndarray | list,
+        wind_speed: np.typing.NDArray[np.floating] | float,
+        wind_direction: np.typing.NDArray[np.floating] | float,
+        pressure_array: np.typing.NDArray[np.floating],
         min_lat: float,
         max_lat: float,
         min_lon: float,
@@ -271,12 +295,12 @@ class WindField(BaseModel):
 
         Parameters
         ----------
-        wind_speed : np.ndarray, list, float
-            1D array, or constant value, of wind speed (in m/s)
-        wind_direction : np.ndarray, list, float
+        wind_speed : np.typing.NDArray[np.floating] | float
+            1D array, or constant value, of wind speed (in m/s).
+        wind_direction : np.typing.NDArray[np.floating] | float
             1D array, or constant value, of wind direction (in degrees).
-        pressure_array : np.ndarray, list
-            1D array of pressure levels (in Pa)
+        pressure_array : np.typing.NDArray[np.floating]
+            1D array of pressure levels (in Pa).
         min_lat : float
             The minimum grid latitude (in degrees)
         max_lat : float
@@ -287,13 +311,12 @@ class WindField(BaseModel):
             The maximum grid longitude (in degrees)
         no_grid_points : int
             The number of grid points in latitude and longitude
-        interpolation_method: str
+        interpolation_method : Literal["trilinear", "nearest", "fl_interpolation"]
             The interpolation method used to estimate wind vector at a given point.
-            Can be either "trilinear" or "nearest".
 
         Returns
         -------
-        Wind :
+        WindField :
             An artificial wind field
         """
         # ensure relevant parameters are numpy arrays
@@ -344,44 +367,27 @@ class WindField(BaseModel):
         u_comp = np.broadcast_to(u_comp, shape)
         v_comp = np.broadcast_to(v_comp, shape)
 
-        wind_field = cls(
+        return cls(
             u_comp=u_comp,
             v_comp=v_comp,
             pressure_array=pressure_array,
             lat_array=lat_array,
             lon_array=lon_array,
             interpolation_method=interpolation_method,
+            wind_speed=wind_speed,
+            wind_direction=wind_direction,
         )
-
-        # Ensure the wind field can be serialised to JSON
-        wind_direction = wind_direction.tolist() if isinstance(wind_direction, np.ndarray) else wind_direction
-
-        wind_field.__construct_data = {
-            "method": "artificial",
-            "args": {
-                "wind_speed": wind_speed.tolist(),
-                "wind_direction": wind_direction,
-                "pressure_array": pressure_array.tolist(),
-                "min_lat": min_lat,
-                "max_lat": max_lat,
-                "min_lon": min_lon,
-                "max_lon": max_lon,
-                "no_grid_points": no_grid_points,
-                "interpolation_method": interpolation_method,
-            },
-        }
-        return wind_field
 
     def data(self) -> dict:
         """
-        Return a dictionary with key/value pairs representing the wind field instantiation definition.
+        Return a dictionary representation of the wind field.
 
         Returns
         -------
         dict :
-            The instantiation definition of the wind field
+            The wind field model as a dictionary (arrays serialised to nested lists).
         """
-        return self.__construct_data
+        return self.model_dump()
 
     @classmethod
     def load(cls: type[WindField], filename: str) -> WindField | None:
@@ -390,13 +396,13 @@ class WindField(BaseModel):
 
         Parameters
         ----------
-        filename: str
+        filename : str
             Path to a JSON file with a wind field instantiation definition in a dictionary format.
 
         Returns
         -------
-        Wind
-            A wind object
+        WindField :
+            A wind field reconstructed from the file contents.
         """
         with open(filename) as fd:
             wind_json = fd.read()
@@ -414,63 +420,67 @@ class WindField(BaseModel):
         with open(filename, "w") as fd:
             fd.write(self.to_json())
 
-    @classmethod
-    def from_dict(cls, data: dict) -> WindField | None:
-        if "method" not in data or data["method"] != "artificial":
-            logger.warning(
-                "Trying to instantiate wind field from string with no valid instantiation method defined. "
-                "Returning None (this will be the case for a replay with no wind field data).",
-                stacklevel=2,
-            )
-            return None
-
-        return cls.artificial(
-            wind_speed=data["args"]["wind_speed"],
-            wind_direction=data["args"]["wind_direction"],
-            pressure_array=data["args"]["pressure_array"],
-            min_lat=data["args"]["min_lat"],
-            max_lat=data["args"]["max_lat"],
-            min_lon=data["args"]["min_lon"],
-            max_lon=data["args"]["max_lon"],
-            no_grid_points=data["args"]["no_grid_points"],
-            interpolation_method=data["args"]["interpolation_method"],
-        )
-
-    @classmethod
-    def from_json(
-        cls,
-        s: str,
-        interpolation_method: typing.Literal["trilinear", "nearest"] = "nearest",  # noqa: ARG003
-    ) -> typing_extensions.Self | None:
-        """
-        Construct a new wind field instance from a string in JSON format.
-
-        Parameters
-        ----------
-        s : str
-            A string representation of Wind instantiation definition in a JSON/dictionary structure.
-        interpolation_method: str
-            The interpolation method used to estimate wind vector at a given point.
-            Can be either "trilinear" or "nearest". Default is "nearest".
-
-        Returns
-        -------
-        Wind :
-            A wind object
-        """
-        return cls.from_dict(json.loads(s), interpolation_method)
-
     def to_json(self) -> str:
         """
-        Serialise the wind instantiation definition to JSON string.
+        Serialise the full wind field (arrays included) to a JSON string via Pydantic.
 
         Returns
         -------
         str :
-            A JSON string representing the instantiation definition of the provided
-            wind instance.
+            A JSON string of the full wind field model.
         """
-        return json.dumps(self.data(), indent=4)
+        return self.model_dump_json()
+
+    @classmethod
+    def from_json(cls, s: str) -> typing_extensions.Self:
+        """
+        Construct a new wind field instance from a JSON string matching the WindField model schema.
+
+        Parameters
+        ----------
+        s : str
+            JSON string previously produced by :meth:`to_json` (or otherwise matching the
+            WindField model schema).
+
+        Returns
+        -------
+        WindField :
+            A wind field reconstructed from the serialised data.
+
+        Raises
+        ------
+        pydantic.ValidationError
+            If ``s`` does not match the WindField model schema.
+        """
+        return cls.model_validate_json(s)
+
+    @classmethod
+    def from_dict(
+        cls: type[WindField],
+        data: dict,
+    ) -> WindField | None:
+        """
+        Construct a new wind field instance from a dictionary matching the WindField model schema.
+
+        Parameters
+        ----------
+        data : dict
+            Dictionary of WindField data matching the WindField model schema.
+
+        Returns
+        -------
+        WindField | None :
+            A wind object, or ``None`` if ``data`` is empty / ``None``.
+        """
+        if not data:
+            logger.warning(
+                "Trying to instantiate wind field from empty data. Returning None "
+                "(this will be the case for a replay with no wind field data).",
+                stacklevel=2,
+            )
+            return None
+
+        return cls.model_validate(data)
 
     def get_wind_vector_using_plevels(self, pressure_level: float, latitude: float, longitude: float) -> WindVector:
         """
@@ -589,8 +599,10 @@ class WindField(BaseModel):
                 apply_shear = False
 
                 pressure_array = self.pressure_array
-                wind_dir_raw = self.__construct_data["args"]["wind_direction"]
-                wind_spd_raw = self.__construct_data["args"]["wind_speed"]
+
+                n_levels = len(pressure_array)
+                wind_spd_raw = np.broadcast_to(np.asarray(self.wind_speed, dtype=float), (n_levels,)).tolist()
+                wind_dir_raw = np.broadcast_to(np.asarray(self.wind_direction, dtype=float), (n_levels,)).tolist()
 
                 # Find the index of the nearest pressure level at or below the target
                 # and obtain matching wind speed and direction

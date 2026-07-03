@@ -54,7 +54,7 @@ def test_all_airspaces(airspace_routes, request):
     sector_name = list(airspace.sectors.keys())[0]
     em = TwoAircraft(total_time=100, scenario_type="random", airspace=airspace, routes=routes).create_env_manager()
 
-    flight_plans = em.event_handler.flight_df
+    flight_plans = em.event_handler.flight_plan_df
 
     assert len(em.event_handler.radar_df) == 2
     ac1_flight_plan = flight_plans.iloc[0]

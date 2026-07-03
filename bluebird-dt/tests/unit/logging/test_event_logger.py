@@ -18,7 +18,7 @@ from bluebird_dt.predictor import RouteFollowPredictor, SimplePredictor, LinearP
 from bluebird_dt.scenario_manager import TwoAircraft
 from bluebird_dt.simulator import Simulator
 
-from bluebird_dt.simulator.simconfig import SaveConfig, SimulatorConfig
+from bluebird_dt.utility.config_models import SaveConfig
 from bluebird_dt.utility.logging_utils import read_tar_csv_to_df, read_tar_json_to_dict, read_tar_parquet_to_df
 from bluebird_dt.utility.paths import LOG_DIR
 
