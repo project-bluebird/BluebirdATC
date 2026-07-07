@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pytest
 
 from bluebird_dt.scenario_manager.replayer_from_logs import ReplayerFromLogs
@@ -47,3 +48,16 @@ def test_replay_scenario(tmp_path, monkeypatch, category, scenario_name):
         assert aircraft_orig.last_passed_current_idx == aircraft_replay.last_passed_current_idx
         assert aircraft_orig.simulated == True
         assert aircraft_replay.simulated == False
+    # test the event handler dataframes
+    eh_orig = s.manager.event_handler
+    eh_replay = s_replay.manager.event_handler
+    df_list = ["radar_df", "flight_plan_df", "clearances_df",
+               "coordination_df", "sectors_df", "incomm_df", 
+               "ac_internals_df", "ac_attribute_update_df"]
+    for df_name in df_list:
+        df_orig = eh_orig.__getattribute__(df_name)
+        df_replay = eh_replay.__getattribute__(df_name)
+        # not guaranteed to be same length, but replay
+        # dataframe should be non-zero if original was.
+        if len(df_orig) > 0:
+            assert len(df_replay) > 0

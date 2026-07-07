@@ -105,7 +105,7 @@ def test_repeat(generate_i):
         env_manager = gen.create_env_manager()
 
         radar_events_df = env_manager.event_handler.radar_df
-        ac_internal_events_df = env_manager.event_handler.aircraft_internals_df
+        ac_internal_events_df = env_manager.event_handler.ac_internals_df
         coord_df = env_manager.event_handler.coordination_df
 
         # test number of events matches number of aircraft

@@ -57,7 +57,7 @@ class EventHandlerArgs:
     coordination_df: pd.DataFrame | None = None
     sectors_df: pd.DataFrame | None = None
     incomm_df: pd.DataFrame | None = None
-    aircraft_internals_df: pd.DataFrame | None = None
+    ac_internals_df: pd.DataFrame | None = None
     ac_attribute_update_df: pd.DataFrame | None = None
     ignore: EventHandler.IgnoreFlags | None = None
     typeof_aircraft: TAircraft = Aircraft
@@ -92,7 +92,7 @@ class EventHandler(typing.Generic[TAircraft]):
     coordination_df: pd.DataFrame
     sectors_df: pd.DataFrame
     incomm_df: pd.DataFrame
-    aircraft_internals_df: pd.DataFrame
+    ac_internals_df: pd.DataFrame
     ac_attribute_update_df: pd.DataFrame
 
     @dataclass
@@ -110,7 +110,7 @@ class EventHandler(typing.Generic[TAircraft]):
             If True, sector configuration events will be ignored for simmed aircraft
         incomm_if_simmed: bool, Default True
             If True, incomm events will be ignored for simmed aircraft
-        aircraft_internals_if_simmed: bool, Default True
+        ac_internals_if_simmed: bool, Default True
             If True, aircraft internal events will be ignored for simmed aircraft
         ac_attribute_if_simmed: bool, Default True
             If True aircraft attribute update events will be ignored for simmed aircraft
@@ -125,7 +125,7 @@ class EventHandler(typing.Generic[TAircraft]):
         coordination_if_simmed: bool = True
         sectors_if_simmed: bool = True
         incomm_if_simmed: bool = True
-        aircraft_internals_if_simmed: bool = True
+        ac_internals_if_simmed: bool = True
         ac_attribute_if_simmed: bool = True
         airspace_config_updates: bool = False
 
@@ -139,7 +139,7 @@ class EventHandler(typing.Generic[TAircraft]):
         coordination_df: pd.DataFrame | None = None,
         sectors_df: pd.DataFrame | None = None,
         incomm_df: pd.DataFrame | None = None,
-        aircraft_internals_df: pd.DataFrame | None = None,
+        ac_internals_df: pd.DataFrame | None = None,
         ac_attribute_update_df: pd.DataFrame | None = None,
         ignore: IgnoreFlags | None = None,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -161,7 +161,7 @@ class EventHandler(typing.Generic[TAircraft]):
             Each row is a sector configuration event
         incomm_df: pd.DataFrame, optional
             Each row is an incomm event
-        aircraft_internals_df: pd.DataFrame, optional
+        ac_internals_df: pd.DataFrame, optional
             Each row is a aircraft internals event
             These update the internal parameters of the aircraft
         ac_attribute_update_df: pd.DataFrame, optional
@@ -189,7 +189,7 @@ class EventHandler(typing.Generic[TAircraft]):
         self.radar_df = radar_df if radar_df is not None else pd.DataFrame(columns=EventDtypes.radar_dtypes)
 
         self.flight_plan_df = (
-            flight_plan_df if flight_plan_df is not None else pd.DataFrame(columns=EventDtypes.flight_dtypes)
+            flight_plan_df if flight_plan_df is not None else pd.DataFrame(columns=EventDtypes.flight_plan_dtypes)
         )
 
         self.clearances_df = (
@@ -204,10 +204,8 @@ class EventHandler(typing.Generic[TAircraft]):
 
         self.incomm_df = incomm_df if incomm_df is not None else pd.DataFrame(columns=EventDtypes.incomm_dtypes)
 
-        self.aircraft_internals_df = (
-            aircraft_internals_df
-            if aircraft_internals_df is not None
-            else pd.DataFrame(columns=EventDtypes.aircraft_internals_dtypes)
+        self.ac_internals_df = (
+            ac_internals_df if ac_internals_df is not None else pd.DataFrame(columns=EventDtypes.ac_internals_dtypes)
         )
 
         self.ac_attribute_update_df = (
@@ -231,12 +229,12 @@ class EventHandler(typing.Generic[TAircraft]):
     def reset_events(self) -> None:
         """Reset events by creating empty DataFrames for each event type"""
         self.radar_df = pd.DataFrame(columns=EventDtypes.radar_dtypes)
-        self.flight_plan_df = pd.DataFrame(columns=EventDtypes.flight_dtypes)
+        self.flight_plan_df = pd.DataFrame(columns=EventDtypes.flight_plan_dtypes)
         self.clearances_df = pd.DataFrame(columns=EventDtypes.clearance_dtypes)
         self.coordination_df = pd.DataFrame(columns=EventDtypes.coord_dtypes)
         self.sectors_df = pd.DataFrame(columns=EventDtypes.sectors_dtypes)
         self.incomm_df = pd.DataFrame(columns=EventDtypes.incomm_dtypes)
-        self.aircraft_internals_df = pd.DataFrame(columns=EventDtypes.aircraft_internals_dtypes)
+        self.ac_internals_df = pd.DataFrame(columns=EventDtypes.ac_internals_dtypes)
         self.ac_attribute_update_df = pd.DataFrame(columns=EventDtypes.ac_attribute_update_dtypes)
 
     def add_optional_radar_columns_if_required(self) -> None:
@@ -281,7 +279,7 @@ class EventHandler(typing.Generic[TAircraft]):
         self.coordination_df = self.coordination_df.set_index("datetime")
         self.sectors_df = self.sectors_df.set_index("datetime")
         self.incomm_df = self.incomm_df.set_index("datetime")
-        self.aircraft_internals_df = self.aircraft_internals_df.set_index("datetime")
+        self.ac_internals_df = self.ac_internals_df.set_index("datetime")
         self.ac_attribute_update_df = self.ac_attribute_update_df.set_index("datetime")
 
     def ensure_specific_format_for_specific_columns(self) -> None:
@@ -303,12 +301,12 @@ class EventHandler(typing.Generic[TAircraft]):
     def ensure_dataframe_data_types(self) -> None:
         """Convert DataFrame columns to correct data types if required."""
         self.radar_df = self.radar_df.astype(EventDtypes.radar_dtypes)
-        self.flight_plan_df = self.flight_plan_df.astype(EventDtypes.flight_dtypes)
+        self.flight_plan_df = self.flight_plan_df.astype(EventDtypes.flight_plan_dtypes)
         self.clearances_df = self.clearances_df.astype(EventDtypes.clearance_dtypes)
         self.coordination_df = self.coordination_df.astype(EventDtypes.coord_dtypes)
         self.sectors_df = self.sectors_df.astype(EventDtypes.sectors_dtypes)
         self.incomm_df = self.incomm_df.astype(EventDtypes.incomm_dtypes)
-        self.aircraft_internals_df = self.aircraft_internals_df.astype(EventDtypes.aircraft_internals_dtypes)
+        self.ac_internals_df = self.ac_internals_df.astype(EventDtypes.ac_internals_dtypes)
         self.ac_attribute_update_df = self.ac_attribute_update_df.astype(EventDtypes.ac_attribute_update_dtypes)
 
     def ensure_dataframes_are_date_ordered(self) -> None:
@@ -325,8 +323,8 @@ class EventHandler(typing.Generic[TAircraft]):
             self.sectors_df = self.sectors_df.sort_index()
         if not self.incomm_df.index.is_monotonic_increasing:
             self.incomm_df = self.incomm_df.sort_index()
-        if not self.aircraft_internals_df.index.is_monotonic_increasing:
-            self.aircraft_internals_df = self.aircraft_internals_df.sort_index()
+        if not self.ac_internals_df.index.is_monotonic_increasing:
+            self.ac_internals_df = self.ac_internals_df.sort_index()
         if not self.ac_attribute_update_df.index.is_monotonic_increasing:
             self.ac_attribute_update_df = self.ac_attribute_update_df.sort_index()
 
@@ -466,7 +464,7 @@ class EventHandler(typing.Generic[TAircraft]):
                 else None
             )
 
-        self.add_aircraft_internals_event(
+        self.add_ac_internals_event(
             the_datetime,
             callsign=aircraft.callsign,
             rate_of_turn=aircraft.rate_of_turn,
@@ -653,7 +651,7 @@ class EventHandler(typing.Generic[TAircraft]):
 
         new_row = pd.Series(new_row, name=the_datetime)
         self.flight_plan_df = pd_concat_two_dfs(
-            self.flight_plan_df, new_row.to_frame().T.astype(EventDtypes.flight_dtypes)
+            self.flight_plan_df, new_row.to_frame().T.astype(EventDtypes.flight_plan_dtypes)
         )
         # ensure date ordering is preserved
         self.flight_plan_df = self.flight_plan_df.sort_index()
@@ -838,7 +836,7 @@ class EventHandler(typing.Generic[TAircraft]):
             secondary_coord_conditions=coordination.secondary_coord_conditions,
         )
 
-    def add_aircraft_internals_event(
+    def add_ac_internals_event(
         self,
         the_datetime: datetime,
         callsign: str | None = None,
@@ -884,7 +882,7 @@ class EventHandler(typing.Generic[TAircraft]):
         squawk_ident_until: float | None = None,
     ):
         """
-        Add an aircraft_internals event.
+        Add an ac_internals event.
 
         Parameters
         ----------
@@ -1015,10 +1013,10 @@ class EventHandler(typing.Generic[TAircraft]):
         }
 
         new_row = pd.Series(new_row, name=the_datetime)
-        dtypes = {key: val for key, val in EventDtypes.aircraft_internals_dtypes.items() if key != "datetime"}
-        self.aircraft_internals_df = pd_concat_two_dfs(self.aircraft_internals_df, new_row.to_frame().T.astype(dtypes))
+        dtypes = {key: val for key, val in EventDtypes.ac_internals_dtypes.items() if key != "datetime"}
+        self.ac_internals_df = pd_concat_two_dfs(self.ac_internals_df, new_row.to_frame().T.astype(dtypes))
         # ensure date ordering is preserved
-        self.aircraft_internals_df = self.aircraft_internals_df.sort_index()
+        self.ac_internals_df = self.ac_internals_df.sort_index()
 
     def jump_to_time(
         self,
@@ -1138,9 +1136,9 @@ class EventHandler(typing.Generic[TAircraft]):
         environment = update_route_status(environment, ignore_simmed=False)
         # if previous internal aircraft state is available in logs, then this has the
         # final say on the state of non-simulated aircraft
-        return update_aircraft_internals(
+        return update_ac_internals(
             environment,
-            self.aircraft_internals_df,
+            self.ac_internals_df,
             episode_start=new_time - timedelta(hours=1),
             episode_end=new_time,
             ignore_simmed=False,
@@ -1260,14 +1258,14 @@ class EventHandler(typing.Generic[TAircraft]):
 
         # if previous internal aircraft state is available in logs, then this has the
         # final say on the state of non-simulated aircraft
-        if not (all_aircraft_are_simmed and self.ignore.aircraft_internals_if_simmed):
+        if not (all_aircraft_are_simmed and self.ignore.ac_internals_if_simmed):
             # bypass if simmed aircraft are being ignored and all aircraft are simulated
-            environment = update_aircraft_internals(
+            environment = update_ac_internals(
                 environment,
-                self.aircraft_internals_df,
+                self.ac_internals_df,
                 episode_start,
                 episode_end,
-                ignore_simmed=self.ignore.aircraft_internals_if_simmed,
+                ignore_simmed=self.ignore.ac_internals_if_simmed,
             )
 
         return environment
@@ -1292,9 +1290,7 @@ class EventHandler(typing.Generic[TAircraft]):
         self.coordination_df = pd_concat_two_dfs(self.coordination_df, other_event_handler.coordination_df)
         self.sectors_df = pd_concat_two_dfs(self.sectors_df, other_event_handler.sectors_df)
         self.incomm_df = pd_concat_two_dfs(self.incomm_df, other_event_handler.incomm_df)
-        self.aircraft_internals_df = pd_concat_two_dfs(
-            self.aircraft_internals_df, other_event_handler.aircraft_internals_df
-        )
+        self.ac_internals_df = pd_concat_two_dfs(self.ac_internals_df, other_event_handler.ac_internals_df)
         self.ac_attribute_update_df = pd_concat_two_dfs(
             self.ac_attribute_update_df, other_event_handler.ac_attribute_update_df
         )
@@ -1343,7 +1339,7 @@ class EventHandler(typing.Generic[TAircraft]):
         self.sectors_df = self.sectors_df[~comp(self.sectors_df.index, a_datetime)]
         self.incomm_df = self.incomm_df[~comp(self.incomm_df.index, a_datetime)]
         self.coordination_df = self.coordination_df[~comp(self.coordination_df.index, a_datetime)]
-        self.aircraft_internals_df = self.aircraft_internals_df[~comp(self.aircraft_internals_df.index, a_datetime)]
+        self.ac_internals_df = self.ac_internals_df[~comp(self.ac_internals_df.index, a_datetime)]
 
         return self
 
@@ -1362,15 +1358,13 @@ class EventHandler(typing.Generic[TAircraft]):
             Original EventHandler with all events for any aircraft which are simmed at any time in the event logger
             removed.
         """
-        callsigns_to_remove = {ac["callsign"] for ac in event_logger.aircraft_internals_log if ac["simulated"]}
+        callsigns_to_remove = {ac["callsign"] for ac in event_logger.ac_internals_log if ac["simulated"]}
 
         self.radar_df = self.radar_df[~self.radar_df.callsign.isin(callsigns_to_remove)]
         self.clearances_df = self.clearances_df[~self.clearances_df.callsign.isin(callsigns_to_remove)]
         self.incomm_df = self.incomm_df[~self.incomm_df.callsign.isin(callsigns_to_remove)]
         self.coordination_df = self.coordination_df[~self.coordination_df.callsign.isin(callsigns_to_remove)]
-        self.aircraft_internals_df = self.aircraft_internals_df[
-            ~self.aircraft_internals_df.callsign.isin(callsigns_to_remove)
-        ]
+        self.ac_internals_df = self.ac_internals_df[~self.ac_internals_df.callsign.isin(callsigns_to_remove)]
 
         return self
 
@@ -2140,7 +2134,7 @@ def update_incomm(
     return environment
 
 
-def update_aircraft_internals(
+def update_ac_internals(
     environment: Environment[TAircraft, TWindField, TForecastWindField],
     df_aircraft_internals: pd.DataFrame,
     episode_start: pd.Timestamp,

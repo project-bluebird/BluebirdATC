@@ -28,7 +28,7 @@ def test_to_simulator(generate_i):
     assert simulator.category is None
 
     radar_events_df = simulator.manager.event_handler.radar_df
-    ac_internal_events_df = simulator.manager.event_handler.aircraft_internals_df
+    ac_internal_events_df = simulator.manager.event_handler.ac_internals_df
     coord_df = simulator.manager.event_handler.coordination_df
 
     # test number of events matches number of aircraft

@@ -164,7 +164,7 @@ class EventLogger:
         self.forecast_log = None
         self.individual_sectors_log = None
         self._previous_ac_internals = []
-        self.aircraft_internals_log = []
+        self.ac_internals_log = []
 
         if log_name is not None:
             self.log_name = log_name
@@ -369,7 +369,7 @@ class EventLogger:
         if not previous_only:
             # deepcopy as mutable objects are stored
             ac_internals_changes = copy.deepcopy(ac_internals_changes)
-            self.aircraft_internals_log.extend(ac_internals_changes)
+            self.ac_internals_log.extend(ac_internals_changes)
 
     def _log_radar(self, environment: Environment):
         """
@@ -444,7 +444,7 @@ class EventLogger:
                 and not isinstance(new_flight_log[col], list)  # pd.isna fails on lists as returns multiple bools
                 and pd.isna(new_flight_log[col])
             )
-            for col in EventDtypes.flight_dtypes
+            for col in EventDtypes.flight_plan_dtypes
             if col not in ["datetime", "start_datetime", "end_datetime", "callsign"]
         )
 
@@ -653,11 +653,11 @@ class EventLogger:
         # transform flight log to dataframe
         if self.flight_log:
             flight_plan_df = pd.DataFrame.from_records([v for vals in self.flight_log.values() for v in vals]).astype(
-                EventDtypes.flight_dtypes
+                EventDtypes.flight_plan_dtypes
             )
         else:
             # else create empty dataframe with correct columns
-            flight_plan_df = pd.DataFrame(columns=EventDtypes.flight_dtypes)
+            flight_plan_df = pd.DataFrame(columns=EventDtypes.flight_plan_dtypes)
 
         return flight_plan_df
 
@@ -744,11 +744,11 @@ class EventLogger:
             The aircraft_internals log as an EventHandler DataFrame
         """
         # transform aircraft_internals log to dataframe
-        if self.aircraft_internals_log:
-            ac_internals_df = pd.DataFrame.from_records(self.aircraft_internals_log)
+        if self.ac_internals_log:
+            ac_internals_df = pd.DataFrame.from_records(self.ac_internals_log)
         else:
             # else create empty dataframe with correct columns
-            ac_internals_df = pd.DataFrame(columns=EventDtypes.aircraft_internals_dtypes)
+            ac_internals_df = pd.DataFrame(columns=EventDtypes.ac_internals_dtypes)
 
         return ac_internals_df
 
@@ -1072,9 +1072,7 @@ class EventLogger:
         self.sectors_log = [log for log in self.sectors_log if not comp(log["datetime"], comparison_datetime)]
         self.incomm_log = [log for log in self.incomm_log if not comp(log["datetime"], comparison_datetime)]
         self.coordination_log = [log for log in self.coordination_log if not comp(log["datetime"], comparison_datetime)]
-        self.aircraft_internals_log = [
-            log for log in self.aircraft_internals_log if not comp(log["datetime"], comparison_datetime)
-        ]
+        self.ac_internals_log = [log for log in self.ac_internals_log if not comp(log["datetime"], comparison_datetime)]
         #        self.strips_log = [log for log in self.strips_log if not comp(log["datetime"], comparison_datetime)]
 
         return self
@@ -1095,6 +1093,6 @@ class EventLogger:
             coordination_df=self.coordination_log_as_df(),
             sectors_df=self.sectors_log_as_df(),
             incomm_df=self.incomm_log_as_df(),
-            aircraft_internals_df=self.aircraft_internals_log_as_df(),
+            ac_internals_df=self.aircraft_internals_log_as_df(),
             ac_attribute_update_df=None,  # taken into account via the ac_internals. Exists for convenience.
         )

@@ -306,7 +306,7 @@ def test_evolve(generate_i: tuple[Airspace, list[Route]]) -> None:
 
     # change start_times - set by callsign to avoid dependence on row order
     radar_df = em.event_handler.radar_df
-    ac_internal_df = em.event_handler.aircraft_internals_df
+    ac_internal_df = em.event_handler.ac_internals_df
     new_start_times = {
         "AIR0": datetime(1970, 1, 1, 0, 0, 0),
         "AIR1": datetime(1970, 1, 1, 0, 0, 6),
@@ -388,7 +388,7 @@ def test_rewind_to_time(generate_i: tuple[Airspace, list[Route]]) -> None:
         em.evolve(time_step)
 
     # To test as replay, set all aircraft logs such that aircraft.simulated = False
-    for ac_attribute_dict in em.event_logger.aircraft_internals_log:
+    for ac_attribute_dict in em.event_logger.ac_internals_log:
         ac_attribute_dict["simulated"] = False
 
     # also set for the "previous_ac_internals" which is used to identify updated attributes

@@ -114,7 +114,7 @@ class SpringfieldScenarioManager(
             coordination_if_simmed=False,
             sectors_if_simmed=False,
             incomm_if_simmed=False,
-            aircraft_internals_if_simmed=True,
+            ac_internals_if_simmed=True,
             ac_attribute_if_simmed=False,
             airspace_config_updates=True,
         )
