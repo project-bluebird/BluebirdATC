@@ -293,6 +293,8 @@ class Aircraft(Comparison):
             Upon instantiation this is set to the current flight level.
             Note that if a flight level is given that is not a multiple of 10, it will be rounded to the nearest
             multiple of 10.
+        speed_cas: float or None
+            The calibrated airspeed (CAS) of the Aircraft in knots.
         speed_tas: float or None
             The true airspeed (TAS) of the Aircraft in knots.
             This is only set by the Predictors.
@@ -375,6 +377,7 @@ class Aircraft(Comparison):
         self.selected_instructions = Instructions(fl=use_fl, on_route=True)
 
         self.vertical_speed: float = 0.0
+        self._speed_cas: float | None = None
         self.speed_tas: float | None = None
         self.ground_speed: float | None = None
 
@@ -642,6 +645,7 @@ class Aircraft(Comparison):
         )
 
         # attributes
+        aircraft._speed_cas = data.get("speed_cas", None)
         aircraft.speed_tas = data.get("speed_tas", None)
         aircraft.ground_speed = data.get("ground_speed", None)
         aircraft.ground_track_angle = data.get("ground_track_angle", None)
@@ -729,6 +733,7 @@ class Aircraft(Comparison):
             "squawk": self.squawk,
             "squawk_ident_until": self.squawk_ident_until,
             "wake_vortex": self.wake_vortex,
+            "speed_cas": self.speed_cas,
             "speed_tas": self.speed_tas,
             "vertical_speed": self.vertical_speed,
             "ground_speed": self.ground_speed,
@@ -955,6 +960,11 @@ class Aircraft(Comparison):
         else:
             for key in ["rocd_des", "rocd_cl"]:
                 self.percentile_rank_dict[key] = None
+
+    @property
+    def speed_cas(self) -> float | None:
+        """The calibrated airspeed of the aircraft, set by the predictors or livestream"""
+        return self._speed_cas
 
     @property
     def current_sector(self) -> str:

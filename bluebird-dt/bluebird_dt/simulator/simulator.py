@@ -611,6 +611,7 @@ class Simulator:
                     "heading": aircraft.heading,
                     "ground_track": aircraft.ground_track_angle,
                     "cleared_heading": aircraft.cleared_instructions.heading,
+                    "calibrated_air_speed": aircraft.speed_cas,
                     "true_air_speed": aircraft.speed_tas,
                     "ground_speed": aircraft.ground_speed,
                     "filed_true_airspeed": filed_true_airspeed,

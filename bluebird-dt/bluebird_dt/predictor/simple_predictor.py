@@ -149,9 +149,9 @@ class SimplePredictor(Predictor):
     def update_total_speeds_cas_is_tas(self, aircraft: Aircraft):
         """
         Updates total speeds of a selected aircraft by writing the selected_instructions.cas value directly to the true
-        airspeed (speed_tas) value. Mach values are ignored. This method is called when the flag "use_cas_as_tas" is set
-        to True. If the selected_instructions.cas value is None, then an error is raised: this must be set to use this
-        simplified speed modelling.
+        airspeed (speed_tas) and calibrated airspeed (speed_cas) values. Mach values are ignored. This method is called
+        when the flag "use_cas_as_tas" is set to True. If the selected_instructions.cas value is None, then an error is
+        raised: this must be set to use this simplified speed modelling.
 
         Parameters
         ----------
@@ -162,7 +162,10 @@ class SimplePredictor(Predictor):
         if aircraft.selected_instructions.cas is None:
             raise ValueError("Aircraft.selected_instructions.cas must be set to use cas_is_tas speed modelling.")
 
-        aircraft.speed_tas = aircraft.selected_instructions.cas
+        cas = aircraft.selected_instructions.cas
+
+        aircraft.speed_tas = cas
+        aircraft._speed_cas = cas
 
     def update_vertical_speeds(self, aircraft: Aircraft):
         """

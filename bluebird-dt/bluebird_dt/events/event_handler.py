@@ -8,8 +8,8 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel
 import typing_extensions
+from pydantic import BaseModel
 from typing_extensions import Self
 
 from bluebird_dt.core import (
@@ -262,6 +262,7 @@ class EventHandler(typing.Generic[TAircraft]):
         columns = self.radar_df.columns
 
         optional_float_cols = [
+            "speed_cas",
             "speed_tas",
             "ground_speed",
             "ground_track_angle",
@@ -401,6 +402,7 @@ class EventHandler(typing.Generic[TAircraft]):
             fl=aircraft.fl,
             heading=aircraft.heading,
             ufid=aircraft.ufid,
+            speed_cas=aircraft.speed_cas,
             speed_tas=aircraft.speed_tas,
             ground_speed=aircraft.ground_speed,
             ground_track_angle=aircraft.ground_track_angle,
@@ -537,6 +539,7 @@ class EventHandler(typing.Generic[TAircraft]):
         fl: float,
         heading: float,
         ufid: str | None = None,
+        speed_cas: float | None = None,
         speed_tas: float | None = None,
         ground_speed: float | None = None,
         ground_track_angle: float | None = None,
@@ -561,6 +564,8 @@ class EventHandler(typing.Generic[TAircraft]):
             Heading of aircraft
         ufid: str, optional
             Unique Flight ID of aircraft
+        speed_cas: float, optional
+            Calibrated Airspeed of the aircraft
         speed_tas: float, optional
             True Airspeed of the aircraft
         ground_speed: float, optional
@@ -577,6 +582,7 @@ class EventHandler(typing.Generic[TAircraft]):
             "fl": fl,
             "heading": heading,
             "ufid": ufid,
+            "speed_cas": speed_cas,
             "speed_tas": speed_tas,
             "ground_speed": ground_speed,
             "ground_track_angle": ground_track_angle,
@@ -1636,6 +1642,9 @@ def update_from_radar(
 
             # calculate the tas
             aircraft.speed_tas = tas_from_ground_speed(aircraft.ground_speed, aircraft.ground_track_angle, wind_vector)
+
+        if row.speed_cas is not None:
+            aircraft._speed_cas = row.speed_cas
 
         if row.heading is not None:
             aircraft.heading = row.heading

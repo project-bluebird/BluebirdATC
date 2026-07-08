@@ -422,6 +422,7 @@ def make_random_aircraft(callsign: str | None = None) -> Aircraft:
         squawk_ident_until=squawk_ident_until,
     )
 
+    aircraft._speed_cas = cleared_cas
     aircraft.speed_tas = cleared_cas  # based on what happens in linear predictor
     aircraft.vertical_speed = vertical_speed
     aircraft.heading_changing_to = heading_changing_to
