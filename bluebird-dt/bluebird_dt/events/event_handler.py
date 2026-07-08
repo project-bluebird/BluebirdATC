@@ -5,11 +5,11 @@ import operator
 import typing
 from dataclasses import dataclass, fields
 from datetime import datetime, timedelta, timezone
+from typing import ClassVar
 
 import numpy as np
 import pandas as pd
-import typing_extensions
-from typing_extensions import Self
+from typing_extensions import Self, TypeVar
 
 from bluebird_dt.core import (
     Action,
@@ -44,40 +44,10 @@ def pd_concat_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([df1, df2])
 
 
-TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
-TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
-TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
-
-
-@dataclass
-class EventHandlerArgs:
-    radar_df: pd.DataFrame | None = None
-    flight_plan_df: pd.DataFrame | None = None
-    clearances_df: pd.DataFrame | None = None
-    coordination_df: pd.DataFrame | None = None
-    sectors_df: pd.DataFrame | None = None
-    incomm_df: pd.DataFrame | None = None
-    ac_internals_df: pd.DataFrame | None = None
-    ac_attribute_update_df: pd.DataFrame | None = None
-    ignore: EventHandler.IgnoreFlags | None = None
-    typeof_aircraft: TAircraft = Aircraft
-
-    @classmethod
-    def from_data(
-        cls,
-        data: dict[str, pd.DataFrame],
-        *,  # keyword args only after this
-        ignore: EventHandler.IgnoreFlags | None = None,
-        typeof_aircraft: type[Aircraft] = Aircraft,
-    ) -> EventHandlerArgs:
-        members = {f.name for f in fields(cls)}
-        kwargs: dict[str, Any] = {f"{k}_df": v for k, v in data.items() if f"{k}_df" in members}
-
-        return cls(**kwargs, ignore=ignore, typeof_aircraft=typeof_aircraft)
-
-    def build(self) -> EventHandler:
-        # only pass fields this args class actually has
-        return EventHandler(**{k: v for k, v in self.__dict__.items() if v is not None})
+TAircraft = TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = TypeVar("TForecastWindField", bound=WindField, default=WindField)
+TEventHandler = TypeVar("TEventHandler", bound="EventHandler")
 
 
 class EventHandler(typing.Generic[TAircraft]):
@@ -2281,3 +2251,35 @@ def update_ac_internals(
                 aircraft.flight_plan.route.current = list(row.route_current)
 
     return environment
+
+
+@dataclass
+class EventHandlerArgs:
+    radar_df: pd.DataFrame | None = None
+    flight_plan_df: pd.DataFrame | None = None
+    clearances_df: pd.DataFrame | None = None
+    coordination_df: pd.DataFrame | None = None
+    sectors_df: pd.DataFrame | None = None
+    incomm_df: pd.DataFrame | None = None
+    ac_internals_df: pd.DataFrame | None = None
+    ac_attribute_update_df: pd.DataFrame | None = None
+    ignore: EventHandler.IgnoreFlags | None = None
+    typeof_aircraft: TAircraft = Aircraft
+    _eh_cls: ClassVar[type[EventHandler]] = EventHandler
+
+    @classmethod
+    def from_data(
+        cls,
+        data: dict[str, pd.DataFrame],
+        *,  # keyword args only after this
+        ignore: EventHandler.IgnoreFlags | None = None,
+        typeof_aircraft: type[Aircraft] = Aircraft,
+    ) -> EventHandlerArgs:
+        members = {f.name for f in fields(cls)}
+        kwargs: dict[str, Any] = {f"{k}_df": v for k, v in data.items() if f"{k}_df" in members}
+
+        return cls(**kwargs, ignore=ignore, typeof_aircraft=typeof_aircraft)
+
+    def build(self) -> TEventHandler:
+        # only pass fields this args class actually has
+        return self._eh_cls(**{k: v for k, v in self.__dict__.items() if v is not None})
