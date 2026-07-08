@@ -127,7 +127,9 @@ class ReplayerFromLogs(
         # just need to clean a few dataframe columns
         self.clean_dataframes()
         # The dict of dataframes should map into an EventHandlerArgs object.
-        eh_args = self.typeof_eventhandler_args.from_data(self.replay_data, ignore=self.event_handler_ignore_flags)
+        eh_args = self.typeof_eventhandler_args.from_data(
+            self.replay_data, typeof_aircraft=self.typeof_aircraft, ignore=self.event_handler_ignore_flags
+        )
         return eh_args.build()
 
     def clean_dataframes(self):
@@ -202,7 +204,6 @@ class ReplayerFromLogs(
         EnvironmentManager
             EnvironmentManager to replay from log files
         """
-
         logger.info(
             f"""
 ===================================================================
