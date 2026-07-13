@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pytest
 
+from bluebird_dt.core.wind import WindField
 from bluebird_dt.scenario_manager.replayer_from_logs import ReplayerFromLogs
 from bluebird_dt.simulator import Simulator
 
@@ -61,3 +62,20 @@ def test_replay_scenario(tmp_path, monkeypatch, category, scenario_name):
         # dataframe should be non-zero if original was.
         if len(df_orig) > 0:
             assert len(df_replay) > 0
+
+def test_replay_wind(tmp_path, monkeypatch):
+    s = Simulator.from_category("Two Aircraft", "I-Sector")
+    wf = WindField.uniform(wind_speed=20, wind_direction=90)
+    fwf = WindField.uniform(wind_speed=25, wind_direction=85)
+    s.manager.environment.wind_field = wf
+    s.manager.environment.forecast_wind_field = fwf
+    for _ in range(5):
+        s.evolve(6)
+    s.save()
+    
+    # filename of logfile can be obtained from event_logger
+    log_name = s.manager.event_logger.log_name
+
+    s_replay = Simulator.from_category("Replay", log_name)
+    assert s_replay.manager.environment.wind_field == wf
+    assert s_replay.manager.environment.forecast_wind_field == fwf

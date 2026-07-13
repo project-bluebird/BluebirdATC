@@ -215,12 +215,10 @@ class EventLogger:
         environment: Environment
             The environment to be logged
         """
-        # log the wind field and for now assume they don't change
-        if self.wind_field_log is None:
-            if environment.wind_field is None:
-                self.wind_field_log = json.dumps({})
-            else:
-                self.wind_field_log = environment.wind_field.to_json()
+        if environment.wind_field is None:
+            self.wind_field_log = json.dumps({})
+        else:
+            self.wind_field_log = environment.wind_field.to_json()
 
     def _log_forecast(self, environment: Environment):
         """
@@ -233,12 +231,10 @@ class EventLogger:
         environment: Environment
             The environment to be logged
         """
-        # log the forecasted wind field and for now assume they don't change
-        if self.forecast_log is None:
-            if environment.forecast_wind_field is None:
-                self.forecast_log = json.dumps({})
-            else:
-                self.forecast_log = environment.forecast_wind_field.to_json()
+        if environment.forecast_wind_field is None:
+            self.forecast_log = json.dumps({})
+        else:
+            self.forecast_log = environment.forecast_wind_field.to_json()
 
     def log_environment(self, environment: Environment, previous_only: bool = False):
         """
