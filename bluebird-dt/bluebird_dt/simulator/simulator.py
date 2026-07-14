@@ -257,7 +257,6 @@ class Simulator:
                     simulated_sectors=simulated_sectors,
                 )
             case "Flight School":
-                # Specify the parameters for the "Flight School" competition here
                 return Infinite.setup(
                     scenario_name="Xplus-Sector",
                     log_filename=log_filename,
