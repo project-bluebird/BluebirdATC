@@ -8,8 +8,8 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel
 import typing_extensions
+from pydantic import BaseModel
 from typing_extensions import Self
 
 from bluebird_dt.core import (
