@@ -10,14 +10,14 @@ dependencies = [
     "mkdocs==1.6.1",
     "mkdocs-jupyter==0.26.1",
     "mkdocs-material==9.7.6",
-    "mkdocstrings[python]==1.0.3",
+    "mkdocstrings[python]==1.0.4",
     "mkdocs-monorepo-plugin==1.1.2",
     "mkdocs-macros-plugin==1.5.0",
 ]
 
 [dependency-groups]
 dev = [ 
-  "pytest>=9.0.3,<10",
+  "pytest>=9.1.1,<10",
   "mktestdocs"
 ]
 
