@@ -72,3 +72,23 @@ def test_hold_state_survives_aircraft_json_roundtrip(generate_simple_environment
     restored = aircraft.from_json(aircraft.to_json())
 
     assert restored.predictor_params["hold"] == aircraft.predictor_params["hold"]
+
+
+def test_coordinate_hold_does_not_require_predictor_fixes(generate_simple_environment: Environment):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    aircraft.selected_instructions.cas = 360
+    aircraft.cleared_instructions.cas = 360
+    hold_position = environment.airspace.fixes.places["EARTH"]
+    predictor = SimplePredictor(1.0, 2.0, fixes=None)
+    action = Action(
+        aircraft.callsign,
+        "hold_at_location",
+        {"location": (hold_position.lat, hold_position.lon), "outbound_time": 30},
+    )
+    aircraft.pilot.process_lateral_actions(action, environment)
+
+    for _ in range(300):
+        predictor.predict_aircraft(aircraft, 1.0, deepcopy_aircraft=False)
+
+    assert aircraft.predictor_params["hold"]["phase"] != "direct_to_fix"

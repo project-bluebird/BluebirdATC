@@ -476,10 +476,14 @@ class Predictor(ABC):
         wind_vector: WindVector | None,
     ):
         """Update lateral guidance for the current phase of a racetrack hold."""
-        if self.fixes is None:
-            raise ValueError("Cannot hold at a fix without predictor.fixes")
-
-        fix_pos = self.fixes.places[hold["fix"]]
+        location = hold.get("location")
+        if location is None:
+            if self.fixes is None or hold.get("fix") is None:
+                raise ValueError("Hold state has no resolvable location")
+            fix_pos = self.fixes.places[hold["fix"]]
+            hold["location"] = [fix_pos.lat, fix_pos.lon]
+        else:
+            fix_pos = Pos2D(*location)
         phase = hold["phase"]
         entered_turn = False
 

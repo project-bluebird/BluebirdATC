@@ -98,10 +98,27 @@ def test_hold_parameters_roundtrip():
     assert action == Action.from_str(str(action))
 
 
+def test_coordinate_hold_parameters_roundtrip():
+    action = Action(
+        callsign="AIR0",
+        kind="hold_at_location",
+        value={"location": (50.716667, -3.533333), "outbound_time": 60},
+    )
+
+    assert action.value.location == (50.716667, -3.533333)
+    assert action.value.location_label == "50.7167, -3.53333"
+    assert action == Action.from_json(action.to_json())
+    assert action == Action.from_str(str(action))
+
+
 @pytest.mark.parametrize(
     "value",
     [
+        {},
         {"fix": ""},
+        {"fix": "FIX", "location": (50.0, -3.0)},
+        {"location": (91.0, -3.0)},
+        {"location": (50.0, -181.0)},
         {"fix": "FIX", "outbound_time": 0},
         {"fix": "FIX", "turn_direction": "straight"},
     ],

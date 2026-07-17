@@ -329,6 +329,23 @@ def test_hold_clearance(env: Environment):
         env,
     )
 
+
+def test_coordinate_hold_clearance(env: Environment):
+    action = Action(
+        "AIR0",
+        "hold_at_location",
+        {"location": (50.716667, -3.533333), "outbound_time": 90.0},
+    )
+
+    assert_action_voice_and_text(
+        action,
+        "AIR0 hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes",
+        "hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes AIR0",
+        "alpha india romeo zero hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes",
+        "hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes alpha india romeo zero",
+        env,
+    )
+
 def test_outcomm_clearance(env: Environment):
     action = Action("AIR0", "outcomm", None)
 

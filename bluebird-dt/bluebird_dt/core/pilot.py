@@ -5,6 +5,7 @@ import typing
 from typing import TypedDict
 
 from bluebird_dt.core import Action
+from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.logger import logger
 from bluebird_dt.utility.convert import (
     timestamp_to_string,
@@ -218,7 +219,11 @@ class Pilot:
 
         aircraft = environment.aircraft[self.callsign]
 
-        if action.kind == "hold_at_location" and action.value.fix not in environment.airspace.fixes.places:
+        if (
+            action.kind == "hold_at_location"
+            and action.value.fix is not None
+            and action.value.fix not in environment.airspace.fixes.places
+        ):
             raise ValueError(f"Unknown holding fix: {action.value.fix}")
 
         # Any new lateral clearance replaces the active hold. A new hold creates
@@ -246,7 +251,11 @@ class Pilot:
 
         elif action.kind == "hold_at_location":
             hold = action.value
-            target_pos = environment.airspace.fixes.places[hold.fix]
+            if hold.fix is not None:
+                target_pos = environment.airspace.fixes.places[hold.fix]
+            else:
+                assert hold.location is not None
+                target_pos = Pos2D(*hold.location)
             aircraft.cleared_instructions.on_route = False
             aircraft.selected_instructions.on_route = False
             aircraft.cleared_instructions.heading = None
@@ -254,6 +263,7 @@ class Pilot:
             aircraft.heading_changing_to = aircraft.pos2d().bearing_to(target_pos)
             aircraft.predictor_params["hold"] = {
                 "fix": hold.fix,
+                "location": [target_pos.lat, target_pos.lon],
                 "outbound_time": hold.outbound_time,
                 "turn_direction": hold.turn_direction,
                 "phase": "direct_to_fix",

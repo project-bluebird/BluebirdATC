@@ -6,8 +6,8 @@ import re
 import typing
 
 import numpy as np
-from pydantic import BaseModel, Field
-from typing_extensions import override
+from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self, override
 
 from bluebird_dt.mixin import Comparison
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
@@ -19,11 +19,30 @@ class ClearanceAndResponse(BaseModel):
 
 
 class HoldParameters(BaseModel):
-    """Parameters for a racetrack hold at a named fix."""
+    """Parameters for a racetrack hold at a named fix or latitude/longitude."""
 
-    fix: str = Field(min_length=1)
+    fix: str | None = Field(default=None, min_length=1)
+    location: tuple[
+        typing.Annotated[float, Field(ge=-90.0, le=90.0)],
+        typing.Annotated[float, Field(ge=-180.0, le=180.0)],
+    ] | None = None
     outbound_time: float = Field(default=90.0, gt=0.0)
     turn_direction: typing.Literal["left", "right"] = "right"
+
+    @model_validator(mode="after")
+    def validate_target(self) -> Self:
+        """Require exactly one holding target."""
+        if (self.fix is None) == (self.location is None):
+            raise ValueError("Exactly one of fix or location must be specified")
+        return self
+
+    @property
+    def location_label(self) -> str:
+        """Return a compact label for displays and clearances."""
+        if self.fix is not None:
+            return self.fix
+        assert self.location is not None
+        return f"{self.location[0]:g}, {self.location[1]:g}"
 
     def __str__(self) -> str:
         """Return the canonical representation used in clearance logs."""
@@ -64,7 +83,7 @@ class Action(Comparison):
             Action type. All supported actions are found in the SUPPORTED_ACTIONS dictionary in the utility folder.
 
             - `route_direct_to`: go directly to named Fix(es) on Route (and set to route following)
-            - `hold_at_location`: fly to a named Fix and enter a repeating racetrack hold
+            - `hold_at_location`: fly to a named Fix or latitude/longitude and enter a repeating racetrack hold
             - `change_heading_to`: change heading to the specified degrees
             - `change_heading_to_by_direction`: change heading to the specified degrees by turning in a specific
             direction

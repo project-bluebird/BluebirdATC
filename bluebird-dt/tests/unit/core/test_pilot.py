@@ -1,7 +1,7 @@
 import logging
 import pytest
 
-from bluebird_dt.core import Action, Aircraft, Pilot, QueueItem
+from bluebird_dt.core import Action, Aircraft, Pilot, Pos2D, QueueItem
 
 
 def test_init():
@@ -270,6 +270,10 @@ def test_hold_action_and_lateral_cancellation(generate_simple_environment):
 
     assert aircraft.predictor_params["hold"] == {
         "fix": hold_fix,
+        "location": [
+            environment.airspace.fixes.places[hold_fix].lat,
+            environment.airspace.fixes.places[hold_fix].lon,
+        ],
         "outbound_time": 45.0,
         "turn_direction": "left",
         "phase": "direct_to_fix",
@@ -292,6 +296,19 @@ def test_hold_rejects_unknown_fix(generate_simple_environment):
     aircraft.pilot.receive_actions([action], environment)
     with pytest.raises(ValueError, match="Unknown holding fix"):
         aircraft.pilot.process_actions(environment)
+
+
+def test_hold_at_coordinate(generate_simple_environment):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    location = (51.25, -1.75)
+    action = Action(aircraft.callsign, "hold_at_location", {"location": location})
+
+    aircraft.pilot.process_lateral_actions(action, environment)
+
+    assert aircraft.predictor_params["hold"]["fix"] is None
+    assert aircraft.predictor_params["hold"]["location"] == list(location)
+    assert aircraft.heading_changing_to == pytest.approx(aircraft.pos2d().bearing_to(Pos2D(*location)))
 
 
 def test_pilot_from_complete_json():
