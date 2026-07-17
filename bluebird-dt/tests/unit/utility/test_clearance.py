@@ -312,6 +312,23 @@ def test_change_mach_clearance(env: Environment):
             env,
             )
 
+
+def test_hold_clearance(env: Environment):
+    action = Action(
+        "AIR0",
+        "hold_at_location",
+        {"fix": "ALPHA", "outbound_time": 90.0, "turn_direction": "right"},
+    )
+
+    assert_action_voice_and_text(
+        action,
+        "AIR0 hold at ALPHA right hand outbound time 1.5 minutes",
+        "hold at ALPHA right hand outbound time 1.5 minutes AIR0",
+        "alpha india romeo zero hold at ALPHA right hand outbound time 1.5 minutes",
+        "hold at ALPHA right hand outbound time 1.5 minutes alpha india romeo zero",
+        env,
+    )
+
 def test_outcomm_clearance(env: Environment):
     action = Action("AIR0", "outcomm", None)
 
