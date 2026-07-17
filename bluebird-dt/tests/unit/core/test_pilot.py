@@ -255,6 +255,45 @@ def test_receive_check_process_single_action(generate_simple_environment):
     assert aircraft.current_sector == "background"
 
 
+def test_hold_action_and_lateral_cancellation(generate_simple_environment):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    hold_fix = next(iter(environment.airspace.fixes.places))
+    hold_action = Action(
+        aircraft.callsign,
+        "hold_at_location",
+        {"fix": hold_fix, "outbound_time": 45, "turn_direction": "left"},
+    )
+
+    aircraft.pilot.receive_actions([hold_action], environment)
+    aircraft.pilot.process_actions(environment)
+
+    assert aircraft.predictor_params["hold"] == {
+        "fix": hold_fix,
+        "outbound_time": 45.0,
+        "turn_direction": "left",
+        "phase": "direct_to_fix",
+        "phase_elapsed": 0.0,
+        "inbound_track": None,
+    }
+    assert aircraft.on_route is False
+
+    aircraft.pilot.receive_actions([Action(aircraft.callsign, "maintain_current_heading", 0)], environment)
+    aircraft.pilot.process_actions(environment)
+
+    assert "hold" not in aircraft.predictor_params
+
+
+def test_hold_rejects_unknown_fix(generate_simple_environment):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    action = Action(aircraft.callsign, "hold_at_location", {"fix": "NOT_A_FIX"})
+
+    aircraft.pilot.receive_actions([action], environment)
+    with pytest.raises(ValueError, match="Unknown holding fix"):
+        aircraft.pilot.process_actions(environment)
+
+
 def test_pilot_from_complete_json():
     """
     Test the Pilot from_json method on a complete Aircraft json string.

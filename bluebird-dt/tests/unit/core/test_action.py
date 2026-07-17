@@ -1,6 +1,6 @@
 import pytest
 
-from bluebird_dt.core import Action
+from bluebird_dt.core import Action, HoldParameters
 from bluebird_dt.scenario_manager import TwoAircraft
 
 def test_init_exceptions():
@@ -30,6 +30,7 @@ def test_init_exceptions_from_str():
     "kind, value",
     [
         ("route_direct_to", "FIX"),
+        ("hold_at_location", HoldParameters(fix="FIX")),
         ("change_heading_to", 120),
         ("change_heading_by", -10),
         ("change_flight_level_to", 250),
@@ -84,6 +85,30 @@ def test_from_str_with_sector():
     action = Action.from_str(action_str)
 
     assert action == expected_action
+
+
+def test_hold_parameters_roundtrip():
+    action = Action(
+        callsign="AIR0",
+        kind="hold_at_location",
+        value={"fix": "FIX", "outbound_time": 60, "turn_direction": "left"},
+    )
+
+    assert action == Action.from_json(action.to_json())
+    assert action == Action.from_str(str(action))
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        {"fix": ""},
+        {"fix": "FIX", "outbound_time": 0},
+        {"fix": "FIX", "turn_direction": "straight"},
+    ],
+)
+def test_invalid_hold_parameters(value: dict):
+    with pytest.raises(ValueError, match="validation error"):
+        Action("AIR0", "hold_at_location", value)
 
 
 @pytest.mark.parametrize(

@@ -218,6 +218,13 @@ class Pilot:
 
         aircraft = environment.aircraft[self.callsign]
 
+        if action.kind == "hold_at_location" and action.value.fix not in environment.airspace.fixes.places:
+            raise ValueError(f"Unknown holding fix: {action.value.fix}")
+
+        # Any new lateral clearance replaces the active hold. A new hold creates
+        # fresh state below after the old one has been discarded.
+        aircraft.predictor_params.pop("hold", None)
+
         if action.kind in ["change_heading_by", "change_heading_to", "change_heading_to_by_direction"]:
             match action.kind:
                 case "change_heading_by":
@@ -236,6 +243,23 @@ class Pilot:
             aircraft.selected_instructions.heading = heading % 360
 
             aircraft.heading_changing_to = aircraft.selected_instructions.heading
+
+        elif action.kind == "hold_at_location":
+            hold = action.value
+            target_pos = environment.airspace.fixes.places[hold.fix]
+            aircraft.cleared_instructions.on_route = False
+            aircraft.selected_instructions.on_route = False
+            aircraft.cleared_instructions.heading = None
+            aircraft.selected_instructions.heading = None
+            aircraft.heading_changing_to = aircraft.pos2d().bearing_to(target_pos)
+            aircraft.predictor_params["hold"] = {
+                "fix": hold.fix,
+                "outbound_time": hold.outbound_time,
+                "turn_direction": hold.turn_direction,
+                "phase": "direct_to_fix",
+                "phase_elapsed": 0.0,
+                "inbound_track": None,
+            }
 
         elif action.kind == "route_direct_to":
             # create a new current route that starts with fix(es) provided in action

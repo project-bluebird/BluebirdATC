@@ -18,6 +18,7 @@ from bluebird_dt.core import (
     Environment,
     Fixes,
     FlightPlan,
+    HoldParameters,
     Pilot,
     Pos2D,
     Pos3D,
@@ -514,6 +515,8 @@ def make_action(kind: str) -> Action:
     value = None
     if kind == "route_direct_to":
         value = random.choice([make_random_fix_name(), [make_random_fix_name()]])
+    if kind == "hold_at_location":
+        value = HoldParameters(fix=make_random_fix_name())
     if kind == "change_heading_to":
         value = make_random_heading()
     if kind == "change_heading_to_by_direction":

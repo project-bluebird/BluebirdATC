@@ -8,7 +8,7 @@ from typing import Literal
 import numpy as np
 
 from bluebird_dt.core import Aircraft, Fixes, Pos2D, Pos4D
-from bluebird_dt.core.wind import WindField
+from bluebird_dt.core.wind import WindField, WindVector
 from bluebird_dt.utility.constants import G_ACC
 from bluebird_dt.utility.convert import (
     KT_TO_MPS,
@@ -20,6 +20,10 @@ from bluebird_dt.utility.performance import get_aircraft_key_mapping
 
 # Default rate of turn (in degrees per second) - used for heading change turns (i.e. not route turns)
 DEFAULT_RATE_OF_TURN = 1.5
+
+# Holds are flown as standard-rate turns, independently of an aircraft's
+# configured rate for ordinary heading changes.
+HOLD_RATE_OF_TURN = 3.0
 
 # Threshold difference (in degrees) between requested heading and actual heading. Below this threshold
 # the heading is automatically updated, without an explicit use of a turn model.
@@ -290,6 +294,11 @@ class Predictor(ABC):
             Flag indicating whether to use turn model or just instantaneously update heading. Default is True.
         """
 
+        # A hold explicitly requires fixed-rate turns, even when a predictor was
+        # configured to make ordinary heading changes instantaneous.
+        if aircraft.predictor_params.get("hold") is not None:
+            use_turn_model = True
+
         if use_turn_model:
             self.update_position_with_turn_model(aircraft, time_evolve, wind_field)
 
@@ -316,6 +325,10 @@ class Predictor(ABC):
         )
 
         ground_speed, ground_track_angle = ground_speed_from_tas(horizontal_speed_kts, aircraft.heading, wind_vector)
+
+        hold = aircraft.predictor_params.get("hold")
+        if hold is not None:
+            self.update_hold_guidance(aircraft, hold, ground_track_angle, horizontal_speed_kts, wind_vector)
 
         # If route-following, check if we need to increment the next_fix_index.
         if aircraft.on_route:
@@ -385,6 +398,8 @@ class Predictor(ABC):
             current_bearing = ground_track_angle
 
             rate_of_turn = aircraft.rate_of_turn if aircraft.rate_of_turn else DEFAULT_RATE_OF_TURN
+            if hold is not None and hold["phase"] in ["turn_outbound", "turn_inbound"]:
+                rate_of_turn = HOLD_RATE_OF_TURN
             # If have started a route turn, then continue the turn at same radius. So calculate the rate of turn
             # from ground speed and turn radius. This means that speed changes won't affect the turn radius.
             if aircraft.on_route and aircraft.predictor_params.get("turn_radius", None) is not None:
@@ -395,7 +410,9 @@ class Predictor(ABC):
             turn_direction: Literal["left", "right"] | None = None
 
             # If aircraft is flying a heading
-            if (
+            if hold is not None and hold["phase"] in ["turn_outbound", "turn_inbound"]:
+                turn_direction = hold["turn_direction"]
+            elif (
                 aircraft.cleared_instructions.lateral_action is not None
                 and aircraft.cleared_instructions.lateral_action.kind == "change_heading_to_by_direction"
                 and aircraft.cleared_instructions.lateral_action.value[1] != "shortest"
@@ -446,6 +463,81 @@ class Predictor(ABC):
 
         aircraft.lat = new_pos.lat
         aircraft.lon = new_pos.lon
+
+        if hold is not None and hold["phase"] == "outbound":
+            hold["phase_elapsed"] += time_evolve
+
+    def update_hold_guidance(
+        self,
+        aircraft: Aircraft,
+        hold: dict,
+        ground_track_angle: float,
+        horizontal_speed_kts: float,
+        wind_vector: WindVector | None,
+    ):
+        """Update lateral guidance for the current phase of a racetrack hold."""
+        if self.fixes is None:
+            raise ValueError("Cannot hold at a fix without predictor.fixes")
+
+        fix_pos = self.fixes.places[hold["fix"]]
+        phase = hold["phase"]
+        entered_turn = False
+
+        if phase in ["direct_to_fix", "inbound"]:
+            distance_to_fix = aircraft.pos2d().distance(fix_pos)
+            if distance_to_fix <= self.fix_proximity_threshold:
+                if hold["inbound_track"] is None:
+                    hold["inbound_track"] = ground_track_angle
+                hold["phase"] = "turn_outbound"
+                hold["phase_elapsed"] = 0.0
+                phase = "turn_outbound"
+                entered_turn = True
+            else:
+                target_track = aircraft.pos2d().bearing_to(fix_pos)
+                aircraft.heading_changing_to = heading_from_ground_track(
+                    target_track, horizontal_speed_kts, wind_vector
+                )
+                return
+
+        if phase == "turn_outbound":
+            target_track = (hold["inbound_track"] + 180.0) % 360.0
+            if aircraft.heading_changing_to is None and not entered_turn:
+                hold["phase"] = "outbound"
+                hold["phase_elapsed"] = 0.0
+                aircraft.heading = heading_from_ground_track(target_track, horizontal_speed_kts, wind_vector)
+            else:
+                aircraft.heading_changing_to = heading_from_ground_track(
+                    target_track, horizontal_speed_kts, wind_vector
+                )
+            return
+
+        if phase == "outbound":
+            target_track = (hold["inbound_track"] + 180.0) % 360.0
+            if hold["phase_elapsed"] >= hold["outbound_time"]:
+                hold["phase"] = "turn_inbound"
+                hold["phase_elapsed"] = 0.0
+                target_track = hold["inbound_track"]
+                aircraft.heading_changing_to = heading_from_ground_track(
+                    target_track, horizontal_speed_kts, wind_vector
+                )
+            else:
+                aircraft.heading = heading_from_ground_track(target_track, horizontal_speed_kts, wind_vector)
+                aircraft.heading_changing_to = None
+            return
+
+        if phase == "turn_inbound":
+            target_track = hold["inbound_track"]
+            if aircraft.heading_changing_to is None:
+                hold["phase"] = "inbound"
+                aircraft.heading = heading_from_ground_track(target_track, horizontal_speed_kts, wind_vector)
+            else:
+                aircraft.heading_changing_to = heading_from_ground_track(
+                    target_track, horizontal_speed_kts, wind_vector
+                )
+            return
+
+        if phase != "inbound":
+            raise ValueError(f"Unrecognised hold phase: {phase}")
 
     def update_position_without_turn_model(self, aircraft: Aircraft, time_evolve: float, wind_field: WindField | None):
         """

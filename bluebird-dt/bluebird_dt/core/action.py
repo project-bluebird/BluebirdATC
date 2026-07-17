@@ -6,7 +6,7 @@ import re
 import typing
 
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing_extensions import override
 
 from bluebird_dt.mixin import Comparison
@@ -18,6 +18,18 @@ class ClearanceAndResponse(BaseModel):
     pilot_response: str | None
 
 
+class HoldParameters(BaseModel):
+    """Parameters for a racetrack hold at a named fix."""
+
+    fix: str = Field(min_length=1)
+    outbound_time: float = Field(default=90.0, gt=0.0)
+    turn_direction: typing.Literal["left", "right"] = "right"
+
+    def __str__(self) -> str:
+        """Return the canonical representation used in clearance logs."""
+        return self.model_dump_json()
+
+
 class Action(Comparison):
     """
     Fundamental unit of communication between Agent and Predictor.
@@ -25,7 +37,7 @@ class Action(Comparison):
 
     callsign: str
     _kind: str
-    _value: int | float | str | list[str] | tuple[int, str] | None = None
+    _value: int | float | str | list[str] | tuple[int, str] | HoldParameters | None = None
     agent: str | None
     voice_representation: ClearanceAndResponse | None
     text_representation: ClearanceAndResponse | None
@@ -35,7 +47,7 @@ class Action(Comparison):
         self,
         callsign: str,
         kind: str,
-        value: int | float | str | list[str] | tuple[int, str] | None,
+        value: int | float | str | list[str] | tuple[int, str] | HoldParameters | dict[str, typing.Any] | None,
         agent: str | None = None,
         text_representation: ClearanceAndResponse | None = None,
         voice_representation: ClearanceAndResponse | None = None,
@@ -52,6 +64,7 @@ class Action(Comparison):
             Action type. All supported actions are found in the SUPPORTED_ACTIONS dictionary in the utility folder.
 
             - `route_direct_to`: go directly to named Fix(es) on Route (and set to route following)
+            - `hold_at_location`: fly to a named Fix and enter a repeating racetrack hold
             - `change_heading_to`: change heading to the specified degrees
             - `change_heading_to_by_direction`: change heading to the specified degrees by turning in a specific
             direction
@@ -73,6 +86,7 @@ class Action(Comparison):
             Allowed values for each Action kind differs:
 
             - `route_direct_to`: str or list[str]
+            - `hold_at_location`: HoldParameters or an equivalent dict
             - `change_heading_to`: int
             - `change_heading_to_by_direction`: tuple[int, Literal['left', 'right', 'shortest']]
             - `change_heading_by`: int
@@ -140,16 +154,20 @@ class Action(Comparison):
         self._kind = kind
 
     @property
-    def value(self) -> int | float | str | list[str] | tuple[int, str] | None:
+    def value(self) -> int | float | str | list[str] | tuple[int, str] | HoldParameters | None:
         """The Action value"""
         return self._value
 
     @value.setter
-    def value(self, value: int | float | str | list[str] | tuple[int, str] | None) -> None:
+    def value(
+        self,
+        value: int | float | str | list[str] | tuple[int, str] | HoldParameters | dict[str, typing.Any] | None,
+    ) -> None:
         """Set value and ensure correct type"""
         # raise error if value is None for action kinds that need a value
         if value is None and self.kind in [
             "route_direct_to",
+            "hold_at_location",
             "change_heading_to",
             "change_heading_by",
             "change_flight_level_to",
@@ -167,7 +185,11 @@ class Action(Comparison):
         ]:
             raise Exception(f"Value cannot be None for action kind {self.kind}")
 
-        if "level_by_fix" in self.kind:
+        if self.kind == "hold_at_location":
+            if isinstance(value, str):
+                value = json.loads(value)
+            self._value = HoldParameters.model_validate(value)
+        elif "level_by_fix" in self.kind:
             # first, check if it is a string (from the clearance df) and convert it back to a tuple.
             # the string should be of the form "(int/float, 'str')"
             if isinstance(value, str):
@@ -295,8 +317,8 @@ class Action(Comparison):
         if ">" in value:
             value = value.split(">")
 
-        # change_* actions take int or float as values, not str; json.loads will convert str to int or float as needed
-        if "change" in kind:
+        # Hold parameters and change_* actions use JSON representations.
+        if kind == "hold_at_location" or "change" in kind:
             value = json.loads(value)
 
         sector = None if sector == "all" or sector is None else sector.split(",")
@@ -365,7 +387,7 @@ class Action(Comparison):
         return {
             "callsign": self.callsign,
             "kind": self.kind,
-            "value": self.value,
+            "value": self.value.model_dump() if isinstance(self.value, HoldParameters) else self.value,
             "agent": self.agent,
             "text_representation": (
                 None if self.text_representation is None else self.text_representation.model_dump()
@@ -485,6 +507,9 @@ class Action(Comparison):
 
         elif isinstance(self.value, list):
             value = ">".join(self.value)
+
+        elif isinstance(self.value, HoldParameters):
+            value = json.dumps(self.value.model_dump(), separators=(",", ":"))
 
         else:
             value = self.value

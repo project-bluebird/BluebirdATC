@@ -9,6 +9,7 @@ SUPPORTED_ACTIONS = {
     "vertical_speed": ["change_vertical_speed_to"],
     "lateral": [
         "route_direct_to",
+        "hold_at_location",
         "change_heading_to",
         "change_heading_to_by_direction",
         "change_heading_by",
