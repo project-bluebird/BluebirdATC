@@ -1,6 +1,6 @@
 import pytest
 
-from bluebird_dt.core import Action, HoldParameters
+from bluebird_dt.core import Action, HoldAtFixParameters
 from bluebird_dt.scenario_manager import TwoAircraft
 
 def test_init_exceptions():
@@ -30,7 +30,7 @@ def test_init_exceptions_from_str():
     "kind, value",
     [
         ("route_direct_to", "FIX"),
-        ("route_direct_to,hold_at_location", HoldParameters(fix="FIX")),
+        ("route_direct_to,hold_at_location", HoldAtFixParameters(fix="FIX")),
         ("change_heading_to", 120),
         ("change_heading_by", -10),
         ("change_flight_level_to", 250),
@@ -105,7 +105,7 @@ def test_hold_parameters_from_json_string():
         value='{"fix":"FIX","outbound_time":60,"turn_direction":"left"}',
     )
 
-    assert action.value == HoldParameters(fix="FIX", outbound_time=60, turn_direction="left")
+    assert action.value == HoldAtFixParameters(fix="FIX", outbound_time=60, turn_direction="left")
 
 
 def test_coordinate_hold_parameters_roundtrip():

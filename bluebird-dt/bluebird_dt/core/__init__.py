@@ -1,4 +1,10 @@
-from bluebird_dt.core.action import Action, ClearanceAndResponse, HoldParameters
+from bluebird_dt.core.action import (
+    Action,
+    ClearanceAndResponse,
+    HoldAtFixParameters,
+    HoldAtLocationParameters,
+    HoldParameters,
+)
 from bluebird_dt.core.aircraft import Aircraft, FlightState, Instructions
 from bluebird_dt.core.airspace import Airspace
 from bluebird_dt.core.airway import Airway, AirwayLeg
@@ -29,6 +35,8 @@ __all__ = [
     "Fixes",
     "FlightPlan",
     "FlightState",
+    "HoldAtFixParameters",
+    "HoldAtLocationParameters",
     "HoldParameters",
     "Instructions",
     "Pilot",

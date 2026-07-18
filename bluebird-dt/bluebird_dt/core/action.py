@@ -6,8 +6,8 @@ import re
 import typing
 
 import numpy as np
-from pydantic import BaseModel, Field, model_validator
-from typing_extensions import Self, override
+from pydantic import BaseModel, Field, TypeAdapter
+from typing_extensions import override
 
 from bluebird_dt.mixin import Comparison
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
@@ -18,35 +18,46 @@ class ClearanceAndResponse(BaseModel):
     pilot_response: str | None
 
 
-class HoldParameters(BaseModel):
-    """Parameters for a racetrack hold at a named fix or latitude/longitude."""
+class HoldParametersBase(BaseModel):
+    """Parameters common to all racetrack hold targets."""
 
-    fix: str | None = Field(default=None, min_length=1)
-    location: tuple[
-        typing.Annotated[float, Field(ge=-90.0, le=90.0)],
-        typing.Annotated[float, Field(ge=-180.0, le=180.0)],
-    ] | None = None
     outbound_time: float = Field(default=90.0, gt=0.0)
     turn_direction: typing.Literal["left", "right"] = "right"
-
-    @model_validator(mode="after")
-    def validate_target(self) -> Self:
-        """Require exactly one holding target."""
-        if (self.fix is None) == (self.location is None):
-            raise ValueError("Exactly one of fix or location must be specified")
-        return self
-
-    @property
-    def location_label(self) -> str:
-        """Return a compact label for displays and clearances."""
-        if self.fix is not None:
-            return self.fix
-        assert self.location is not None
-        return f"{self.location[0]:g}, {self.location[1]:g}"
 
     def __str__(self) -> str:
         """Return the canonical representation used in clearance logs."""
         return self.model_dump_json()
+
+
+class HoldAtFixParameters(HoldParametersBase):
+    """Parameters for a racetrack hold at a named fix."""
+
+    fix: str = Field(min_length=1)
+    location: None = None
+
+    @property
+    def location_label(self) -> str:
+        """Return a compact label for displays and clearances."""
+        return self.fix
+
+
+class HoldAtLocationParameters(HoldParametersBase):
+    """Parameters for a racetrack hold at a latitude/longitude."""
+
+    fix: None = None
+    location: tuple[
+        typing.Annotated[float, Field(ge=-90.0, le=90.0)],
+        typing.Annotated[float, Field(ge=-180.0, le=180.0)],
+    ]
+
+    @property
+    def location_label(self) -> str:
+        """Return a compact label for displays and clearances."""
+        return f"{self.location[0]:g}, {self.location[1]:g}"
+
+
+HoldParameters: typing.TypeAlias = HoldAtFixParameters | HoldAtLocationParameters
+_HOLD_PARAMETERS_ADAPTER = TypeAdapter(HoldParameters)
 
 
 class Action(Comparison):
@@ -207,9 +218,9 @@ class Action(Comparison):
 
         if self.kind == "route_direct_to,hold_at_location":
             if isinstance(value, str):
-                self._value = HoldParameters.model_validate_json(value)
+                self._value = _HOLD_PARAMETERS_ADAPTER.validate_json(value)
             else:
-                self._value = HoldParameters.model_validate(value)
+                self._value = _HOLD_PARAMETERS_ADAPTER.validate_python(value)
         elif "level_by_fix" in self.kind:
             # first, check if it is a string (from the clearance df) and convert it back to a tuple.
             # the string should be of the form "(int/float, 'str')"
