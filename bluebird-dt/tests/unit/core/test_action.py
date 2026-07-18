@@ -30,7 +30,7 @@ def test_init_exceptions_from_str():
     "kind, value",
     [
         ("route_direct_to", "FIX"),
-        ("hold_at_location", HoldParameters(fix="FIX")),
+        ("route_direct_to,hold_at_location", HoldParameters(fix="FIX")),
         ("change_heading_to", 120),
         ("change_heading_by", -10),
         ("change_flight_level_to", 250),
@@ -90,7 +90,7 @@ def test_from_str_with_sector():
 def test_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",
-        kind="hold_at_location",
+        kind="route_direct_to,hold_at_location",
         value={"fix": "FIX", "outbound_time": 60, "turn_direction": "left"},
     )
 
@@ -101,7 +101,7 @@ def test_hold_parameters_roundtrip():
 def test_hold_parameters_from_json_string():
     action = Action(
         callsign="AIR0",
-        kind="hold_at_location",
+        kind="route_direct_to,hold_at_location",
         value='{"fix":"FIX","outbound_time":60,"turn_direction":"left"}',
     )
 
@@ -111,7 +111,7 @@ def test_hold_parameters_from_json_string():
 def test_coordinate_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",
-        kind="hold_at_location",
+        kind="route_direct_to,hold_at_location",
         value={"location": (50.716667, -3.533333), "outbound_time": 60},
     )
 
@@ -135,7 +135,7 @@ def test_coordinate_hold_parameters_roundtrip():
 )
 def test_invalid_hold_parameters(value: dict):
     with pytest.raises(ValueError, match="validation error"):
-        Action("AIR0", "hold_at_location", value)
+        Action("AIR0", "route_direct_to,hold_at_location", value)
 
 
 @pytest.mark.parametrize(

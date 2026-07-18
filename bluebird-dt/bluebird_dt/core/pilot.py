@@ -220,7 +220,7 @@ class Pilot:
         aircraft = environment.aircraft[self.callsign]
 
         if (
-            action.kind == "hold_at_location"
+            action.kind == "route_direct_to,hold_at_location"
             and action.value.fix is not None
             and action.value.fix not in environment.airspace.fixes.places
         ):
@@ -249,7 +249,7 @@ class Pilot:
 
             aircraft.heading_changing_to = aircraft.selected_instructions.heading
 
-        elif action.kind == "hold_at_location":
+        elif action.kind == "route_direct_to,hold_at_location":
             hold = action.value
             if hold.fix is not None:
                 target_pos = environment.airspace.fixes.places[hold.fix]
@@ -266,7 +266,7 @@ class Pilot:
                 "location": [target_pos.lat, target_pos.lon],
                 "outbound_time": hold.outbound_time,
                 "turn_direction": hold.turn_direction,
-                "phase": "direct_to_fix",
+                "phase": "direct_to_location",
                 "phase_elapsed": 0.0,
                 "inbound_track": None,
             }

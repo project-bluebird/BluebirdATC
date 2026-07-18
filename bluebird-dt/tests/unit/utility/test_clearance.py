@@ -316,7 +316,7 @@ def test_change_mach_clearance(env: Environment):
 def test_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
-        "hold_at_location",
+        "route_direct_to,hold_at_location",
         {"fix": "ALPHA", "outbound_time": 90.0, "turn_direction": "right"},
     )
 
@@ -333,7 +333,7 @@ def test_hold_clearance(env: Environment):
 def test_coordinate_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
-        "hold_at_location",
+        "route_direct_to,hold_at_location",
         {"location": (50.716667, -3.533333), "outbound_time": 90.0},
     )
 

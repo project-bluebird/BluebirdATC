@@ -765,7 +765,7 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
             else:
                 clearance_parts.extend(["resume own navigation", str(fix)])
 
-        case "hold_at_location":
+        case "route_direct_to,hold_at_location":
             assert isinstance(value, HoldParameters)
             minutes = f"{value.outbound_time / 60.0:g}"
             location = value.fix or f"latitude {value.location[0]:g} longitude {value.location[1]:g}"
@@ -1007,7 +1007,7 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
             else:
                 clearance_parts.extend(["resume own navigation", str(fix)])
 
-        case "hold_at_location":
+        case "route_direct_to,hold_at_location":
             assert isinstance(value, HoldParameters)
             minutes = f"{value.outbound_time / 60.0:g}"
             location = value.fix or f"latitude {value.location[0]:g} longitude {value.location[1]:g}"

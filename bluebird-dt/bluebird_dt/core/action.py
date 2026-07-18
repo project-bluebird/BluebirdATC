@@ -83,7 +83,8 @@ class Action(Comparison):
             Action type. All supported actions are found in the SUPPORTED_ACTIONS dictionary in the utility folder.
 
             - `route_direct_to`: go directly to named Fix(es) on Route (and set to route following)
-            - `hold_at_location`: fly to a named Fix or latitude/longitude and enter a repeating racetrack hold
+            - `route_direct_to,hold_at_location`: fly directly to a named Fix or latitude/longitude, then enter a
+                repeating racetrack hold
             - `change_heading_to`: change heading to the specified degrees
             - `change_heading_to_by_direction`: change heading to the specified degrees by turning in a specific
             direction
@@ -105,7 +106,7 @@ class Action(Comparison):
             Allowed values for each Action kind differs:
 
             - `route_direct_to`: str or list[str]
-            - `hold_at_location`: HoldParameters or an equivalent dict
+            - `route_direct_to,hold_at_location`: HoldParameters or an equivalent dict
             - `change_heading_to`: int
             - `change_heading_to_by_direction`: tuple[int, Literal['left', 'right', 'shortest']]
             - `change_heading_by`: int
@@ -186,7 +187,7 @@ class Action(Comparison):
         # raise error if value is None for action kinds that need a value
         if value is None and self.kind in [
             "route_direct_to",
-            "hold_at_location",
+            "route_direct_to,hold_at_location",
             "change_heading_to",
             "change_heading_by",
             "change_flight_level_to",
@@ -204,7 +205,7 @@ class Action(Comparison):
         ]:
             raise Exception(f"Value cannot be None for action kind {self.kind}")
 
-        if self.kind == "hold_at_location":
+        if self.kind == "route_direct_to,hold_at_location":
             if isinstance(value, str):
                 self._value = HoldParameters.model_validate_json(value)
             else:

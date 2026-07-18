@@ -14,7 +14,7 @@ def test_repeating_standard_rate_hold(generate_simple_environment: Environment):
     predictor = SimplePredictor(1.0, 2.0, fixes=environment.airspace.fixes)
     action = Action(
         aircraft.callsign,
-        "hold_at_location",
+        "route_direct_to,hold_at_location",
         {"fix": "EARTH", "outbound_time": 30, "turn_direction": "right"},
     )
     aircraft.pilot.process_lateral_actions(action, environment)
@@ -83,7 +83,7 @@ def test_coordinate_hold_does_not_require_predictor_fixes(generate_simple_enviro
     predictor = SimplePredictor(1.0, 2.0, fixes=None)
     action = Action(
         aircraft.callsign,
-        "hold_at_location",
+        "route_direct_to,hold_at_location",
         {"location": (hold_position.lat, hold_position.lon), "outbound_time": 30},
     )
     aircraft.pilot.process_lateral_actions(action, environment)
@@ -91,4 +91,4 @@ def test_coordinate_hold_does_not_require_predictor_fixes(generate_simple_enviro
     for _ in range(300):
         predictor.predict_aircraft(aircraft, 1.0, deepcopy_aircraft=False)
 
-    assert aircraft.predictor_params["hold"]["phase"] != "direct_to_fix"
+    assert aircraft.predictor_params["hold"]["phase"] != "direct_to_location"

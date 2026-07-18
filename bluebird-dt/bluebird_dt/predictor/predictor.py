@@ -480,16 +480,16 @@ class Predictor(ABC):
         if location is None:
             if self.fixes is None or hold.get("fix") is None:
                 raise ValueError("Hold state has no resolvable location")
-            fix_pos = self.fixes.places[hold["fix"]]
-            hold["location"] = [fix_pos.lat, fix_pos.lon]
+            target_pos = self.fixes.places[hold["fix"]]
+            hold["location"] = [target_pos.lat, target_pos.lon]
         else:
-            fix_pos = Pos2D(*location)
+            target_pos = Pos2D(*location)
         phase = hold["phase"]
         entered_turn = False
 
-        if phase in ["direct_to_fix", "inbound"]:
-            distance_to_fix = aircraft.pos2d().distance(fix_pos)
-            if distance_to_fix <= self.fix_proximity_threshold:
+        if phase in ["direct_to_location", "inbound"]:
+            distance_to_location = aircraft.pos2d().distance(target_pos)
+            if distance_to_location <= self.fix_proximity_threshold:
                 if hold["inbound_track"] is None:
                     hold["inbound_track"] = ground_track_angle
                 hold["phase"] = "turn_outbound"
@@ -497,7 +497,7 @@ class Predictor(ABC):
                 phase = "turn_outbound"
                 entered_turn = True
             else:
-                target_track = aircraft.pos2d().bearing_to(fix_pos)
+                target_track = aircraft.pos2d().bearing_to(target_pos)
                 aircraft.heading_changing_to = heading_from_ground_track(
                     target_track, horizontal_speed_kts, wind_vector
                 )

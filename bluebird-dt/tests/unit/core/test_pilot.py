@@ -261,7 +261,7 @@ def test_hold_action_and_lateral_cancellation(generate_simple_environment):
     hold_fix = next(iter(environment.airspace.fixes.places))
     hold_action = Action(
         aircraft.callsign,
-        "hold_at_location",
+        "route_direct_to,hold_at_location",
         {"fix": hold_fix, "outbound_time": 45, "turn_direction": "left"},
     )
 
@@ -276,7 +276,7 @@ def test_hold_action_and_lateral_cancellation(generate_simple_environment):
         ],
         "outbound_time": 45.0,
         "turn_direction": "left",
-        "phase": "direct_to_fix",
+        "phase": "direct_to_location",
         "phase_elapsed": 0.0,
         "inbound_track": None,
     }
@@ -291,7 +291,7 @@ def test_hold_action_and_lateral_cancellation(generate_simple_environment):
 def test_hold_rejects_unknown_fix(generate_simple_environment):
     environment = generate_simple_environment
     aircraft = environment.aircraft["AIR0"]
-    action = Action(aircraft.callsign, "hold_at_location", {"fix": "NOT_A_FIX"})
+    action = Action(aircraft.callsign, "route_direct_to,hold_at_location", {"fix": "NOT_A_FIX"})
 
     aircraft.pilot.receive_actions([action], environment)
     with pytest.raises(ValueError, match="Unknown holding fix"):
@@ -302,7 +302,7 @@ def test_hold_at_coordinate(generate_simple_environment):
     environment = generate_simple_environment
     aircraft = environment.aircraft["AIR0"]
     location = (51.25, -1.75)
-    action = Action(aircraft.callsign, "hold_at_location", {"location": location})
+    action = Action(aircraft.callsign, "route_direct_to,hold_at_location", {"location": location})
 
     aircraft.pilot.process_lateral_actions(action, environment)
 
