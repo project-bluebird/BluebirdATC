@@ -337,8 +337,9 @@ class Action(Comparison):
         if ">" in value:
             value = value.split(">")
 
-        # Hold parameters and change_* actions use JSON representations.
-        if kind == "hold_at_location" or "change" in kind:
+        # change_* actions use JSON representations. Hold parameters are
+        # validated from their JSON representation by the value setter.
+        if "change" in kind:
             value = json.loads(value)
 
         sector = None if sector == "all" or sector is None else sector.split(",")
