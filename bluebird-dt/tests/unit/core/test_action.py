@@ -98,6 +98,16 @@ def test_hold_parameters_roundtrip():
     assert action == Action.from_str(str(action))
 
 
+def test_hold_parameters_from_json_string():
+    action = Action(
+        callsign="AIR0",
+        kind="hold_at_location",
+        value='{"fix":"FIX","outbound_time":60,"turn_direction":"left"}',
+    )
+
+    assert action.value == HoldParameters(fix="FIX", outbound_time=60, turn_direction="left")
+
+
 def test_coordinate_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",

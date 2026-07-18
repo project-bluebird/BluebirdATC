@@ -206,8 +206,9 @@ class Action(Comparison):
 
         if self.kind == "hold_at_location":
             if isinstance(value, str):
-                value = json.loads(value)
-            self._value = HoldParameters.model_validate(value)
+                self._value = HoldParameters.model_validate_json(value)
+            else:
+                self._value = HoldParameters.model_validate(value)
         elif "level_by_fix" in self.kind:
             # first, check if it is a string (from the clearance df) and convert it back to a tuple.
             # the string should be of the form "(int/float, 'str')"
