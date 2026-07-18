@@ -294,8 +294,8 @@ class Predictor(ABC):
             Flag indicating whether to use turn model or just instantaneously update heading. Default is True.
         """
 
-        # A hold explicitly requires fixed-rate turns, even when a predictor was
-        # configured to make ordinary heading changes instantaneous.
+        # This implementation of a hold explicitly requires fixed-rate turns,
+        # even when a predictor was configured to make ordinary heading changes instantaneous.
         if aircraft.predictor_params.get("hold") is not None:
             use_turn_model = True
 
