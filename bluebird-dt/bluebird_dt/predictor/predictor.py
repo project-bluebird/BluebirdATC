@@ -21,8 +21,9 @@ from bluebird_dt.utility.performance import get_aircraft_key_mapping
 # Default rate of turn (in degrees per second) - used for heading change turns (i.e. not route turns)
 DEFAULT_RATE_OF_TURN = 1.5
 
-# Holds are flown as standard-rate turns, independently of an aircraft's
-# configured rate for ordinary heading changes.
+# Assumption: Holds are flown as standard-rate turns, independently of an aircraft's
+# configured rate for ordinary heading changes.  According to ICAO 8168 section 2.1.2, all turns
+# shall be made at a bank angle of 25° or at a rate of 3° per second, whichever requires the lesser bank.
 HOLD_RATE_OF_TURN_s = 3.0
 
 # Threshold difference (in degrees) between requested heading and actual heading. Below this threshold
