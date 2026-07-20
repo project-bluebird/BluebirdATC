@@ -91,7 +91,7 @@ def test_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",
         kind="route_direct_to,hold_at_location",
-        value={"fix": "FIX", "outbound_time": 60, "turn_direction": "left"},
+        value={"fix": "FIX", "outbound_time_s": 60, "turn_direction": "left"},
     )
 
     assert action == Action.from_json(action.to_json())
@@ -102,17 +102,17 @@ def test_hold_parameters_from_json_string():
     action = Action(
         callsign="AIR0",
         kind="route_direct_to,hold_at_location",
-        value='{"fix":"FIX","outbound_time":60,"turn_direction":"left"}',
+        value='{"fix":"FIX","outbound_time_s":60,"turn_direction":"left"}',
     )
 
-    assert action.value == HoldAtFixParameters(fix="FIX", outbound_time=60, turn_direction="left")
+    assert action.value == HoldAtFixParameters(fix="FIX", outbound_time_s=60, turn_direction="left")
 
 
 def test_coordinate_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",
         kind="route_direct_to,hold_at_location",
-        value={"location": (50.716667, -3.533333), "outbound_time": 60},
+        value={"location": (50.716667, -3.533333), "outbound_time_s": 60},
     )
 
     assert action.value.location == (50.716667, -3.533333)
@@ -129,7 +129,7 @@ def test_coordinate_hold_parameters_roundtrip():
         {"fix": "FIX", "location": (50.0, -3.0)},
         {"location": (91.0, -3.0)},
         {"location": (50.0, -181.0)},
-        {"fix": "FIX", "outbound_time": 0},
+        {"fix": "FIX", "outbound_time_s": 0},
         {"fix": "FIX", "turn_direction": "straight"},
     ],
 )

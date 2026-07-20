@@ -317,7 +317,7 @@ def test_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
         "route_direct_to,hold_at_location",
-        {"fix": "ALPHA", "outbound_time": 90.0, "turn_direction": "right"},
+        {"fix": "ALPHA", "outbound_time_s": 90.0, "turn_direction": "right"},
     )
 
     assert_action_voice_and_text(
@@ -334,7 +334,7 @@ def test_coordinate_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
         "route_direct_to,hold_at_location",
-        {"location": (50.716667, -3.533333), "outbound_time": 90.0},
+        {"location": (50.716667, -3.533333), "outbound_time_s": 90.0},
     )
 
     assert_action_voice_and_text(

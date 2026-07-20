@@ -23,7 +23,7 @@ DEFAULT_RATE_OF_TURN = 1.5
 
 # Holds are flown as standard-rate turns, independently of an aircraft's
 # configured rate for ordinary heading changes.
-HOLD_RATE_OF_TURN = 3.0
+HOLD_RATE_OF_TURN_s = 3.0
 
 # Threshold difference (in degrees) between requested heading and actual heading. Below this threshold
 # the heading is automatically updated, without an explicit use of a turn model.
@@ -399,7 +399,7 @@ class Predictor(ABC):
 
             rate_of_turn = aircraft.rate_of_turn if aircraft.rate_of_turn else DEFAULT_RATE_OF_TURN
             if hold is not None and hold["phase"] in ["turn_outbound", "turn_inbound"]:
-                rate_of_turn = HOLD_RATE_OF_TURN
+                rate_of_turn = HOLD_RATE_OF_TURN_s
             # If have started a route turn, then continue the turn at same radius. So calculate the rate of turn
             # from ground speed and turn radius. This means that speed changes won't affect the turn radius.
             if aircraft.on_route and aircraft.predictor_params.get("turn_radius", None) is not None:
@@ -517,7 +517,7 @@ class Predictor(ABC):
 
         if phase == "outbound":
             target_track = (hold["inbound_track"] + 180.0) % 360.0
-            if hold["phase_elapsed"] >= hold["outbound_time"]:
+            if hold["phase_elapsed"] >= hold["outbound_time_s"]:
                 hold["phase"] = "turn_inbound"
                 hold["phase_elapsed"] = 0.0
                 target_track = hold["inbound_track"]

@@ -21,7 +21,7 @@ class ClearanceAndResponse(BaseModel):
 class HoldParametersBase(BaseModel):
     """Parameters common to all racetrack hold targets."""
 
-    outbound_time: float = Field(default=90.0, gt=0.0)
+    outbound_time_s: float = Field(default=90.0, gt=0.0)
     turn_direction: typing.Literal["left", "right"] = "right"
 
     def __str__(self) -> str:

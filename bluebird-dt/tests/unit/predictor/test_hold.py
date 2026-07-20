@@ -15,7 +15,7 @@ def test_repeating_standard_rate_hold(generate_simple_environment: Environment):
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"fix": "EARTH", "outbound_time": 30, "turn_direction": "right"},
+        {"fix": "EARTH", "outbound_time_s": 30, "turn_direction": "right"},
     )
     aircraft.pilot.process_lateral_actions(action, environment)
 
@@ -62,7 +62,7 @@ def test_hold_state_survives_aircraft_json_roundtrip(generate_simple_environment
     aircraft = generate_simple_environment.aircraft["AIR0"]
     aircraft.predictor_params["hold"] = {
         "fix": "EARTH",
-        "outbound_time": 90.0,
+        "outbound_time_s": 90.0,
         "turn_direction": "left",
         "phase": "outbound",
         "phase_elapsed": 12.0,
@@ -84,7 +84,7 @@ def test_coordinate_hold_does_not_require_predictor_fixes(generate_simple_enviro
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"location": (hold_position.lat, hold_position.lon), "outbound_time": 30},
+        {"location": (hold_position.lat, hold_position.lon), "outbound_time_s": 30},
     )
     aircraft.pilot.process_lateral_actions(action, environment)
 
