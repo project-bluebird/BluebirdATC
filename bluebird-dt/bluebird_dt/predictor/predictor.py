@@ -39,7 +39,7 @@ HOLD_TURN_PHASES = frozenset(
     }
 )
 HOLD_DIRECTION_TURN_PHASES = frozenset(
-    {"turn_outbound", "turn_inbound", "parallel_turn_inbound", "teardrop_turn_inbound"}
+    {"turn_outbound", "turn_inbound", "teardrop_turn_inbound"}
 )
 HOLD_TIMED_LEG_PHASES = frozenset({"outbound", "parallel_outbound", "teardrop_outbound"})
 
@@ -428,7 +428,9 @@ class Predictor(ABC):
             turn_direction: Literal["left", "right"] | None = None
 
             # If aircraft is flying a heading
-            if hold is not None and hold["phase"] in HOLD_DIRECTION_TURN_PHASES:
+            if hold is not None and hold["phase"] == "parallel_turn_inbound":
+                turn_direction = "left" if hold["turn_direction"] == "right" else "right"
+            elif hold is not None and hold["phase"] in HOLD_DIRECTION_TURN_PHASES:
                 turn_direction = hold["turn_direction"]
             elif (
                 aircraft.cleared_instructions.lateral_action is not None
