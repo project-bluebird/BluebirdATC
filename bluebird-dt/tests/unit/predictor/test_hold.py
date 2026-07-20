@@ -12,10 +12,17 @@ def test_repeating_standard_rate_hold(generate_simple_environment: Environment):
     aircraft.selected_instructions.cas = 360
     aircraft.cleared_instructions.cas = 360
     predictor = SimplePredictor(1.0, 2.0, fixes=environment.airspace.fixes)
+    hold_fix = environment.airspace.fixes.places["EARTH"]
+    inbound_course_deg = aircraft.pos2d().bearing_to(hold_fix)
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"fix": "EARTH", "outbound_time_s": 30, "turn_direction": "right"},
+        {
+            "fix": "EARTH",
+            "inbound_course_deg": inbound_course_deg,
+            "outbound_time_s": 30,
+            "turn_direction": "right",
+        },
     )
     aircraft.pilot.process_lateral_actions(action, environment)
 
@@ -82,11 +89,16 @@ def test_coordinate_hold_does_not_require_predictor_fixes(generate_simple_enviro
     aircraft.selected_instructions.cas = 360
     aircraft.cleared_instructions.cas = 360
     hold_position = environment.airspace.fixes.places["EARTH"]
+    inbound_course_deg = aircraft.pos2d().bearing_to(hold_position)
     predictor = SimplePredictor(1.0, 2.0, fixes=None)
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"location": (hold_position.lat, hold_position.lon), "outbound_time_s": 30},
+        {
+            "location": (hold_position.lat, hold_position.lon),
+            "inbound_course_deg": inbound_course_deg,
+            "outbound_time_s": 30,
+        },
     )
     aircraft.pilot.process_lateral_actions(action, environment)
 

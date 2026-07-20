@@ -30,7 +30,7 @@ def test_init_exceptions_from_str():
     "kind, value",
     [
         ("route_direct_to", "FIX"),
-        ("route_direct_to,hold_at_location", HoldAtFixParameters(fix="FIX")),
+        ("route_direct_to,hold_at_location", HoldAtFixParameters(fix="FIX", inbound_course_deg=0)),
         ("change_heading_to", 120),
         ("change_heading_by", -10),
         ("change_flight_level_to", 250),
@@ -119,7 +119,7 @@ def test_coordinate_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",
         kind="route_direct_to,hold_at_location",
-        value={"location": (50.716667, -3.533333), "outbound_time_s": 60},
+        value={"location": (50.716667, -3.533333), "inbound_course_deg": 90, "outbound_time_s": 60},
     )
 
     assert action.value.location == (50.716667, -3.533333)
@@ -134,6 +134,7 @@ def test_coordinate_hold_parameters_roundtrip():
         {},
         {"fix": ""},
         {"fix": "FIX", "location": (50.0, -3.0)},
+        {"fix": "FIX"},
         {"location": (91.0, -3.0)},
         {"location": (50.0, -181.0)},
         {"fix": "FIX", "inbound_course_deg": -1},

@@ -530,15 +530,11 @@ class Predictor(ABC):
             distance_to_location = aircraft.pos2d().distance(target_pos)
             if distance_to_location <= self.fix_proximity_threshold:
                 if phase == "direct_to_location":
-                    if hold["inbound_course_deg"] is None:
-                        hold["inbound_course_deg"] = ground_track_angle
-                        entry_type = "direct"
-                    else:
-                        entry_type = self.select_hold_entry(
-                            ground_track_angle,
-                            hold["inbound_course_deg"],
-                            hold["turn_direction"],
-                        )
+                    entry_type = self.select_hold_entry(
+                        ground_track_angle,
+                        hold["inbound_course_deg"],
+                        hold["turn_direction"],
+                    )
                     hold["entry_type"] = entry_type
                     hold["phase"] = {
                         "direct": "turn_outbound",
@@ -558,8 +554,6 @@ class Predictor(ABC):
                 return
 
         inbound_course_deg = hold["inbound_course_deg"]
-        if inbound_course_deg is None:
-            raise ValueError("Hold state has no inbound course")
         outbound_track = (inbound_course_deg + 180.0) % 360.0
 
         outbound_turn_phases = {

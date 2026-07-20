@@ -327,10 +327,10 @@ def test_hold_clearance(env: Environment):
 
     assert_action_voice_and_text(
         action,
-        "AIR0 hold at ALPHA inbound course 270 right hand outbound time 1.5 minutes",
-        "hold at ALPHA inbound course 270 right hand outbound time 1.5 minutes AIR0",
-        "alpha india romeo zero hold at ALPHA inbound course 270 right hand outbound time 1.5 minutes",
-        "hold at ALPHA inbound course 270 right hand outbound time 1.5 minutes alpha india romeo zero",
+        "AIR0 hold east of ALPHA on course 270 for 1.5 minutes with right turns",
+        "hold east of ALPHA on course 270 for 1.5 minutes with right turns AIR0",
+        "alpha india romeo zero hold east of ALPHA on course too seven zero for wun decimal five minutes with right turns",
+        "hold east of ALPHA on course too seven zero for wun decimal five minutes with right turns alpha india romeo zero",
         env,
     )
 
@@ -339,15 +339,15 @@ def test_coordinate_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
         "route_direct_to,hold_at_location",
-        {"location": (50.716667, -3.533333), "outbound_time_s": 90.0},
+        {"location": (50.716667, -3.533333), "inbound_course_deg": 90, "outbound_time_s": 90.0},
     )
 
     assert_action_voice_and_text(
         action,
-        "AIR0 hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes",
-        "hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes AIR0",
-        "alpha india romeo zero hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes",
-        "hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes alpha india romeo zero",
+        "AIR0 hold west of latitude 50.7167 longitude -3.53333 on course 90 for 1.5 minutes with right turns",
+        "hold west of latitude 50.7167 longitude -3.53333 on course 90 for 1.5 minutes with right turns AIR0",
+        "alpha india romeo zero hold west of latitude 50.7167 longitude -3.53333 on course niner zero for wun decimal five minutes with right turns",
+        "hold west of latitude 50.7167 longitude -3.53333 on course niner zero for wun decimal five minutes with right turns alpha india romeo zero",
         env,
     )
 

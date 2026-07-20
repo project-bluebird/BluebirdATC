@@ -19,12 +19,7 @@ class ClearanceAndResponse(BaseModel):
 
 
 class HoldParametersBase(BaseModel):
-    """Parameters common to all racetrack hold targets.
-
-    If no inbound course is supplied, the hold is aligned with the arrival
-    track and therefore uses a direct entry, preserving the simple-hold
-    behaviour.
-    """
+    """Parameters common to all racetrack hold targets."""
 
     inbound_course_deg: typing.Annotated[
         float,
@@ -33,7 +28,7 @@ class HoldParametersBase(BaseModel):
             lt=360.0,
             description="Course in degrees flown inbound towards the holding fix",
         ),
-    ] | None = None
+    ]
     outbound_time_s: float = Field(default=90.0, gt=0.0, description="Outbound leg duration in seconds")
     turn_direction: typing.Literal["left", "right"] = "right"
 
