@@ -215,6 +215,11 @@ class Pilot:
             Action issued to the Aircraft
         environment: Environment
             The simulation environment at the time step
+
+        Note
+        ----
+        Any new lateral clearance replaces an active hold. A new hold creates
+        fresh state after the old one has been discarded.
         """
 
         aircraft = environment.aircraft[self.callsign]
