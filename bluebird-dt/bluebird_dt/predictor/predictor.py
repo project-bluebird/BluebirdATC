@@ -25,7 +25,9 @@ DEFAULT_RATE_OF_TURN = 1.5
 # configured rate for ordinary heading changes.  According to ICAO 8168 section 2.1.2, all turns
 # shall be made at a bank angle of 25° or at a rate of 3° per second, whichever requires the lesser bank.
 HOLD_RATE_OF_TURN_s = 3.0
-HOLD_ENTRY_LEG_TIME_s = 60.0
+# Parallel and teardrop entry timing starts when the holding fix is crossed,
+# including the initial turn onto the entry's outbound track.
+HOLD_ENTRY_TIME_s = 60.0
 HOLD_TEARDROP_ANGLE_deg = 30.0
 
 HOLD_TURN_PHASES = frozenset(
@@ -41,7 +43,15 @@ HOLD_TURN_PHASES = frozenset(
 HOLD_DIRECTION_TURN_PHASES = frozenset(
     {"turn_outbound", "turn_inbound", "teardrop_turn_inbound"}
 )
-HOLD_TIMED_LEG_PHASES = frozenset({"outbound", "parallel_outbound", "teardrop_outbound"})
+HOLD_TIMED_LEG_PHASES = frozenset(
+    {
+        "outbound",
+        "parallel_turn_outbound",
+        "parallel_outbound",
+        "teardrop_turn_outbound",
+        "teardrop_outbound",
+    }
+)
 
 # Threshold difference (in degrees) between requested heading and actual heading. Below this threshold
 # the heading is automatically updated, without an explicit use of a turn model.
@@ -574,7 +584,8 @@ class Predictor(ABC):
             target_track, next_phase = outbound_turn_phases[phase]
             if aircraft.heading_changing_to is None and not entered_turn:
                 hold["phase"] = next_phase
-                hold["phase_elapsed"] = 0.0
+                if phase == "turn_outbound":
+                    hold["phase_elapsed"] = 0.0
                 aircraft.heading = heading_from_ground_track(target_track, horizontal_speed_kts, wind_vector)
             else:
                 aircraft.heading_changing_to = heading_from_ground_track(
@@ -584,8 +595,8 @@ class Predictor(ABC):
 
         timed_leg_phases = {
             "outbound": (hold["outbound_time_s"], "turn_inbound"),
-            "parallel_outbound": (HOLD_ENTRY_LEG_TIME_s, "parallel_turn_inbound"),
-            "teardrop_outbound": (HOLD_ENTRY_LEG_TIME_s, "teardrop_turn_inbound"),
+            "parallel_outbound": (HOLD_ENTRY_TIME_s, "parallel_turn_inbound"),
+            "teardrop_outbound": (HOLD_ENTRY_TIME_s, "teardrop_turn_inbound"),
         }
         if phase in timed_leg_phases:
             leg_time_s, next_phase = timed_leg_phases[phase]
