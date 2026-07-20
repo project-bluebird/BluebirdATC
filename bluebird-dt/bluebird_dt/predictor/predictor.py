@@ -25,6 +25,23 @@ DEFAULT_RATE_OF_TURN = 1.5
 # configured rate for ordinary heading changes.  According to ICAO 8168 section 2.1.2, all turns
 # shall be made at a bank angle of 25° or at a rate of 3° per second, whichever requires the lesser bank.
 HOLD_RATE_OF_TURN_s = 3.0
+HOLD_ENTRY_LEG_TIME_s = 60.0
+HOLD_TEARDROP_ANGLE_deg = 30.0
+
+HOLD_TURN_PHASES = frozenset(
+    {
+        "turn_outbound",
+        "turn_inbound",
+        "parallel_turn_outbound",
+        "parallel_turn_inbound",
+        "teardrop_turn_outbound",
+        "teardrop_turn_inbound",
+    }
+)
+HOLD_DIRECTION_TURN_PHASES = frozenset(
+    {"turn_outbound", "turn_inbound", "parallel_turn_inbound", "teardrop_turn_inbound"}
+)
+HOLD_TIMED_LEG_PHASES = frozenset({"outbound", "parallel_outbound", "teardrop_outbound"})
 
 # Threshold difference (in degrees) between requested heading and actual heading. Below this threshold
 # the heading is automatically updated, without an explicit use of a turn model.
@@ -399,7 +416,7 @@ class Predictor(ABC):
             current_bearing = ground_track_angle
 
             rate_of_turn = aircraft.rate_of_turn if aircraft.rate_of_turn else DEFAULT_RATE_OF_TURN
-            if hold is not None and hold["phase"] in ["turn_outbound", "turn_inbound"]:
+            if hold is not None and hold["phase"] in HOLD_TURN_PHASES:
                 rate_of_turn = HOLD_RATE_OF_TURN_s
             # If have started a route turn, then continue the turn at same radius. So calculate the rate of turn
             # from ground speed and turn radius. This means that speed changes won't affect the turn radius.
@@ -411,7 +428,7 @@ class Predictor(ABC):
             turn_direction: Literal["left", "right"] | None = None
 
             # If aircraft is flying a heading
-            if hold is not None and hold["phase"] in ["turn_outbound", "turn_inbound"]:
+            if hold is not None and hold["phase"] in HOLD_DIRECTION_TURN_PHASES:
                 turn_direction = hold["turn_direction"]
             elif (
                 aircraft.cleared_instructions.lateral_action is not None
@@ -465,8 +482,28 @@ class Predictor(ABC):
         aircraft.lat = new_pos.lat
         aircraft.lon = new_pos.lon
 
-        if hold is not None and hold["phase"] == "outbound":
+        if hold is not None and hold["phase"] in HOLD_TIMED_LEG_PHASES:
             hold["phase_elapsed"] += time_evolve
+
+    @staticmethod
+    def select_hold_entry(
+        arrival_track_deg: float,
+        inbound_course_deg: float,
+        turn_direction: Literal["left", "right"],
+    ) -> Literal["direct", "parallel", "teardrop"]:
+        """Select the standard entry sector for a hold.
+
+        Sector boundaries are mirrored for left-hand holds. An aircraft on an
+        exact 70-degree boundary uses the direct entry; the reciprocal-course
+        boundary uses the parallel entry.
+        """
+        direction_sign = 1.0 if turn_direction == "right" else -1.0
+        relative_track = (direction_sign * (arrival_track_deg - inbound_course_deg)) % 360.0
+        if 110.0 < relative_track < 180.0:
+            return "teardrop"
+        if 180.0 <= relative_track < 290.0:
+            return "parallel"
+        return "direct"
 
     def update_hold_guidance(
         self,
@@ -488,14 +525,30 @@ class Predictor(ABC):
         phase = hold["phase"]
         entered_turn = False
 
-        if phase in ["direct_to_location", "inbound"]:
+        inbound_phases = ["direct_to_location", "inbound", "parallel_inbound", "teardrop_inbound"]
+        if phase in inbound_phases:
             distance_to_location = aircraft.pos2d().distance(target_pos)
             if distance_to_location <= self.fix_proximity_threshold:
-                if hold["inbound_track"] is None:
-                    hold["inbound_track"] = ground_track_angle
-                hold["phase"] = "turn_outbound"
+                if phase == "direct_to_location":
+                    if hold["inbound_course_deg"] is None:
+                        hold["inbound_course_deg"] = ground_track_angle
+                        entry_type = "direct"
+                    else:
+                        entry_type = self.select_hold_entry(
+                            ground_track_angle,
+                            hold["inbound_course_deg"],
+                            hold["turn_direction"],
+                        )
+                    hold["entry_type"] = entry_type
+                    hold["phase"] = {
+                        "direct": "turn_outbound",
+                        "parallel": "parallel_turn_outbound",
+                        "teardrop": "teardrop_turn_outbound",
+                    }[entry_type]
+                else:
+                    hold["phase"] = "turn_outbound"
                 hold["phase_elapsed"] = 0.0
-                phase = "turn_outbound"
+                phase = hold["phase"]
                 entered_turn = True
             else:
                 target_track = aircraft.pos2d().bearing_to(target_pos)
@@ -504,10 +557,27 @@ class Predictor(ABC):
                 )
                 return
 
-        if phase == "turn_outbound":
-            target_track = (hold["inbound_track"] + 180.0) % 360.0
+        inbound_course_deg = hold["inbound_course_deg"]
+        if inbound_course_deg is None:
+            raise ValueError("Hold state has no inbound course")
+        outbound_track = (inbound_course_deg + 180.0) % 360.0
+
+        outbound_turn_phases = {
+            "turn_outbound": (outbound_track, "outbound"),
+            "parallel_turn_outbound": (outbound_track, "parallel_outbound"),
+            "teardrop_turn_outbound": (
+                (
+                    outbound_track
+                    - (HOLD_TEARDROP_ANGLE_deg if hold["turn_direction"] == "right" else -HOLD_TEARDROP_ANGLE_deg)
+                )
+                % 360.0,
+                "teardrop_outbound",
+            ),
+        }
+        if phase in outbound_turn_phases:
+            target_track, next_phase = outbound_turn_phases[phase]
             if aircraft.heading_changing_to is None and not entered_turn:
-                hold["phase"] = "outbound"
+                hold["phase"] = next_phase
                 hold["phase_elapsed"] = 0.0
                 aircraft.heading = heading_from_ground_track(target_track, horizontal_speed_kts, wind_vector)
             else:
@@ -516,12 +586,30 @@ class Predictor(ABC):
                 )
             return
 
-        if phase == "outbound":
-            target_track = (hold["inbound_track"] + 180.0) % 360.0
-            if hold["phase_elapsed"] >= hold["outbound_time_s"]:
-                hold["phase"] = "turn_inbound"
+        timed_leg_phases = {
+            "outbound": (hold["outbound_time_s"], "turn_inbound"),
+            "parallel_outbound": (HOLD_ENTRY_LEG_TIME_s, "parallel_turn_inbound"),
+            "teardrop_outbound": (HOLD_ENTRY_LEG_TIME_s, "teardrop_turn_inbound"),
+        }
+        if phase in timed_leg_phases:
+            leg_time_s, next_phase = timed_leg_phases[phase]
+            target_track = (
+                outbound_track
+                if phase != "teardrop_outbound"
+                else (
+                    outbound_track
+                    - (HOLD_TEARDROP_ANGLE_deg if hold["turn_direction"] == "right" else -HOLD_TEARDROP_ANGLE_deg)
+                )
+                % 360.0
+            )
+            if hold["phase_elapsed"] >= leg_time_s:
+                hold["phase"] = next_phase
                 hold["phase_elapsed"] = 0.0
-                target_track = hold["inbound_track"]
+                target_track = (
+                    inbound_course_deg
+                    if next_phase == "turn_inbound"
+                    else aircraft.pos2d().bearing_to(target_pos)
+                )
                 aircraft.heading_changing_to = heading_from_ground_track(
                     target_track, horizontal_speed_kts, wind_vector
                 )
@@ -530,10 +618,17 @@ class Predictor(ABC):
                 aircraft.heading_changing_to = None
             return
 
-        if phase == "turn_inbound":
-            target_track = hold["inbound_track"]
+        inbound_turn_phases = {
+            "turn_inbound": "inbound",
+            "parallel_turn_inbound": "parallel_inbound",
+            "teardrop_turn_inbound": "teardrop_inbound",
+        }
+        if phase in inbound_turn_phases:
+            target_track = (
+                inbound_course_deg if phase == "turn_inbound" else aircraft.pos2d().bearing_to(target_pos)
+            )
             if aircraft.heading_changing_to is None:
-                hold["phase"] = "inbound"
+                hold["phase"] = inbound_turn_phases[phase]
                 aircraft.heading = heading_from_ground_track(target_track, horizontal_speed_kts, wind_vector)
             else:
                 aircraft.heading_changing_to = heading_from_ground_track(
@@ -541,7 +636,7 @@ class Predictor(ABC):
                 )
             return
 
-        if phase != "inbound":
+        if phase not in inbound_phases:
             raise ValueError(f"Unrecognised hold phase: {phase}")
 
     def update_position_without_turn_model(self, aircraft: Aircraft, time_evolve: float, wind_field: WindField | None):

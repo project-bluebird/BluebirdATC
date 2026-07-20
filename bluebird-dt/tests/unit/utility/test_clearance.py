@@ -317,15 +317,20 @@ def test_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
         "route_direct_to,hold_at_location",
-        {"fix": "ALPHA", "outbound_time_s": 90.0, "turn_direction": "right"},
+        {
+            "fix": "ALPHA",
+            "inbound_course_deg": 270,
+            "outbound_time_s": 90.0,
+            "turn_direction": "right",
+        },
     )
 
     assert_action_voice_and_text(
         action,
-        "AIR0 hold at ALPHA right hand outbound time 1.5 minutes",
-        "hold at ALPHA right hand outbound time 1.5 minutes AIR0",
-        "alpha india romeo zero hold at ALPHA right hand outbound time 1.5 minutes",
-        "hold at ALPHA right hand outbound time 1.5 minutes alpha india romeo zero",
+        "AIR0 hold at ALPHA inbound course 270 right hand outbound time 1.5 minutes",
+        "hold at ALPHA inbound course 270 right hand outbound time 1.5 minutes AIR0",
+        "alpha india romeo zero hold at ALPHA inbound course 270 right hand outbound time 1.5 minutes",
+        "hold at ALPHA inbound course 270 right hand outbound time 1.5 minutes alpha india romeo zero",
         env,
     )
 

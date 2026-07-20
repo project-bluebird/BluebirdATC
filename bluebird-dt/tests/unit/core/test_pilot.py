@@ -262,7 +262,7 @@ def test_hold_action_and_lateral_cancellation(generate_simple_environment):
     hold_action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"fix": hold_fix, "outbound_time_s": 45, "turn_direction": "left"},
+        {"fix": hold_fix, "inbound_course_deg": 270, "outbound_time_s": 45, "turn_direction": "left"},
     )
 
     aircraft.pilot.receive_actions([hold_action], environment)
@@ -274,11 +274,12 @@ def test_hold_action_and_lateral_cancellation(generate_simple_environment):
             environment.airspace.fixes.places[hold_fix].lat,
             environment.airspace.fixes.places[hold_fix].lon,
         ],
+        "inbound_course_deg": 270.0,
         "outbound_time_s": 45.0,
         "turn_direction": "left",
         "phase": "direct_to_location",
         "phase_elapsed": 0.0,
-        "inbound_track": None,
+        "entry_type": None,
     }
     assert aircraft.on_route is False
 

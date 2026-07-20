@@ -269,11 +269,12 @@ class Pilot:
             aircraft.predictor_params["hold"] = {
                 "fix": hold.fix,
                 "location": [target_pos.lat, target_pos.lon],
+                "inbound_course_deg": hold.inbound_course_deg,
                 "outbound_time_s": hold.outbound_time_s,
                 "turn_direction": hold.turn_direction,
                 "phase": "direct_to_location",
                 "phase_elapsed": 0.0,
-                "inbound_track": None,
+                "entry_type": None,
             }
 
         elif action.kind == "route_direct_to":

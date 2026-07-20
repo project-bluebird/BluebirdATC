@@ -769,9 +769,10 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
             assert isinstance(value, HoldParameters)
             minutes = f"{value.outbound_time_s / 60.0:g}"
             location = value.fix or f"latitude {value.location[0]:g} longitude {value.location[1]:g}"
-            clearance_parts.extend(
-                ["hold at", location, value.turn_direction, "hand", "outbound time", minutes, "minutes"]
-            )
+            clearance_parts.extend(["hold at", location])
+            if value.inbound_course_deg is not None:
+                clearance_parts.extend(["inbound course", f"{value.inbound_course_deg:g}"])
+            clearance_parts.extend([value.turn_direction, "hand", "outbound time", minutes, "minutes"])
 
         case "change_cas_to":
             clearance_parts.extend(["fly speed", str(value), "knots"])
@@ -1011,9 +1012,10 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
             assert isinstance(value, HoldParameters)
             minutes = f"{value.outbound_time_s / 60.0:g}"
             location = value.fix or f"latitude {value.location[0]:g} longitude {value.location[1]:g}"
-            clearance_parts.extend(
-                ["hold at", location, value.turn_direction, "hand", "outbound time", minutes, "minutes"]
-            )
+            clearance_parts.extend(["hold at", location])
+            if value.inbound_course_deg is not None:
+                clearance_parts.extend(["inbound course", f"{value.inbound_course_deg:g}"])
+            clearance_parts.extend([value.turn_direction, "hand", "outbound time", minutes, "minutes"])
 
         case "change_cas_to":
             clearance_parts.extend(["speed", spell_phonetically(str(value)), "knots"])
