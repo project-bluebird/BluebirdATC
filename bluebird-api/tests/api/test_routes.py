@@ -10,6 +10,7 @@ from bluebird_api.models import ActionInput
 from bluebird_api.runner import Runner
 from bluebird_dt.core.wind import WindField
 from bluebird_dt.utility.paths import LOG_DIR as REPLAY_DIR
+from bluebird_dt.simulator import Simulator
 
 class TestAPI:
     """
@@ -201,8 +202,8 @@ class TestFunctions:
             expected = {
                 "exists": True,
                 "iterations": 0,
-                "category": runner.category,
-                "scenario": runner.scenario_name,
+                "category": runner.sim.category,
+                "scenario": runner.sim.scenario_name,
                 "running": runner.running,
                 "evolve_period": runner.evolve_period,
                 "tick_frequency_period": runner.tick_frequency_period,
@@ -545,7 +546,7 @@ class TestFunctions:
 
 @pytest.mark.asyncio
 async def test_runner_close():
-    runner = Runner("Springfield", "testScenario")
+    runner = Runner(Simulator.from_category("Springfield", "testScenario"))
     expected_logfile_name = os.path.join(REPLAY_DIR, runner.sim.manager.event_logger.log_name + ".tar.gz")
     await routers.core.close(runner)
     assert os.path.isfile(expected_logfile_name)

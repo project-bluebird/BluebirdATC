@@ -7,9 +7,8 @@ from bluebird_dt.events.event_logger import SimStartStop
 from bluebird_dt.simulator.common import list_sim_scenario_categories, list_sim_scenarios
 from fastapi import APIRouter
 
-from bluebird_api.models import ActionInput, RunnerStore
-
-from ..runnerabc import RunnerDep
+from bluebird_api.models import ActionInput
+from bluebird_api.runner import RunnerDep, RunnerStore
 
 core_router = APIRouter()
 
@@ -203,13 +202,12 @@ async def runner_status(runner: RunnerDep):  # noqa: ANN201
     """
     Get the current state of the current run.
     """
-    if RunnerStore.current_runner is None:
-        return {"exists": False}
+
     return {
-        "exists": runner.scenario_name is not None,
+        "exists": runner.sim.scenario_name is not None,
         "iterations": runner.tick,
-        "category": runner.category,
-        "scenario": runner.scenario_name,
+        "category": runner.sim.category,
+        "scenario": runner.sim.scenario_name,
         "running": runner.running,
         "evolve_period": runner.evolve_period,
         "tick_frequency_period": runner.tick_frequency_period,

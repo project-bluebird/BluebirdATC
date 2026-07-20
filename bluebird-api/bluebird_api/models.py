@@ -3,13 +3,7 @@ import typing
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
 from pydantic import BaseModel, Field
 
-from bluebird_api.runnerabc import RunnerABC
-
 SUPPORTED_ACTIONS_LIST = [action for actions in SUPPORTED_ACTIONS.values() for action in actions]
-
-
-class RunnerStore:
-    current_runner: RunnerABC = None
 
 
 class ActionInput(BaseModel):
@@ -37,3 +31,7 @@ class ActionInput(BaseModel):
         description="The sector that the action is being performed in.",
         json_schema_extra={"example": "sector_1"},
     )
+
+
+class HmiRunnerInformation(BaseModel):
+    selected_aircraft: None | str

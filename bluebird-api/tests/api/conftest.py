@@ -4,18 +4,18 @@ from fastapi.testclient import TestClient
 import datetime
 
 from bluebird_api import app
-from bluebird_api.runner import Runner
-from bluebird_api.models import RunnerStore
+from bluebird_api.runner import Runner, RunnerStore
+from bluebird_dt.simulator import Simulator
 
+@pytest.fixture()
+def runner(monkeypatch):
+    async def mock_delete(self):
+        pass
 
-@pytest.fixture(scope="module")
-def runner():
-    runner = Runner("Springfield", "testScenario")
+    monkeypatch.setattr(Runner, "delete", mock_delete)
 
-    # Mock the function delete doing nothing
-    runner.delete = lambda: asyncio.sleep(0)
+    return Runner(Simulator.from_category("Springfield", "testScenario"))
 
-    return runner
 
 @pytest.fixture(scope="module")
 def sector_id():
