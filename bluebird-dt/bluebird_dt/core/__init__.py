@@ -4,6 +4,7 @@ from bluebird_dt.core.action import (
     HoldAtFixParameters,
     HoldAtLocationParameters,
     HoldParameters,
+    parse_hold_parameters,
 )
 from bluebird_dt.core.aircraft import Aircraft, FlightState, Instructions
 from bluebird_dt.core.airspace import Airspace
@@ -49,4 +50,5 @@ __all__ = [
     "Volume",
     "WindField",
     "WindVector",
+    "parse_hold_parameters",
 ]

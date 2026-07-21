@@ -1,7 +1,13 @@
 import pytest
 
-from bluebird_dt.core import Action, HoldAtFixParameters
+from bluebird_dt.core import (
+    Action,
+    HoldAtFixParameters,
+    HoldAtLocationParameters,
+    parse_hold_parameters,
+)
 from bluebird_dt.scenario_manager import TwoAircraft
+
 
 def test_init_exceptions():
     """
@@ -91,7 +97,7 @@ def test_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",
         kind="route_direct_to,hold_at_location",
-        value={"fix": "FIX", "outbound_time_s": 60, "turn_direction": "left"},
+        value=HoldAtFixParameters(fix="FIX", outbound_time_s=60, turn_direction="left"),
     )
 
     assert action == Action.from_json(action.to_json())
@@ -99,10 +105,8 @@ def test_hold_parameters_roundtrip():
 
 
 def test_hold_parameters_from_json_string():
-    action = Action(
-        callsign="AIR0",
-        kind="route_direct_to,hold_at_location",
-        value='{"fix":"FIX","outbound_time_s":60,"turn_direction":"left"}',
+    action = Action.from_str(
+        'AIR0 route_direct_to,hold_at_location {"fix":"FIX","outbound_time_s":60,"turn_direction":"left"}'
     )
 
     assert action.value == HoldAtFixParameters(fix="FIX", outbound_time_s=60, turn_direction="left")
@@ -112,7 +116,7 @@ def test_coordinate_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",
         kind="route_direct_to,hold_at_location",
-        value={"location": (50.716667, -3.533333), "outbound_time_s": 60},
+        value=HoldAtLocationParameters(location=(50.716667, -3.533333), outbound_time_s=60),
     )
 
     assert action.value.location == (50.716667, -3.533333)
@@ -135,7 +139,12 @@ def test_coordinate_hold_parameters_roundtrip():
 )
 def test_invalid_hold_parameters(value: dict):
     with pytest.raises(ValueError, match="validation error"):
-        Action("AIR0", "route_direct_to,hold_at_location", value)
+        parse_hold_parameters(value)
+
+
+def test_hold_action_rejects_unparsed_mapping():
+    with pytest.raises(TypeError, match="HoldAtFixParameters or HoldAtLocationParameters"):
+        Action("AIR0", "route_direct_to,hold_at_location", {"fix": "FIX"})
 
 
 @pytest.mark.parametrize(
