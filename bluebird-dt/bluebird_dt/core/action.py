@@ -432,7 +432,7 @@ class Action(Comparison):
         return {
             "callsign": self.callsign,
             "kind": self.kind,
-            "value": self.value.model_dump() if isinstance(self.value, HoldParameters) else self.value,
+            "value": self.value.model_dump() if isinstance(self.value, BaseModel) else self.value,
             "agent": self.agent,
             "text_representation": (
                 None if self.text_representation is None else self.text_representation.model_dump()
