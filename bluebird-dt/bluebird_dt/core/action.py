@@ -554,7 +554,7 @@ class Action(Comparison):
             value = ">".join(self.value)
 
         elif isinstance(self.value, HoldParameters):
-            value = json.dumps(self.value.model_dump(), separators=(",", ":"))
+            value = self.value.model_dump_json()
 
         else:
             value = self.value
