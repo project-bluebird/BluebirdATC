@@ -30,7 +30,7 @@ def test_init_exceptions_from_str():
     "kind, value",
     [
         ("route_direct_to", "FIX"),
-        ("route_direct_to,hold_at_location", HoldAtFixParameters(fix="FIX", inbound_course_deg=0)),
+        ("route_direct_to,hold_at_location", HoldAtFixParameters(fix="FIX", hold_orientation_deg=180)),
         ("change_heading_to", 120),
         ("change_heading_by", -10),
         ("change_flight_level_to", 250),
@@ -93,7 +93,7 @@ def test_hold_parameters_roundtrip():
         kind="route_direct_to,hold_at_location",
         value={
             "fix": "FIX",
-            "inbound_course_deg": 270,
+            "hold_orientation_deg": 90,
             "outbound_time_s": 60,
             "turn_direction": "left",
         },
@@ -107,11 +107,11 @@ def test_hold_parameters_from_json_string():
     action = Action(
         callsign="AIR0",
         kind="route_direct_to,hold_at_location",
-        value='{"fix":"FIX","inbound_course_deg":270,"outbound_time_s":60,"turn_direction":"left"}',
+        value='{"fix":"FIX","hold_orientation_deg":90,"outbound_time_s":60,"turn_direction":"left"}',
     )
 
     assert action.value == HoldAtFixParameters(
-        fix="FIX", inbound_course_deg=270, outbound_time_s=60, turn_direction="left"
+        fix="FIX", hold_orientation_deg=90, outbound_time_s=60, turn_direction="left"
     )
 
 
@@ -119,7 +119,7 @@ def test_coordinate_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",
         kind="route_direct_to,hold_at_location",
-        value={"location": (50.716667, -3.533333), "inbound_course_deg": 90, "outbound_time_s": 60},
+        value={"location": (50.716667, -3.533333), "hold_orientation_deg": 270, "outbound_time_s": 60},
     )
 
     assert action.value.location == (50.716667, -3.533333)
@@ -137,10 +137,10 @@ def test_coordinate_hold_parameters_roundtrip():
         {"fix": "FIX"},
         {"location": (91.0, -3.0)},
         {"location": (50.0, -181.0)},
-        {"fix": "FIX", "inbound_course_deg": -1},
-        {"fix": "FIX", "inbound_course_deg": 360},
-        {"fix": "FIX", "outbound_time_s": 0},
-        {"fix": "FIX", "turn_direction": "straight"},
+        {"fix": "FIX", "hold_orientation_deg": -1},
+        {"fix": "FIX", "hold_orientation_deg": 360},
+        {"fix": "FIX", "hold_orientation_deg": 90, "outbound_time_s": 0},
+        {"fix": "FIX", "hold_orientation_deg": 90, "turn_direction": "straight"},
     ],
 )
 def test_invalid_hold_parameters(value: dict):

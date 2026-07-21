@@ -21,12 +21,12 @@ class ClearanceAndResponse(BaseModel):
 class HoldParametersBase(BaseModel):
     """Parameters common to all racetrack hold targets."""
 
-    inbound_course_deg: typing.Annotated[
+    hold_orientation_deg: typing.Annotated[
         float,
         Field(
             ge=0.0,
             lt=360.0,
-            description="Course in degrees flown inbound towards the holding fix",
+            description="Bearing in degrees from the fix towards the outbound end of the hold",
         ),
     ]
     outbound_time_s: float = Field(default=90.0, gt=0.0, description="Outbound leg duration in seconds")
@@ -125,8 +125,8 @@ class Action(Comparison):
             Allowed values for each Action kind differs:
 
             - `route_direct_to`: str or list[str]
-            - `route_direct_to,hold_at_location`: HoldParameters or an equivalent dict; `inbound_course_deg`
-                defines the hold axis and enables automatic direct, parallel, or teardrop entry selection
+            - `route_direct_to,hold_at_location`: HoldParameters or an equivalent dict; `hold_orientation_deg`
+                specifies the bearing from the fix towards the outbound end, from which the inbound course is calculated
             - `change_heading_to`: int
             - `change_heading_to_by_direction`: tuple[int, Literal['left', 'right', 'shortest']]
             - `change_heading_by`: int

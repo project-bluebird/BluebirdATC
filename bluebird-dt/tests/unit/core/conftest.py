@@ -516,7 +516,7 @@ def make_action(kind: str) -> Action:
     if kind == "route_direct_to":
         value = random.choice([make_random_fix_name(), [make_random_fix_name()]])
     if kind == "route_direct_to,hold_at_location":
-        value = HoldAtFixParameters(fix=make_random_fix_name(), inbound_course_deg=make_random_heading() % 360.0)
+        value = HoldAtFixParameters(fix=make_random_fix_name(), hold_orientation_deg=make_random_heading() % 360.0)
     if kind == "change_heading_to":
         value = make_random_heading()
     if kind == "change_heading_to_by_direction":

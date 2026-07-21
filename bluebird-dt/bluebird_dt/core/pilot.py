@@ -269,7 +269,7 @@ class Pilot:
             aircraft.predictor_params["hold"] = {
                 "fix": hold.fix,
                 "location": [target_pos.lat, target_pos.lon],
-                "inbound_course_deg": hold.inbound_course_deg,
+                "inbound_course_deg": (hold.hold_orientation_deg + 180.0) % 360.0,
                 "outbound_time_s": hold.outbound_time_s,
                 "turn_direction": hold.turn_direction,
                 "phase": "direct_to_location",

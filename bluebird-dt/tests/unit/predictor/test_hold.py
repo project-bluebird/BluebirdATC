@@ -19,7 +19,7 @@ def test_repeating_standard_rate_hold(generate_simple_environment: Environment):
         "route_direct_to,hold_at_location",
         {
             "fix": "EARTH",
-            "inbound_course_deg": inbound_course_deg,
+            "hold_orientation_deg": (inbound_course_deg + 180.0) % 360.0,
             "outbound_time_s": 30,
             "turn_direction": "right",
         },
@@ -96,7 +96,7 @@ def test_coordinate_hold_does_not_require_predictor_fixes(generate_simple_enviro
         "route_direct_to,hold_at_location",
         {
             "location": (hold_position.lat, hold_position.lon),
-            "inbound_course_deg": inbound_course_deg,
+            "hold_orientation_deg": (inbound_course_deg + 180.0) % 360.0,
             "outbound_time_s": 30,
         },
     )
@@ -155,7 +155,7 @@ def test_hold_starts_selected_entry(
         Action(
             aircraft.callsign,
             "route_direct_to,hold_at_location",
-            {"fix": "EARTH", "inbound_course_deg": 0.0, "turn_direction": turn_direction},
+            {"fix": "EARTH", "hold_orientation_deg": 180.0, "turn_direction": turn_direction},
         ),
         environment,
     )
@@ -206,7 +206,7 @@ def test_non_direct_entry_joins_repeating_hold(
             "route_direct_to,hold_at_location",
             {
                 "fix": "EARTH",
-                "inbound_course_deg": inbound_course_deg,
+                "hold_orientation_deg": (inbound_course_deg + 180.0) % 360.0,
                 "outbound_time_s": 30,
                 "turn_direction": turn_direction,
             },

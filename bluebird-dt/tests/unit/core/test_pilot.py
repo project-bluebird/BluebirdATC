@@ -262,7 +262,7 @@ def test_hold_action_and_lateral_cancellation(generate_simple_environment):
     hold_action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"fix": hold_fix, "inbound_course_deg": 270, "outbound_time_s": 45, "turn_direction": "left"},
+        {"fix": hold_fix, "hold_orientation_deg": 90, "outbound_time_s": 45, "turn_direction": "left"},
     )
 
     aircraft.pilot.receive_actions([hold_action], environment)
@@ -295,7 +295,7 @@ def test_hold_rejects_unknown_fix(generate_simple_environment):
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"fix": "NOT_A_FIX", "inbound_course_deg": 0},
+        {"fix": "NOT_A_FIX", "hold_orientation_deg": 180},
     )
 
     aircraft.pilot.receive_actions([action], environment)
@@ -310,13 +310,14 @@ def test_hold_at_coordinate(generate_simple_environment):
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"location": location, "inbound_course_deg": 0},
+        {"location": location, "hold_orientation_deg": 180},
     )
 
     aircraft.pilot.process_lateral_actions(action, environment)
 
     assert aircraft.predictor_params["hold"]["fix"] is None
     assert aircraft.predictor_params["hold"]["location"] == list(location)
+    assert aircraft.predictor_params["hold"]["inbound_course_deg"] == 0.0
     assert aircraft.heading_changing_to == pytest.approx(aircraft.pos2d().bearing_to(Pos2D(*location)))
 
 

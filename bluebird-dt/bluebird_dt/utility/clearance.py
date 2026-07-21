@@ -648,10 +648,10 @@ def hold_phraseology(value: HoldParameters, voice: bool = False) -> list[str]:
     minutes = f"{value.outbound_time_s / 60.0:g}"
     location = value.fix or f"latitude {value.location[0]:g} longitude {value.location[1]:g}"
     compass_directions = ("north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest")
-    outbound_course_deg = (value.inbound_course_deg + 180.0) % 360.0
-    direction_index = int((outbound_course_deg + 22.5) // 45.0) % len(compass_directions)
+    direction_index = int((value.hold_orientation_deg + 22.5) // 45.0) % len(compass_directions)
     holding_direction = compass_directions[direction_index]
-    inbound_course = f"{value.inbound_course_deg:g}"
+    inbound_course_deg = (value.hold_orientation_deg + 180.0) % 360.0
+    inbound_course = f"{inbound_course_deg:g}"
     leg_length = spell_phonetically(minutes) if voice else minutes
     spoken_course = spell_phonetically(inbound_course) if voice else inbound_course
     leg_unit = "minute" if minutes == "1" else "minutes"

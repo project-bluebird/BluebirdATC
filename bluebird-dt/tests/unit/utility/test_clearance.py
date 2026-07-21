@@ -319,7 +319,7 @@ def test_hold_clearance(env: Environment):
         "route_direct_to,hold_at_location",
         {
             "fix": "ALPHA",
-            "inbound_course_deg": 270,
+            "hold_orientation_deg": 90,
             "outbound_time_s": 90.0,
             "turn_direction": "right",
         },
@@ -335,11 +335,31 @@ def test_hold_clearance(env: Environment):
     )
 
 
+def test_hold_clearance_calculates_inbound_course_from_orientation(env: Environment):
+    hold_fix_name = next(iter(env.airspace.fixes.places))
+    action = Action(
+        "AIR0",
+        "route_direct_to,hold_at_location",
+        {"fix": hold_fix_name, "hold_orientation_deg": 180, "outbound_time_s": 90.0},
+    )
+
+    assert_action_voice_and_text(
+        action,
+        f"AIR0 hold south of {hold_fix_name} on course 0 for 1.5 minutes with right turns",
+        f"hold south of {hold_fix_name} on course 0 for 1.5 minutes with right turns AIR0",
+        f"alpha india romeo zero hold south of {hold_fix_name} "
+        "on course zero for wun decimal five minutes with right turns",
+        f"hold south of {hold_fix_name} on course zero for wun decimal five minutes "
+        "with right turns alpha india romeo zero",
+        env,
+    )
+
+
 def test_coordinate_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
         "route_direct_to,hold_at_location",
-        {"location": (50.716667, -3.533333), "inbound_course_deg": 90, "outbound_time_s": 90.0},
+        {"location": (50.716667, -3.533333), "hold_orientation_deg": 270, "outbound_time_s": 90.0},
     )
 
     assert_action_voice_and_text(
