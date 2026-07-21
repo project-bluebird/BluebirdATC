@@ -1,7 +1,22 @@
 from __future__ import annotations
 
+import functools
+
 import numpy as np
 from scipy.stats import truncnorm
+
+
+@functools.lru_cache(maxsize=16384)
+def _truncnorm_ppf(percentile_rank: float, lower: float, upper: float) -> float:
+    """
+    Cached inverse-CDF (percent-point function) of the standard truncated normal.
+
+    This is the expensive part of the uncertainty calculation. The (percentile_rank, lower, upper) triple is
+    constant for a given aircraft type, flight phase and percentile across an entire simulation, yet it is
+    evaluated on every prediction step, so caching avoids repeated scipy evaluations. The result is purely a
+    function of these three scalars, so caching is exact (not an approximation).
+    """
+    return float(truncnorm.ppf(percentile_rank / 100.0, lower, upper))
 
 
 def score_from_rank(
@@ -42,7 +57,7 @@ def score_from_rank(
         a = (min_score - nominal) / standard_deviation if min_score is not None else -np.inf
         b = (max_score - nominal) / standard_deviation if max_score is not None else np.inf
 
-        return nominal + standard_deviation * float(truncnorm.ppf(percentile_rank / 100.0, a, b))
+        return nominal + standard_deviation * _truncnorm_ppf(percentile_rank, a, b)
 
     raise ValueError(f"Percentile rank value of {percentile_rank} is outside the allowed range (0, 100)")
 
@@ -85,7 +100,7 @@ def apply_rocd_uncertainty(
 
 
 def apply_speed_uncertainty(
-    nominal_cas: float, speed_uncertainty: dict[str, float], percentile_rank: float | None
+    nominal_speed: float, speed_uncertainty: dict[str, float], percentile_rank: float | None
 ) -> float:
     sd = speed_uncertainty["sigma"]
 
@@ -95,7 +110,7 @@ def apply_speed_uncertainty(
         # Else apply shift to the observed minimum score since we are using the observed speed
         # distribution but with a mean/mode equal to the nominal speed value obtained from
         # the speed profile data (e.g. from BADA).
-        else nominal_cas - speed_uncertainty["norm_mean"] + speed_uncertainty["minimum"]
+        else nominal_speed - speed_uncertainty["norm_mean"] + speed_uncertainty["minimum"]
     )
 
     max_score = (
@@ -104,12 +119,12 @@ def apply_speed_uncertainty(
         # Else apply shift to the observed maximum score since we are using the observed speed
         # distribution but with a mean/mode equal to the nominal speed value obtained from
         # the speed profile data (e.g. from BADA).
-        else nominal_cas - speed_uncertainty["norm_mean"] + speed_uncertainty["maximum"]
+        else nominal_speed - speed_uncertainty["norm_mean"] + speed_uncertainty["maximum"]
     )
 
     return score_from_rank(
         percentile_rank,
-        nominal=nominal_cas,
+        nominal=nominal_speed,
         standard_deviation=sd,
         min_score=min_score,
         max_score=max_score,
