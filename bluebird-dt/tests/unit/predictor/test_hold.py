@@ -2,7 +2,7 @@ from itertools import pairwise
 
 import pytest
 
-from bluebird_dt.core import Action, Environment
+from bluebird_dt.core import Action, Environment, HoldAtFixParameters, HoldAtLocationParameters
 from bluebird_dt.predictor import SimplePredictor
 
 
@@ -17,12 +17,12 @@ def test_repeating_standard_rate_hold(generate_simple_environment: Environment):
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {
-            "fix": "EARTH",
-            "hold_orientation_deg": (inbound_course_deg + 180.0) % 360.0,
-            "outbound_time_s": 30,
-            "turn_direction": "right",
-        },
+        HoldAtFixParameters(
+            fix="EARTH",
+            hold_orientation_deg=(inbound_course_deg + 180.0) % 360.0,
+            outbound_time_s=30,
+            turn_direction="right",
+        ),
     )
     aircraft.pilot.process_lateral_actions(action, environment)
 
@@ -94,11 +94,11 @@ def test_coordinate_hold_does_not_require_predictor_fixes(generate_simple_enviro
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {
-            "location": (hold_position.lat, hold_position.lon),
-            "hold_orientation_deg": (inbound_course_deg + 180.0) % 360.0,
-            "outbound_time_s": 30,
-        },
+        HoldAtLocationParameters(
+            location=(hold_position.lat, hold_position.lon),
+            hold_orientation_deg=(inbound_course_deg + 180.0) % 360.0,
+            outbound_time_s=30,
+        ),
     )
     aircraft.pilot.process_lateral_actions(action, environment)
 
@@ -155,7 +155,11 @@ def test_hold_starts_selected_entry(
         Action(
             aircraft.callsign,
             "route_direct_to,hold_at_location",
-            {"fix": "EARTH", "hold_orientation_deg": 180.0, "turn_direction": turn_direction},
+            HoldAtFixParameters(
+                fix="EARTH",
+                hold_orientation_deg=180.0,
+                turn_direction=turn_direction,
+            ),
         ),
         environment,
     )
@@ -204,12 +208,12 @@ def test_non_direct_entry_joins_repeating_hold(
         Action(
             aircraft.callsign,
             "route_direct_to,hold_at_location",
-            {
-                "fix": "EARTH",
-                "hold_orientation_deg": (inbound_course_deg + 180.0) % 360.0,
-                "outbound_time_s": 30,
-                "turn_direction": turn_direction,
-            },
+            HoldAtFixParameters(
+                fix="EARTH",
+                hold_orientation_deg=(inbound_course_deg + 180.0) % 360.0,
+                outbound_time_s=30,
+                turn_direction=turn_direction,
+            ),
         ),
         environment,
     )

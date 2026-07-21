@@ -68,6 +68,13 @@ HoldParameters: typing.TypeAlias = HoldAtFixParameters | HoldAtLocationParameter
 _HOLD_PARAMETERS_ADAPTER = TypeAdapter(HoldParameters)
 
 
+def parse_hold_parameters(value: object) -> HoldParameters:
+    """Parse hold parameters at an input or deserialization boundary."""
+    if isinstance(value, str):
+        return _HOLD_PARAMETERS_ADAPTER.validate_json(value)
+    return _HOLD_PARAMETERS_ADAPTER.validate_python(value)
+
+
 class Action(Comparison):
     """
     Fundamental unit of communication between Agent and Predictor.
@@ -85,7 +92,7 @@ class Action(Comparison):
         self,
         callsign: str,
         kind: str,
-        value: int | float | str | list[str] | tuple[int, str] | HoldParameters | dict[str, typing.Any] | None,
+        value: int | float | str | list[str] | tuple[int, str] | HoldParameters | None,
         agent: str | None = None,
         text_representation: ClearanceAndResponse | None = None,
         voice_representation: ClearanceAndResponse | None = None,
@@ -125,8 +132,8 @@ class Action(Comparison):
             Allowed values for each Action kind differs:
 
             - `route_direct_to`: str or list[str]
-            - `route_direct_to,hold_at_location`: HoldParameters or an equivalent dict; `hold_orientation_deg`
-                specifies the bearing from the fix towards the outbound end, from which the inbound course is calculated
+            - `route_direct_to,hold_at_location`: HoldParameters; `hold_orientation_deg` specifies the bearing from
+                the fix towards the outbound end, from which the inbound course is calculated
             - `change_heading_to`: int
             - `change_heading_to_by_direction`: tuple[int, Literal['left', 'right', 'shortest']]
             - `change_heading_by`: int
@@ -201,7 +208,7 @@ class Action(Comparison):
     @value.setter
     def value(
         self,
-        value: int | float | str | list[str] | tuple[int, str] | HoldParameters | dict[str, typing.Any] | None,
+        value: int | float | str | list[str] | tuple[int, str] | HoldParameters | None,
     ) -> None:
         """Set value and ensure correct type"""
         # raise error if value is None for action kinds that need a value
@@ -226,10 +233,12 @@ class Action(Comparison):
             raise Exception(f"Value cannot be None for action kind {self.kind}")
 
         if self.kind == "route_direct_to,hold_at_location":
-            if isinstance(value, str):
-                self._value = _HOLD_PARAMETERS_ADAPTER.validate_json(value)
-            else:
-                self._value = _HOLD_PARAMETERS_ADAPTER.validate_python(value)
+            if not isinstance(value, HoldParameters):
+                raise TypeError(
+                    "Action value must be HoldAtFixParameters or HoldAtLocationParameters "
+                    f"for {self.kind}. Got {type(value)}."
+                )
+            self._value = value
         elif "level_by_fix" in self.kind:
             # first, check if it is a string (from the clearance df) and convert it back to a tuple.
             # the string should be of the form "(int/float, 'str')"
@@ -358,9 +367,10 @@ class Action(Comparison):
         if ">" in value:
             value = value.split(">")
 
-        # change_* actions use JSON representations. Hold parameters are
-        # validated from their JSON representation by the value setter.
-        if "change" in kind:
+        # Actions with structured values are parsed at this deserialization boundary.
+        if kind == "route_direct_to,hold_at_location":
+            value = parse_hold_parameters(value)
+        elif "change" in kind:
             value = json.loads(value)
 
         sector = None if sector == "all" or sector is None else sector.split(",")
@@ -397,7 +407,9 @@ class Action(Comparison):
         kind = data["kind"]
         value = data["value"]
 
-        if "level_by_fix" in kind or kind == "change_heading_to_by_direction":
+        if kind == "route_direct_to,hold_at_location":
+            value = parse_hold_parameters(value)
+        elif "level_by_fix" in kind or kind == "change_heading_to_by_direction":
             value = tuple(value)
 
         voice_representation: str | None = data.get("voice_representation", None)
@@ -429,7 +441,7 @@ class Action(Comparison):
         return {
             "callsign": self.callsign,
             "kind": self.kind,
-            "value": self.value.model_dump() if isinstance(self.value, HoldParameters) else self.value,
+            "value": self.value.model_dump() if isinstance(self.value, BaseModel) else self.value,
             "agent": self.agent,
             "text_representation": (
                 None if self.text_representation is None else self.text_representation.model_dump()
@@ -551,7 +563,7 @@ class Action(Comparison):
             value = ">".join(self.value)
 
         elif isinstance(self.value, HoldParameters):
-            value = json.dumps(self.value.model_dump(), separators=(",", ":"))
+            value = self.value.model_dump_json()
 
         else:
             value = self.value

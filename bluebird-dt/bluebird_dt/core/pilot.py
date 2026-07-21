@@ -274,6 +274,7 @@ class Pilot:
                 "turn_direction": hold.turn_direction,
                 "phase": "direct_to_location",
                 "phase_elapsed": 0.0,
+                # Runtime state selected from the arrival track when the aircraft first crosses the holding fix.
                 "entry_type": None,
             }
 

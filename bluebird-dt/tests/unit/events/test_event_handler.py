@@ -11,7 +11,13 @@ from bluebird_dt.events.event_handler import (
 )
 from bluebird_dt.events.event_logger import EventLogger
 from bluebird_dt.events.event_dtypes import EventDtypes
-from bluebird_dt.core import Aircraft, Coordination, Environment, WindField
+from bluebird_dt.core import (
+    Aircraft,
+    Coordination,
+    Environment,
+    HoldAtLocationParameters,
+    WindField,
+)
 from conftest import (
     pick_random_next_sector, build_default_test_df, is_deeply_equal, setup_test_sim, get_to_and_from_sectors, 
     build_test_df_for_multiple_ac, build_coordination_test_df
@@ -1132,6 +1138,23 @@ class TestUpdateFromClearances():
         update_from_clearances(env, manager, df, episode_start, episode_end, ignore_simmed=True)
         manager.process_actions()
         assert all(ac.cleared_instructions.fl != self.mock_fl for ac in env.aircraft.values())
+
+    def test_parses_hold_parameters(self):
+        env, manager, _, _, episode_start, episode_end = setup_test_sim()
+        props_to_set = [
+            ("kind", "route_direct_to,hold_at_location"),
+            (
+                "value",
+                '{"location":[51.0,-1.0],"hold_orientation_deg":90.0,'
+                '"outbound_time_s":60.0,"turn_direction":"left"}',
+            ),
+        ]
+        df = build_test_df_for_multiple_ac(EventDtypes.clearance_dtypes, env, props_to_set)
+
+        update_from_clearances(env, manager, df, episode_start, episode_end, ignore_simmed=False)
+
+        assert manager._actions_to_issue
+        assert all(isinstance(action.value, HoldAtLocationParameters) for action in manager._actions_to_issue)
 
 
 class TestUpdateAirspaceConfiguration:

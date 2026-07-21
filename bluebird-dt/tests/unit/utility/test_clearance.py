@@ -1,7 +1,8 @@
 import logging
+
 import pytest
 
-from bluebird_dt.core import Action, Environment
+from bluebird_dt.core import Action, Environment, HoldAtFixParameters, HoldAtLocationParameters
 from bluebird_dt.utility.clearance import (
     add_phraseology,
     beautify_callsign,
@@ -317,12 +318,12 @@ def test_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
         "route_direct_to,hold_at_location",
-        {
-            "fix": "ALPHA",
-            "hold_orientation_deg": 90,
-            "outbound_time_s": 90.0,
-            "turn_direction": "right",
-        },
+        HoldAtFixParameters(
+            fix="ALPHA",
+            hold_orientation_deg=90,
+            outbound_time_s=90.0,
+            turn_direction="right",
+        ),
     )
 
     assert_action_voice_and_text(
@@ -340,7 +341,7 @@ def test_hold_clearance_calculates_inbound_course_from_orientation(env: Environm
     action = Action(
         "AIR0",
         "route_direct_to,hold_at_location",
-        {"fix": hold_fix_name, "hold_orientation_deg": 180, "outbound_time_s": 90.0},
+        HoldAtFixParameters(fix=hold_fix_name, hold_orientation_deg=180, outbound_time_s=90.0),
     )
 
     assert_action_voice_and_text(
@@ -359,7 +360,11 @@ def test_coordinate_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
         "route_direct_to,hold_at_location",
-        {"location": (50.716667, -3.533333), "hold_orientation_deg": 270, "outbound_time_s": 90.0},
+        HoldAtLocationParameters(
+            location=(50.716667, -3.533333),
+            hold_orientation_deg=270,
+            outbound_time_s=90.0,
+        ),
     )
 
     assert_action_voice_and_text(

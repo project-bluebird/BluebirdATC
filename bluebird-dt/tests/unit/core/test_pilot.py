@@ -1,7 +1,16 @@
 import logging
+
 import pytest
 
-from bluebird_dt.core import Action, Aircraft, Pilot, Pos2D, QueueItem
+from bluebird_dt.core import (
+    Action,
+    Aircraft,
+    HoldAtFixParameters,
+    HoldAtLocationParameters,
+    Pilot,
+    Pos2D,
+    QueueItem,
+)
 
 
 def test_init():
@@ -262,7 +271,12 @@ def test_hold_action_and_lateral_cancellation(generate_simple_environment):
     hold_action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"fix": hold_fix, "hold_orientation_deg": 90, "outbound_time_s": 45, "turn_direction": "left"},
+        HoldAtFixParameters(
+            fix=hold_fix,
+            hold_orientation_deg=90,
+            outbound_time_s=45,
+            turn_direction="left",
+        ),
     )
 
     aircraft.pilot.receive_actions([hold_action], environment)
@@ -295,7 +309,7 @@ def test_hold_rejects_unknown_fix(generate_simple_environment):
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"fix": "NOT_A_FIX", "hold_orientation_deg": 180},
+        HoldAtFixParameters(fix="NOT_A_FIX", hold_orientation_deg=180),
     )
 
     aircraft.pilot.receive_actions([action], environment)
@@ -310,7 +324,7 @@ def test_hold_at_coordinate(generate_simple_environment):
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        {"location": location, "hold_orientation_deg": 180},
+        HoldAtLocationParameters(location=location, hold_orientation_deg=180),
     )
 
     aircraft.pilot.process_lateral_actions(action, environment)
