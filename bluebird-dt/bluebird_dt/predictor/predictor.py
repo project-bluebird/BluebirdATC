@@ -25,8 +25,9 @@ DEFAULT_RATE_OF_TURN = 1.5
 # configured rate for ordinary heading changes.  According to ICAO 8168 section 2.1.2, all turns
 # shall be made at a bank angle of 25° or at a rate of 3° per second, whichever requires the lesser bank.
 HOLD_RATE_OF_TURN_s = 3.0
-# Parallel and teardrop entry timing starts when the holding fix is crossed,
-# including the initial turn onto the entry's outbound track.
+# Parallel entry timing starts when the holding fix is crossed. Teardrop entry
+# timing starts after the initial turn so that its outbound track is flown
+# straight for the full entry time.
 HOLD_ENTRY_TIME_s = 60.0
 HOLD_TEARDROP_ANGLE_deg = 30.0
 # Hold guidance can change phase at the fix, at the end of a turn, or at the
@@ -597,7 +598,7 @@ class Predictor(ABC):
             target_track, next_phase = outbound_turn_phases[phase]
             if aircraft.heading_changing_to is None and not entered_turn:
                 hold["phase"] = next_phase
-                if phase == "turn_outbound":
+                if phase in {"turn_outbound", "teardrop_turn_outbound"}:
                     hold["phase_elapsed"] = 0.0
                 aircraft.heading = heading_from_ground_track(target_track, horizontal_speed_kts, wind_vector)
             else:

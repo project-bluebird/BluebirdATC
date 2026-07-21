@@ -286,8 +286,11 @@ def test_non_direct_entry_joins_repeating_hold(
     entry_started_s = transitions[0][1]
     entry_outbound_started_s = transitions[1][1]
     entry_inbound_turn_started_s = transitions[2][1]
-    assert entry_inbound_turn_started_s - entry_started_s == 60
-    assert entry_inbound_turn_started_s - entry_outbound_started_s < 60
     if entry_type == "parallel":
+        assert entry_inbound_turn_started_s - entry_started_s == 60
+        assert entry_inbound_turn_started_s - entry_outbound_started_s < 60
         parallel_turn_delta_deg = (transitions[2][2] - expected_entry_track_deg + 180.0) % 360.0 - 180.0
         assert parallel_turn_delta_deg * direction_sign < 0.0
+    else:
+        assert entry_inbound_turn_started_s - entry_outbound_started_s == 60
+        assert entry_inbound_turn_started_s - entry_started_s > 60
