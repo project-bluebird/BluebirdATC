@@ -273,6 +273,7 @@ class Pilot:
                 "turn_direction": hold.turn_direction,
                 "phase": "direct_to_location",
                 "phase_elapsed": 0.0,
+                # Runtime state set from the ground track on first arrival; it defines the racetrack axis.
                 "inbound_track": None,
             }
 
