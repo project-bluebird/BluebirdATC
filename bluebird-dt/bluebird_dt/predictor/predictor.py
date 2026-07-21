@@ -645,7 +645,9 @@ class Predictor(ABC):
         }
         if phase in inbound_turn_phases:
             target_track = (
-                inbound_course_deg if phase == "turn_inbound" else aircraft.pos2d().bearing_to(target_pos)
+                inbound_course_deg
+                if phase in {"turn_inbound", "teardrop_turn_inbound"}
+                else aircraft.pos2d().bearing_to(target_pos)
             )
             if aircraft.heading_changing_to is None:
                 hold["phase"] = inbound_turn_phases[phase]

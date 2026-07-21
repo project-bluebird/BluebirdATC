@@ -280,6 +280,8 @@ def test_non_direct_entry_joins_repeating_hold(
         else (outbound_track_deg - direction_sign * 30.0) % 360.0
     )
     assert transitions[1][2] == pytest.approx(expected_entry_track_deg)
+    if entry_type == "teardrop":
+        assert transitions[3][2] == pytest.approx(inbound_course_deg)
     assert transitions[-1][2] == pytest.approx(outbound_track_deg)
     entry_started_s = transitions[0][1]
     entry_outbound_started_s = transitions[1][1]
