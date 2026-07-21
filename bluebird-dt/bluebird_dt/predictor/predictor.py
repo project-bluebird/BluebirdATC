@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 from abc import ABC, abstractmethod
-from math import degrees, radians, tan
+from math import cos, degrees, hypot, radians, tan
 from typing import Literal
 
 import numpy as np
@@ -531,6 +531,78 @@ class Predictor(ABC):
             return "parallel"
         return "direct"
 
+    @staticmethod
+    def ground_speed_for_track(
+        ground_track_deg: float,
+        horizontal_speed_kts: float,
+        wind_vector: WindVector | None,
+    ) -> float:
+        """Return groundspeed while wind-correcting onto a requested track."""
+        heading = heading_from_ground_track(ground_track_deg, horizontal_speed_kts, wind_vector)
+        ground_speed, _ = ground_speed_from_tas(horizontal_speed_kts, heading, wind_vector)
+        return ground_speed
+
+    def calculate_teardrop_entry_geometry(
+        self,
+        inbound_course_deg: float,
+        outbound_time_s: float,
+        turn_direction: Literal["left", "right"],
+        horizontal_speed_kts: float,
+        wind_vector: WindVector | None,
+    ) -> tuple[float, float, float]:
+        """Return racetrack width, teardrop distance, and teardrop time.
+
+        The teardrop leg is treated as the hypotenuse of a triangle whose
+        along-track edge is the established outbound leg and whose cross-track
+        edge is the displacement of a standard-rate 180-degree turn. All three
+        distances use wind-adjusted groundspeed on their respective tracks.
+        """
+        direction_sign = 1.0 if turn_direction == "right" else -1.0
+        cross_track_deg = (inbound_course_deg + direction_sign * 90.0) % 360.0
+        turn_time_s = 180.0 / HOLD_RATE_OF_TURN_s
+        full_steps = int(turn_time_s // HOLD_MAX_INTEGRATION_STEP_s)
+        remainder = turn_time_s - full_steps * HOLD_MAX_INTEGRATION_STEP_s
+        steps = [HOLD_MAX_INTEGRATION_STEP_s] * full_steps
+        if remainder > 0.0:
+            steps.append(remainder)
+
+        racetrack_width_nm = 0.0
+        elapsed_s = 0.0
+        for step_s in steps:
+            midpoint_track_deg = (
+                inbound_course_deg
+                + direction_sign * HOLD_RATE_OF_TURN_s * (elapsed_s + 0.5 * step_s)
+            ) % 360.0
+            ground_speed_kts = self.ground_speed_for_track(
+                midpoint_track_deg,
+                horizontal_speed_kts,
+                wind_vector,
+            )
+            distance_nm = ground_speed_kts * step_s / 3600.0
+            racetrack_width_nm += distance_nm * cos(radians(midpoint_track_deg - cross_track_deg))
+            elapsed_s += step_s
+        racetrack_width_nm = abs(racetrack_width_nm)
+
+        outbound_track_deg = (inbound_course_deg + 180.0) % 360.0
+        outbound_ground_speed_kts = self.ground_speed_for_track(
+            outbound_track_deg,
+            horizontal_speed_kts,
+            wind_vector,
+        )
+        straight_leg_distance_nm = outbound_ground_speed_kts * outbound_time_s / 3600.0
+        teardrop_distance_nm = hypot(straight_leg_distance_nm, racetrack_width_nm)
+
+        teardrop_track_deg = (
+            outbound_track_deg - direction_sign * HOLD_TEARDROP_ANGLE_deg
+        ) % 360.0
+        teardrop_ground_speed_kts = self.ground_speed_for_track(
+            teardrop_track_deg,
+            horizontal_speed_kts,
+            wind_vector,
+        )
+        teardrop_time_s = teardrop_distance_nm * 3600.0 / teardrop_ground_speed_kts
+        return racetrack_width_nm, teardrop_distance_nm, teardrop_time_s
+
     def update_hold_guidance(
         self,
         aircraft: Aircraft,
@@ -600,6 +672,17 @@ class Predictor(ABC):
                 hold["phase"] = next_phase
                 if phase in {"turn_outbound", "teardrop_turn_outbound"}:
                     hold["phase_elapsed"] = 0.0
+                if phase == "teardrop_turn_outbound":
+                    width_nm, distance_nm, time_s = self.calculate_teardrop_entry_geometry(
+                        inbound_course_deg,
+                        hold["outbound_time_s"],
+                        hold["turn_direction"],
+                        horizontal_speed_kts,
+                        wind_vector,
+                    )
+                    hold["racetrack_width_nm"] = width_nm
+                    hold["teardrop_outbound_distance_nm"] = distance_nm
+                    hold["teardrop_outbound_time_s"] = time_s
                 aircraft.heading = heading_from_ground_track(target_track, horizontal_speed_kts, wind_vector)
             else:
                 aircraft.heading_changing_to = heading_from_ground_track(
@@ -610,7 +693,10 @@ class Predictor(ABC):
         timed_leg_phases = {
             "outbound": (hold["outbound_time_s"], "turn_inbound"),
             "parallel_outbound": (HOLD_ENTRY_TIME_s, "parallel_turn_inbound"),
-            "teardrop_outbound": (HOLD_ENTRY_TIME_s, "teardrop_turn_inbound"),
+            "teardrop_outbound": (
+                hold.get("teardrop_outbound_time_s", HOLD_ENTRY_TIME_s),
+                "teardrop_turn_inbound",
+            ),
         }
         if phase in timed_leg_phases:
             leg_time_s, next_phase = timed_leg_phases[phase]

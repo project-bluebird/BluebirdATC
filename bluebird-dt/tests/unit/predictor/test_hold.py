@@ -1,10 +1,12 @@
 from copy import deepcopy
 from itertools import pairwise
+from math import ceil, hypot, radians
 
 import pytest
 
-from bluebird_dt.core import Action, Environment, HoldAtFixParameters, HoldAtLocationParameters
+from bluebird_dt.core import Action, Environment, HoldAtFixParameters, HoldAtLocationParameters, WindVector
 from bluebird_dt.predictor import SimplePredictor
+from bluebird_dt.utility.convert import KT_TO_MPS
 
 
 def test_coarse_hold_timestep_matches_one_second_integration(generate_simple_environment: Environment):
@@ -140,6 +142,40 @@ def test_coordinate_hold_does_not_require_predictor_fixes(generate_simple_enviro
         predictor.predict_aircraft(aircraft, 1.0, deepcopy_aircraft=False)
 
     assert aircraft.predictor_params["hold"]["phase"] != "direct_to_location"
+
+
+def test_teardrop_entry_time_uses_racetrack_geometry_and_wind():
+    predictor = SimplePredictor(1.0, 2.0)
+    horizontal_speed_kts = 360.0
+    outbound_time_s = 60.0
+
+    width_nm, distance_nm, time_s = predictor.calculate_teardrop_entry_geometry(
+        inbound_course_deg=0.0,
+        outbound_time_s=outbound_time_s,
+        turn_direction="right",
+        horizontal_speed_kts=horizontal_speed_kts,
+        wind_vector=None,
+    )
+
+    expected_width_nm = 2.0 * (horizontal_speed_kts / 3600.0) / radians(3.0)
+    expected_straight_distance_nm = horizontal_speed_kts * outbound_time_s / 3600.0
+    assert width_nm == pytest.approx(expected_width_nm, rel=2e-4)
+    assert distance_nm == pytest.approx(hypot(expected_straight_distance_nm, expected_width_nm), rel=2e-4)
+    assert time_s == pytest.approx(distance_nm * 3600.0 / horizontal_speed_kts)
+    assert time_s > outbound_time_s
+
+    wind_vector = WindVector.from_polar(wind_speed=40.0 * KT_TO_MPS, wind_direction=90.0)
+    windy_width_nm, windy_distance_nm, windy_time_s = predictor.calculate_teardrop_entry_geometry(
+        inbound_course_deg=0.0,
+        outbound_time_s=outbound_time_s,
+        turn_direction="right",
+        horizontal_speed_kts=horizontal_speed_kts,
+        wind_vector=wind_vector,
+    )
+
+    assert windy_width_nm != pytest.approx(width_nm)
+    assert windy_distance_nm != pytest.approx(distance_nm)
+    assert windy_time_s != pytest.approx(time_s)
 
 
 @pytest.mark.parametrize(
@@ -292,5 +328,8 @@ def test_non_direct_entry_joins_repeating_hold(
         parallel_turn_delta_deg = (transitions[2][2] - expected_entry_track_deg + 180.0) % 360.0 - 180.0
         assert parallel_turn_delta_deg * direction_sign < 0.0
     else:
-        assert entry_inbound_turn_started_s - entry_outbound_started_s == 60
-        assert entry_inbound_turn_started_s - entry_started_s > 60
+        teardrop_time_s = aircraft.predictor_params["hold"]["teardrop_outbound_time_s"]
+        assert entry_inbound_turn_started_s - entry_outbound_started_s == ceil(teardrop_time_s)
+        assert aircraft.predictor_params["hold"]["racetrack_width_nm"] > 0.0
+        assert aircraft.predictor_params["hold"]["teardrop_outbound_distance_nm"] > 0.0
+        assert entry_inbound_turn_started_s - entry_started_s > teardrop_time_s
