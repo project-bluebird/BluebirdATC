@@ -318,15 +318,40 @@ def test_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
         "route_direct_to,hold_at_location",
-        HoldAtFixParameters(fix="ALPHA", outbound_time_s=90.0, turn_direction="right"),
+        HoldAtFixParameters(
+            fix="ALPHA",
+            hold_orientation_deg=90,
+            outbound_time_s=90.0,
+            turn_direction="right",
+        ),
     )
 
     assert_action_voice_and_text(
         action,
-        "AIR0 hold at ALPHA right hand outbound time 1.5 minutes",
-        "hold at ALPHA right hand outbound time 1.5 minutes AIR0",
-        "alpha india romeo zero hold at ALPHA right hand outbound time 1.5 minutes",
-        "hold at ALPHA right hand outbound time 1.5 minutes alpha india romeo zero",
+        "AIR0 hold east of ALPHA on course 270 for 1.5 minutes with right turns",
+        "hold east of ALPHA on course 270 for 1.5 minutes with right turns AIR0",
+        "alpha india romeo zero hold east of ALPHA on course too seven zero for wun decimal five minutes with right turns",
+        "hold east of ALPHA on course too seven zero for wun decimal five minutes with right turns alpha india romeo zero",
+        env,
+    )
+
+
+def test_hold_clearance_calculates_inbound_course_from_orientation(env: Environment):
+    hold_fix_name = next(iter(env.airspace.fixes.places))
+    action = Action(
+        "AIR0",
+        "route_direct_to,hold_at_location",
+        HoldAtFixParameters(fix=hold_fix_name, hold_orientation_deg=180, outbound_time_s=90.0),
+    )
+
+    assert_action_voice_and_text(
+        action,
+        f"AIR0 hold south of {hold_fix_name} on course 0 for 1.5 minutes with right turns",
+        f"hold south of {hold_fix_name} on course 0 for 1.5 minutes with right turns AIR0",
+        f"alpha india romeo zero hold south of {hold_fix_name} "
+        "on course zero for wun decimal five minutes with right turns",
+        f"hold south of {hold_fix_name} on course zero for wun decimal five minutes "
+        "with right turns alpha india romeo zero",
         env,
     )
 
@@ -335,15 +360,19 @@ def test_coordinate_hold_clearance(env: Environment):
     action = Action(
         "AIR0",
         "route_direct_to,hold_at_location",
-        HoldAtLocationParameters(location=(50.716667, -3.533333), outbound_time_s=90.0),
+        HoldAtLocationParameters(
+            location=(50.716667, -3.533333),
+            hold_orientation_deg=270,
+            outbound_time_s=90.0,
+        ),
     )
 
     assert_action_voice_and_text(
         action,
-        "AIR0 hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes",
-        "hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes AIR0",
-        "alpha india romeo zero hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes",
-        "hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes alpha india romeo zero",
+        "AIR0 hold west of latitude 50.7167 longitude -3.53333 on course 90 for 1.5 minutes with right turns",
+        "hold west of latitude 50.7167 longitude -3.53333 on course 90 for 1.5 minutes with right turns AIR0",
+        "alpha india romeo zero hold west of latitude 50.7167 longitude -3.53333 on course niner zero for wun decimal five minutes with right turns",
+        "hold west of latitude 50.7167 longitude -3.53333 on course niner zero for wun decimal five minutes with right turns alpha india romeo zero",
         env,
     )
 

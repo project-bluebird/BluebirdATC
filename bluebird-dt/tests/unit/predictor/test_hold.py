@@ -1,9 +1,45 @@
+from copy import deepcopy
 from itertools import pairwise
+from math import atan2, ceil, degrees, hypot, radians, tan
 
 import pytest
 
-from bluebird_dt.core import Action, Environment, HoldAtFixParameters, HoldAtLocationParameters
+from bluebird_dt.core import Action, Environment, HoldAtFixParameters, HoldAtLocationParameters, Pos2D, WindVector
 from bluebird_dt.predictor import SimplePredictor
+from bluebird_dt.utility.convert import KT_TO_MPS
+
+
+def test_coarse_hold_timestep_matches_one_second_integration(generate_simple_environment: Environment):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    aircraft.selected_instructions.cas = 360
+    aircraft.cleared_instructions.cas = 360
+    hold_fix = environment.airspace.fixes.places["EARTH"]
+    inbound_course_deg = aircraft.pos2d().bearing_to(hold_fix)
+    aircraft.pilot.process_lateral_actions(
+        Action(
+            aircraft.callsign,
+            "route_direct_to,hold_at_location",
+            HoldAtFixParameters(
+                fix="EARTH",
+                hold_orientation_deg=(inbound_course_deg + 180.0) % 360.0,
+                outbound_time_s=30,
+            ),
+        ),
+        environment,
+    )
+    coarse_aircraft = deepcopy(aircraft)
+    fine_aircraft = deepcopy(aircraft)
+    coarse_predictor = SimplePredictor(300.0, 2.0, fixes=environment.airspace.fixes)
+    fine_predictor = SimplePredictor(1.0, 2.0, fixes=environment.airspace.fixes)
+
+    coarse_predictor.predict_aircraft(coarse_aircraft, 300.0, deepcopy_aircraft=False)
+    for _ in range(300):
+        fine_predictor.predict_aircraft(fine_aircraft, 1.0, deepcopy_aircraft=False)
+
+    assert coarse_aircraft.predictor_params["hold"] == fine_aircraft.predictor_params["hold"]
+    assert coarse_aircraft.heading == pytest.approx(fine_aircraft.heading)
+    assert coarse_aircraft.pos2d().distance(fine_aircraft.pos2d()) == pytest.approx(0.0, abs=1e-6)
 
 
 def test_repeating_standard_rate_hold(generate_simple_environment: Environment):
@@ -12,10 +48,17 @@ def test_repeating_standard_rate_hold(generate_simple_environment: Environment):
     aircraft.selected_instructions.cas = 360
     aircraft.cleared_instructions.cas = 360
     predictor = SimplePredictor(1.0, 2.0, fixes=environment.airspace.fixes)
+    hold_fix = environment.airspace.fixes.places["EARTH"]
+    inbound_course_deg = aircraft.pos2d().bearing_to(hold_fix)
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        HoldAtFixParameters(fix="EARTH", outbound_time_s=30, turn_direction="right"),
+        HoldAtFixParameters(
+            fix="EARTH",
+            hold_orientation_deg=(inbound_course_deg + 180.0) % 360.0,
+            outbound_time_s=30,
+            turn_direction="right",
+        ),
     )
     aircraft.pilot.process_lateral_actions(action, environment)
 
@@ -62,11 +105,13 @@ def test_hold_state_survives_aircraft_json_roundtrip(generate_simple_environment
     aircraft = generate_simple_environment.aircraft["AIR0"]
     aircraft.predictor_params["hold"] = {
         "fix": "EARTH",
+        "location": None,
+        "inbound_course_deg": 0.0,
         "outbound_time_s": 90.0,
         "turn_direction": "left",
         "phase": "outbound",
         "phase_elapsed": 12.0,
-        "inbound_track": 0.0,
+        "entry_type": "direct",
     }
 
     restored = aircraft.from_json(aircraft.to_json())
@@ -80,11 +125,16 @@ def test_coordinate_hold_does_not_require_predictor_fixes(generate_simple_enviro
     aircraft.selected_instructions.cas = 360
     aircraft.cleared_instructions.cas = 360
     hold_position = environment.airspace.fixes.places["EARTH"]
+    inbound_course_deg = aircraft.pos2d().bearing_to(hold_position)
     predictor = SimplePredictor(1.0, 2.0, fixes=None)
     action = Action(
         aircraft.callsign,
         "route_direct_to,hold_at_location",
-        HoldAtLocationParameters(location=(hold_position.lat, hold_position.lon), outbound_time_s=30),
+        HoldAtLocationParameters(
+            location=(hold_position.lat, hold_position.lon),
+            hold_orientation_deg=(inbound_course_deg + 180.0) % 360.0,
+            outbound_time_s=30,
+        ),
     )
     aircraft.pilot.process_lateral_actions(action, environment)
 
@@ -92,3 +142,210 @@ def test_coordinate_hold_does_not_require_predictor_fixes(generate_simple_enviro
         predictor.predict_aircraft(aircraft, 1.0, deepcopy_aircraft=False)
 
     assert aircraft.predictor_params["hold"]["phase"] != "direct_to_location"
+
+
+def test_teardrop_entry_time_uses_racetrack_geometry_and_wind():
+    predictor = SimplePredictor(1.0, 2.0)
+    horizontal_speed_kts = 360.0
+    outbound_time_s = 60.0
+
+    width_nm, distance_nm, track_deg, time_s = predictor.calculate_teardrop_entry_geometry(
+        inbound_course_deg=0.0,
+        outbound_time_s=outbound_time_s,
+        turn_direction="right",
+        horizontal_speed_kts=horizontal_speed_kts,
+        wind_vector=None,
+    )
+
+    expected_width_nm = 2.0 * (horizontal_speed_kts / 3600.0) / radians(3.0)
+    expected_straight_distance_nm = horizontal_speed_kts * outbound_time_s / 3600.0
+    expected_angle_deg = degrees(atan2(expected_width_nm, expected_straight_distance_nm))
+    expected_track_deg = 180.0 - expected_angle_deg
+    expected_turn_radius_nm = (horizontal_speed_kts / 3600.0) / radians(3.0)
+    expected_turn_start_distance_nm = expected_turn_radius_nm / tan(radians(expected_angle_deg / 2.0))
+    tangent_distance_nm = hypot(expected_straight_distance_nm, expected_width_nm)
+    assert width_nm == pytest.approx(expected_width_nm, rel=2e-4)
+    assert distance_nm == pytest.approx(expected_turn_start_distance_nm, rel=2e-4)
+    assert distance_nm < tangent_distance_nm
+    assert track_deg == pytest.approx(expected_track_deg, rel=2e-4)
+    assert time_s == pytest.approx(distance_nm * 3600.0 / horizontal_speed_kts)
+    assert time_s > outbound_time_s
+
+    wind_vector = WindVector.from_polar(wind_speed=40.0 * KT_TO_MPS, wind_direction=90.0)
+    windy_width_nm, windy_distance_nm, windy_track_deg, windy_time_s = predictor.calculate_teardrop_entry_geometry(
+        inbound_course_deg=0.0,
+        outbound_time_s=outbound_time_s,
+        turn_direction="right",
+        horizontal_speed_kts=horizontal_speed_kts,
+        wind_vector=wind_vector,
+    )
+
+    assert windy_width_nm != pytest.approx(width_nm)
+    assert windy_distance_nm != pytest.approx(distance_nm)
+    assert windy_track_deg != pytest.approx(track_deg)
+    assert windy_time_s != pytest.approx(time_s)
+
+
+@pytest.mark.parametrize(
+    ("turn_direction", "arrival_track_deg", "expected_entry"),
+    [
+        ("right", 0.0, "direct"),
+        ("right", 225.0, "parallel"),
+        ("right", 135.0, "teardrop"),
+        ("left", 0.0, "direct"),
+        ("left", 135.0, "parallel"),
+        ("left", 225.0, "teardrop"),
+        ("right", 110.0, "direct"),
+        ("right", 180.0, "parallel"),
+        ("right", 290.0, "direct"),
+    ],
+)
+def test_select_hold_entry(
+    turn_direction: str,
+    arrival_track_deg: float,
+    expected_entry: str,
+):
+    assert SimplePredictor.select_hold_entry(arrival_track_deg, 0.0, turn_direction) == expected_entry
+
+
+@pytest.mark.parametrize(
+    ("turn_direction", "arrival_track_deg", "expected_entry", "expected_phase"),
+    [
+        ("right", 0.0, "direct", "turn_outbound"),
+        ("right", 225.0, "parallel", "parallel_turn_outbound"),
+        ("right", 135.0, "teardrop", "teardrop_turn_outbound"),
+        ("left", 135.0, "parallel", "parallel_turn_outbound"),
+        ("left", 225.0, "teardrop", "teardrop_turn_outbound"),
+    ],
+)
+def test_hold_starts_selected_entry(
+    generate_simple_environment: Environment,
+    turn_direction: str,
+    arrival_track_deg: float,
+    expected_entry: str,
+    expected_phase: str,
+):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    aircraft.selected_instructions.cas = 360
+    aircraft.cleared_instructions.cas = 360
+    hold_fix = environment.airspace.fixes.places["EARTH"]
+    predictor = SimplePredictor(1.0, 2.0, fixes=environment.airspace.fixes)
+    aircraft.pilot.process_lateral_actions(
+        Action(
+            aircraft.callsign,
+            "route_direct_to,hold_at_location",
+            HoldAtFixParameters(
+                fix="EARTH",
+                hold_orientation_deg=180.0,
+                turn_direction=turn_direction,
+            ),
+        ),
+        environment,
+    )
+    aircraft.lat = hold_fix.lat
+    aircraft.lon = hold_fix.lon
+    aircraft.heading = arrival_track_deg
+    aircraft.heading_changing_to = None
+
+    predictor.update_hold_guidance(
+        aircraft,
+        aircraft.predictor_params["hold"],
+        arrival_track_deg,
+        aircraft.selected_instructions.cas,
+        None,
+    )
+
+    assert aircraft.predictor_params["hold"]["entry_type"] == expected_entry
+    assert aircraft.predictor_params["hold"]["phase"] == expected_phase
+
+
+@pytest.mark.parametrize(
+    ("turn_direction", "relative_arrival_deg", "entry_type"),
+    [
+        ("right", 225.0, "parallel"),
+        ("right", 135.0, "teardrop"),
+        ("left", 225.0, "parallel"),
+        ("left", 135.0, "teardrop"),
+    ],
+)
+def test_non_direct_entry_joins_repeating_hold(
+    generate_simple_environment: Environment,
+    turn_direction: str,
+    relative_arrival_deg: float,
+    entry_type: str,
+):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    aircraft.selected_instructions.cas = 360
+    aircraft.cleared_instructions.cas = 360
+    hold_fix = environment.airspace.fixes.places["EARTH"]
+    arrival_track_deg = aircraft.pos2d().bearing_to(hold_fix)
+    direction_sign = 1.0 if turn_direction == "right" else -1.0
+    inbound_course_deg = (arrival_track_deg - direction_sign * relative_arrival_deg) % 360.0
+    predictor = SimplePredictor(1.0, 2.0, fixes=environment.airspace.fixes)
+    aircraft.pilot.process_lateral_actions(
+        Action(
+            aircraft.callsign,
+            "route_direct_to,hold_at_location",
+            HoldAtFixParameters(
+                fix="EARTH",
+                hold_orientation_deg=(inbound_course_deg + 180.0) % 360.0,
+                outbound_time_s=30,
+                turn_direction=turn_direction,
+            ),
+        ),
+        environment,
+    )
+
+    transitions = []
+    teardrop_turn_start_error_nm = None
+    previous_phase = aircraft.predictor_params["hold"]["phase"]
+    for elapsed_s in range(1, 901):
+        predictor.predict_aircraft(aircraft, 1.0, deepcopy_aircraft=False)
+        phase = aircraft.predictor_params["hold"]["phase"]
+        if phase != previous_phase:
+            transitions.append((phase, elapsed_s, aircraft.heading))
+            if phase == "teardrop_turn_inbound":
+                turn_location = aircraft.predictor_params["hold"]["teardrop_turn_location"]
+                teardrop_turn_start_error_nm = aircraft.pos2d().distance(Pos2D(*turn_location))
+            previous_phase = phase
+        if phase == "outbound":
+            break
+
+    phases = [phase for phase, _, _ in transitions]
+    assert phases == [
+        f"{entry_type}_turn_outbound",
+        f"{entry_type}_outbound",
+        f"{entry_type}_turn_inbound",
+        f"{entry_type}_inbound",
+        "turn_outbound",
+        "outbound",
+    ]
+    assert aircraft.predictor_params["hold"]["entry_type"] == entry_type
+    outbound_track_deg = (inbound_course_deg + 180.0) % 360.0
+    expected_entry_track_deg = aircraft.predictor_params["hold"].get(
+        "teardrop_outbound_track_deg", outbound_track_deg
+    )
+    assert transitions[1][2] == pytest.approx(expected_entry_track_deg)
+    if entry_type == "teardrop":
+        assert transitions[3][2] == pytest.approx(inbound_course_deg)
+    assert transitions[-1][2] == pytest.approx(outbound_track_deg)
+    entry_started_s = transitions[0][1]
+    entry_outbound_started_s = transitions[1][1]
+    entry_inbound_turn_started_s = transitions[2][1]
+    entry_inbound_started_s = transitions[3][1]
+    if entry_type == "parallel":
+        assert entry_inbound_turn_started_s - entry_started_s == 60
+        assert entry_inbound_turn_started_s - entry_outbound_started_s < 60
+        parallel_turn_delta_deg = (transitions[2][2] - expected_entry_track_deg + 180.0) % 360.0 - 180.0
+        assert parallel_turn_delta_deg * direction_sign < 0.0
+    else:
+        teardrop_time_s = aircraft.predictor_params["hold"]["teardrop_outbound_time_s"]
+        assert entry_inbound_turn_started_s - entry_outbound_started_s == ceil(teardrop_time_s)
+        assert aircraft.predictor_params["hold"]["racetrack_width_nm"] > 0.0
+        assert aircraft.predictor_params["hold"]["teardrop_outbound_distance_nm"] > 0.0
+        assert teardrop_turn_start_error_nm is not None
+        assert teardrop_turn_start_error_nm < 0.25
+        assert entry_inbound_started_s - entry_inbound_turn_started_s > 60
+        assert entry_inbound_turn_started_s - entry_started_s > teardrop_time_s

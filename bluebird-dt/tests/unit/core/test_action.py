@@ -36,7 +36,7 @@ def test_init_exceptions_from_str():
     "kind, value",
     [
         ("route_direct_to", "FIX"),
-        ("route_direct_to,hold_at_location", HoldAtFixParameters(fix="FIX")),
+        ("route_direct_to,hold_at_location", HoldAtFixParameters(fix="FIX", hold_orientation_deg=180)),
         ("change_heading_to", 120),
         ("change_heading_by", -10),
         ("change_flight_level_to", 250),
@@ -97,7 +97,12 @@ def test_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",
         kind="route_direct_to,hold_at_location",
-        value=HoldAtFixParameters(fix="FIX", outbound_time_s=60, turn_direction="left"),
+        value=HoldAtFixParameters(
+            fix="FIX",
+            hold_orientation_deg=90,
+            outbound_time_s=60,
+            turn_direction="left",
+        ),
     )
 
     assert action == Action.from_json(action.to_json())
@@ -106,17 +111,24 @@ def test_hold_parameters_roundtrip():
 
 def test_hold_parameters_from_json_string():
     action = Action.from_str(
-        'AIR0 route_direct_to,hold_at_location {"fix":"FIX","outbound_time_s":60,"turn_direction":"left"}'
+        'AIR0 route_direct_to,hold_at_location '
+        '{"fix":"FIX","hold_orientation_deg":90,"outbound_time_s":60,"turn_direction":"left"}'
     )
 
-    assert action.value == HoldAtFixParameters(fix="FIX", outbound_time_s=60, turn_direction="left")
+    assert action.value == HoldAtFixParameters(
+        fix="FIX", hold_orientation_deg=90, outbound_time_s=60, turn_direction="left"
+    )
 
 
 def test_coordinate_hold_parameters_roundtrip():
     action = Action(
         callsign="AIR0",
         kind="route_direct_to,hold_at_location",
-        value=HoldAtLocationParameters(location=(50.716667, -3.533333), outbound_time_s=60),
+        value=HoldAtLocationParameters(
+            location=(50.716667, -3.533333),
+            hold_orientation_deg=270,
+            outbound_time_s=60,
+        ),
     )
 
     assert action.value.location == (50.716667, -3.533333)
@@ -131,10 +143,13 @@ def test_coordinate_hold_parameters_roundtrip():
         {},
         {"fix": ""},
         {"fix": "FIX", "location": (50.0, -3.0)},
+        {"fix": "FIX"},
         {"location": (91.0, -3.0)},
         {"location": (50.0, -181.0)},
-        {"fix": "FIX", "outbound_time_s": 0},
-        {"fix": "FIX", "turn_direction": "straight"},
+        {"fix": "FIX", "hold_orientation_deg": -1},
+        {"fix": "FIX", "hold_orientation_deg": 360},
+        {"fix": "FIX", "hold_orientation_deg": 90, "outbound_time_s": 0},
+        {"fix": "FIX", "hold_orientation_deg": 90, "turn_direction": "straight"},
     ],
 )
 def test_invalid_hold_parameters(value: dict):

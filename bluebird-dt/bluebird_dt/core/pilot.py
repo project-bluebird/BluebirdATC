@@ -269,12 +269,13 @@ class Pilot:
             aircraft.predictor_params["hold"] = {
                 "fix": hold.fix,
                 "location": [target_pos.lat, target_pos.lon],
+                "inbound_course_deg": (hold.hold_orientation_deg + 180.0) % 360.0,
                 "outbound_time_s": hold.outbound_time_s,
                 "turn_direction": hold.turn_direction,
                 "phase": "direct_to_location",
                 "phase_elapsed": 0.0,
-                # Runtime state set from the ground track on first arrival; it defines the racetrack axis.
-                "inbound_track": None,
+                # Runtime state selected from the arrival track when the aircraft first crosses the holding fix.
+                "entry_type": None,
             }
 
         elif action.kind == "route_direct_to":

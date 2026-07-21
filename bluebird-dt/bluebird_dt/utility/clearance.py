@@ -643,6 +643,34 @@ def which_way(current: float, cleared: float) -> Literal["left", "right"]:
     return "right"
 
 
+def hold_phraseology(value: HoldParameters, voice: bool = False) -> list[str]:
+    """Build standard hold phraseology from validated hold parameters."""
+    minutes = f"{value.outbound_time_s / 60.0:g}"
+    location = value.fix or f"latitude {value.location[0]:g} longitude {value.location[1]:g}"
+    compass_directions = ("north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest")
+    direction_index = int((value.hold_orientation_deg + 22.5) // 45.0) % len(compass_directions)
+    holding_direction = compass_directions[direction_index]
+    inbound_course_deg = (value.hold_orientation_deg + 180.0) % 360.0
+    inbound_course = f"{inbound_course_deg:g}"
+    leg_length = spell_phonetically(minutes) if voice else minutes
+    spoken_course = spell_phonetically(inbound_course) if voice else inbound_course
+    leg_unit = "minute" if minutes == "1" else "minutes"
+    return [
+        "hold",
+        holding_direction,
+        "of",
+        location,
+        "on course",
+        spoken_course,
+        "for",
+        leg_length,
+        leg_unit,
+        "with",
+        value.turn_direction,
+        "turns",
+    ]
+
+
 def text_phraseology(action: Action, environment: Environment) -> ClearanceAndResponse:
     """
     Generate clearance that would be issued for an action with matching response
@@ -767,11 +795,7 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
 
         case "route_direct_to,hold_at_location":
             assert isinstance(value, HoldParameters)
-            minutes = f"{value.outbound_time_s / 60.0:g}"
-            location = value.fix or f"latitude {value.location[0]:g} longitude {value.location[1]:g}"
-            clearance_parts.extend(
-                ["hold at", location, value.turn_direction, "hand", "outbound time", minutes, "minutes"]
-            )
+            clearance_parts.extend(hold_phraseology(value))
 
         case "change_cas_to":
             clearance_parts.extend(["fly speed", str(value), "knots"])
@@ -1009,11 +1033,7 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
 
         case "route_direct_to,hold_at_location":
             assert isinstance(value, HoldParameters)
-            minutes = f"{value.outbound_time_s / 60.0:g}"
-            location = value.fix or f"latitude {value.location[0]:g} longitude {value.location[1]:g}"
-            clearance_parts.extend(
-                ["hold at", location, value.turn_direction, "hand", "outbound time", minutes, "minutes"]
-            )
+            clearance_parts.extend(hold_phraseology(value, voice=True))
 
         case "change_cas_to":
             clearance_parts.extend(["speed", spell_phonetically(str(value)), "knots"])

@@ -1143,7 +1143,11 @@ class TestUpdateFromClearances():
         env, manager, _, _, episode_start, episode_end = setup_test_sim()
         props_to_set = [
             ("kind", "route_direct_to,hold_at_location"),
-            ("value", '{"location":[51.0,-1.0],"outbound_time_s":60.0,"turn_direction":"left"}'),
+            (
+                "value",
+                '{"location":[51.0,-1.0],"hold_orientation_deg":90.0,'
+                '"outbound_time_s":60.0,"turn_direction":"left"}',
+            ),
         ]
         df = build_test_df_for_multiple_ac(EventDtypes.clearance_dtypes, env, props_to_set)
 
