@@ -1,9 +1,43 @@
+from copy import deepcopy
 from itertools import pairwise
 
 import pytest
 
 from bluebird_dt.core import Action, Environment, HoldAtFixParameters, HoldAtLocationParameters
 from bluebird_dt.predictor import SimplePredictor
+
+
+def test_coarse_hold_timestep_matches_one_second_integration(generate_simple_environment: Environment):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    aircraft.selected_instructions.cas = 360
+    aircraft.cleared_instructions.cas = 360
+    hold_fix = environment.airspace.fixes.places["EARTH"]
+    inbound_course_deg = aircraft.pos2d().bearing_to(hold_fix)
+    aircraft.pilot.process_lateral_actions(
+        Action(
+            aircraft.callsign,
+            "route_direct_to,hold_at_location",
+            HoldAtFixParameters(
+                fix="EARTH",
+                hold_orientation_deg=(inbound_course_deg + 180.0) % 360.0,
+                outbound_time_s=30,
+            ),
+        ),
+        environment,
+    )
+    coarse_aircraft = deepcopy(aircraft)
+    fine_aircraft = deepcopy(aircraft)
+    coarse_predictor = SimplePredictor(300.0, 2.0, fixes=environment.airspace.fixes)
+    fine_predictor = SimplePredictor(1.0, 2.0, fixes=environment.airspace.fixes)
+
+    coarse_predictor.predict_aircraft(coarse_aircraft, 300.0, deepcopy_aircraft=False)
+    for _ in range(300):
+        fine_predictor.predict_aircraft(fine_aircraft, 1.0, deepcopy_aircraft=False)
+
+    assert coarse_aircraft.predictor_params["hold"] == fine_aircraft.predictor_params["hold"]
+    assert coarse_aircraft.heading == pytest.approx(fine_aircraft.heading)
+    assert coarse_aircraft.pos2d().distance(fine_aircraft.pos2d()) == pytest.approx(0.0, abs=1e-6)
 
 
 def test_repeating_standard_rate_hold(generate_simple_environment: Environment):

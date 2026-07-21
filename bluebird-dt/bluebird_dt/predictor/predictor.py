@@ -29,6 +29,10 @@ HOLD_RATE_OF_TURN_s = 3.0
 # including the initial turn onto the entry's outbound track.
 HOLD_ENTRY_TIME_s = 60.0
 HOLD_TEARDROP_ANGLE_deg = 30.0
+# Hold guidance can change phase at the fix, at the end of a turn, or at the
+# end of a timed leg. Limit its lateral integration step so a coarse predictor
+# timestep cannot skip those transitions or apply one phase for the full step.
+HOLD_MAX_INTEGRATION_STEP_s = 1.0
 
 HOLD_TURN_PHASES = frozenset(
     {
@@ -324,8 +328,17 @@ class Predictor(ABC):
 
         # This implementation of a hold explicitly requires fixed-rate turns,
         # even when a predictor was configured to make ordinary heading changes instantaneous.
+        # Substep the lateral integration independently of the predictor's configured
+        # timestep so that fix arrival and multiple subsequent hold phase boundaries
+        # can all be processed during one coarse prediction step.
         if aircraft.predictor_params.get("hold") is not None:
-            use_turn_model = True
+            full_steps = int(time_evolve // HOLD_MAX_INTEGRATION_STEP_s)
+            remainder = time_evolve - full_steps * HOLD_MAX_INTEGRATION_STEP_s
+            for _ in range(full_steps):
+                self.update_position_with_turn_model(aircraft, HOLD_MAX_INTEGRATION_STEP_s, wind_field)
+            if remainder > 0.0:
+                self.update_position_with_turn_model(aircraft, remainder, wind_field)
+            return
 
         if use_turn_model:
             self.update_position_with_turn_model(aircraft, time_evolve, wind_field)
