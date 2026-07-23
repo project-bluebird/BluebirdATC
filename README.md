@@ -6,9 +6,6 @@ This repository contains the following packages:
  * [![PyPI version](https://img.shields.io/pypi/v/bluebird-api.svg?logo=pypi&logoColor=white&label=bluebird-api)](https://pypi.org/project/bluebird-api/) - A REST API for the digital twin.  See [here](bluebird-api/README.md) for more information.
  * [![PyPI version](https://img.shields.io/pypi/v/bluebird-gymnasium.svg?logo=pypi&logoColor=white&label=bluebird-gymnasium)](https://pypi.org/project/bluebird-gymnasium/) - a gym environment for AI agents.  See [here](bluebird-gymnasium/README.md) for more details. 
  * `bluebird-hmi` - an optional web-based visualisation package.  See [here](bluebird-hmi/README.md) for details.
-  
-## (AI)r traffic controller challenge
-Information relating to the (AI)r traffic controller challenge can be found [here](https://docs.projectbluebird.ai/examples/competition/Competition-Intro/) to get started with the competition specific setup.
 
 ## Running the digital twin
 
