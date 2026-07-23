@@ -198,7 +198,7 @@ The `bluebird-hmi` package is a typescript/React [@React] frontend application p
 
 The display shows the "radar" view that an air traffic control officer (ATCO) would have of the airspace they are controlling, including sector boundaries, navigation fixes, aircraft positions, recent trail dots and data blocks containing callsign, current and target flight levels, and other relevant information.
 
-Several stylistic display modes are available in addition to the operational-style default, for example, the "presentation mode"\autoref{fig:hmi_screenshot} is suitable for lay audiences.
+Several stylistic display modes are available in addition to the operational-style default, for example, the "presentation mode"\autoref{fig:hmi_presentation} is suitable for lay audiences.
 
 ![The HMI radar view in presentation mode.\label{fig:hmi_presentation}](hmi_screenshot.png)
 
