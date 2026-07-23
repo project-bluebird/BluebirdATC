@@ -2,15 +2,14 @@
 This module provides the interfaces used in all endpoints to obtain data from the runner and simulator that is being
 requested.
 
-The first thing available is the RunnerABC class, which is implemented for BluebirdATC in ./runner.py.
 
-Secondly, and most importantly, this module provides the FastAPI dependency for the runner, used to access the simulator
+This module provides the FastAPI dependency for the runner, used to access the simulator
 instance, RunnerDep.
 To use this dependency, create an endpoint as would be done normally.
 As one of the arguments to the function, include the RunnerDep type alias as shown in the example below and
 it will be available to interact with.
 
->>> from ..runnerabc import RunnerDep
+>>> from ..runner import RunnerDep
 >>> @core_router.post("/close", tags=["Control"])
 >>> async def close(runner: RunnerDep) -> bool:
 >>>    await runner.delete()
@@ -74,6 +73,9 @@ class Runner(typing.Generic[TSimulator]):
         self.time_of_next_tick = datetime.now()
 
         while True:
+            if self.kill:
+                break
+
             if self.running and datetime.now() >= self.time_of_next_tick:
                 start_time = datetime.now()
                 self.time_of_next_tick = start_time + timedelta(seconds=self.tick_frequency_period)
@@ -81,9 +83,6 @@ class Runner(typing.Generic[TSimulator]):
                 self.sim.evolve(self.evolve_period)
                 self.tick += 1
                 logger.info(f"evolve time: {datetime.now() - start_time}")
-
-            if self.kill:
-                break
 
             await asyncio.sleep(0.1)
 
