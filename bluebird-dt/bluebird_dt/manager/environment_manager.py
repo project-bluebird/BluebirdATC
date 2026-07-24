@@ -320,8 +320,10 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
             min_latitude, max_latitude, min_longitude, max_longitude
         """
         if sector_names is None:
-            # use whole airspace
-            boundary_points = self.environment.airspace.boundary().boundary_vertices
+            # use whole airspace — also include all named fixes so that aircraft
+            # approaching along defined routes are within the penumbra from the start
+            boundary_points = list(self.environment.airspace.boundary().boundary_vertices)
+            boundary_points.extend(self.environment.airspace.fixes.places.values())
         else:
             boundary_points = [
                 p for name in sector_names for p in self.environment.airspace.sectors[name].boundary().boundary_vertices
@@ -516,12 +518,6 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
         # resent list of actions waiting to be enacted
         self._actions_to_issue = []
 
-        removed_aircraft = self.environment.remove_obsolete_aircraft()
-
-        if len(removed_aircraft) > 0:
-            debugging_list = [f"{aircraft.callsign} at FL{aircraft.fl}" for aircraft in removed_aircraft.values()]
-            logger.debug(f"Removed aircraft {debugging_list} from environment because their track data is too old.")
-
         return self.environment
 
     def remove_aircraft_outside_airspace_penumbra(self) -> None:
@@ -559,9 +555,7 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
             min_lat, max_lat, min_lon, max_lon = self.square_penumbra_limits()
 
             for callsign, aircraft in self.environment.aircraft.items():
-                in_airspace_penumbra = (min_lat - 1 < aircraft.lat <= max_lat + 1) and (
-                    min_lon - 1 < aircraft.lon <= max_lon + 1
-                )
+                in_airspace_penumbra = (min_lat < aircraft.lat <= max_lat) and (min_lon < aircraft.lon <= max_lon)
                 if not in_airspace_penumbra:
                     callsigns_to_remove.add(callsign)
 

@@ -1605,11 +1605,10 @@ def update_from_radar(
                 selected_fl=row.selected_fl,
                 ufid=row.ufid if row.ufid != "" else None,
                 simulated=False,
-                track_time=episode_start,
             )
         else:  # callsign is in environment, so update aircraft
             aircraft = environment.aircraft[row.callsign]
-            aircraft.set_position(row.lat, row.lon, environment.datetime)
+            aircraft.set_position(row.lat, row.lon)
 
             # don't update values if new values are zero (originally nan, transformed to zero)
             if row.fl is not None:
@@ -1641,6 +1640,15 @@ def update_from_radar(
             aircraft.heading = row.heading
 
         all_aircraft.append(aircraft)
+
+    if ignore_simmed:
+        # filter to keep only simulated aircraft
+        environment.aircraft = {
+            callsign: aircraft for callsign, aircraft in environment.aircraft.items() if aircraft.simulated
+        }
+    else:
+        # we are NOT ignoring simmed aircraft, so filter out all aircraft
+        environment.aircraft = {}
 
     # add back in the aircraft replaying from data
     for aircraft in all_aircraft:
@@ -2128,7 +2136,13 @@ def update_coordination(
             secondary_coord_conditions=secondary_coord_conditions,
             the_datetime=the_datetime,
         )
-        environment.coordinations.add(new_coordination)
+
+        # don't add coordination if already present (possibly with a different timestamp)
+        coord_already_present = environment.coordinations.contains_excluding_times(new_coordination)
+
+        if not coord_already_present:
+            environment.coordinations.add(new_coordination)
+
     return environment
 
 
