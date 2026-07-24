@@ -81,11 +81,8 @@ class Runner(typing.Generic[TSimulator]):
             await asyncio.sleep(0.1)
 
 
-TRunner = typing_extensions.TypeVar("TRunner", bound=Runner, default=Runner)
-
-
-class RunnerStore(typing.Generic[TRunner]):
-    current_runner: TRunner | None = None
+class RunnerStore(typing.Generic[TSimulator]):
+    current_runner: Runner[TSimulator] | None = None
 
     @classmethod
     async def delete(cls):
