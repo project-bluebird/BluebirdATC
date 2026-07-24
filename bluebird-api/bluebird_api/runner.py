@@ -29,7 +29,7 @@ import typing_extensions
 from bluebird_dt.events.event_logger import SimRateUpdate
 from bluebird_dt.logger import logger
 from bluebird_dt.simulator import Simulator
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 
 from bluebird_api.models import HmiRunnerInformation
 
@@ -94,18 +94,20 @@ class RunnerStore(typing.Generic[TSimulator]):
             cls.current_runner = None
 
 
-async def runner() -> Runner[Simulator]:  # noqa: ARG001
+async def runner(request: Request) -> Runner[Simulator]:  # noqa: ARG001
     """
     Function taking the runner information from the store, and making it available for the endpoint that uses it. See
     module documentation for more details on usage, and an example.
     """
-    runner = RunnerStore.current_runner
+    runner = request.state.runner
 
     if runner is None:
         raise HTTPException(404, "Runner instance not found")
 
     if not isinstance(runner, Runner):
         raise HTTPException(500, "The runner passed is not a valid type.")
+
+    request.state.runner = None
 
     return runner
 

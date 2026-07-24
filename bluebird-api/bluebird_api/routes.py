@@ -6,7 +6,7 @@ BluebirdATC, including loading which is implementation dependent.
 import asyncio
 
 from bluebird_dt.simulator import Simulator
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
 
 from bluebird_api.routers.core import background_tasks
 from bluebird_api.runner import Runner, RunnerStore
@@ -15,7 +15,16 @@ from .routers import (
     core_router,
 )
 
-router = APIRouter()
+
+async def simulator(request: Request):
+    """
+    The simulator dependency, available to endpoints using the RunnerDep dependency, provides access to the runner.
+    """
+
+    request.state.runner = RunnerStore.current_runner
+
+
+router = APIRouter(dependencies=[Depends(simulator)])
 router.include_router(core_router)
 
 
