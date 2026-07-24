@@ -1061,6 +1061,26 @@ class EventLogger:
         comparison_datetime: pd.Timestamp,
         expire: pd.Timedelta = DEFAULT_TRIM_AND_CUT_TIMEDELTA,
     ) -> Self:
+        """
+        Remove logs by comparing datetime to a reference datetime.
+        Comparison function allows "<", "<=".
+
+        Any log which has a datetime satisfying the comparison function with the comparison datetime
+        will be removed from the log, except an initial one to ensure the resulting log does include
+        initialisation properties.
+
+        Parameters
+        ----------
+        comparison_function: str
+            Function to use to compare the log datetime with a target datetime
+        comparison_datetime: pandas.Timestamp
+            Datetime to be compared to log in filter
+
+        Returns
+        -------
+        EventLogger
+            The EventLogger after removing any logs which satisfied the comparison function
+        """
 
         match comparison_operator:
             case "<":
