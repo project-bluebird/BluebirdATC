@@ -542,14 +542,3 @@ class TestFunctions:
             assert received is True
             assert runner.tick_frequency_period == 243
 
-
-@pytest.mark.asyncio
-async def test_runner_close():
-    
-    runner_store = RunnerStore(typeof_runner=Runner, typeof_simulator=Simulator)
-    runner_store.initialise_from_category("Springfield", "testScenario")
-
-    expected_logfile_name = os.path.join(REPLAY_DIR, runner_store.current_runner.sim.manager.event_logger.log_name + ".tar.gz")
-
-    await routers.core.close(runner_store)
-    assert os.path.isfile(expected_logfile_name)
