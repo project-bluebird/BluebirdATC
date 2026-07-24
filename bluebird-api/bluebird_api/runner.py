@@ -49,6 +49,12 @@ class Runner(typing.Generic[TSimulator]):
         default_factory=lambda: defaultdict(lambda: HmiRunnerInformation(selected_aircraft=None))
     )
 
+    async def close(self):
+        self.kill = True
+        self.sim.save()
+        self.sim.close()
+        await asyncio.sleep(3)
+
     def log_simrate(self):
         """
         Creates an entry in the file logs with the current tick frequency and evolve period of the runner.
@@ -81,17 +87,22 @@ class Runner(typing.Generic[TSimulator]):
             await asyncio.sleep(0.1)
 
 
-class RunnerStore(typing.Generic[TSimulator]):
-    current_runner: Runner[TSimulator] | None = None
+TRunner = typing_extensions.TypeVar("TRunner", bound=Runner, default=Runner[Simulator])
 
-    @classmethod
-    async def delete(cls):
-        if cls.current_runner is not None:
-            cls.current_runner.kill = True
-            cls.current_runner.sim.save()
-            cls.current_runner.sim.close()
-            await asyncio.sleep(3)
-            cls.current_runner = None
+
+@dataclass(init=True)
+class RunnerStore(typing.Generic[TRunner, TSimulator]):
+    typeof_runner: type[TRunner]
+    typeof_simulator: type[TSimulator]
+    current_runner: TRunner | None = None
+
+    async def delete(self):
+        if self.current_runner is not None:
+            await self.current_runner.close()
+            self.current_runner = None
+
+    def initialise_from_category(self, category: str, scenario_name: str):
+        self.current_runner = self.typeof_runner(self.typeof_simulator.from_category(category, scenario_name))
 
 
 async def runner(request: Request) -> Runner[Simulator]:  # noqa: ARG001
@@ -99,7 +110,7 @@ async def runner(request: Request) -> Runner[Simulator]:  # noqa: ARG001
     Function taking the runner information from the store, and making it available for the endpoint that uses it. See
     module documentation for more details on usage, and an example.
     """
-    runner = request.state.runner
+    runner = request.app.state.runner_store.current_runner
 
     if runner is None:
         raise HTTPException(404, "Runner instance not found")
@@ -107,9 +118,15 @@ async def runner(request: Request) -> Runner[Simulator]:  # noqa: ARG001
     if not isinstance(runner, Runner):
         raise HTTPException(500, "The runner passed is not a valid type.")
 
-    request.state.runner = None
-
     return runner
 
 
+async def runner_store(request: Request) -> RunnerStore[RunnerStore[Runner, Simulator]]:
+    """
+    Function taking the runner store.
+    """
+    return request.app.state.runner_store
+
+
 RunnerDep = typing.Annotated[Runner[Simulator], Depends(runner)]
+RunnerStoreDep = typing.Annotated[RunnerStore[Runner[Simulator]], Depends(runner_store)]

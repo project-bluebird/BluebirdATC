@@ -8,7 +8,7 @@ from bluebird_dt.simulator.common import list_sim_scenario_categories, list_sim_
 from fastapi import APIRouter
 
 from bluebird_api.models import ActionInput
-from bluebird_api.runner import RunnerDep, RunnerStore
+from bluebird_api.runner import RunnerDep, RunnerStoreDep
 
 core_router = APIRouter()
 
@@ -45,12 +45,12 @@ async def list_scenarios(category: str):  # noqa: ANN201
 
 
 @core_router.post("/close", tags=["Control"])
-async def close(runner: RunnerDep) -> bool:  # noqa: ARG001  # pyright: ignore[reportUnknownParameterType] as we use this to check if it is running
+async def close(runner_store: RunnerStoreDep) -> bool:
     """
     Unload a given simulator scenario.
     """
 
-    await RunnerStore.delete()
+    await runner_store.delete()
     return True
 
 
@@ -132,8 +132,7 @@ async def static_data(  # noqa: ANN201
     """
     Get the static data for the scenario.
     """
-    if RunnerStore.current_runner is None or runner.sim is None:
-        return {"exists": False}
+
     return {"exists": True} | runner.sim.static_data(
         sim_time=runner.sim.manager.environment.time,
     )
@@ -146,8 +145,7 @@ async def dynamic_data(  # noqa: ANN201
     """
     Get the dynamic data for the scenario.
     """
-    if RunnerStore.current_runner is None or runner.sim is None:
-        return {"exists": False}
+
     sim_time = runner.sim.manager.environment.time
     if sector_id.lower() == "none" or sector_id.lower() == "all":
         return {"exists": True} | runner.sim.dynamic_data(sim_time)

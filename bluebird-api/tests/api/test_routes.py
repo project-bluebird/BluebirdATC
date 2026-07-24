@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from bluebird_api import routers
 from bluebird_api import routes
 from bluebird_api.models import ActionInput
-from bluebird_api.runner import Runner
+from bluebird_api.runner import Runner, RunnerStore
 from bluebird_dt.core.wind import WindField
 from bluebird_dt.utility.paths import LOG_DIR as REPLAY_DIR
 from bluebird_dt.simulator import Simulator
@@ -174,21 +174,21 @@ class TestFunctions:
             assert received is True
 
         @pytest.mark.asyncio
-        async def test_load_tenant(self):
+        async def test_load_tenant(self, runner_store):
             """
             Test that load() ends existing tenancy and creates new tenancy
             """
-            received = await routes.load("Springfield", "testScenario")
+            received = await routes.load("Springfield", "testScenario", runner_store)
 
             assert received is True
 
         @pytest.mark.asyncio
-        async def test_close(self, runner: Runner):
+        async def test_close(self, runner_store: RunnerStore):
             """
             Test that close() returns True
             """
 
-            received = await routers.core.close(runner)
+            received = await routers.core.close(runner_store)
 
             assert received is True
 
@@ -433,7 +433,6 @@ class TestFunctions:
 
             received = await routers.core.dynamic_data(runner, sector_id)
             received_keys = set(received.keys())
-
             assert received_keys == expected_keys, (received_keys, expected_keys)
             assert received["exists"] is True
 
@@ -546,7 +545,11 @@ class TestFunctions:
 
 @pytest.mark.asyncio
 async def test_runner_close():
-    runner = Runner(Simulator.from_category("Springfield", "testScenario"))
-    expected_logfile_name = os.path.join(REPLAY_DIR, runner.sim.manager.event_logger.log_name + ".tar.gz")
-    await routers.core.close(runner)
+    
+    runner_store = RunnerStore(typeof_runner=Runner, typeof_simulator=Simulator)
+    runner_store.initialise_from_category("Springfield", "testScenario")
+
+    expected_logfile_name = os.path.join(REPLAY_DIR, runner_store.current_runner.sim.manager.event_logger.log_name + ".tar.gz")
+
+    await routers.core.close(runner_store)
     assert os.path.isfile(expected_logfile_name)
