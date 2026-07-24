@@ -25,7 +25,7 @@ async def load(category: str, scenario_name: str) -> bool:  # noqa: ARG001
     End any existing run, then create a new Runner and load a given simulator scenario.
     """
     if RunnerStore.current_runner is not None:
-        await RunnerStore.current_runner.delete()
+        await RunnerStore.delete()
 
     RunnerStore.current_runner = Runner(Simulator.from_category(category, scenario_name))
 

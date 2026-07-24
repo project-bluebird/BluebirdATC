@@ -25,6 +25,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
+import typing_extensions
 from bluebird_dt.events.event_logger import SimRateUpdate
 from bluebird_dt.logger import logger
 from bluebird_dt.simulator import Simulator
@@ -32,7 +33,7 @@ from fastapi import Depends, HTTPException
 
 from bluebird_api.models import HmiRunnerInformation
 
-TSimulator = typing.TypeVar("TSimulator", bound=Simulator)
+TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator, default=Simulator)
 
 
 @dataclass(init=True, slots=True)
@@ -47,13 +48,6 @@ class Runner(typing.Generic[TSimulator]):
     hmi: defaultdict[str, HmiRunnerInformation] = field(
         default_factory=lambda: defaultdict(lambda: HmiRunnerInformation(selected_aircraft=None))
     )
-
-    async def delete(self):
-        self.kill = True
-        self.sim.save()
-        self.sim.close()
-        self.sim = None
-        await asyncio.sleep(3)
 
     def log_simrate(self):
         """
@@ -87,8 +81,17 @@ class Runner(typing.Generic[TSimulator]):
             await asyncio.sleep(0.1)
 
 
-class RunnerStore:
-    current_runner: Runner[Simulator] | None = None
+class RunnerStore(typing.Generic[TSimulator]):
+    current_runner: Runner[TSimulator] | None = None
+
+    @classmethod
+    async def delete(cls):
+        if cls.current_runner is not None:
+            cls.current_runner.kill = True
+            cls.current_runner.sim.save()
+            cls.current_runner.sim.close()
+            await asyncio.sleep(3)
+            cls.current_runner = None
 
 
 async def runner() -> Runner[Simulator]:  # noqa: ARG001

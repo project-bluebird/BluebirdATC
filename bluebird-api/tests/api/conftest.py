@@ -7,15 +7,23 @@ from bluebird_api import app
 from bluebird_api.runner import Runner, RunnerStore
 from bluebird_dt.simulator import Simulator
 
-@pytest.fixture()
-def runner(monkeypatch):
-    async def mock_delete(self):
+from pytest import MonkeyPatch
+
+@pytest.fixture(scope="module")
+def runner():
+    mp = MonkeyPatch()
+
+    async def mock_delete():
         pass
 
-    monkeypatch.setattr(Runner, "delete", mock_delete)
+    mp.setattr(RunnerStore, "delete", mock_delete)
 
-    return Runner(Simulator.from_category("Springfield", "testScenario"))
-
+    try:
+        yield Runner(
+            Simulator.from_category("Springfield", "testScenario")
+        )
+    finally:
+        mp.undo()
 
 @pytest.fixture(scope="module")
 def sector_id():
@@ -46,7 +54,7 @@ def setup(client):
 def tear_down():
     if RunnerStore.current_runner is not None:
         try:
-            asyncio.run(RunnerStore.current_runner.delete())
+            asyncio.run(RunnerStore.delete())
         except Exception:
             pass
         finally:

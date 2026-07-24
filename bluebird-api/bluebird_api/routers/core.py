@@ -45,13 +45,12 @@ async def list_scenarios(category: str):  # noqa: ANN201
 
 
 @core_router.post("/close", tags=["Control"])
-async def close(runner: RunnerDep) -> bool:
+async def close(runner: RunnerDep) -> bool:  # noqa: ARG001  # pyright: ignore[reportUnknownParameterType] as we use this to check if it is running
     """
     Unload a given simulator scenario.
     """
 
-    await runner.delete()
-    RunnerStore.current_runner = None
+    await RunnerStore.delete()
     return True
 
 
