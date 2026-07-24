@@ -156,13 +156,12 @@ class Simulator:
         """
         The location of the base logfile directory can be overridden by derived classes.
         """
-        log_dir = os.path.join(LOG_DIR, self.log_filename)
-        os.makedirs(log_dir, exist_ok=True)
-        log_file = os.path.join(log_dir, self.log_filename + ".log")
-        self.logging_file_handler = logging.FileHandler(log_file)
+        os.makedirs(os.path.join(LOG_DIR, "runtime_logs"), exist_ok=True)
+        self.logging_file_handler = logging.FileHandler(
+            os.path.join(LOG_DIR, "runtime_logs", self.log_filename + ".log")
+        )
         self.logging_file_handler.setFormatter(CustomFormatter())
         logger.addHandler(self.logging_file_handler)
-        logger.info(f"Saving logs to {log_dir}")
 
     @classmethod
     def from_category(
@@ -288,7 +287,6 @@ class Simulator:
                     simulated_sectors=simulated_sectors,
                 )
             case "Flight School":
-                # Specify the parameters for the "Flight School" competition here
                 return Infinite.setup(
                     scenario_name="Xplus-Sector",
                     log_filename=log_filename,
