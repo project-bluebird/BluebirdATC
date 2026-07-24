@@ -813,7 +813,7 @@ class EventHandler(typing.Generic[TAircraft]):
         # ensure date ordering is preserved
         self.incomm_df = self.incomm_df.sort_index()
 
-    def extend_coordinations(self, events: list[CoordinationEvent]):
+    def extend_coordination_events(self, events: list[CoordinationEvent]):
         if len(events) == 0:
             return
 

@@ -201,7 +201,7 @@ class Fixes(BaseModel, Comparison):
         dict
         """
 
-        data: dict[str, str] = {}
+        data: dict[str, list[float]] = {}
 
         for name, coord in self.places.items():
             data[name] = [coord.lat, coord.lon]

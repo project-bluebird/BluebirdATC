@@ -99,7 +99,7 @@ class Area(Comparison):
 
         Returns
         --------
-        list[str]
+        list[list[float]]
         """
 
         return [[p[1], p[0]] for p in self.boundary.exterior.coords][:-1]
