@@ -56,7 +56,7 @@ class FlightPlanEvent(BaseModel):
     route_filed: list[str] | None = None
     start_datetime: datetime | None = None
     end_datetime: datetime | None = None
-    squawk: int | None = None
+    squawk: str | None = None
     origin: str | None = None
     dest: str | None = None
     unexpanded_route: str | None = None
@@ -67,7 +67,7 @@ class FlightPlanEvent(BaseModel):
     filed_true_airspeed: float | int | None = None
     intention_code: str | None = None
     ufid: str | None = None
-    assigned_squawk: int | None = None
+    assigned_squawk: str | None = None
 
 
 class CoordinationEvent(BaseModel):
