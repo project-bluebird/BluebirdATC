@@ -138,9 +138,9 @@ class Fixes(BaseModel, Comparison):
         >>> )
         """
 
-        places = {}
+        places: dict[str, Pos2D] = {}
         for name, coord in json.loads(s).items():
-            places[name] = Pos2D(lat=coord[0], lon=coord[1])
+            places[name] = Pos2D.from_list(coord)
 
         return Fixes(places)
 
