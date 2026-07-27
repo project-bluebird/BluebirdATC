@@ -1071,10 +1071,10 @@ class EventLogger:
 
         Parameters
         ----------
-        comparison_function: str
-            Function to use to compare the log datetime with a target datetime
+        comparison_operator: Literal["<", "<="]
+            Operator to compare each log datetime against comparison_datetime.
         comparison_datetime: pandas.Timestamp
-            Datetime to be compared to log in filter
+            Datetime to be compared to log in filter.
 
         Returns
         -------

@@ -590,9 +590,10 @@ class EventHandler(typing.Generic[TAircraft]):
         # ensure date ordering is preserved
         self.radar_df = self.radar_df.sort_index()
 
-    def extend_flight_plan_events(self, events: list[FlightPlanEvent]):
+def extend_flight_plan_events(self, events: list[FlightPlanEvent]):
+        if len(events) == 0:
+            return
         new_flights = pd.DataFrame([event.model_dump() for event in events])
-
         new_flights = new_flights.set_index("datetime")
         new_flights.index.name = "datetime"
 

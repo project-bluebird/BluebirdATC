@@ -340,7 +340,7 @@ def test_trim_and_clip(time_period: int, ticks_to_evolve: int, ticks_to_trim: in
 
     log = sim.manager.event_logger
     
-    # Aircraft will appear with time, so this is dependent to where we trim. The following should always be trye as the radar log should get trimmed as it gets updated every tick
+    # Aircraft will appear with time, so this depends on where we trim. The following should always be true because the radar log should get trimmed as it gets updated every tick
     assert len(log.radar_log) <= len(sim.manager.environment.aircraft) * (ticks_to_evolve - ticks_to_trim)
 
     # The tests don't have any aircraft disappear, so we expect at least an equal set of initialisers of aircraft internals as aircraft we have in the airspace
