@@ -10,10 +10,9 @@ As one of the arguments to the function, include the RunnerDep type alias as sho
 it will be available to interact with.
 
 >>> from ..runner import RunnerDep
->>> @core_router.post("/close", tags=["Control"])
->>> async def close(runner: RunnerDep) -> bool:
->>>    await runner.delete()
->>> return True
+>>> @core_router.get("/wind_field", tags=["State"])
+>>> async def wind_field(runner: RunnerDep) -> WindField | None:
+>>>    return runner.sim.manager.environment.wind_field
 
 If during resolution of the runner, for example trying to find the runner, the runner is not available,
 a HTTP error 404 (Not found) will be returned before even running the function above.
