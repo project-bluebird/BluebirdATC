@@ -120,7 +120,7 @@ async def runner(request: Request) -> Runner[Simulator]:  # noqa: ARG001
     return runner
 
 
-async def runner_store(request: Request) -> RunnerStore[RunnerStore[Runner, Simulator]]:
+async def runner_store(request: Request) -> RunnerStore[Runner, Simulator]:
     """
     Function taking the runner store.
     """
