@@ -156,7 +156,6 @@ It also provides:
 These capabilities allow researchers to focus on tactical control of aircraft, coordination between sectors, and the evaluation of agents in domain-informed ATC scenarios.
 
 
-
 # Software design
 
 **BluebirdATC** comprises four main modular sub-packages, maintaining a strict separation between the simulation core (the `bluebird-dt` package) and the interfaces through which it is used. The `bluebird-gymnasium` package provides the gymnasium environment for reinforcement learning, `bluebird-api` enables a mechanism for communication with AI agents and remote services, and `bluebird-hmi` is a client of the API that provides a radar-style visualisation of the airspace and aircraft in it.
@@ -177,7 +176,9 @@ The package consists of:
 
 The simulator also processes actions, which are instructions to a given aircraft, such as changes to heading, altitude, or speed, and passing control to the next sector.
 
-Users initialise the simulator with a pre-defined scenario and advance it with the `evolve(time_period)` method. A key feature of `bluebird-dt` is its modularity which allows most components to be replaced, provided they conform to the specified interface. For example, this package includes both deterministic and probabilistic predictors, with the former giving reproducible baselines and fast training, and the latter capturing real-world uncertainties in aircraft performance.
+Users initialise the simulator with a pre-defined scenario and advance it with the `evolve(time_period)` method.  This stepped evolve approach is preferred over the alternative event-driven simulation approach, as it scales better to large numbers of aircraft.
+
+A key feature of `bluebird-dt` is its modularity which allows most components to be replaced, provided they conform to the specified interface. For example, this package includes both deterministic and probabilistic predictors, with the former giving reproducible baselines and fast training, and the latter capturing real-world uncertainties in aircraft performance.
 
 
 ## 2. `bluebird-gymnasium`
