@@ -202,6 +202,9 @@ def test_close_releases_runtime_log_file():
 
     # the file handle must be released: this raises PermissionError on Windows otherwise
     os.remove(log_path)
+
+
+def test_simulator_gets_garbage_collected():
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
     sim_ref = weakref.ref(sim)
 
