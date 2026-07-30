@@ -175,13 +175,15 @@ def test_save_autosave_skips_if_interval_not_elapsed():
 
 def test_close_releases_runtime_log_file():
     """
-    Check that close() detaches and closes the runtime log file handler.
+    Check that close() detaches the runtime log file handler from the shared
+    module-level logger and closes it, releasing the OS file handle immediately.
 
-    The handler is attached to the shared module-level logger, so it is not released
-    by the Simulator being garbage collected. If close() does not explicitly close it,
-    the .log file stays open for the lifetime of the process and cannot be deleted on
-    Windows (PermissionError / WinError 32), while on Linux the delete silently
-    succeeds on the still-open file.
+    While attached, the logger keeps the handler (and its open file) alive
+    regardless of what happens to the Simulator instance, and detaching without
+    closing still leaves the file open until the handler happens to be garbage
+    collected. An open .log file cannot be deleted on Windows (PermissionError /
+    WinError 32); on Linux deleting the still-open file silently succeeds, so
+    only the stream-closed assertion below catches the leak there.
     """
     log_filename = f"test_close_releases_runtime_log_{uuid.uuid4()}"
     log_path = os.path.join(LOG_DIR, "runtime_logs", log_filename + ".log")
@@ -205,6 +207,13 @@ def test_close_releases_runtime_log_file():
 
 
 def test_simulator_gets_garbage_collected():
+    """
+    Check that a Simulator can be garbage collected after close().
+
+    The lru_cache-wrapped methods (environment, dynamic_data, static_data) hold
+    self in a class-level cache once called, so the instance stays alive until
+    close() runs cache_clear() on them.
+    """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
     sim_ref = weakref.ref(sim)
 
