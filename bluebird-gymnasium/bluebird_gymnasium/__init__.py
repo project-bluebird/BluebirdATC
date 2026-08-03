@@ -18,3 +18,5 @@ register(id="SectorXPlusEnv-v0", entry_point="bluebird_gymnasium.envs:SectorXPlu
 register(id="SectorYEnv-v0", entry_point="bluebird_gymnasium.envs:SectorYEnv")
 
 register(id="SpringfieldEnv-v0", entry_point="bluebird_gymnasium.envs:SpringfieldEnv")
+
+register(id="FlightSchoolEnv-v0", entry_point="bluebird_gymnasium.envs:FlightSchoolEnv")

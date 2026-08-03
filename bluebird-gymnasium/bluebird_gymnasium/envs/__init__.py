@@ -152,6 +152,7 @@ class EnvConfig:
 
 # aircraft scenario generator class(es)
 from bluebird_dt.scenario_manager import (  # noqa: E402
+    Infinite,
     Regular,
     Tactical,
     TwoAircraft,
@@ -159,6 +160,7 @@ from bluebird_dt.scenario_manager import (  # noqa: E402
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager  # noqa: E402
 
 SCENARIO_CLS: dict[str, ScenarioManager] = {
+    "infinite": Infinite,
     "regular": Regular,
     "tactical": Tactical,
     "twoaircraft": TwoAircraft,
@@ -167,6 +169,7 @@ SCENARIO_CLS: dict[str, ScenarioManager] = {
 
 # now envs module imports
 from bluebird_gymnasium.envs.base import BaseEnv  # noqa: E402
+from bluebird_gymnasium.envs.flight_school import FlightSchoolEnv  # noqa: E402
 from bluebird_gymnasium.envs.infinite import CustomInfiniteEnv, InfiniteEnv  # noqa: E402
 from bluebird_gymnasium.envs.sector_i import SectorIEnv  # noqa: E402
 from bluebird_gymnasium.envs.sector_x import SectorXEnv  # noqa: E402
@@ -183,6 +186,7 @@ registry_env: dict[str, BaseEnv] = {
     "SectorXPlusEnv-v0": SectorXPlusEnv,
     "SectorYEnv-v0": SectorYEnv,
     "SpringfieldEnv-v0": SpringfieldEnv,
+    "FlightSchoolEnv-v0": FlightSchoolEnv,
 }
 
 name_to_gym_key: dict[str, str] = {
@@ -193,6 +197,7 @@ name_to_gym_key: dict[str, str] = {
     "SectorXPlusEnv-v0": "sector_xplus",
     "SectorYEnv-v0": "sector_y",
     "SpringfieldEnv-v0": "springfield",
+    "FlightSchoolEnv-v0": "flight_school",
 }
 
 available_names = ", ".join(name_to_gym_key.values())
@@ -238,6 +243,7 @@ def get_env_cls_and_config(env_name: str) -> tuple[type[BaseEnv], EnvConfig]:
 __all__ = [
     "BaseEnv",
     "CustomInfiniteEnv",
+    "FlightSchoolEnv",
     "InfiniteEnv",
     "SectorIEnv",
     "SectorXEnv",

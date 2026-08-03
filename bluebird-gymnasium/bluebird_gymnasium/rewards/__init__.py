@@ -98,3 +98,20 @@ registry_reward_fn.register("route_parallel_exp", f"{mod_name}:route_parallel_ex
 mod_name = f"{base_pkg}.custom.reward_drlan"
 registry_reward_fn.register("reward_drlan", f"{mod_name}:reward_drlan")
 registry_reward_fn.register("custom_reward", f"{mod_name}:custom_reward_fn")
+mod_name = f"{base_pkg}.custom.custom_reward"
+registry_reward_fn.register(
+    "route_progress_terminal_reward",
+    f"{mod_name}:route_progress_terminal_reward",
+)
+registry_reward_fn.register(
+    "lateral_termination_check_sac_env",
+    f"{mod_name}:lateral_termination_check_sac_env",
+)
+registry_reward_fn.register(
+    "lateral_termination_check_mac_env",
+    f"{mod_name}:lateral_termination_check_mac_env",
+)
+registry_reward_fn.register(
+    "anti_loiter_route_rejoin_reward",
+    f"{mod_name}:anti_loiter_route_rejoin_reward",
+)
