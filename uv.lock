@@ -233,7 +233,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bluebird-dt", editable = "bluebird-dt" },
-    { name = "fastapi", specifier = ">=0.139.2,<0.140" },
+    { name = "fastapi", specifier = ">=0.141.1,<0.142" },
     { name = "lxml-html-clean", specifier = ">=0.4.4" },
     { name = "uvicorn", specifier = ">=0.51.0,<0.52" },
 ]
@@ -307,7 +307,7 @@ requires-dist = [
 dev = [
     { name = "deepdiff", specifier = ">=8.6.2" },
     { name = "pandas-stubs", specifier = ">=2.3.2.250926" },
-    { name = "pre-commit", specifier = ">=4.2.0" },
+    { name = "pre-commit", specifier = ">=4.6.1" },
     { name = "pytest", specifier = ">=9.0.3,<10" },
     { name = "pytest-cov", specifier = ">=7.0.0,<8.0.0" },
     { name = "pytest-xdist", specifier = ">=3.8.0,<4.0.0" },
@@ -343,7 +343,7 @@ requires-dist = [
     { name = "bluebird-dt", editable = "bluebird-dt" },
     { name = "bluebird-gymnasium", editable = "bluebird-gymnasium" },
     { name = "mkdocs", specifier = "==1.6.1" },
-    { name = "mkdocs-jupyter", specifier = "==0.26.1" },
+    { name = "mkdocs-jupyter", specifier = "==0.26.3" },
     { name = "mkdocs-macros-plugin", specifier = "==1.5.0" },
     { name = "mkdocs-material", specifier = "==9.7.7" },
     { name = "mkdocs-monorepo-plugin", specifier = "==1.1.2" },
@@ -378,7 +378,7 @@ dev = [
 requires-dist = [
     { name = "bluebird-dt", editable = "bluebird-dt" },
     { name = "gymnasium", specifier = ">=0.29.1" },
-    { name = "imageio", specifier = ">=2.37.3,<3" },
+    { name = "imageio", specifier = ">=2.37.4,<3" },
     { name = "jupyter", specifier = ">=1.1.1,<2" },
 ]
 
@@ -1146,7 +1146,7 @@ wheels = [
 
 [[package]]
 name = "fastapi"
-version = "0.139.2"
+version = "0.141.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
@@ -1155,9 +1155,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/95/d3f0ae10836324a2eab98a52b61210ac609f08200bf4bb0dc8132d32f78a/fastapi-0.139.2.tar.gz", hash = "sha256:333145a6891e9b5b3cfceb69baf817e8240cde4d4588ae5a10bf56ffacb6255e", size = 423428, upload-time = "2026-07-16T15:06:17.912Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8a/02/91e3416a8fdd715abb903a952a6bec7cdd8d14eed55d415fc8595524c319/fastapi-0.141.1.tar.gz", hash = "sha256:e8822fc40db1e1858054d7a949a888695bc9bdce70139178e33bd2871a453ca1", size = 425799, upload-time = "2026-07-29T17:18:05.568Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5f/c7/cb03251d9dfb177246a9809a76f189d21df32dbd4a845951881d11323b7f/fastapi-0.139.2-py3-none-any.whl", hash = "sha256:b9ad015a835173d59865e2f5d8296fbc2b317bf56a2ba1a5bfbdd03de2fd4b1c", size = 130234, upload-time = "2026-07-16T15:06:19.557Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/03/10388a42375ee7e4ac9b94eb2c5c569c8b5795e377e701c9ac3ad63de890/fastapi-0.141.1-py3-none-any.whl", hash = "sha256:bfb91aa2d334c61cb35ba9a116fc123b3d3df31640b801cf57a7a78ec3f603b3", size = 131954, upload-time = "2026-07-29T17:18:04.364Z" },
 ]
 
 [[package]]
@@ -1377,16 +1377,16 @@ wheels = [
 
 [[package]]
 name = "imageio"
-version = "2.37.3"
+version = "2.37.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pillow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b1/84/93bcd1300216ea50811cee96873b84a1bebf8d0489ffaf7f2a3756bab866/imageio-2.37.3.tar.gz", hash = "sha256:bbb37efbfc4c400fcd534b367b91fcd66d5da639aaa138034431a1c5e0a41451", size = 389673, upload-time = "2026-03-09T11:31:12.573Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/62/aa770a9307508d2a2a2c62d536a49347bffe9e55322db27838d3c93d0b07/imageio-2.37.4.tar.gz", hash = "sha256:e45cbc5e83502047fb138f7f585f7f105a136a57eea5f4b3cfc6ce1b52720bd3", size = 390173, upload-time = "2026-07-20T05:26:11.369Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/49/fa/391e437a34e55095173dca5f24070d89cbc233ff85bf1c29c93248c6588d/imageio-2.37.3-py3-none-any.whl", hash = "sha256:46f5bb8522cd421c0f5ae104d8268f569d856b29eb1a13b92829d1970f32c9f0", size = 317646, upload-time = "2026-03-09T11:31:10.771Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/2d/ca050652104bab2cf55e569db2a178b1b61cb041fef28307f2db383f6d9f/imageio-2.37.4-py3-none-any.whl", hash = "sha256:1ab2e22c8debf700f24c3ac43e8f95f3b3a8110c83b93411e97b4b0b2cd1c7e6", size = 318000, upload-time = "2026-07-20T05:26:09.874Z" },
 ]
 
 [[package]]
@@ -2369,7 +2369,7 @@ wheels = [
 
 [[package]]
 name = "mkdocs-jupyter"
-version = "0.26.1"
+version = "0.26.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipykernel" },
@@ -2379,9 +2379,9 @@ dependencies = [
     { name = "nbconvert" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7f/d8/c146ea8cc36c3e812dd4c154513aa308614f35d2b4becec4b449165088f5/mkdocs_jupyter-0.26.1.tar.gz", hash = "sha256:7c80c0d3953de91e5b40a0d3209233795c8f800243ab298e4ec38e0504eda630", size = 1628270, upload-time = "2026-03-24T15:32:47.944Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/00/aa/f8d15409a9a3112486994a80d5a975694c7d145c4f8b5b484aeb383420ef/mkdocs_jupyter-0.26.3.tar.gz", hash = "sha256:e1e8bd48a1b96542e84e3028e3066112bac7b94d95ab69f8b91305c84003ca26", size = 1628353, upload-time = "2026-04-17T18:56:31.517Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/93/89/eb601278b12c471235860992f5973cf3c55ca3f77d1d6127389eb045a021/mkdocs_jupyter-0.26.1-py3-none-any.whl", hash = "sha256:527242c2c8f1d30970764bbab752de41243e5703f458d8bc05336ec53828192e", size = 1459618, upload-time = "2026-03-24T15:32:46.25Z" },
+    { url = "https://files.pythonhosted.org/packages/13/95/cf3f7fe4910cf0365fa8ea0c731f4b8a624d97cd76ea777913ac8d0868e2/mkdocs_jupyter-0.26.3-py3-none-any.whl", hash = "sha256:cd6644fb578131157194d750fd4d10fc2fd8f1e84e00036ee62df3b5b4b84c82", size = 1459740, upload-time = "2026-04-17T18:56:30.031Z" },
 ]
 
 [[package]]
@@ -3033,7 +3033,7 @@ wheels = [
 
 [[package]]
 name = "pre-commit"
-version = "4.6.0"
+version = "4.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cfgv" },
@@ -3042,9 +3042,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "virtualenv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8e/22/2de9408ac81acbb8a7d05d4cc064a152ccf33b3d480ebe0cd292153db239/pre_commit-4.6.0.tar.gz", hash = "sha256:718d2208cef53fdc38206e40524a6d4d9576d103eb16f0fec11c875e7716e9d9", size = 198525, upload-time = "2026-04-21T20:31:41.613Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/3a/ddb78f32a0814e66b18a099377a106a2dcdce92d86a034d69d65df9b256e/pre_commit-4.6.1.tar.gz", hash = "sha256:03e809865c7d178b9979d06c761fcbfe6808fdaded8581a745bb110e52050421", size = 198646, upload-time = "2026-07-21T20:56:58.225Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/80/6e/4b28b62ecb6aae56769c34a8ff1d661473ec1e9519e2d5f8b2c150086b26/pre_commit-4.6.0-py2.py3-none-any.whl", hash = "sha256:e2cf246f7299edcabcf15f9b0571fdce06058527f0a06535068a86d38089f29b", size = 226472, upload-time = "2026-04-21T20:31:40.092Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/49/bc925106abcdac498074f2cbe6137e94e09f418dd2b7775df5b577dc0313/pre_commit-4.6.1-py2.py3-none-any.whl", hash = "sha256:0e3b2942510d1fb34eec167a3ec57331bf8442122f1153a9fb8b58f5c49b2717", size = 226186, upload-time = "2026-07-21T20:56:57.064Z" },
 ]
 
 [[package]]
