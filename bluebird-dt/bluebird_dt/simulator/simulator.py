@@ -779,9 +779,6 @@ class Simulator:
 
         if self.logging_file_handler:
             logger.removeHandler(self.logging_file_handler)
-            # Close the handler to release the OS file handle. Without this the runtime
-            # log file stays open for the lifetime of the process (the handler is only
-            # detached from the logger), which on Windows blocks deleting the file.
             self.logging_file_handler.close()
             self.logging_file_handler = None
 
