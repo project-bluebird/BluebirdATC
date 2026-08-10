@@ -243,7 +243,7 @@ class Action(Comparison):
             ):
                 raise ValueError(
                     f"Action value must be a tuple[int, Literal['left', 'right', 'shortest']] for {self.kind}. Got "
-                    f"{value} of type {type(value)} with members of type {type(value[0])}, {type(value[1])}"
+                    f"{value} of type {type(value)}"
                 )
             self._value = value
 
