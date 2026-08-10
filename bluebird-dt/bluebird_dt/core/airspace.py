@@ -113,9 +113,11 @@ class Airspace(Comparison):
         >>>             ]
         >>>         },
         >>>         "fixes": {
-        >>>             "EXTER": "50.7351N 3.4153W",
-        >>>             "HTHRW": "51.4702N 0.4479W",
-        >>>             "STHPN": "50.9515N 1.3577W"
+        >>>             "places": {
+        >>>                 "EXTER": "50.7351N 3.4153W",
+        >>>                 "HTHRW": "51.4702N 0.4479W",
+        >>>                 "STHPN": "50.9515N 1.3577W"
+        >>>             }
         >>>         },
         >>>         "airspace_configuration": {"devon": ["devon"]},
         >>>         "individual_sectors": {
@@ -140,7 +142,7 @@ class Airspace(Comparison):
         data = json.loads(s)
 
         sectors = {name: Sector.from_json(json.dumps(sector)) for name, sector in data["sectors"].items()}
-        fixes = Fixes.from_json(json.dumps(data["fixes"]))
+        fixes = Fixes.model_validate(data["fixes"])
 
         # Create an airspace assuming no bandboxing of sectors.
         airspace = cls(sectors, fixes)
@@ -202,7 +204,7 @@ class Airspace(Comparison):
 
         return {
             "sectors": {pair[0]: pair[1].data() for pair in self.sectors.items()},
-            "fixes": self.fixes.data(),
+            "fixes": self.fixes.model_dump(),
             "airways": {pair.identifier: pair.data() for pair in self.airways.values()},
             "airspace_configuration": dict(self._airspace_configuration.items()),
             "individual_sectors": {pair[0]: pair[1].data() for pair in self._individual_sectors.items()},
@@ -1160,7 +1162,10 @@ class Airspace(Comparison):
             leg_cpa = nearest_point_on_line_segment(
                 aircraft_location, leg_start_loc, leg_end_loc, truncate_to_segment=True
             ).squeeze()
-            distance_to_legs[leg_idx_pair] = aircraft_pos2d.distance(Pos2D(*leg_cpa))
+            try:
+                distance_to_legs[leg_idx_pair] = aircraft_pos2d.distance(Pos2D(*leg_cpa))
+            except Exception as e:
+                logger.error(e)
 
         # Find the smallest distance
         min_distance_to_legs = min(distance_to_legs.values())

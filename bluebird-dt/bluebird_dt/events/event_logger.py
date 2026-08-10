@@ -10,7 +10,7 @@ from datetime import datetime
 
 import pandas as pd
 from pydantic import BaseModel, Field, RootModel
-from typing_extensions import override
+from typing_extensions import Self, override
 
 from bluebird_dt.core import Action, Aircraft, Environment
 from bluebird_dt.events import EventHandler
@@ -24,6 +24,8 @@ from bluebird_dt.utility.logging_utils import (
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator.simconfig import SaveConfig
 
+DEFAULT_TRIM_AND_CUT_TIMEDELTA = pd.Timedelta(hours=4)
+
 
 class ClearanceLog(typing.TypedDict):
     datetime: pd.Timestamp
@@ -36,6 +38,31 @@ class ClearanceLog(typing.TypedDict):
     voice_clearance: str | None
     voice_pilot_response: str | None
     sector: list[str] | None
+
+
+class RadarLog(typing.TypedDict):
+    datetime: pd.Timestamp
+    callsign: str
+    lat: float
+    lon: float
+    fl: float
+    heading: float
+    ufid: str
+    speed_tas: float
+    ground_speed: float
+    ground_track_angle: float
+    selected_fl: float
+
+
+class SectorsLog(typing.TypedDict):
+    datetime: pd.Timestamp
+    sectors_configuration: list[tuple[str, list[str]]]
+
+
+class IncommLog(typing.TypedDict):
+    datetime: pd.Timestamp
+    callsign: str
+    sector_name: str
 
 
 class SimRateUpdate(BaseModel):
@@ -89,6 +116,7 @@ class EventLogger:
 
     _sim_events: list[SimRateUpdate | SimStartStop]
     clearances_log: list[ClearanceLog]
+    radar_log: list[RadarLog]
 
     def __init__(self, log_name: str | None = None):
         """
@@ -155,8 +183,8 @@ class EventLogger:
         self.airspace_files_path_log = []  # may need deleting
         self.coordination_log = []
         self._previous_coordination = []
-        self.sectors_log = []
-        self.incomm_log = []
+        self.sectors_log: list[SectorsLog] = []
+        self.incomm_log: list[IncommLog] = []
         self._previous_incomm_states = {}
         self.fixes_df = None
         self.config = {}
@@ -1027,13 +1055,121 @@ class EventLogger:
         tar_buffer.seek(0)
         return tar_buffer
 
-    def trim(self, comparison_function: str, comparison_datetime: pd.Timestamp) -> EventLogger:
+    def trim_and_clip(
+        self,
+        comparison_operator: typing.Literal["<", "<="],
+        comparison_datetime: pd.Timestamp,
+        expire: pd.Timedelta = DEFAULT_TRIM_AND_CUT_TIMEDELTA,
+    ) -> Self:
+        """
+        Remove logs by comparing datetime to a reference datetime.
+        Comparison function allows "<", "<=".
+
+        Any log which has a datetime satisfying the comparison function with the comparison datetime
+        will be removed from the log, except an initial one to ensure the resulting log does include
+        initialisation properties.
+
+        Parameters
+        ----------
+        comparison_function: str
+            Function to use to compare the log datetime with a target datetime
+        comparison_datetime: pandas.Timestamp
+            Datetime to be compared to log in filter
+
+        Returns
+        -------
+        EventLogger
+            The EventLogger after removing any logs which satisfied the comparison function
+        """
+
+        match comparison_operator:
+            case "<":
+                comp = operator.lt
+            case "<=":
+                comp = operator.le
+            case _:
+                raise ValueError('Comparison operator unknown, must be one of "<", "<="')
+
+        if False:
+            # for now we don't trim the flight_plans as these can be at any time in the day
+            df_flight_log = self.flight_log_as_df()
+            self.flight_log = df_flight_log[comp(df_flight_log.start_datetime, comparison_datetime)].to_dict(
+                orient="records"
+            )
+
+        self.radar_log = [log for log in self.radar_log if not comp(log["datetime"], comparison_datetime)]
+        self.clearances_log = [log for log in self.clearances_log if not comp(log["datetime"], comparison_datetime)]
+
+        # For the sector log we need to clip the last before the timestamp such that loading the log hsa an
+        # initialisation state
+        last_sectorisation: SectorsLog | None = None
+        future_sector_logs: list[SectorsLog] = []
+
+        # Go from oldest to newest, assumes the list is ordered by datetime
+        for log in self.sectors_log:
+            if not comp(log["datetime"], comparison_datetime):
+                future_sector_logs.append(log)
+            elif not comp(log["datetime"], comparison_datetime - expire):
+                last_sectorisation = log
+
+        if last_sectorisation is not None:
+            self.sectors_log = [last_sectorisation, *future_sector_logs]
+        else:
+            self.sectors_log = future_sector_logs
+
+        # For the incomm and aircraft_internals, we need to clip the last before the timestamp for EACH CALLSIGN up to
+        # 4 hours ago (or as overriden)
+        last_incomm_per_callsign: dict[str, IncommLog] = {}
+        future_incomm_logs: list[IncommLog] = []
+
+        for log in self.incomm_log:
+            if not comp(log["datetime"], comparison_datetime):
+                future_incomm_logs.append(log)
+            elif not comp(log["datetime"], comparison_datetime - expire):
+                last_incomm_per_callsign[log["callsign"]] = log
+
+        self.incomm_log = sorted(last_incomm_per_callsign.values(), key=lambda x: x["datetime"]) + future_incomm_logs
+
+        last_aircraft_internals_log_per_callsign: dict[str, typing.Any] = {}
+        future_aircraft_internal_logs: list[typing.Any] = []
+
+        for log in self.aircraft_internals_log:
+            if not comp(log["datetime"], comparison_datetime):
+                future_aircraft_internal_logs.append(log)
+            elif not comp(log["datetime"], comparison_datetime - expire):
+                last_aircraft_internals_log_per_callsign[log["callsign"]] = log
+
+        self.aircraft_internals_log = (
+            sorted(last_aircraft_internals_log_per_callsign.values(), key=lambda x: x["datetime"])
+            + future_aircraft_internal_logs
+        )
+
+        last_coordination_per_key: dict[tuple[str, str], dict[str, typing.Any]] = {}
+        future_coordination_logs: list[typing.Any] = []
+
+        for log in self.coordination_log:
+            if not comp(log["datetime"], comparison_datetime):
+                future_coordination_logs.append(log)
+            elif not comp(log["datetime"], comparison_datetime - expire):
+                last_coordination_per_key[(log["callsign"], log["from_sector"])] = log
+
+        self.coordination_log = (
+            sorted(last_coordination_per_key.values(), key=lambda x: x["datetime"]) + future_coordination_logs
+        )
+
+        return self
+
+    def trim(
+        self, comparison_function: typing.Literal[">", ">=", "<=", "<"], comparison_datetime: pd.Timestamp
+    ) -> EventLogger:
         """
         Remove logs by comparing datetime to a reference datetime.
         Comparison function allows "<", "<=", ">", ">=".
 
         Any log which has a datetime satisfying the comparison function with the comparison datetime
         will be removed from the log.
+        This will cause the resulting log to not include initialisation properties, use trim_and_clip if interested in
+        these being included
 
         Parameters
         ----------
@@ -1075,7 +1211,6 @@ class EventLogger:
         self.aircraft_internals_log = [
             log for log in self.aircraft_internals_log if not comp(log["datetime"], comparison_datetime)
         ]
-        #        self.strips_log = [log for log in self.strips_log if not comp(log["datetime"], comparison_datetime)]
 
         return self
 

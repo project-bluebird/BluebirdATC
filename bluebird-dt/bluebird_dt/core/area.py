@@ -62,16 +62,16 @@ class Area(Comparison):
         >>> Area.from_json(
         >>>     '''
         >>>     [
-        >>>    "52.2069N 0.1713E",
-        >>>    "50.7350N 3.4153W",
-        >>>    "51.4700N 0.4543W",
-        >>>    "50.9515N 1.3577W"
+        >>>         [52.2069, 0.1713],
+        >>>         [50.7350, -3.4153],
+        >>>         [51.4700, -0.4543],
+        >>>         [50.9515, -1.3577]
         >>>     ]
         >>>     '''
         >>>     )
         """
 
-        boundary = [Pos2D.from_str(location) for location in json.loads(s)]
+        boundary = [Pos2D.from_list(location) for location in json.loads(s)]
 
         return Area(boundary)
 
@@ -93,7 +93,7 @@ class Area(Comparison):
         with open(filename) as fd:
             return Area.from_json(fd.read())
 
-    def data(self) -> list[str]:
+    def data(self) -> list[list[float]]:
         """
         Create a list of strings representing the Area data.
 
@@ -102,7 +102,7 @@ class Area(Comparison):
         list[str]
         """
 
-        return [f"{Pos2D(p[1], p[0])}" for p in self.boundary.exterior.coords][:-1]
+        return [[p[1], p[0]] for p in self.boundary.exterior.coords][:-1]
 
     def to_json(self) -> str:
         """

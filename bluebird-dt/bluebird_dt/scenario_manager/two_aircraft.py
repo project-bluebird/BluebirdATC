@@ -398,7 +398,6 @@ Creating TwoAircraft Scenario
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -428,9 +427,6 @@ Creating TwoAircraft Scenario
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
         env_manager_class: type, optional
             if specified, use this class (maybe a subclass of BluebirdATC EventManager).
         typeof_environmentmanager: type[EnvironmentManager], optional
@@ -486,7 +482,6 @@ Creating TwoAircraft Scenario
                 autosave=autosave,
                 attach_context_to_logger=attach_context_to_logger,
                 save_log_to_file=save_log_to_file,
-                simulated_sectors=simulated_sectors,
                 typeof_simulator=typeof_simulator,
             )
 
@@ -523,7 +518,6 @@ Creating TwoAircraft Scenario
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:
         """
@@ -552,9 +546,6 @@ Creating TwoAircraft Scenario
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], optional
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios. Defaults to "ALL".
 
         Returns
         -------
@@ -583,5 +574,4 @@ Creating TwoAircraft Scenario
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
             predictor=predictor,
-            simulated_sectors=simulated_sectors,
         )
