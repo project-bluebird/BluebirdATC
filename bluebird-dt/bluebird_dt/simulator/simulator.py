@@ -779,6 +779,8 @@ class Simulator:
 
         if self.logging_file_handler:
             logger.removeHandler(self.logging_file_handler)
+            self.logging_file_handler.close()
+            self.logging_file_handler = None
 
         self.environment.cache_clear()
         self.dynamic_data.cache_clear()
