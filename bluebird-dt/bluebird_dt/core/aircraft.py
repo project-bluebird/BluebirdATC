@@ -174,6 +174,28 @@ class Aircraft(Comparison):
     it is viewed from an air traffic control point of view.
     """
 
+    lat: float
+    lon: float
+    fl: float
+    heading: float
+    flight_plan: FlightPlan | None
+    callsign: str | None
+    ufid: str | None
+    rate_of_turn: float | None
+    aircraft_type: str | None
+    operation_params: dict | None
+    controllable: bool
+    simulated: bool
+    _current_sector: str | None
+    random_seed: int | None
+    pilot: Pilot
+    squawk: str | None
+    squawk_ident_until: float | None
+    last_passed_filed_idx: int | None
+    last_passed_current_idx: int | None
+    cleared_instructions: Instructions
+    selected_instructions: Instructions
+
     def __init__(
         self,
         lat: float,

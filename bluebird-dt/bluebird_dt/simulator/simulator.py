@@ -43,7 +43,6 @@ class Simulator:
     autosave: bool
     log_filename: str | None = None
     predictor: Predictor | None = None
-    simulated_sectors: list[str] | typing.Literal["ALL"]
     save_interval: timedelta
     last_save_time: datetime
 
@@ -61,7 +60,6 @@ class Simulator:
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
     ):
         """
         Initialise a simulation instance from a given scenario. It is not recommended to use this directly, instead use
@@ -97,9 +95,6 @@ class Simulator:
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
 
         Returns
         -------
@@ -121,7 +116,6 @@ class Simulator:
         self.save_log_to_file = save_log_to_file
         self.use_wind = use_wind
         self.use_forecast = use_forecast
-        self.simulated_sectors = simulated_sectors
         self.initialization_datetime = datetime.now()
         self.scenario_manager = scenario_manager
         self.manager = env_manager
@@ -175,7 +169,6 @@ class Simulator:
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
     ) -> Self:
         """
         Initialize a simulator from a given scenario category and name.
@@ -203,9 +196,6 @@ class Simulator:
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
 
         Returns
         -------
@@ -229,7 +219,6 @@ class Simulator:
                     autosave=autosave,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
-                    simulated_sectors=simulated_sectors,
                 )
             case "Infinite":
                 return Infinite.setup(
@@ -241,7 +230,6 @@ class Simulator:
                     autosave=autosave,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
-                    simulated_sectors=simulated_sectors,
                 )
             case "Springfield":
                 return SpringfieldScenarioManager.setup(
@@ -253,7 +241,6 @@ class Simulator:
                     autosave=autosave,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
-                    simulated_sectors=simulated_sectors,
                 )
             case "Flight School":
                 return Infinite.setup(
@@ -265,7 +252,6 @@ class Simulator:
                     autosave=autosave,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
-                    simulated_sectors=simulated_sectors,
                     random_seed=None,
                     num_starter_aircraft=2,
                     initial_spawn_rate=0.005,
