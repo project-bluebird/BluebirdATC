@@ -234,6 +234,8 @@ class Action(Comparison):
                 raise ValueError(f"Action value must be a string for {self.kind}. Got {type(value)}.")
             self._value = str(value)
         elif self.kind == "change_heading_to_by_direction":
+            if isinstance(value, str):
+                value = ast.literal_eval(value)
             if (
                 not isinstance(value, tuple)
                 or not isinstance(value[0], int | float)
@@ -241,7 +243,7 @@ class Action(Comparison):
             ):
                 raise ValueError(
                     f"Action value must be a tuple[int, Literal['left', 'right', 'shortest']] for {self.kind}. Got "
-                    "{value}"
+                    f"{value} of type {type(value)}"
                 )
             self._value = value
 
