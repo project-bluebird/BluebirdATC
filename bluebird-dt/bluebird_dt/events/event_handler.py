@@ -53,7 +53,7 @@ TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindF
 class FlightPlanEvent(BaseModel):
     callsign: str
     datetime: datetime
-    route_filed: list[str] | None = None
+    route_filed: list[str]
     start_datetime: datetime | None = None
     end_datetime: datetime | None = None
     squawk: str | None = None

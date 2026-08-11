@@ -47,10 +47,10 @@ class RadarLog(typing.TypedDict):
     lon: float
     fl: float
     heading: float
-    ufid: str
-    speed_tas: float
-    ground_speed: float
-    ground_track_angle: float
+    ufid: str | None
+    speed_tas: float | None
+    ground_speed: float | None
+    ground_track_angle: float | None
     selected_fl: float
 
 
