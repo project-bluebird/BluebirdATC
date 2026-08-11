@@ -690,6 +690,9 @@ class EventHandler(typing.Generic[TAircraft]):
         self.flight_df = self.flight_df.sort_index()
 
     def extend_clearance_events(self, clearance_events: list[ClearanceEvent]):
+        if len(clearance_events) == 0:
+            return
+
         new_clearances = pd.DataFrame([event.model_dump() for event in clearance_events])
         new_clearances["text_clearance"] = [None] * new_clearances.shape[0]
         new_clearances["text_pilot_response"] = [None] * new_clearances.shape[0]
@@ -777,6 +780,9 @@ class EventHandler(typing.Generic[TAircraft]):
         self,
         incomm_events: list[IncommEvent],
     ):
+        if len(incomm_events) == 0:
+            return
+
         new_incomm_events = pd.DataFrame([incomm_event.model_dump() for incomm_event in incomm_events])
         new_incomm_events = new_incomm_events.set_index("datetime")
         new_incomm_events.index.name = "datetime"
