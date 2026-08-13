@@ -1,28 +1,40 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import functools
 import logging
 import os
+import time
 import typing
 from collections import defaultdict
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
+import aiofiles
 from typing_extensions import Self
 
 from bluebird_dt.core import Action, Aircraft, Coordination, WindField
 from bluebird_dt.logger import ContextFilter, CustomFormatter, logger
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor
-from bluebird_dt.simulator.simconfig import SaveConfig, SimulatorConfig
+from bluebird_dt.simulator.simconfig import SaveConfig, SimConfig, SimulatorConfig
 from bluebird_dt.utility.convert import timestamp_to_string
 from bluebird_dt.utility.paths import LOG_DIR
 
 if typing.TYPE_CHECKING:
-    from bluebird_dt.scenario_manager.infinite import Infinite
+    from bluebird_dt.scenario_manager.infinite import Infinite, InfiniteScenarioManagerConfig
     from bluebird_dt.scenario_manager.regular import Regular, RegularScenarioManagerConfig
     from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
     from bluebird_dt.scenario_manager.tactical import Tactical, TacticalScenarioManagerConfig
     from bluebird_dt.scenario_manager.two_aircraft import TwoAircraft, TwoAircraftScenarioManagerConfig
+
+
+@dataclass
+class SaveData:
+    log_buffer: bytes
+    save_config: SaveConfig
+    end_save: bool = False
 
 
 class Simulator:
@@ -30,21 +42,19 @@ class Simulator:
     Implementation of the `Simulator` interface.
     """
 
-    logging_context: ContextFilter | None = None
-    logging_file_handler: logging.FileHandler | None = None
     category: str | None
     scenario_name: str | None
-    save_log_to_file: bool
-    initialization_datetime: datetime
     manager: EnvironmentManager[Aircraft, WindField, WindField]
     projection_centre: tuple[float, float] | None
     use_wind: bool
     use_forecast: bool
-    autosave: bool
-    log_filename: str | None = None
     predictor: Predictor | None = None
-    save_interval: timedelta
-    last_save_time: datetime
+    logging_context: ContextFilter | None = None
+    logging_file_handler: logging.FileHandler | None = None
+    log_filename: str | None = None
+    current_save_task: asyncio.Task | None = None
+    next_save_data: SaveData | None = None
+    save_config: SaveConfig
 
     def __init__(
         self,
@@ -55,11 +65,13 @@ class Simulator:
         scenario_name: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=1),
+        save_chunk_interval: timedelta | None = None,
     ):
         """
         Initialise a simulation instance from a given scenario. It is not recommended to use this directly, instead use
@@ -82,19 +94,23 @@ class Simulator:
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
 
         Returns
         -------
@@ -111,27 +127,32 @@ class Simulator:
         if not isinstance(env_manager, EnvironmentManager):
             raise TypeError(f"env_manager must be of type EnvironmentManager, got {type(env_manager).__name__}")
 
+        initialization_datetime = datetime.now(tz=UTC)
+        self.scenario_manager = scenario_manager
+
         self.category = category
         self.scenario_name = scenario_name
-        self.save_log_to_file = save_log_to_file
-        self.use_wind = use_wind
-        self.use_forecast = use_forecast
-        self.initialization_datetime = datetime.now()
-        self.scenario_manager = scenario_manager
         self.manager = env_manager
         self.projection_centre = projection_centre
+        self.use_wind = use_wind
+        self.use_forecast = use_forecast
+        self.predictor = predictor
+        self.save_log_to_file = save_log_to_file
 
         if attach_context_to_logger:
-            self.logging_context = ContextFilter(
-                {
-                    "scenario_name": self.scenario_name,
-                    "scenario_category": self.category,
-                }
-            )
-            logger.addFilter(self.logging_context)
+            if category is None or scenario_name is None:
+                logging.warning("Failed to setup logging context due to empty category or scenario name")
+            else:
+                self.logging_context = ContextFilter(
+                    {
+                        "scenario_name": scenario_name,
+                        "scenario_category": category,
+                    }
+                )
+                logger.addFilter(self.logging_context)
 
         if log_filename is None:
-            the_datetime_formatted = self.initialization_datetime.strftime("%Y_%m_%d__%H_%M_%S")
+            the_datetime_formatted = initialization_datetime.strftime("%Y_%m_%d__%H_%M_%S")
             # Windows can't handle ':' character in file-paths
             sanitised_name = scenario_name.replace(":", "_") if scenario_name is not None else None
             self.log_filename = f"{category}_{sanitised_name}_{the_datetime_formatted}"
@@ -141,15 +162,27 @@ class Simulator:
         if save_log_to_file:
             self.setup_logging()
 
-        self.predictor = predictor
-        self.autosave = autosave
-        self.save_interval = timedelta(minutes=5.0)
-        self.last_save_time = datetime.now()
+        self.save_config = SaveConfig(
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
+            load_simtime=env_manager.environment.datetime,
+            load_realtime=initialization_datetime,
+            save_simtime=None if autosave_interval is None else env_manager.environment.datetime,
+            save_realtime=None if autosave_interval is None else initialization_datetime,
+            chunk_start_simtime=None if save_chunk_interval is None else env_manager.environment.datetime,
+            chunk_start_realtime=None if save_chunk_interval is None else initialization_datetime,
+            save_chunk_id=None if save_chunk_interval is None else 0,
+        )
+        self.current_save_task = None
+        self.next_save_data = None
 
     def setup_logging(self):
         """
         The location of the base logfile directory can be overridden by derived classes.
         """
+        if self.log_filename is None:
+            raise Exception("Failed to setup logging as log_filename is empty")
         os.makedirs(os.path.join(LOG_DIR, "runtime_logs"), exist_ok=True)
         self.logging_file_handler = logging.FileHandler(
             os.path.join(LOG_DIR, "runtime_logs", self.log_filename + ".log")
@@ -164,11 +197,13 @@ class Simulator:
         scenario_name: str,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=1),
+        save_chunk_interval: timedelta | None = None,
     ) -> Self:
         """
         Initialize a simulator from a given scenario category and name.
@@ -183,19 +218,23 @@ class Simulator:
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
 
         Returns
         -------
@@ -211,47 +250,60 @@ class Simulator:
             # lots of additional steps for the artificial airspace
             case "Artificial":
                 return TwoAircraft.setup(
+                    typeof_simulator=cls,
                     scenario_name=scenario_name,
-                    log_filename=log_filename,
-                    predictor=predictor,
                     use_wind=use_wind,
                     use_forecast=use_forecast,
-                    autosave=autosave,
+                    predictor=predictor,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
+                    log_filename=log_filename,
+                    save_csv=save_csv,
+                    autosave_interval=autosave_interval,
+                    save_chunk_interval=save_chunk_interval,
                 )
             case "Infinite":
                 return Infinite.setup(
+                    typeof_simulator=cls,
                     scenario_name=scenario_name,
-                    log_filename=log_filename,
-                    predictor=predictor,
                     use_wind=use_wind,
                     use_forecast=use_forecast,
-                    autosave=autosave,
+                    predictor=predictor,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
+                    log_filename=log_filename,
+                    save_csv=save_csv,
+                    autosave_interval=autosave_interval,
+                    save_chunk_interval=save_chunk_interval,
                 )
             case "Springfield":
                 return SpringfieldScenarioManager.setup(
+                    typeof_simulator=cls,
                     scenario_name=scenario_name,
-                    log_filename=log_filename,
-                    predictor=predictor,
                     use_wind=use_wind,
                     use_forecast=use_forecast,
-                    autosave=autosave,
+                    predictor=predictor,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
+                    log_filename=log_filename,
+                    save_csv=save_csv,
+                    autosave_interval=autosave_interval,
+                    save_chunk_interval=save_chunk_interval,
                 )
             case "Flight School":
                 return Infinite.setup(
-                    scenario_name="Xplus-Sector",
-                    log_filename=log_filename,
-                    predictor=predictor,
+                    typeof_simulator=cls,
+                    scenario_name="plus-Sector",
                     use_wind=use_wind,
                     use_forecast=use_forecast,
-                    autosave=autosave,
+                    predictor=predictor,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
+                    log_filename=log_filename,
+                    save_csv=save_csv,
+                    autosave_interval=autosave_interval,
+                    save_chunk_interval=save_chunk_interval,
+                    # Flight school specific param
                     random_seed=None,
                     num_starter_aircraft=2,
                     initial_spawn_rate=0.005,
@@ -288,8 +340,41 @@ class Simulator:
 
         self.manager.evolve(delta)
 
-        if self.autosave:
+        if self.save_config.autosave_interval is not None:
             self.save(autosave=True)
+
+        return True
+
+    async def async_evolve(self, delta: float) -> bool:
+        """
+        Increment the simulation by a given time delta (seconds).
+
+        Parameters
+        ----------
+        delta: float
+            Time period to increment environment by
+
+        Returns
+        -------
+        bool
+        """
+        if delta <= 0:
+            raise ValueError("Time delta must be positive. Received: {}.", delta)
+
+        if self.logging_context is not None:
+            self.logging_context.set("timestamp", timestamp_to_string(self.manager.environment.time))
+
+        # Update save task
+        self.update_async_save_task()
+
+        # allow scenario manager to update events if needed
+        if self.scenario_manager is not None:
+            self.manager = self.scenario_manager.update(self.manager)
+
+        self.manager.evolve(delta)
+
+        if self.save_config.autosave_interval is not None:
+            await self.async_save(autosave=True)
 
         return True
 
@@ -655,10 +740,10 @@ class Simulator:
             )
 
         timed_action_log = []
-        for time, action_list in sorted(action_log.items()):
+        for action_time, action_list in sorted(action_log.items()):
             timed_action_log.append(
                 {
-                    "time": time.isoformat(timespec="microseconds")[:-6].replace("T", " "),
+                    "time": action_time.isoformat(timespec="microseconds")[:-6].replace("T", " "),
                     "actions": action_list,
                 }
             )
@@ -721,7 +806,7 @@ class Simulator:
 
     def config(
         self,
-    ) -> SaveConfig[
+    ) -> SimConfig[
         RegularScenarioManagerConfig
         | TacticalScenarioManagerConfig
         | SpringfieldScenarioManagerConfig
@@ -741,23 +826,26 @@ class Simulator:
             | InfiniteScenarioManagerConfig
         ]
         """
-        return SaveConfig(
+        return SimConfig(
             scenario_name=self.scenario_name,
             scenario_category=self.category,
-            save_real_datetime=self.last_save_time,
-            load_real_datetime=self.initialization_datetime,
             simulator=SimulatorConfig(
                 projection_centre=self.projection_centre,
             ),
-            save_simulator_datetime=self.manager.environment.datetime,
             scenario=self.scenario_manager.config() if self.scenario_manager is not None else None,
             environment_manager=self.manager.config(),
+            save_config=self.save_config,
         )
 
-    def close(self):
+    async def close(self):
         """
         Clean up after the simulator, otherwise it doesn't get garbage collected.
         """
+        if self.current_save_task is not None:
+            self.current_save_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self.current_save_task
+            self.current_save_task = None
         self.scenario_manager.close()
 
         if self.logging_context:
@@ -772,33 +860,225 @@ class Simulator:
         self.dynamic_data.cache_clear()
         self.static_data.cache_clear()
 
-    def save(self, autosave: bool = False) -> bool:
+    def _chunk_prepare_savedata(self, autosave: bool = False, end_save: bool = False) -> SaveData | None:
         """
-        Save simulator state to JSON.
+        Prepare save data and execute chunking if enabled.
+
+         Parameters
+         ----------
+         auto_save: bool
+             Whether autosave mode is being used
+         end_save: bool
+             Whether this is the last save of the scenario, indicate successful completion
+
+         Returns
+         -------
+         SaveData | None
+             SaveData object or None if no data should be prepared for auto save
+        """
+        curret_datetime = datetime.now(tz=UTC)
+        # if we're in autosave mode and enough time hasn't passed, don't save
+        # Checking both simtime and realtime to ensure autosave works for pausing/fast time etc.
+        if (
+            autosave
+            and self.save_config.autosave_interval is not None
+            and self.save_config.save_simtime is not None
+            and self.save_config.save_realtime is not None
+            and self.manager.environment.datetime - self.save_config.save_simtime < self.save_config.autosave_interval
+            and curret_datetime - self.save_config.save_realtime < self.save_config.autosave_interval
+        ):
+            return None
+
+        # check if we're in chunking mode and enough time has passed before preparing save data
+        # check both simtime and realtime to ensure chunking works for pausing/fast time etc.
+        if (
+            self.save_config.save_chunk_interval is not None
+            and self.save_config.save_chunk_id is not None
+            and self.save_config.chunk_start_simtime is not None
+            and self.save_config.chunk_start_realtime is not None
+            and self.manager.environment.datetime - self.save_config.chunk_start_simtime
+            > self.save_config.save_chunk_interval
+            and curret_datetime - self.save_config.chunk_start_realtime > self.save_config.save_chunk_interval
+        ):
+            if (
+                # check if there is no current_save_task and that last async save is completed and successful
+                self.current_save_task
+                and self.current_save_task.done()
+                and self.save_config.last_save_task_success
+                # check if the last async save task simtime is the same as the just finished current_save_task simtime,
+                # this grantee that the chunking is only executed if there is not missing data in between
+                and self.save_config.last_save_task_save_simtime is not None
+                and self.save_config.save_simtime is not None
+                and self.save_config.last_save_task_save_simtime == self.save_config.save_simtime
+            ):
+                t0 = time.monotonic()
+                self.manager.event_logger.trim_and_clip(
+                    "<=", self.save_config.last_save_task_save_simtime
+                )  # Empty logger completely
+                self.manager.event_handler.trim(
+                    "<=", self.save_config.last_save_task_save_simtime - timedelta(minutes=5)
+                )  # Provide some buffer to prevent unprocessed event being cleared
+                self.save_config.chunk_start_simtime = self.save_config.last_save_task_save_simtime
+                self.save_config.chunk_start_realtime = self.save_config.save_realtime
+                self.save_config.save_chunk_id += 1
+                logger.info(f"Finished chunking logger and handler in {time.monotonic() - t0:.3f} seconds")
+            else:
+                logger.warning("Skipping chunking logger and handler")
+
+        # Prepare save data
+        t0 = time.monotonic()
+        self.save_config.save_simtime = self.manager.environment.datetime
+        self.save_config.save_realtime = curret_datetime
+        save_data = SaveData(
+            self.manager.write_logs_to_buffer(self.config(), self.save_config.save_csv).getvalue(),
+            self.save_config.model_copy(deep=True),
+            end_save,
+        )
+        logger.info(f"Finished preparing save data object in {time.monotonic() - t0:.3f} seconds")
+
+        return save_data
+
+    def save(self, autosave: bool = False, end_save: bool = False) -> bool:
+        """
+        Save simulator state to log file synchronously.
 
         Parameters
         ----------
         autosave: bool
             Whether autosave mode is being used
+        end_save: bool
+            Whether this is the last save of the scenario, indicate successful completion
 
         Returns
         -------
         bool
         """
-        # if we're in autosave mode and enough time hasn't passed, don't save
-        if autosave and (datetime.now() - self.last_save_time < self.save_interval):
+        save_data = self._chunk_prepare_savedata(autosave, end_save)
+        if save_data is None:
             return False
 
-        # update the last save time
-        self.last_save_time = datetime.now()
-
-        sim_config = self.config()
-
-        # Guard against the unlikely event that autosave true but save_logs_to_file is false
-        os.makedirs(LOG_DIR, exist_ok=True)
-        log_path = os.path.join(LOG_DIR, self.manager.event_logger.log_name + ".tar.gz")
-        with open(log_path, "wb") as tar:
-            tar.write(self.manager.write_logs_to_buffer(sim_config).getvalue())
-            logger.info(f"Log saved to {log_path}")
+        self.save_task(save_data)
 
         return True
+
+    async def async_save(self, autosave: bool = False, end_save: bool = False) -> bool:
+        """
+        Save simulator state to log file asynchronously via adding to a async task queue.
+
+        Parameters
+        ----------
+        autosave: bool
+            Whether autosave mode is being used
+        end_save: bool
+            Whether this is the last save of the scenario, indicate successful completion
+
+        Returns
+        -------
+        bool
+        """
+        save_data = self._chunk_prepare_savedata(autosave, end_save)
+        if save_data is None:
+            return False
+
+        if not autosave:
+            # If manual saving, force the current task to finish and await new save task before returning
+            if self.current_save_task and not self.current_save_task.done():
+                self.current_save_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await self.current_save_task
+            self.current_save_task = asyncio.create_task(self.async_save_task(save_data))
+            await self.current_save_task
+            return self.save_config.last_save_task_success or False
+
+        # If autosave, submit the task or to next_save_data
+        if self.current_save_task is not None:
+            if self.current_save_task.done():
+                self.current_save_task = asyncio.create_task(self.async_save_task(save_data))
+                self.next_save_data = None
+            else:
+                self.next_save_data = save_data
+        else:
+            self.current_save_task = asyncio.create_task(self.async_save_task(save_data))
+            self.next_save_data = None
+        return True
+
+    def save_task(self, save_data: SaveData):
+        """
+        Process and save save_data synchronously. Raise exception if failed.
+
+        Parameters
+        ----------
+        save_data: SaveData
+            A SaveData object that contains necessary information for saving
+        """
+        log_path = os.path.join(
+            LOG_DIR,
+            self.manager.event_logger.log_name
+            + (
+                f"/{save_data.save_config.save_chunk_id}.tar.gz"
+                if save_data.save_config.save_chunk_id is not None
+                else ".tar.gz"
+            ),
+        )
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        with open(log_path, "wb") as tar:
+            tar.write(save_data.log_buffer)
+        logger.info(f"Log saved to {log_path} synchronously")
+
+        self.save_config.last_save_task_success = True
+        self.save_config.last_save_task_save_simtime = save_data.save_config.save_simtime
+        self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
+        self.save_config.last_save_task_done_realtime = datetime.now(tz=UTC)
+
+    async def async_save_task(self, save_data: SaveData):
+        """
+        Process and save save_data asynchronously.
+
+        Parameters
+        ----------
+        save_data: SaveData
+            A SaveData object that contains necessary information for saving
+        """
+        try:
+            log_path = os.path.join(
+                LOG_DIR,
+                self.manager.event_logger.log_name
+                + (
+                    f"/{save_data.save_config.save_chunk_id}.tar.gz"
+                    if save_data.save_config.save_chunk_id is not None
+                    else ".tar.gz"
+                ),
+            )
+            os.makedirs(os.path.dirname(log_path), exist_ok=True)
+            async with aiofiles.open(log_path, "wb") as tar:
+                await tar.write(save_data.log_buffer)
+            logger.info(f"Log saved to {log_path} asynchronously")
+
+            self.save_config.last_save_task_success = True
+            self.save_config.last_save_task_save_simtime = save_data.save_config.save_simtime
+            self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
+            self.save_config.last_save_task_done_realtime = datetime.now(tz=UTC)
+        except Exception as e:
+            logger.error(f"Log failed to saved to {log_path} asynchronously with exception {e}")
+            self.save_config.last_save_task_success = False
+            self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
+            self.save_config.last_save_task_done_realtime = datetime.now(tz=UTC)
+
+    def update_async_save_task(self):
+        """
+        Update the current save task and save data each evolve
+        """
+        if self.current_save_task is None and self.next_save_data is not None:
+            self.current_save_task = self.current_save_task = asyncio.create_task(
+                self.async_save_task(self.next_save_data)
+            )
+            self.next_save_data = None
+
+        if self.current_save_task is not None and self.current_save_task.done():
+            if self.next_save_data is not None:
+                self.current_save_task = self.current_save_task = asyncio.create_task(
+                    self.async_save_task(self.next_save_data)
+                )
+                self.next_save_data = None
+            else:
+                self.current_save_task = None

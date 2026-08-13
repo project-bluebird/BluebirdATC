@@ -463,21 +463,23 @@ class Tactical(ScenarioManager[TacticalScenarioManagerConfig]):
         category: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=1),
+        save_chunk_interval: timedelta | None = None,
     ) -> Simulator:
         """
         Create a Simulator instance for Tactical scenarios.
 
         Parameters
         ----------
-        scenario_name : str | None, optional
-            Name of the scenario. Default is None.
         category : str | None, optional
             Category of the simulation. Default is None.
+        scenario_name : str | None, optional
+            Name of the scenario. Default is None.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
@@ -514,13 +516,15 @@ class Tactical(ScenarioManager[TacticalScenarioManagerConfig]):
             scenario_manager=self,
             env_manager=env_manager,
             projection_centre=self.projection_centre,
-            scenario_name=scenario_name,
             category=category,
+            scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
-            predictor=predictor,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )

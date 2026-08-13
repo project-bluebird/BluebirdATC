@@ -1,6 +1,6 @@
 import random
 import typing
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import typing_extensions
@@ -106,8 +106,6 @@ class TwoAircraft(
             One of "random", "overflier", "climber" or "descender". If "random" - choose one of
             ["overflier", "climber", "descender"].
             Describes the behaviour of the second Aircraft.
-        env_manager_class: type, optional
-            if specified, use this class (maybe a subclass of BluebirdATC EventManager).
         start_time: int
             Start time of scenario, in unix time (seconds)
         vertical_buffer_distance: int or float, default is 500
@@ -393,11 +391,13 @@ Creating TwoAircraft Scenario
         scenario_name: str,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=1),
+        save_chunk_interval: timedelta | None = None,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -414,21 +414,23 @@ Creating TwoAircraft Scenario
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
-        env_manager_class: type, optional
-            if specified, use this class (maybe a subclass of BluebirdATC EventManager).
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
         typeof_environmentmanager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -473,16 +475,18 @@ Creating TwoAircraft Scenario
                 typeof_event_handler=typeof_event_handler,
                 typeof_environment_manager=typeof_environment_manager,
             ).to_simulator(
-                log_filename=log_filename,
-                predictor=predictor,
-                category="Artificial",
+                typeof_simulator=typeof_simulator,
                 scenario_name=scenario_name,
+                category="Artificial",
                 use_wind=use_wind,
                 use_forecast=use_forecast,
-                autosave=autosave,
+                predictor=predictor,
                 attach_context_to_logger=attach_context_to_logger,
                 save_log_to_file=save_log_to_file,
-                typeof_simulator=typeof_simulator,
+                log_filename=log_filename,
+                save_csv=save_csv,
+                autosave_interval=autosave_interval,
+                save_chunk_interval=save_chunk_interval,
             )
 
         else:
@@ -509,15 +513,17 @@ Creating TwoAircraft Scenario
 
     def to_simulator(
         self,
-        scenario_name: str | None = None,
         category: str | None = None,
+        scenario_name: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=1),
+        save_chunk_interval: timedelta | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:
         """
@@ -525,27 +531,33 @@ Creating TwoAircraft Scenario
 
         Parameters
         ----------
+         category : str | None, optional
+            Category of the simulation. Default is None.
         scenario_name : str | None, optional
             Name of the scenario. Default is None.
-        category : str | None, optional
-            Category of the simulation. Default is None.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
+        typeof_simulator: type[TSimulator], optional
+            If we want to use a derived class of simulator, specify here.
 
         Returns
         -------
@@ -565,13 +577,15 @@ Creating TwoAircraft Scenario
             scenario_manager=self,
             env_manager=env_manager,
             projection_centre=self.projection_centre,
-            scenario_name=scenario_name,
             category=category,
+            scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
-            predictor=predictor,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )

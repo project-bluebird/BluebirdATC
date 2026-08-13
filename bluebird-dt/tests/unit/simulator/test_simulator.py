@@ -12,7 +12,7 @@ from bluebird_dt.core import Coordination
 from bluebird_dt.logger import logger
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.simulator.simconfig import SaveConfig
+from bluebird_dt.simulator.simconfig import SimConfig
 from bluebird_dt.utility.paths import LOG_DIR
 
 
@@ -92,8 +92,8 @@ def test_log_filename(category: str, scenario_name: str):
     ],
 )
 def test_sim_config(category: str, scenario_name:str, scenario_config_type: type[SpringfieldScenarioManager]):
-    sim = Simulator.from_category(category=category, scenario_name=scenario_name, autosave=False)
-    assert isinstance(sim.config(), SaveConfig)
+    sim = Simulator.from_category(category=category, scenario_name=scenario_name, autosave_interval=None)
+    assert isinstance(sim.config(), SimConfig)
     assert isinstance(sim.config().scenario, scenario_config_type)
 
 @pytest.mark.parametrize(
@@ -150,7 +150,7 @@ def test_evolve_with_invalid_delta():
     """
     Create a sim and check that calling evolve with an invalid (zero) delta is rejected.
     """
-    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
     with pytest.raises(ValueError):
         sim.evolve(0)
 
@@ -160,7 +160,7 @@ def test_action_invalid_payload_returns_false():
     Create a sim and check that adding an invalid action to the queue is rejected.
 
     """
-    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
     assert sim.action([{"callsign": "AIR01"}]) is False
 
 
@@ -168,12 +168,15 @@ def test_save_autosave_skips_if_interval_not_elapsed():
     """
     Create a sim and check that save() fails when called before interval has elapsed.
     """
-    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
-    sim.last_save_time = datetime.now()
-    sim.save_interval = timedelta(minutes=10)
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=timedelta(minutes=10))
+    # sim.save_config.autosave_interval = timedelta(minutes=10)
+    assert sim.save_config.autosave_interval is not None
+    assert sim.save_config.save_simtime is not None
+    assert sim.save_config.save_realtime is not None
     assert sim.save(autosave=True) is False
 
-def test_close_releases_runtime_log_file():
+@pytest.mark.asyncio
+async def test_close_releases_runtime_log_file():
     """
     Check that close() detaches the runtime log file handler from the shared
     module-level logger and closes it, releasing the OS file handle immediately.
@@ -189,14 +192,14 @@ def test_close_releases_runtime_log_file():
     log_path = os.path.join(LOG_DIR, "runtime_logs", log_filename + ".log")
 
     sim = Simulator.from_category(
-        category="Springfield", scenario_name="example-scenario", autosave=False, log_filename=log_filename
+        category="Springfield", scenario_name="example-scenario", autosave_interval=None, log_filename=log_filename
     )
     handler = sim.logging_file_handler
     assert handler is not None
     assert handler in logger.handlers
     assert os.path.exists(log_path)
 
-    sim.close()
+    await sim.close()
 
     assert handler not in logger.handlers
     assert handler.stream is None or handler.stream.closed
@@ -205,8 +208,8 @@ def test_close_releases_runtime_log_file():
     # the file handle must be released: this raises PermissionError on Windows otherwise
     os.remove(log_path)
 
-
-def test_simulator_gets_garbage_collected():
+@pytest.mark.asyncio
+async def test_simulator_gets_garbage_collected():
     """
     Check that a Simulator can be garbage collected after close().
 
@@ -214,14 +217,14 @@ def test_simulator_gets_garbage_collected():
     self in a class-level cache once called, so the instance stays alive until
     close() runs cache_clear() on them.
     """
-    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
     sim_ref = weakref.ref(sim)
 
     _ = sim.environment(sim.manager.environment.datetime)
     _ = sim.dynamic_data(sim.manager.environment.datetime)
     _ = sim.static_data(sim.manager.environment.datetime)
 
-    sim.close()
+    await sim.close()
 
     del sim
 

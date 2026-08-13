@@ -122,7 +122,7 @@ class InfiniteEnv(BaseEnv):
         sim = Infinite.setup(
             scenario_name=self.config.scenario_config["scenario_name"],
             random_seed=self._reset_seed,
-            autosave=False,
+            autosave_interval=None,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,
@@ -317,7 +317,7 @@ class CustomInfiniteEnv(BaseEnv):
             spawn_distance_threshold=self.config.scenario_config["spawn_distance_threshold"],
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
-            autosave=False,
+            autosave_interval=None,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,
