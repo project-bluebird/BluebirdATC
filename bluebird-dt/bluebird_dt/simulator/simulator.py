@@ -315,6 +315,27 @@ class Simulator:
             case _:
                 raise ValueError(f"Unknown scenario category: {category}")
 
+    def _evolve_core(self, delta: float) -> None:
+        """
+        A private core evolve function shared for both evolve and async_evolve
+
+        Parameters
+        ----------
+        delta: float
+            Time period to increment environment by
+        """
+        if delta <= 0:
+            raise ValueError(f"Time delta must be positive. Received: {delta}")
+
+        if self.logging_context is not None:
+            self.logging_context.set("timestamp", timestamp_to_string(self.manager.environment.time))
+
+        # allow scenario manager to update events if needed
+        if self.scenario_manager is not None:
+            self.manager = self.scenario_manager.update(self.manager)
+
+        self.manager.evolve(delta)
+
     def evolve(self, delta: float) -> bool:
         """
         Increment the simulation by a given time delta (seconds).
@@ -328,17 +349,7 @@ class Simulator:
         -------
         bool
         """
-        if delta <= 0:
-            raise ValueError("Time delta must be positive. Received: {}.", delta)
-
-        if self.logging_context is not None:
-            self.logging_context.set("timestamp", timestamp_to_string(self.manager.environment.time))
-
-        # allow scenario manager to update events if needed
-        if self.scenario_manager is not None:
-            self.manager = self.scenario_manager.update(self.manager)
-
-        self.manager.evolve(delta)
+        self._evolve_core(delta)
 
         if self.save_config.autosave_interval is not None:
             self.save(autosave=True)
@@ -358,20 +369,10 @@ class Simulator:
         -------
         bool
         """
-        if delta <= 0:
-            raise ValueError("Time delta must be positive. Received: {}.", delta)
-
-        if self.logging_context is not None:
-            self.logging_context.set("timestamp", timestamp_to_string(self.manager.environment.time))
-
         # Update save task
         self.update_async_save_task()
 
-        # allow scenario manager to update events if needed
-        if self.scenario_manager is not None:
-            self.manager = self.scenario_manager.update(self.manager)
-
-        self.manager.evolve(delta)
+        self._evolve_core(delta)
 
         if self.save_config.autosave_interval is not None:
             await self.async_save(autosave=True)
@@ -841,11 +842,15 @@ class Simulator:
         """
         Clean up after the simulator, otherwise it doesn't get garbage collected.
         """
+        logger.info("closing simulator")
+
         if self.current_save_task is not None:
             self.current_save_task.cancel()
+            logger.info("awaiting current save task to finish")
             with contextlib.suppress(asyncio.CancelledError):
                 await self.current_save_task
             self.current_save_task = None
+
         self.scenario_manager.close()
 
         if self.logging_context:
@@ -860,7 +865,7 @@ class Simulator:
         self.dynamic_data.cache_clear()
         self.static_data.cache_clear()
 
-    def _chunk_prepare_savedata(self, autosave: bool = False, end_save: bool = False) -> SaveData | None:
+    def _prepare_savedata_and_chunk(self, autosave: bool = False, end_save: bool = False) -> SaveData | None:
         """
         Prepare save data and execute chunking if enabled.
 
@@ -884,8 +889,10 @@ class Simulator:
             and self.save_config.autosave_interval is not None
             and self.save_config.save_simtime is not None
             and self.save_config.save_realtime is not None
-            and self.manager.environment.datetime - self.save_config.save_simtime < self.save_config.autosave_interval
-            and curret_datetime - self.save_config.save_realtime < self.save_config.autosave_interval
+            and (
+                self.manager.environment.datetime - self.save_config.save_simtime < self.save_config.autosave_interval
+                or curret_datetime - self.save_config.save_realtime < self.save_config.autosave_interval
+            )
         ):
             return None
 
@@ -897,14 +904,16 @@ class Simulator:
             and self.save_config.chunk_start_simtime is not None
             and self.save_config.chunk_start_realtime is not None
             and self.manager.environment.datetime - self.save_config.chunk_start_simtime
-            > self.save_config.save_chunk_interval
-            and curret_datetime - self.save_config.chunk_start_realtime > self.save_config.save_chunk_interval
+            >= self.save_config.save_chunk_interval
+            and curret_datetime - self.save_config.chunk_start_realtime >= self.save_config.save_chunk_interval
         ):
             if (
                 # check if there is no current_save_task and that last async save is completed and successful
-                self.current_save_task
-                and self.current_save_task.done()
-                and self.save_config.last_save_task_success
+                (
+                    self.current_save_task is None
+                    or (self.current_save_task is not None and self.current_save_task.done())
+                )
+                and self.save_config.last_save_task_success is True
                 # check if the last async save task simtime is the same as the just finished current_save_task simtime,
                 # this grantee that the chunking is only executed if there is not missing data in between
                 and self.save_config.last_save_task_save_simtime is not None
@@ -921,9 +930,9 @@ class Simulator:
                 self.save_config.chunk_start_simtime = self.save_config.last_save_task_save_simtime
                 self.save_config.chunk_start_realtime = self.save_config.save_realtime
                 self.save_config.save_chunk_id += 1
-                logger.info(f"Finished chunking logger and handler in {time.monotonic() - t0:.3f} seconds")
+                logger.info(f"finished chunking logger and handler in {time.monotonic() - t0:.3f} seconds")
             else:
-                logger.warning("Skipping chunking logger and handler")
+                logger.warning("skipping chunking logger and handler")
 
         # Prepare save data
         t0 = time.monotonic()
@@ -953,7 +962,7 @@ class Simulator:
         -------
         bool
         """
-        save_data = self._chunk_prepare_savedata(autosave, end_save)
+        save_data = self._prepare_savedata_and_chunk(autosave, end_save)
         if save_data is None:
             return False
 
@@ -976,7 +985,7 @@ class Simulator:
         -------
         bool
         """
-        save_data = self._chunk_prepare_savedata(autosave, end_save)
+        save_data = self._prepare_savedata_and_chunk(autosave, end_save)
         if save_data is None:
             return False
 
@@ -986,21 +995,38 @@ class Simulator:
                 self.current_save_task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await self.current_save_task
+            logger.info("manual saving - awaiting save task to finish")
             self.current_save_task = asyncio.create_task(self.async_save_task(save_data))
             await self.current_save_task
             return self.save_config.last_save_task_success or False
 
         # If autosave, submit the task or to next_save_data
-        if self.current_save_task is not None:
-            if self.current_save_task.done():
-                self.current_save_task = asyncio.create_task(self.async_save_task(save_data))
+        self.next_save_data = save_data
+        self.update_async_save_task()
+
+        return True
+
+    def update_async_save_task(self) -> None:
+        """
+        Update the current save task and save data
+        """
+        if self.current_save_task is None and self.next_save_data is not None:
+            logger.info("update save task - moving next_save_data to current_save_task")
+            self.current_save_task = self.current_save_task = asyncio.create_task(
+                self.async_save_task(self.next_save_data)
+            )
+            self.next_save_data = None
+
+        if self.current_save_task is not None and self.current_save_task.done():
+            if self.next_save_data is not None:
+                logger.info("update save task - moving next_save_data to current_save_task")
+                self.current_save_task = self.current_save_task = asyncio.create_task(
+                    self.async_save_task(self.next_save_data)
+                )
                 self.next_save_data = None
             else:
-                self.next_save_data = save_data
-        else:
-            self.current_save_task = asyncio.create_task(self.async_save_task(save_data))
-            self.next_save_data = None
-        return True
+                logger.info("update save task - setting current_save_task to None as all save tasks finishes")
+                self.current_save_task = None
 
     def save_task(self, save_data: SaveData):
         """
@@ -1023,14 +1049,14 @@ class Simulator:
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
         with open(log_path, "wb") as tar:
             tar.write(save_data.log_buffer)
-        logger.info(f"Log saved to {log_path} synchronously")
+        logger.info(f"sync save task - log saved to {log_path}")
 
         self.save_config.last_save_task_success = True
         self.save_config.last_save_task_save_simtime = save_data.save_config.save_simtime
         self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
         self.save_config.last_save_task_done_realtime = datetime.now(tz=UTC)
 
-    async def async_save_task(self, save_data: SaveData):
+    async def async_save_task(self, save_data: SaveData) -> None:
         """
         Process and save save_data asynchronously.
 
@@ -1052,33 +1078,14 @@ class Simulator:
             os.makedirs(os.path.dirname(log_path), exist_ok=True)
             async with aiofiles.open(log_path, "wb") as tar:
                 await tar.write(save_data.log_buffer)
-            logger.info(f"Log saved to {log_path} asynchronously")
+            logger.info(f"async save task - log saved to {log_path}")
 
             self.save_config.last_save_task_success = True
             self.save_config.last_save_task_save_simtime = save_data.save_config.save_simtime
             self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
             self.save_config.last_save_task_done_realtime = datetime.now(tz=UTC)
         except Exception as e:
-            logger.error(f"Log failed to saved to {log_path} asynchronously with exception {e}")
+            logger.error(f"async save task - log failed to saved to {log_path} with exception {e}")
             self.save_config.last_save_task_success = False
             self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
             self.save_config.last_save_task_done_realtime = datetime.now(tz=UTC)
-
-    def update_async_save_task(self):
-        """
-        Update the current save task and save data each evolve
-        """
-        if self.current_save_task is None and self.next_save_data is not None:
-            self.current_save_task = self.current_save_task = asyncio.create_task(
-                self.async_save_task(self.next_save_data)
-            )
-            self.next_save_data = None
-
-        if self.current_save_task is not None and self.current_save_task.done():
-            if self.next_save_data is not None:
-                self.current_save_task = self.current_save_task = asyncio.create_task(
-                    self.async_save_task(self.next_save_data)
-                )
-                self.next_save_data = None
-            else:
-                self.current_save_task = None

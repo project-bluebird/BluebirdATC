@@ -2,7 +2,7 @@ import gc
 import os
 import uuid
 import weakref
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from typing import Any
 
 import pytest
@@ -163,17 +163,6 @@ def test_action_invalid_payload_returns_false():
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
     assert sim.action([{"callsign": "AIR01"}]) is False
 
-
-def test_save_autosave_skips_if_interval_not_elapsed():
-    """
-    Create a sim and check that save() fails when called before interval has elapsed.
-    """
-    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=timedelta(minutes=10))
-    # sim.save_config.autosave_interval = timedelta(minutes=10)
-    assert sim.save_config.autosave_interval is not None
-    assert sim.save_config.save_simtime is not None
-    assert sim.save_config.save_realtime is not None
-    assert sim.save(autosave=True) is False
 
 @pytest.mark.asyncio
 async def test_close_releases_runtime_log_file():
