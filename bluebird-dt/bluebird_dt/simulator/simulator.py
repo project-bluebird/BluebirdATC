@@ -9,7 +9,7 @@ import time
 import typing
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import aiofiles
 from typing_extensions import Self
@@ -70,7 +70,7 @@ class Simulator:
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         save_csv: bool = True,
-        autosave_interval: timedelta | None = timedelta(minutes=1),
+        autosave_interval: timedelta | None = timedelta(minutes=5),
         save_chunk_interval: timedelta | None = None,
     ):
         """
@@ -127,7 +127,7 @@ class Simulator:
         if not isinstance(env_manager, EnvironmentManager):
             raise TypeError(f"env_manager must be of type EnvironmentManager, got {type(env_manager).__name__}")
 
-        initialization_datetime = datetime.now(tz=UTC)
+        initialization_datetime = datetime.now(tz=timezone.utc)
         self.scenario_manager = scenario_manager
 
         self.category = category
@@ -202,7 +202,7 @@ class Simulator:
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         save_csv: bool = True,
-        autosave_interval: timedelta | None = timedelta(minutes=1),
+        autosave_interval: timedelta | None = timedelta(minutes=5),
         save_chunk_interval: timedelta | None = None,
     ) -> Self:
         """
@@ -293,7 +293,7 @@ class Simulator:
             case "Flight School":
                 return Infinite.setup(
                     typeof_simulator=cls,
-                    scenario_name="plus-Sector",
+                    scenario_name="Xplus-Sector",
                     use_wind=use_wind,
                     use_forecast=use_forecast,
                     predictor=predictor,
@@ -819,7 +819,7 @@ class Simulator:
 
         Returns
         -------
-        SaveConfig[
+        SimConfig[
             RegularScenarioManagerConfig
             | TacticalScenarioManagerConfig
             | SpringfieldScenarioManagerConfig
@@ -845,11 +845,11 @@ class Simulator:
         logger.info("closing simulator")
 
         if self.current_save_task is not None:
-            self.current_save_task.cancel()
             logger.info("awaiting current save task to finish")
             with contextlib.suppress(asyncio.CancelledError):
                 await self.current_save_task
             self.current_save_task = None
+        self.next_save_data = None
 
         self.scenario_manager.close()
 
@@ -881,7 +881,7 @@ class Simulator:
          SaveData | None
              SaveData object or None if no data should be prepared for auto save
         """
-        curret_datetime = datetime.now(tz=UTC)
+        curret_datetime = datetime.now(tz=timezone.utc)
         # if we're in autosave mode and enough time hasn't passed, don't save
         # Checking both simtime and realtime to ensure autosave works for pausing/fast time etc.
         if (
@@ -990,7 +990,9 @@ class Simulator:
             return False
 
         if not autosave:
-            # If manual saving, force the current task to finish and await new save task before returning
+            # If manual saving, force the current task to finish and cancel future task
+            # and await new save task before returning
+            self.next_save_data = None
             if self.current_save_task and not self.current_save_task.done():
                 self.current_save_task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
@@ -1054,7 +1056,7 @@ class Simulator:
         self.save_config.last_save_task_success = True
         self.save_config.last_save_task_save_simtime = save_data.save_config.save_simtime
         self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
-        self.save_config.last_save_task_done_realtime = datetime.now(tz=UTC)
+        self.save_config.last_save_task_done_realtime = datetime.now(tz=timezone.utc)
 
     async def async_save_task(self, save_data: SaveData) -> None:
         """
@@ -1083,9 +1085,9 @@ class Simulator:
             self.save_config.last_save_task_success = True
             self.save_config.last_save_task_save_simtime = save_data.save_config.save_simtime
             self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
-            self.save_config.last_save_task_done_realtime = datetime.now(tz=UTC)
+            self.save_config.last_save_task_done_realtime = datetime.now(tz=timezone.utc)
         except Exception as e:
             logger.error(f"async save task - log failed to saved to {log_path} with exception {e}")
             self.save_config.last_save_task_success = False
             self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
-            self.save_config.last_save_task_done_realtime = datetime.now(tz=UTC)
+            self.save_config.last_save_task_done_realtime = datetime.now(tz=timezone.utc)

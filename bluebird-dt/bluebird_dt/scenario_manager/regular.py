@@ -245,7 +245,7 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         save_csv: bool = True,
-        autosave_interval: timedelta | None = timedelta(minutes=1),
+        autosave_interval: timedelta | None = timedelta(minutes=5),
         save_chunk_interval: timedelta | None = None,
     ) -> Simulator:
         """

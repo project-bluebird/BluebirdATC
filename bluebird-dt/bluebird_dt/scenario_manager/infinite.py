@@ -577,7 +577,7 @@ Creating Infinite Scenario
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         save_csv: bool = True,
-        autosave_interval: timedelta | None = timedelta(minutes=1),
+        autosave_interval: timedelta | None = timedelta(minutes=5),
         save_chunk_interval: timedelta | None = None,
         random_seed: int | None = None,
         num_starter_aircraft: int = 2,
@@ -718,7 +718,7 @@ Creating Infinite Scenario
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         save_csv: bool = True,
-        autosave_interval: timedelta | None = timedelta(minutes=1),
+        autosave_interval: timedelta | None = timedelta(minutes=5),
         save_chunk_interval: timedelta | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:

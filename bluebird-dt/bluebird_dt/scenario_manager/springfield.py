@@ -144,7 +144,7 @@ class SpringfieldScenarioManager(
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         save_csv: bool = True,
-        autosave_interval: timedelta | None = timedelta(minutes=1),
+        autosave_interval: timedelta | None = timedelta(minutes=5),
         save_chunk_interval: timedelta | None = None,
         typeof_environmentmanager: type[
             EnvironmentManager[TAircraft, TWindField, TForecastWindField]
@@ -704,7 +704,7 @@ class SpringfieldScenarioManager(
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         save_csv: bool = True,
-        autosave_interval: timedelta | None = timedelta(minutes=1),
+        autosave_interval: timedelta | None = timedelta(minutes=5),
         save_chunk_interval: timedelta | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:
@@ -760,7 +760,7 @@ class SpringfieldScenarioManager(
             env_manager=env_manager,
             projection_centre=self.projection_centre,
             category=category,
-            scenario_name=scenario_name,
+            scenario_name=self.scenario_name if scenario_name is None else scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
             predictor=predictor,

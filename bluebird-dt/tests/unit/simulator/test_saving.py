@@ -4,7 +4,7 @@ import os
 from unittest.mock import MagicMock, patch
 import uuid
 import weakref
-from datetime import UTC, date, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pytest
@@ -46,7 +46,7 @@ def test_chunk_prepare_savedata_autosave_skip(sim_elapsed, real_elapsed, autosav
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=timedelta(minutes=10))
 
     # Fake state
-    now_realtime = datetime.now(tz=UTC)
+    now_realtime = datetime.now(tz=timezone.utc)
     now_simtime = sim.manager.environment.datetime
     sim.save_config.save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.save_config.save_realtime = now_realtime - timedelta(minutes=real_elapsed)
@@ -68,7 +68,7 @@ def test_chunk_prepare_savedata_autosave_proceed(sim_elapsed, real_elapsed, auto
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=timedelta(minutes=10))
 
     # Fake state
-    now_realtime = datetime.now(tz=UTC)
+    now_realtime = datetime.now(tz=timezone.utc)
     now_simtime = sim.manager.environment.datetime
     sim.save_config.save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.save_config.save_realtime = now_realtime - timedelta(minutes=real_elapsed)
@@ -94,7 +94,7 @@ def test_chunking_skipped(sim_elapsed, real_elapsed, autosave, last_save_task_su
     sim.manager.event_handler.trim = trim_handler
 
     # Fake state
-    now_realtime = datetime.now(tz=UTC)
+    now_realtime = datetime.now(tz=timezone.utc)
     now_simtime = sim.manager.environment.datetime
     sim.save_config.chunk_start_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.save_config.chunk_start_realtime = now_realtime - timedelta(minutes=real_elapsed)
@@ -127,7 +127,7 @@ def test_chunking_proceed(sim_elapsed, real_elapsed, autosave, last_save_task_su
     sim.manager.event_handler.trim = trim_handler
 
     # Fake state
-    now_realtime = datetime.now(tz=UTC)
+    now_realtime = datetime.now(tz=timezone.utc)
     now_simtime = sim.manager.environment.datetime
     sim.save_config.chunk_start_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.save_config.chunk_start_realtime = now_realtime - timedelta(minutes=real_elapsed)
@@ -160,7 +160,7 @@ def test_save_skip(sim_elapsed, real_elapsed, autosave):
     sim.evolve(6)
 
     # Fake state
-    now_realtime = datetime.now(tz=UTC)
+    now_realtime = datetime.now(tz=timezone.utc)
     now_simtime = sim.manager.environment.datetime
     sim.save_config.save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.save_config.save_realtime = now_realtime - timedelta(minutes=real_elapsed)
@@ -186,7 +186,7 @@ def test_save_proceed(sim_elapsed, real_elapsed, autosave):
     sim.evolve(6)
 
     # Fake state
-    now_realtime = datetime.now(tz=UTC)
+    now_realtime = datetime.now(tz=timezone.utc)
     now_simtime = sim.manager.environment.datetime
     sim.save_config.save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.save_config.save_realtime = now_realtime - timedelta(minutes=real_elapsed)
@@ -209,7 +209,7 @@ async def test_async_save_skip(sim_elapsed, real_elapsed, autosave):
     await sim.async_evolve(6)
 
     # Fake state
-    now_realtime = datetime.now(tz=UTC)
+    now_realtime = datetime.now(tz=timezone.utc)
     now_simtime = sim.manager.environment.datetime
     sim.save_config.save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.save_config.save_realtime = now_realtime - timedelta(minutes=real_elapsed)
@@ -235,7 +235,7 @@ async def test_async_save_proceed(sim_elapsed, real_elapsed, autosave):
     await sim.async_evolve(6)
 
     # Fake state
-    now_realtime = datetime.now(tz=UTC)
+    now_realtime = datetime.now(tz=timezone.utc)
     now_simtime = sim.manager.environment.datetime
     sim.save_config.save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.save_config.save_realtime = now_realtime - timedelta(minutes=real_elapsed)
