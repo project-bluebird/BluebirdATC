@@ -27,6 +27,7 @@ from bluebird_dt.core import (
     Volume,
     WindField,
 )
+from bluebird_dt.core.action import ExpectLevelByValue
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
 from bluebird_dt.utility.geo_helper import GeoHelper
 
@@ -554,6 +555,18 @@ def make_action(kind: str) -> Action:
         value = make_random_heading()
     if kind == "message":
         value = make_random_message()
+    if kind == "expect_level_by_fix,descend":
+        value = ExpectLevelByValue(
+                cleared_level=make_random_fl(), 
+                target_fix=make_random_fix_name(), 
+                expected_level_at_target=make_random_fl()
+                )
+    if kind == "expect_level_by_fix,climb":
+        value = ExpectLevelByValue(
+                cleared_level=make_random_fl(),
+                target_fix=make_random_fix_name(),
+                expected_level_at_target=make_random_fl()
+                )
     agent = random.choice(["Smith", "Bond", "Powers", "J"])
     clearance = " ".join((callsign, kind, str(value), agent))
     pilot_response = " ".join((kind, str(value), agent, callsign))

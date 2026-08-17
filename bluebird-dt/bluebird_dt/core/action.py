@@ -18,6 +18,12 @@ class ClearanceAndResponse(BaseModel):
     pilot_response: str | None
 
 
+class ExpectLevelByValue(BaseModel):
+    cleared_level: int
+    target_fix: str
+    expected_level_at_target: int
+
+
 class Action(Comparison):
     """
     Fundamental unit of communication between Agent and Predictor.
@@ -25,7 +31,7 @@ class Action(Comparison):
 
     callsign: str
     _kind: str
-    _value: int | float | str | list[str] | tuple[int, str] | None = None
+    _value: int | float | str | list[str] | tuple[int, str] | ExpectLevelByValue | None = None
     agent: str | None
     voice_representation: ClearanceAndResponse | None
     text_representation: ClearanceAndResponse | None
@@ -35,7 +41,7 @@ class Action(Comparison):
         self,
         callsign: str,
         kind: str,
-        value: int | float | str | list[str] | tuple[int, str] | None,
+        value: int | float | str | list[str] | tuple[int, str] | ExpectLevelByValue | None,
         agent: str | None = None,
         text_representation: ClearanceAndResponse | None = None,
         voice_representation: ClearanceAndResponse | None = None,
@@ -68,6 +74,10 @@ class Action(Comparison):
             - `outcomm`: hand control over to the named sector or next coordinated sector if no name given
             - `using_speed_limit`: set whether aircraft needs to obey TMA speed limit (for basic training only)
             - `message`: pass a text string (primarily to display on the HMI)
+            - 'expect_level_by_fix,climb': Instruct the aircraft to calculate the climb profile with the aim of
+            meeting a level by instruction at the instructed waypoint, but climbing only to the separately
+            instructed level. The value property should be ExpectLevelByValue
+            - 'expect_level_by_fix,descend': Equivalent to the expect_level_by_fix,climb, but for descends
 
         value: Union[int, float, str]
             Allowed values for each Action kind differs:
@@ -82,6 +92,8 @@ class Action(Comparison):
             - `change_cas_to`: int or None (None indicates "fly at own speed")
             - `descend_when_ready,level_by_fix`: tuple[int, str]
             - `descend_now,level_by_fix`: tuple[int, str]
+            - `expect_level_by_fix,descend`: tuple[int, str, int]
+            - `expect_level_by_fix,climb`: tuple[int, str, int]
             - `change_cas_to`: float or None (None indicates "fly at own speed")
             - `change_mach_to`: float or None (None indicates "fly at own speed")
             - `change_vertical_speed_to`: float
@@ -140,12 +152,12 @@ class Action(Comparison):
         self._kind = kind
 
     @property
-    def value(self) -> int | float | str | list[str] | tuple[int, str] | None:
+    def value(self) -> int | float | str | list[str] | tuple[int, str] | ExpectLevelByValue | None:
         """The Action value"""
         return self._value
 
     @value.setter
-    def value(self, value: int | float | str | list[str] | tuple[int, str] | None) -> None:
+    def value(self, value: int | float | str | list[str] | tuple[int, str] | ExpectLevelByValue | None) -> None:
         """Set value and ensure correct type"""
         # raise error if value is None for action kinds that need a value
         if value is None and self.kind in [
@@ -164,10 +176,17 @@ class Action(Comparison):
             "heading_turn_segment",
             "message",
             "change_heading_to_by_direction",
+            "expect_level_by_fix,climb",
+            "expect_level_by_fix,descend",
         ]:
             raise Exception(f"Value cannot be None for action kind {self.kind}")
 
-        if "level_by_fix" in self.kind:
+        if self.kind in ["expect_level_by_fix,descend", "expect_level_by_fix,climb"]:
+            if not isinstance(value, ExpectLevelByValue):
+                raise ValueError(f"Action value must be of type ExpectLevelByValue {self.kind}. Got {type(value)}.")
+            self._value = value
+
+        elif "level_by_fix" in self.kind:
             # first, check if it is a string (from the clearance df) and convert it back to a tuple.
             # the string should be of the form "(int/float, 'str')"
             if isinstance(value, str):
@@ -335,7 +354,10 @@ class Action(Comparison):
         kind = data["kind"]
         value = data["value"]
 
-        if "level_by_fix" in kind or kind == "change_heading_to_by_direction":
+        if kind in ["expect_level_by_fix,descend", "expect_level_by_fix,climb"]:
+            value = ExpectLevelByValue.model_validate(value)
+
+        elif "level_by_fix" in kind or kind == "change_heading_to_by_direction":
             value = tuple(value)
 
         voice_representation: str | None = data.get("voice_representation", None)
@@ -367,7 +389,7 @@ class Action(Comparison):
         return {
             "callsign": self.callsign,
             "kind": self.kind,
-            "value": self.value,
+            "value": self.value.model_dump() if isinstance(self.value, BaseModel) else self.value,
             "agent": self.agent,
             "text_representation": (
                 None if self.text_representation is None else self.text_representation.model_dump()
