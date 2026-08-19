@@ -436,7 +436,6 @@ class Custom(
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         env_manager: TEnvironmentManager | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> Simulator:
@@ -466,9 +465,6 @@ class Custom(
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], optional
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios. Defaults to "ALL".
         env_manager: TEnvironmentManager | None
             If given, use this EnvironmentManager as the Simulator's `manager`.
             Default is None, in which case a new EnvironmentManager will be created.
@@ -502,7 +498,6 @@ class Custom(
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
             predictor=predictor,
-            simulated_sectors=simulated_sectors,
         )
 
     @classmethod
@@ -524,7 +519,6 @@ class Custom(
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
@@ -573,9 +567,6 @@ class Custom(
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
@@ -625,6 +616,5 @@ class Custom(
             autosave=autosave,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
-            simulated_sectors=simulated_sectors,
             typeof_simulator=typeof_simulator,
         )

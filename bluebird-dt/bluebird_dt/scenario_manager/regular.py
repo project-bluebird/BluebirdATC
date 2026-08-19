@@ -255,7 +255,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_event_logger: type[TEventLogger] = EventLogger,
@@ -297,9 +296,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
         env_manager_class: type, optional
             if specified, use this class (maybe a subclass of BluebirdATC EventManager).
         typeof_environment_manager: type[EnvironmentManager], optional
@@ -343,7 +339,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             autosave=autosave,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
-            simulated_sectors=simulated_sectors,
             typeof_simulator=typeof_simulator,
         )
         # if needed, fast-forward to the first aircraft entry time, ensuring that it is

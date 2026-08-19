@@ -233,7 +233,6 @@ class Simulator:
                     autosave=autosave,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
-                    simulated_sectors=simulated_sectors,
                 )
             case "Custom":
                 return Custom.setup(
@@ -249,7 +248,6 @@ class Simulator:
                     autosave=autosave,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
-                    simulated_sectors=simulated_sectors,
                 )
             case "Infinite":
                 return Infinite.setup(
