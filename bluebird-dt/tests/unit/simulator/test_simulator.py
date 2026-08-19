@@ -1,19 +1,19 @@
-import copy
 import gc
-from datetime import date, datetime, timedelta
-
-from pydantic import ValidationError
-import pandas as pd
-import pytest
+import os
+import uuid
 import weakref
+from datetime import date, datetime, timedelta
+from typing import Any
 
-from bluebird_dt.core import Action, Coordination
+import pytest
+from pydantic import ValidationError
+
+from bluebird_dt.core import Coordination
+from bluebird_dt.logger import logger
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
 from bluebird_dt.simulator import Simulator
 from bluebird_dt.simulator.simconfig import SaveConfig
-from bluebird_dt.utility import convert
-from bluebird_dt.simulator import Simulator
-from typing import Any
+from bluebird_dt.utility.paths import LOG_DIR
 
 
 def test_springfield_simulation():
@@ -173,19 +173,53 @@ def test_save_autosave_skips_if_interval_not_elapsed():
     sim.save_interval = timedelta(minutes=10)
     assert sim.save(autosave=True) is False
 
+def test_close_releases_runtime_log_file():
+    """
+    Check that close() detaches the runtime log file handler from the shared
+    module-level logger and closes it, releasing the OS file handle immediately.
+
+    While attached, the logger keeps the handler (and its open file) alive
+    regardless of what happens to the Simulator instance, and detaching without
+    closing still leaves the file open until the handler happens to be garbage
+    collected. An open .log file cannot be deleted on Windows (PermissionError /
+    WinError 32); on Linux deleting the still-open file silently succeeds, so
+    only the stream-closed assertion below catches the leak there.
+    """
+    log_filename = f"test_close_releases_runtime_log_{uuid.uuid4()}"
+    log_path = os.path.join(LOG_DIR, "runtime_logs", log_filename + ".log")
+
+    sim = Simulator.from_category(
+        category="Springfield", scenario_name="example-scenario", autosave=False, log_filename=log_filename
+    )
+    handler = sim.logging_file_handler
+    assert handler is not None
+    assert handler in logger.handlers
+    assert os.path.exists(log_path)
+
+    sim.close()
+
+    assert handler not in logger.handlers
+    assert handler.stream is None or handler.stream.closed
+    assert sim.logging_file_handler is None
+
+    # the file handle must be released: this raises PermissionError on Windows otherwise
+    os.remove(log_path)
+
+
 def test_simulator_gets_garbage_collected():
+    """
+    Check that a Simulator can be garbage collected after close().
+
+    The lru_cache-wrapped methods (environment, dynamic_data, static_data) hold
+    self in a class-level cache once called, so the instance stays alive until
+    close() runs cache_clear() on them.
+    """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
     sim_ref = weakref.ref(sim)
 
-    _ = sim.environment(
-            sim.manager.environment.datetime
-            )
-    _ = sim.dynamic_data(
-            sim.manager.environment.datetime
-            )
-    _ = sim.static_data(
-            sim.manager.environment.datetime
-            )
+    _ = sim.environment(sim.manager.environment.datetime)
+    _ = sim.dynamic_data(sim.manager.environment.datetime)
+    _ = sim.static_data(sim.manager.environment.datetime)
 
     sim.close()
 
@@ -194,4 +228,3 @@ def test_simulator_gets_garbage_collected():
     gc.collect()
 
     assert sim_ref() is None
-

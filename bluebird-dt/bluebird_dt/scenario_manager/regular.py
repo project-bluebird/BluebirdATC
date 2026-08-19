@@ -376,7 +376,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> Simulator:
         """
@@ -405,9 +404,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], optional
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios. Defaults to "ALL".
         typeof_simulator: type[TSimulator]
             If we want to create a derived class of Simulator, specify here
 
@@ -438,5 +434,4 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
             predictor=predictor,
-            simulated_sectors=simulated_sectors,
         )

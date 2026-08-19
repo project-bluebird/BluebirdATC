@@ -96,6 +96,13 @@ class Pos2D(BaseModel, Comparison):
         return Pos2D(lat=lat, lon=lon)
 
     @staticmethod
+    def from_list(a: list[float]) -> Pos2D:
+        if len(a) != 2:
+            raise ValueError(f"Expected list of length 2, given: {a}")
+
+        return Pos2D(lat=a[0], lon=a[1])
+
+    @staticmethod
     def from_array(a: np.ndarray) -> Pos2D:
         """
         Construct a new instance from a numpy array.

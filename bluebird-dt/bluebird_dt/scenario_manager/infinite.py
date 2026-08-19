@@ -516,7 +516,6 @@ Creating Infinite Scenario
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -580,16 +579,13 @@ Creating Infinite Scenario
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
-        typeof_environmentmanager: type[EnvironmentManager], optional
+        typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
             If we want to use a derived class for the aircraft class, specify here.
         typeof_event_logger: type[EventLogger], optional
             If we want to use a derived class for the event logger, specify here.
-        typeof_eventhandler: type[EventHandler], optional
+        typeof_event_handler: type[EventHandler], optional
             If we want to use a derived class for the Event Handler, specify here.
         typeof_simulator: type[Simulator], optional
             If we want to use a derived class for the Simulator, specify here.
@@ -635,7 +631,6 @@ Creating Infinite Scenario
             autosave=autosave,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
-            simulated_sectors=simulated_sectors,
             typeof_simulator=typeof_simulator,
         )
 
@@ -669,7 +664,6 @@ Creating Infinite Scenario
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:
         """
@@ -698,9 +692,6 @@ Creating Infinite Scenario
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], optional
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios. Defaults to "ALL".
         typeof_simulator: type[Simulator], optional
             If we want to use a derived class for the Simulator, specify here.
 
@@ -731,7 +722,6 @@ Creating Infinite Scenario
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
             predictor=predictor,
-            simulated_sectors=simulated_sectors,
         )
 
 

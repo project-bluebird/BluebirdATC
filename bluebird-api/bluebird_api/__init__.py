@@ -2,14 +2,18 @@ import logging
 import os
 import re
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from bluebird_dt import logger
+from bluebird_dt.simulator.simulator import Simulator
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
+
+from bluebird_api.runner import Runner, RunnerStore
 
 from .route_tags import tags_metadata
 from .routes import router
@@ -20,6 +24,19 @@ stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(logger.CustomFormatter())
 bluebird_logger.addHandler(stream_handler)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.runner_store = RunnerStore(typeof_runner=Runner, typeof_simulator=Simulator)
+
+    yield
+
+    # Cleanup on shutdown
+    runner_store = app.state.runner_store
+    if runner_store.current_runner is not None:
+        await runner_store.current_runner.close()
+
+
 app = FastAPI(
     title="BluebirdATC: AI for air traffic control",
     description="FastAPI interface to control the simulation framework BluebirdATC.",
@@ -29,7 +46,9 @@ app = FastAPI(
     },
     openapi_tags=tags_metadata,
     strict_content_type=False,
+    lifespan=lifespan,
 )
+
 app.include_router(router)
 app.add_middleware(
     CORSMiddleware,
