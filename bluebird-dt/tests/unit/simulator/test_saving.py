@@ -102,8 +102,8 @@ def test_chunking_skipped(sim_elapsed, real_elapsed, autosave, last_save_task_su
     sim.saver.save_config.chunk_start_realtime = now_realtime - timedelta(minutes=real_elapsed)
     sim.saver.save_config.save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.saver.save_config.save_realtime = now_realtime - timedelta(minutes=real_elapsed)
-    sim.saver.save_config.last_save_task_success = last_save_task_success
-    sim.saver.save_config.last_save_task_save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
+    sim.saver.save_status.last_save_task_success = last_save_task_success
+    sim.saver.save_status.last_save_task_save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
 
     sim._prepare_save(autosave=autosave, end_save=False)
 
@@ -135,8 +135,8 @@ def test_chunking_proceed(sim_elapsed, real_elapsed, autosave, last_save_task_su
     sim.saver.save_config.chunk_start_realtime = now_realtime - timedelta(minutes=real_elapsed)
     sim.saver.save_config.save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.saver.save_config.save_realtime = now_realtime - timedelta(minutes=real_elapsed)
-    sim.saver.save_config.last_save_task_success = last_save_task_success
-    sim.saver.save_config.last_save_task_save_simtime = now_simtime - timedelta(minutes=sim_elapsed) - timedelta(minutes=10 if last_save_delayed else 0)
+    sim.saver.save_status.last_save_task_success = last_save_task_success
+    sim.saver.save_status.last_save_task_save_simtime = now_simtime - timedelta(minutes=sim_elapsed) - timedelta(minutes=10 if last_save_delayed else 0)
 
     sim._prepare_save(autosave=autosave, end_save=False)
 
@@ -295,7 +295,7 @@ def test_saver_update(
 
     if expected_create_task_calls:
         scheduled_coroutine = create_task.call_args.args[0]
-        scheduled_save_data = scheduled_coroutine.cr_frame.f_locals["savedata"]
+        scheduled_save_data = scheduled_coroutine.cr_frame.f_locals["save_data"]
         assert scheduled_save_data is next_save_data
         scheduled_coroutine.close()
 
@@ -359,8 +359,8 @@ def test_saver_should_chunk(last_save_task_success, last_save_task_save_simtime,
     saver.save_config.chunk_start_simtime = now - timedelta(minutes=10)
     saver.save_config.chunk_start_realtime = now - timedelta(minutes=10)
     saver.save_config.save_simtime = now
-    saver.save_config.last_save_task_success = last_save_task_success
-    saver.save_config.last_save_task_save_simtime = now - timedelta(minutes=10 - last_save_task_save_simtime)
+    saver.save_status.last_save_task_success = last_save_task_success
+    saver.save_status.last_save_task_save_simtime = now - timedelta(minutes=10 - last_save_task_save_simtime)
     if current_task_done is not None:
         saver.current_save_task = MagicMock()
         saver.current_save_task.done.return_value = current_task_done
@@ -379,8 +379,8 @@ async def test_saver_force_dispatch_writes_save_data(tmp_path):
         assert await saver.dispatch(savedata, force=True) is True
 
     assert (tmp_path / "direct-saver-test.tar.gz").read_bytes() == b"save contents"
-    assert saver.save_config.last_save_task_success is True
-    assert saver.save_config.last_save_task_save_simtime == save_time
+    assert saver.save_status.last_save_task_success is True
+    assert saver.save_status.last_save_task_save_simtime == save_time
     await saver.close()
 
 
@@ -393,5 +393,5 @@ async def test_saver_async_save_task_records_failure():
     with patch("bluebird_dt.simulator.saver.os.makedirs", side_effect=OSError("disk unavailable")):
         await saver.async_save_task(savedata)
 
-    assert saver.save_config.last_save_task_success is False
-    assert saver.save_config.last_save_task_save_simtime == savedata.save_config.save_simtime
+    assert saver.save_status.last_save_task_success is False
+    assert saver.save_status.last_save_task_save_simtime == savedata.save_config.save_simtime

@@ -865,11 +865,11 @@ class Simulator:
         -------
         bool
         """
-        savedata = self._prepare_save(autosave, end_save)
-        if savedata is None:
+        save_data = self._prepare_save(autosave, end_save)
+        if save_data is None:
             return False
 
-        self.saver.save_task(savedata)
+        self.saver.save_task(save_data)
 
         return True
 
@@ -888,12 +888,12 @@ class Simulator:
         -------
         bool
         """
-        savedata = self._prepare_save(autosave, end_save)
-        if savedata is None:
+        save_data = self._prepare_save(autosave, end_save)
+        if save_data is None:
             await self.saver.update()
             return False
 
-        return await self.saver.dispatch(savedata, force=not autosave)
+        return await self.saver.dispatch(save_data, force=not autosave)
 
     def _prepare_save(self, autosave: bool, end_save: bool) -> SaveData | None:
         """
@@ -952,18 +952,18 @@ class Simulator:
         Carry out chunking
         """
         if (
-            self.saver.save_config.last_save_task_save_simtime is not None
-            and self.saver.save_config.last_save_task_save_simtime is not None
+            self.saver.save_status.last_save_task_save_simtime is not None
+            and self.saver.save_status.last_save_task_save_simtime is not None
             and self.saver.save_config.save_chunk_id is not None
         ):
             t0 = time.monotonic()
             self.manager.event_logger.trim_and_clip(
-                "<=", self.saver.save_config.last_save_task_save_simtime
+                "<=", self.saver.save_status.last_save_task_save_simtime
             )  # Empty logger completely
             self.manager.event_handler.trim(
-                "<=", self.saver.save_config.last_save_task_save_simtime - timedelta(minutes=5)
+                "<=", self.saver.save_status.last_save_task_save_simtime - timedelta(minutes=5)
             )  # Provide some buffer to prevent unprocessed event being cleared
-            self.saver.save_config.chunk_start_simtime = self.saver.save_config.last_save_task_save_simtime
+            self.saver.save_config.chunk_start_simtime = self.saver.save_status.last_save_task_save_simtime
             self.saver.save_config.chunk_start_realtime = self.saver.save_config.save_realtime
             self.saver.save_config.save_chunk_id += 1
             logger.info(f"finished chunking logger and handler in {time.monotonic() - t0:.3f} seconds")

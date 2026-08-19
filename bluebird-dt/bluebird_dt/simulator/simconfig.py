@@ -48,17 +48,6 @@ class SaveConfig(BaseModel):
         default=None,
         description=("The chunk id when the chunk was created. If None, chunking is not enabled for this save."),
     )
-    # Internal logic, excluded for serialization
-    last_save_task_success: bool | None = Field(
-        default=None,
-        exclude=True,
-        description=("A boolean of if the last save task was successful."),
-    )
-    last_save_task_save_simtime: datetime | None = Field(
-        default=None,
-        exclude=True,
-        description=("The simulator datetime from the environment of last save task savedata's save_simtime."),
-    )
 
 
 TScenarios = TypeVar("TScenarios", bound=BaseModel)

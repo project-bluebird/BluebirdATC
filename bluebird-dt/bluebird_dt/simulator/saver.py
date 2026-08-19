@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import aiofiles
+from pydantic import BaseModel
 
 from bluebird_dt.logger import logger
 from bluebird_dt.simulator.simconfig import SaveConfig
@@ -18,12 +19,19 @@ class SaveData:
     end_save: bool = False
 
 
+class SaveStatus(BaseModel):
+    is_saving: bool = False
+    last_save_task_success: bool | None = None
+    last_save_task_save_simtime: datetime | None = None
+
+
 class Saver:
     """
     A helper class to handle saving logic for simulator
     """
 
     save_config: SaveConfig
+    save_status: SaveStatus
     current_save_task: asyncio.Task | None = None
     next_save_data: SaveData | None = None
 
@@ -41,17 +49,18 @@ class Saver:
         Saver
         """
         self.save_config = save_config
+        self.save_status = SaveStatus()
         self.current_save_task = None
         self.next_save_data = None
 
-    async def dispatch(self, savedata: SaveData, force: bool = False) -> bool:
+    async def dispatch(self, save_data: SaveData, force: bool = False) -> bool:
         """
         Queue or immediately execute a save operation. When force is true, any pending save request is discarded
         and this method execute and await the new save operation before returning its result.
 
         Parameters
         ----------
-        savedata: SaveData
+        save_data: SaveData
             A populated SaveData object.
         force: bool
             If True, perform the save immediately and wait for completion.
@@ -68,14 +77,14 @@ class Saver:
             if self.current_save_task is not None and not self.current_save_task.done():
                 logger.info("saver force dispatch - awaiting previous save task to finish")
                 await self.current_save_task
-            self.current_save_task = asyncio.create_task(self.async_save_task(savedata))
+            self.current_save_task = asyncio.create_task(self.async_save_task(save_data))
             await self.current_save_task
             logger.info("saver force dispatch - save task finished")
-            return self.save_config.last_save_task_success or False
+            return self.save_status.last_save_task_success or False
 
         # Put and override new save data in the next_save_data
         logger.info("saver dispatch - putting savedata to queue")
-        self.next_save_data = savedata
+        self.next_save_data = save_data
         await self.update()
         return True
 
@@ -175,70 +184,75 @@ class Saver:
                     self.current_save_task is None
                     or (self.current_save_task is not None and self.current_save_task.done())
                 )
-                and self.save_config.last_save_task_success is True
+                and self.save_status.last_save_task_success is True
                 # check if the last async save task simtime is the same as the just finished current_save_task simtime,
                 # this guarantee that the chunking is only executed if there is no missing data in between
-                and self.save_config.last_save_task_save_simtime is not None
+                and self.save_status.last_save_task_save_simtime is not None
                 and self.save_config.save_simtime is not None
-                and self.save_config.last_save_task_save_simtime == self.save_config.save_simtime
+                and self.save_status.last_save_task_save_simtime == self.save_config.save_simtime
             ):
                 return True
             logger.warning("skipping chunking logger and handler")
         return False
 
-    def save_task(self, savedata: SaveData):
+    def save_task(self, save_data: SaveData):
         """
         Process and save save_data synchronously. Raise exception if failed.
 
         Parameters
         ----------
-        savedata: SaveData
+        save_data: SaveData
             A SaveData object that contains necessary information for saving
         """
+        self.save_status.is_saving = True
         log_path = os.path.join(
             LOG_DIR,
-            savedata.log_name
+            save_data.log_name
             + (
-                f"/{savedata.save_config.save_chunk_id}.tar.gz"
-                if savedata.save_config.save_chunk_id is not None
+                f"/{save_data.save_config.save_chunk_id}.tar.gz"
+                if save_data.save_config.save_chunk_id is not None
                 else ".tar.gz"
             ),
         )
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
         with open(log_path, "wb") as tar:
-            tar.write(savedata.log_buffer)
+            tar.write(save_data.log_buffer)
         logger.info(f"sync save task - log saved to {log_path}")
 
-        self.save_config.last_save_task_success = True
-        self.save_config.last_save_task_save_simtime = savedata.save_config.save_simtime
+        self.save_status.is_saving = False
+        self.save_status.last_save_task_success = True
+        self.save_status.last_save_task_save_simtime = save_data.save_config.save_simtime
 
-    async def async_save_task(self, savedata: SaveData) -> None:
+    async def async_save_task(self, save_data: SaveData) -> None:
         """
         Process and save save_data asynchronously.
 
         Parameters
         ----------
-        savedata: SaveData
+        save_data: SaveData
             A SaveData object that contains necessary information for saving
         """
+        self.save_status.is_saving = True
         try:
             log_path = os.path.join(
                 LOG_DIR,
-                savedata.log_name
+                save_data.log_name
                 + (
-                    f"/{savedata.save_config.save_chunk_id}.tar.gz"
-                    if savedata.save_config.save_chunk_id is not None
+                    f"/{save_data.save_config.save_chunk_id}.tar.gz"
+                    if save_data.save_config.save_chunk_id is not None
                     else ".tar.gz"
                 ),
             )
             os.makedirs(os.path.dirname(log_path), exist_ok=True)
             async with aiofiles.open(log_path, "wb") as tar:
-                await tar.write(savedata.log_buffer)
+                await tar.write(save_data.log_buffer)
             logger.info(f"async save task - log saved to {log_path}")
 
-            self.save_config.last_save_task_success = True
-            self.save_config.last_save_task_save_simtime = savedata.save_config.save_simtime
+            self.save_status.is_saving = False
+            self.save_status.last_save_task_success = True
+            self.save_status.last_save_task_save_simtime = save_data.save_config.save_simtime
         except Exception as e:
             logger.error(f"async save task - log failed to saved to {log_path} with exception {e}")
-            self.save_config.last_save_task_success = False
-            self.save_config.last_save_task_save_simtime = savedata.save_config.save_simtime
+            self.save_status.is_saving = False
+            self.save_status.last_save_task_success = False
+            self.save_status.last_save_task_save_simtime = save_data.save_config.save_simtime
