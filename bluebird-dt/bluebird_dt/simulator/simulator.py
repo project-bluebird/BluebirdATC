@@ -129,7 +129,7 @@ class Simulator:
 
         if attach_context_to_logger:
             if category is None or scenario_name is None:
-                logging.warning("Failed to setup logging context due to empty category or scenario name")
+                logger.warning("Failed to setup logging context due to empty category or scenario name")
             else:
                 self.logging_context = ContextFilter(
                     {
@@ -888,12 +888,12 @@ class Simulator:
         -------
         bool
         """
-        save_data = self._prepare_save(autosave, end_save)
-        if save_data is None:
+        savedata = self._prepare_save(autosave, end_save)
+        if savedata is None:
             await self.saver.update()
             return False
 
-        return await self.saver.dispatch(save_data, force=not autosave)
+        return await self.saver.dispatch(savedata, force=not autosave)
 
     def _prepare_save(self, autosave: bool, end_save: bool) -> SaveData | None:
         """
