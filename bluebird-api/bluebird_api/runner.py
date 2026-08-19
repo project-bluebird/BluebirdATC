@@ -51,7 +51,7 @@ class Runner(typing.Generic[TSimulator]):
     async def close(self):
         self.kill = True
         await self.sim.async_save(autosave=False, end_save=True)
-        await self.sim.close()
+        await self.sim.async_close()
         await asyncio.sleep(3)
 
     def log_simrate(self):

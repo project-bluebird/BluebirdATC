@@ -106,7 +106,7 @@ def test_to_simulator():
     assert simulator.category is None
 
     assert simulator.manager.event_logger.log_name == "test"
-    assert simulator.save_config.autosave_interval is None
+    assert simulator.saver.save_config.autosave_interval is None
 
     # Check returned simulator works as expected
     simulator.evolve(6)

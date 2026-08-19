@@ -188,7 +188,7 @@ async def test_close_releases_runtime_log_file():
     assert handler in logger.handlers
     assert os.path.exists(log_path)
 
-    await sim.close()
+    await sim.async_close()
 
     assert handler not in logger.handlers
     assert handler.stream is None or handler.stream.closed
@@ -213,7 +213,7 @@ async def test_simulator_gets_garbage_collected():
     _ = sim.dynamic_data(sim.manager.environment.datetime)
     _ = sim.static_data(sim.manager.environment.datetime)
 
-    await sim.close()
+    await sim.async_close()
 
     del sim
 

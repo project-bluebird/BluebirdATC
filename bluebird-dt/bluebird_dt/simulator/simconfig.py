@@ -49,16 +49,6 @@ class SaveConfig(BaseModel):
         description=("The chunk id when the chunk was created. If None, chunking is not enabled for this save."),
     )
     # Internal logic, excluded for serialization
-    last_save_task_done_simtime: datetime | None = Field(
-        default=None,
-        exclude=True,
-        description=("The simulator datetime from the environment of last save task done time."),
-    )
-    last_save_task_done_realtime: datetime | None = Field(
-        default=None,
-        exclude=True,
-        description=("The real datetime from the host system clock in UTC of last save task done time."),
-    )
     last_save_task_success: bool | None = Field(
         default=None,
         exclude=True,

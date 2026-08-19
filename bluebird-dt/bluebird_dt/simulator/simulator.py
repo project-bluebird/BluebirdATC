@@ -1,23 +1,20 @@
 from __future__ import annotations
 
-import asyncio
-import contextlib
 import functools
 import logging
 import os
 import time
 import typing
 from collections import defaultdict
-from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-import aiofiles
 from typing_extensions import Self
 
 from bluebird_dt.core import Action, Aircraft, Coordination, WindField
 from bluebird_dt.logger import ContextFilter, CustomFormatter, logger
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor
+from bluebird_dt.simulator.saver import SaveData, Saver
 from bluebird_dt.simulator.simconfig import SaveConfig, SimConfig, SimulatorConfig
 from bluebird_dt.utility.convert import timestamp_to_string
 from bluebird_dt.utility.paths import LOG_DIR
@@ -28,13 +25,6 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
     from bluebird_dt.scenario_manager.tactical import Tactical, TacticalScenarioManagerConfig
     from bluebird_dt.scenario_manager.two_aircraft import TwoAircraft, TwoAircraftScenarioManagerConfig
-
-
-@dataclass
-class SaveData:
-    log_buffer: bytes
-    save_config: SaveConfig
-    end_save: bool = False
 
 
 class Simulator:
@@ -52,9 +42,7 @@ class Simulator:
     logging_context: ContextFilter | None = None
     logging_file_handler: logging.FileHandler | None = None
     log_filename: str | None = None
-    current_save_task: asyncio.Task | None = None
-    next_save_data: SaveData | None = None
-    save_config: SaveConfig
+    saver: Saver
 
     def __init__(
         self,
@@ -162,20 +150,20 @@ class Simulator:
         if save_log_to_file:
             self.setup_logging()
 
-        self.save_config = SaveConfig(
-            save_csv=save_csv,
-            autosave_interval=autosave_interval,
-            save_chunk_interval=save_chunk_interval,
-            load_simtime=env_manager.environment.datetime,
-            load_realtime=initialization_datetime,
-            save_simtime=None if autosave_interval is None else env_manager.environment.datetime,
-            save_realtime=None if autosave_interval is None else initialization_datetime,
-            chunk_start_simtime=None if save_chunk_interval is None else env_manager.environment.datetime,
-            chunk_start_realtime=None if save_chunk_interval is None else initialization_datetime,
-            save_chunk_id=None if save_chunk_interval is None else 0,
+        self.saver = Saver(
+            SaveConfig(
+                save_csv=save_csv,
+                autosave_interval=autosave_interval,
+                save_chunk_interval=save_chunk_interval,
+                load_simtime=env_manager.environment.datetime,
+                load_realtime=initialization_datetime,
+                save_simtime=None if autosave_interval is None else env_manager.environment.datetime,
+                save_realtime=None if autosave_interval is None else initialization_datetime,
+                chunk_start_simtime=None if save_chunk_interval is None else env_manager.environment.datetime,
+                chunk_start_realtime=None if save_chunk_interval is None else initialization_datetime,
+                save_chunk_id=None if save_chunk_interval is None else 0,
+            )
         )
-        self.current_save_task = None
-        self.next_save_data = None
 
     def setup_logging(self):
         """
@@ -351,7 +339,7 @@ class Simulator:
         """
         self._evolve_core(delta)
 
-        if self.save_config.autosave_interval is not None:
+        if self.saver.save_config.autosave_interval is not None:
             self.save(autosave=True)
 
         return True
@@ -369,12 +357,9 @@ class Simulator:
         -------
         bool
         """
-        # Update save task
-        self.update_async_save_task()
-
         self._evolve_core(delta)
 
-        if self.save_config.autosave_interval is not None:
+        if self.saver.save_config.autosave_interval is not None:
             await self.async_save(autosave=True)
 
         return True
@@ -835,21 +820,14 @@ class Simulator:
             ),
             scenario=self.scenario_manager.config() if self.scenario_manager is not None else None,
             environment_manager=self.manager.config(),
-            save_config=self.save_config,
+            save_config=self.saver.save_config,
         )
 
-    async def close(self):
+    def close(self):
         """
-        Clean up after the simulator, otherwise it doesn't get garbage collected.
+        Clean up the simulator, otherwise it doesn't get garbage collected.
         """
         logger.info("closing simulator")
-
-        if self.current_save_task is not None:
-            logger.info("awaiting current save task to finish")
-            with contextlib.suppress(asyncio.CancelledError):
-                await self.current_save_task
-            self.current_save_task = None
-        self.next_save_data = None
 
         self.scenario_manager.close()
 
@@ -865,87 +843,12 @@ class Simulator:
         self.dynamic_data.cache_clear()
         self.static_data.cache_clear()
 
-    def _prepare_savedata_and_chunk(self, autosave: bool = False, end_save: bool = False) -> SaveData | None:
+    async def async_close(self):
         """
-        Prepare save data and execute chunking if enabled.
-
-         Parameters
-         ----------
-         auto_save: bool
-             Whether autosave mode is being used
-         end_save: bool
-             Whether this is the last save of the scenario, indicate successful completion
-
-         Returns
-         -------
-         SaveData | None
-             SaveData object or None if no data should be prepared for auto save
+        Clean up the simulator asynchronously, otherwise it doesn't get garbage collected.
         """
-        curret_datetime = datetime.now(tz=timezone.utc)
-        # if we're in autosave mode and enough time hasn't passed, don't save
-        # Checking both simtime and realtime to ensure autosave works for pausing/fast time etc.
-        if (
-            autosave
-            and self.save_config.autosave_interval is not None
-            and self.save_config.save_simtime is not None
-            and self.save_config.save_realtime is not None
-            and (
-                self.manager.environment.datetime - self.save_config.save_simtime < self.save_config.autosave_interval
-                or curret_datetime - self.save_config.save_realtime < self.save_config.autosave_interval
-            )
-        ):
-            return None
-
-        # check if we're in chunking mode and enough time has passed before preparing save data
-        # check both simtime and realtime to ensure chunking works for pausing/fast time etc.
-        if (
-            self.save_config.save_chunk_interval is not None
-            and self.save_config.save_chunk_id is not None
-            and self.save_config.chunk_start_simtime is not None
-            and self.save_config.chunk_start_realtime is not None
-            and self.manager.environment.datetime - self.save_config.chunk_start_simtime
-            >= self.save_config.save_chunk_interval
-            and curret_datetime - self.save_config.chunk_start_realtime >= self.save_config.save_chunk_interval
-        ):
-            if (
-                # check if there is no current_save_task and that last async save is completed and successful
-                (
-                    self.current_save_task is None
-                    or (self.current_save_task is not None and self.current_save_task.done())
-                )
-                and self.save_config.last_save_task_success is True
-                # check if the last async save task simtime is the same as the just finished current_save_task simtime,
-                # this grantee that the chunking is only executed if there is not missing data in between
-                and self.save_config.last_save_task_save_simtime is not None
-                and self.save_config.save_simtime is not None
-                and self.save_config.last_save_task_save_simtime == self.save_config.save_simtime
-            ):
-                t0 = time.monotonic()
-                self.manager.event_logger.trim_and_clip(
-                    "<=", self.save_config.last_save_task_save_simtime
-                )  # Empty logger completely
-                self.manager.event_handler.trim(
-                    "<=", self.save_config.last_save_task_save_simtime - timedelta(minutes=5)
-                )  # Provide some buffer to prevent unprocessed event being cleared
-                self.save_config.chunk_start_simtime = self.save_config.last_save_task_save_simtime
-                self.save_config.chunk_start_realtime = self.save_config.save_realtime
-                self.save_config.save_chunk_id += 1
-                logger.info(f"finished chunking logger and handler in {time.monotonic() - t0:.3f} seconds")
-            else:
-                logger.warning("skipping chunking logger and handler")
-
-        # Prepare save data
-        t0 = time.monotonic()
-        self.save_config.save_simtime = self.manager.environment.datetime
-        self.save_config.save_realtime = curret_datetime
-        save_data = SaveData(
-            self.manager.write_logs_to_buffer(self.config(), self.save_config.save_csv).getvalue(),
-            self.save_config.model_copy(deep=True),
-            end_save,
-        )
-        logger.info(f"Finished preparing save data object in {time.monotonic() - t0:.3f} seconds")
-
-        return save_data
+        await self.saver.close()
+        self.close()
 
     def save(self, autosave: bool = False, end_save: bool = False) -> bool:
         """
@@ -962,11 +865,11 @@ class Simulator:
         -------
         bool
         """
-        save_data = self._prepare_savedata_and_chunk(autosave, end_save)
-        if save_data is None:
+        savedata = self._prepare_save(autosave, end_save)
+        if savedata is None:
             return False
 
-        self.save_task(save_data)
+        self.saver.save_task(savedata)
 
         return True
 
@@ -985,109 +888,84 @@ class Simulator:
         -------
         bool
         """
-        save_data = self._prepare_savedata_and_chunk(autosave, end_save)
-        if save_data is None:
+        savedata = self._prepare_save(autosave, end_save)
+        if savedata is None:
+            await self.saver.update()
             return False
 
-        if not autosave:
-            # If manual saving, force the current task to finish and cancel future task
-            # and await new save task before returning
-            self.next_save_data = None
-            if self.current_save_task and not self.current_save_task.done():
-                self.current_save_task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await self.current_save_task
-            logger.info("manual saving - awaiting save task to finish")
-            self.current_save_task = asyncio.create_task(self.async_save_task(save_data))
-            await self.current_save_task
-            return self.save_config.last_save_task_success or False
+        return await self.saver.dispatch(savedata, force=not autosave)
 
-        # If autosave, submit the task or to next_save_data
-        self.next_save_data = save_data
-        self.update_async_save_task()
-
-        return True
-
-    def update_async_save_task(self) -> None:
+    def _prepare_save(self, autosave: bool, end_save: bool) -> SaveData | None:
         """
-        Update the current save task and save data
-        """
-        if self.current_save_task is None and self.next_save_data is not None:
-            logger.info("update save task - moving next_save_data to current_save_task")
-            self.current_save_task = self.current_save_task = asyncio.create_task(
-                self.async_save_task(self.next_save_data)
-            )
-            self.next_save_data = None
+        Prepare SaveData if saving is needed and execute chunking if needed.
+        If no saving should be carried out, return None.
 
-        if self.current_save_task is not None and self.current_save_task.done():
-            if self.next_save_data is not None:
-                logger.info("update save task - moving next_save_data to current_save_task")
-                self.current_save_task = self.current_save_task = asyncio.create_task(
-                    self.async_save_task(self.next_save_data)
-                )
-                self.next_save_data = None
-            else:
-                logger.info("update save task - setting current_save_task to None as all save tasks finishes")
-                self.current_save_task = None
+        autosave: bool
+            Whether autosave mode is being used
+        end_save: bool
+            Whether this is the last save of the scenario, indicate successful completion
 
-    def save_task(self, save_data: SaveData):
+        Returns
+        -------
+        SaveData | None
+            Returns None if no saving should be conducted
         """
-        Process and save save_data synchronously. Raise exception if failed.
+        current_simtime = self.manager.environment.datetime
+        current_realtime = datetime.now(tz=timezone.utc)
+        if self.saver.should_save(autosave, current_simtime, current_realtime):
+            if self.saver.should_chunk(current_simtime, current_realtime):
+                self._chunk()
+            return self._build_savedata(end_save, current_simtime, current_realtime)
+        return None
+
+    def _build_savedata(self, end_save: bool, current_simtime: datetime, current_realtime: datetime) -> SaveData:
+        """
+        Build the savedata object
 
         Parameters
         ----------
-        save_data: SaveData
-            A SaveData object that contains necessary information for saving
+        end_save: bool
+            Whether this is the last save of the scenario, indicate successful completion
+        current_simtime: datetime
+            The simulator datetime from the environment.
+        current_realtime: datetime
+            The real datetime from the host system clock in UTC.
+
+        Returns
+        -------
+        SaveData
         """
-        log_path = os.path.join(
-            LOG_DIR,
-            self.manager.event_logger.log_name
-            + (
-                f"/{save_data.save_config.save_chunk_id}.tar.gz"
-                if save_data.save_config.save_chunk_id is not None
-                else ".tar.gz"
-            ),
+        t0 = time.monotonic()
+        self.saver.save_config.save_simtime = current_simtime
+        self.saver.save_config.save_realtime = current_realtime
+        save_data = SaveData(
+            self.manager.write_logs_to_buffer(self.config(), self.saver.save_config.save_csv).getvalue(),
+            self.manager.event_logger.log_name,
+            self.saver.save_config.model_copy(deep=True),
+            end_save,
         )
-        os.makedirs(os.path.dirname(log_path), exist_ok=True)
-        with open(log_path, "wb") as tar:
-            tar.write(save_data.log_buffer)
-        logger.info(f"sync save task - log saved to {log_path}")
+        logger.info(f"Finished preparing save data object in {time.monotonic() - t0:.3f} seconds")
+        return save_data
 
-        self.save_config.last_save_task_success = True
-        self.save_config.last_save_task_save_simtime = save_data.save_config.save_simtime
-        self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
-        self.save_config.last_save_task_done_realtime = datetime.now(tz=timezone.utc)
-
-    async def async_save_task(self, save_data: SaveData) -> None:
+    def _chunk(self):
         """
-        Process and save save_data asynchronously.
-
-        Parameters
-        ----------
-        save_data: SaveData
-            A SaveData object that contains necessary information for saving
+        Carry out chunking
         """
-        try:
-            log_path = os.path.join(
-                LOG_DIR,
-                self.manager.event_logger.log_name
-                + (
-                    f"/{save_data.save_config.save_chunk_id}.tar.gz"
-                    if save_data.save_config.save_chunk_id is not None
-                    else ".tar.gz"
-                ),
-            )
-            os.makedirs(os.path.dirname(log_path), exist_ok=True)
-            async with aiofiles.open(log_path, "wb") as tar:
-                await tar.write(save_data.log_buffer)
-            logger.info(f"async save task - log saved to {log_path}")
-
-            self.save_config.last_save_task_success = True
-            self.save_config.last_save_task_save_simtime = save_data.save_config.save_simtime
-            self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
-            self.save_config.last_save_task_done_realtime = datetime.now(tz=timezone.utc)
-        except Exception as e:
-            logger.error(f"async save task - log failed to saved to {log_path} with exception {e}")
-            self.save_config.last_save_task_success = False
-            self.save_config.last_save_task_done_simtime = self.manager.environment.datetime
-            self.save_config.last_save_task_done_realtime = datetime.now(tz=timezone.utc)
+        if (
+            self.saver.save_config.last_save_task_save_simtime is not None
+            and self.saver.save_config.last_save_task_save_simtime is not None
+            and self.saver.save_config.save_chunk_id is not None
+        ):
+            t0 = time.monotonic()
+            self.manager.event_logger.trim_and_clip(
+                "<=", self.saver.save_config.last_save_task_save_simtime
+            )  # Empty logger completely
+            self.manager.event_handler.trim(
+                "<=", self.saver.save_config.last_save_task_save_simtime - timedelta(minutes=5)
+            )  # Provide some buffer to prevent unprocessed event being cleared
+            self.saver.save_config.chunk_start_simtime = self.saver.save_config.last_save_task_save_simtime
+            self.saver.save_config.chunk_start_realtime = self.saver.save_config.save_realtime
+            self.saver.save_config.save_chunk_id += 1
+            logger.info(f"finished chunking logger and handler in {time.monotonic() - t0:.3f} seconds")
+        else:
+            logger.warning("skipping _chunk as save_config contains none values")
