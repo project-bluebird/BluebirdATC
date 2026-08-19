@@ -2,7 +2,6 @@ import logging
 import pytest
 
 from bluebird_dt.core import Action, Environment
-from bluebird_dt.core.action import ExpectLevelByValue
 from bluebird_dt.utility.clearance import (
     add_phraseology,
     beautify_callsign,
@@ -377,11 +376,7 @@ def test_not_using_speed_limit(env: Environment):
 
 def test_expect_level_by_fix_climb_now(env: Environment):
     action = Action("AIR0", "expect_level_by_fix,climb", 
-                    ExpectLevelByValue(
-                        cleared_level=300,
-                        target_fix="OCK", 
-                        expected_level_at_target=330
-                        )
+                    (300, "OCK", 330)
                     )
 
     assert_action_voice_and_text(
@@ -398,12 +393,7 @@ def test_expect_level_abeam_fix_climb_now(env: Environment):
     assert aircraft != None
     aircraft.on_route = False
 
-    action = Action("AIR0", "expect_level_by_fix,climb", ExpectLevelByValue(
-        cleared_level=300,
-        target_fix="OCK", 
-        expected_level_at_target=330
-        )
-    )
+    action = Action("AIR0", "expect_level_by_fix,climb", (300, "OCK", 330))
 
     assert_action_voice_and_text(
             action,
@@ -415,11 +405,7 @@ def test_expect_level_abeam_fix_climb_now(env: Environment):
             )
 
 def test_expect_level_by_fix_descend_now(env: Environment):
-    action = Action("AIR0", "expect_level_by_fix,descend", ExpectLevelByValue(
-        cleared_level=150, 
-        target_fix="OCK", 
-        expected_level_at_target=100
-        ))
+    action = Action("AIR0", "expect_level_by_fix,descend", (150, "OCK", 100))
 
     assert_action_voice_and_text(
             action,
@@ -436,12 +422,7 @@ def test_expect_level_abeam_fix_descend_now(env: Environment):
     assert aircraft != None
     aircraft.on_route = False
 
-    action = Action("AIR0", "expect_level_by_fix,descend", ExpectLevelByValue(
-        cleared_level=150,
-        target_fix="OCK",
-        expected_level_at_target=100
-        )
-    )
+    action = Action("AIR0", "expect_level_by_fix,descend", (150, "OCK", 100))
 
     assert_action_voice_and_text(
             action,
