@@ -190,6 +190,12 @@ class Action(Comparison):
                 raise ValueError(f"Action value[0] must be an float or int for {self.kind}. Got {type(value[0])}.")
             if not isinstance(value[1], str):
                 raise ValueError(f"Action value[1] must be a string for {self.kind}. Got {type(value[1])}.")
+            if "expect_level_by_fix" in self.kind:
+                if len(value) != 3:
+                    raise ValueError(f"Action value for expect level bys should have 3 elements. Got {value}.")
+                if not isinstance(value[2], int):
+                    raise ValueError(f"Action value[2] myst be a string for {self.kind}. Got {type(value[2])}")
+
             self._value = value
         elif self.kind in ["route_direct_to", "route_segment", "route_turn_segment"]:
             # allow single fix or list of fixes, and for route_direct_to value
