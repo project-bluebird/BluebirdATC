@@ -1047,9 +1047,7 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
 
                 if frequency_value[-2:] == "00":
                     clearance_parts.extend(
-                        "contact",
-                        frequency_callsign,
-                        spell_phonetically(frequency_value[0:5]),
+                        ["contact", frequency_callsign, spell_phonetically(frequency_value[0:5])],
                     )
                 else:
                     clearance_parts.extend(["contact", frequency_callsign, spell_phonetically(frequency_value)])
