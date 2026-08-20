@@ -194,7 +194,7 @@ class Action(Comparison):
                 if len(value) != 3:
                     raise ValueError(f"Action value for expect level bys should have 3 elements. Got {value}.")
                 if not isinstance(value[2], int):
-                    raise ValueError(f"Action value[2] myst be a string for {self.kind}. Got {type(value[2])}")
+                    raise ValueError(f"Action value[2] myst be a int for {self.kind}. Got {type(value[2])}")
 
             self._value = value
         elif self.kind in ["route_direct_to", "route_segment", "route_turn_segment"]:

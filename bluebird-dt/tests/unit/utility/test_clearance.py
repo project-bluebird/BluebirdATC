@@ -374,6 +374,30 @@ def test_not_using_speed_limit(env: Environment):
             env
             )
 
+def test_descend_now_level_by_fix(env: Environment):
+    action = Action("AIR0", "descend_now,level_by_fix", (150, "OCK"))
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 descend flight level 150 level by OCK",
+            "descend flight level 150 level by OCK AIR0",
+            "alpha india romeo zero dee send flight level wun five zero level by OCK",
+            "dee send flight level wun five zero level by OCK alpha india romeo zero",
+            env,
+            )
+
+def test_descend_when_ready_level_by_fix(env: Environment):
+    action = Action("AIR0", "descend_when_ready,level_by_fix", (100, "OCK"))
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 when ready descend flight level 100 level by OCK",
+            "when ready descend flight level 100 level by OCK AIR0",
+            "alpha india romeo zero when ready dee send flight level wun hundred level by OCK",
+            "when ready dee send flight level wun hundred level by OCK alpha india romeo zero",
+            env,
+            )
+
 def test_expect_level_by_fix_climb_now(env: Environment):
     action = Action("AIR0", "expect_level_by_fix,climb",
                     (300, "OCK", 330)
@@ -415,7 +439,6 @@ def test_expect_level_by_fix_descend_now(env: Environment):
             "expect flight level wun hundred level by OCK dee send now flight level wun five zero alpha india romeo zero",
             env,
             )
-
 
 def test_expect_level_abeam_fix_descend_now(env: Environment):
     aircraft = env.aircraft.get("AIR0")
