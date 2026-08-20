@@ -11,6 +11,7 @@ from bluebird_dt.core import (
     FlightPlan,
     Route,
 )
+from bluebird_dt.core.action import ActionValueType
 from bluebird_dt.logger import logger
 
 phonetic = {
@@ -681,7 +682,7 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
     """
     callsign: str = action.callsign
     action_kind: str = action.kind
-    value: int | float | str | list[str] | tuple[int, str] | tuple[int, str, int] | None = action.value
+    value: ActionValueType = action.value
 
     aircraft: Aircraft | None = environment.aircraft.get(callsign, None)
 
@@ -904,7 +905,7 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
     """
     callsign: str = action.callsign
     action_kind: str = action.kind
-    value: int | float | str | list[str] | tuple[int, str] | tuple[int, str, int] | None = action.value
+    value: ActionValueType = action.value
 
     aircraft: Aircraft | None = environment.aircraft.get(callsign, None)
 

@@ -18,6 +18,9 @@ class ClearanceAndResponse(BaseModel):
     pilot_response: str | None
 
 
+ActionValueType = int | float | str | list[str] | tuple[int, str] | tuple[int, str, int] | None
+
+
 class Action(Comparison):
     """
     Fundamental unit of communication between Agent and Predictor.
@@ -25,7 +28,7 @@ class Action(Comparison):
 
     callsign: str
     _kind: str
-    _value: int | float | str | list[str] | tuple[int, str] | None = None
+    _value: ActionValueType = None
     agent: str | None
     voice_representation: ClearanceAndResponse | None
     text_representation: ClearanceAndResponse | None
@@ -35,7 +38,7 @@ class Action(Comparison):
         self,
         callsign: str,
         kind: str,
-        value: int | float | str | list[str] | tuple[int, str] | tuple[int, str, int] | None,
+        value: ActionValueType,
         agent: str | None = None,
         text_representation: ClearanceAndResponse | None = None,
         voice_representation: ClearanceAndResponse | None = None,
@@ -147,12 +150,12 @@ class Action(Comparison):
         self._kind = kind
 
     @property
-    def value(self) -> int | float | str | list[str] | tuple[int, str] | tuple[int, str, int] | None:
+    def value(self) -> ActionValueType:
         """The Action value"""
         return self._value
 
     @value.setter
-    def value(self, value: int | float | str | list[str] | tuple[int, str] | tuple[int, str, int] | None) -> None:
+    def value(self, value: ActionValueType) -> None:
         """Set value and ensure correct type"""
         # raise error if value is None for action kinds that need a value
         if value is None and self.kind in [
