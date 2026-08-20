@@ -601,6 +601,15 @@ def spell_phonetically(spelled_output: str) -> str:
     return " ".join([phonetic[character.capitalize()] for character in spelled_output])
 
 
+def flight_level_phraseology(flight_level: int) -> str:
+    value_string = str(int(flight_level))
+
+    if len(value_string) == 3 and value_string[-2:] == "00":
+        return f"{spell_phonetically(value_string[0])} hundred"
+
+    return spell_phonetically(value_string)
+
+
 def beautify_callsign(callsign: str) -> str:
     """
     Abbreviates or reads out callsign
@@ -729,52 +738,31 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
 
         case "expect_level_by_fix,descend":
             assert isinstance(value, tuple)
-            if aircraft.on_route:
-                clearance_parts.extend(
-                    [
-                        "expect flight level",
-                        str(value[2]),
-                        "level by",
-                        value[1],
-                        "descend now flight level",
-                        str(value[0]),
-                    ]
-                )
-            else:
-                clearance_parts.extend(
-                    [
-                        "expect flight level",
-                        str(value[2]),
-                        "level abeam",
-                        value[1],
-                        "descend now flight level",
-                        str(value[0]),
-                    ]
-                )
+            on_route = "level by" if aircraft.on_route else "level abeam"
+            clearance_parts.extend(
+                [
+                    "expect flight level",
+                    str(value[2]),
+                    on_route,
+                    value[1],
+                    "descend now flight level",
+                    str(value[0]),
+                ]
+            )
 
         case "expect_level_by_fix,climb":
-            if aircraft.on_route:
-                clearance_parts.extend(
-                    [
-                        "expect flight level",
-                        str(value[2]),
-                        "level by",
-                        value[1],
-                        "climb now flight level",
-                        str(value[0]),
-                    ]
-                )
-            else:
-                clearance_parts.extend(
-                    [
-                        "expect flight level",
-                        str(value[2]),
-                        "level abeam",
-                        value[1],
-                        "climb now flight level",
-                        str(value[0]),
-                    ]
-                )
+            assert isinstance(value, tuple)
+            on_route = "level by" if aircraft.on_route else "level abeam"
+            clearance_parts.extend(
+                [
+                    "expect flight level",
+                    str(value[2]),
+                    on_route,
+                    value[1],
+                    "climb now flight level",
+                    str(value[0]),
+                ]
+            )
 
         case "descend_now,level_by_fix":
             assert isinstance(value, tuple)
@@ -929,20 +917,9 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
         # vertical actions: "change_flight_level_to", "change_flight_level_by", "change_vertical_speed_to",
         #                   "descend_when_ready,level_by_fix", "descend_now,level_by_fix"
         case "change_flight_level_to":
-            direction = "climb" if value > fl else "dee send"
+            direction = "climb" if value > fl else DESCEND_PHRASEOLOGY
             # Aircraft flight level stored as a float - change to int
-            value_string = str(int(value))
-            if value_string[-2:] == "00":
-                clearance_parts.extend(
-                    [
-                        direction,
-                        "flight level",
-                        spell_phonetically(value_string[0]),
-                        "hundred",
-                    ]
-                )
-            else:
-                clearance_parts.extend([direction, "flight level", spell_phonetically(value_string)])
+            clearance_parts.extend([direction, "flight level", flight_level_phraseology(int(value))])
 
         # case "change_flight_level_by":
         # Possibly doesn't exist as a required action/clearance
@@ -954,32 +931,21 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
 
         case "descend_when_ready,level_by_fix":
             assert isinstance(value, tuple)
-            value_string = str(int(value[0]))
-            if value_string[-2:] == "00":
-                clearance_parts.extend(
-                    [
-                        f"when ready {DESCEND_PHRASEOLOGY} flight level",
-                        spell_phonetically(str(value[0])[0]),
-                        "hundred level by",
-                        value[1],
-                    ]
-                )
-            else:
-                clearance_parts.extend(
-                    [
-                        f"when ready {DESCEND_PHRASEOLOGY} flight level",
-                        spell_phonetically(str(value[0])),
-                        "level by",
-                        value[1],
-                    ]
-                )
+            clearance_parts.extend(
+                [
+                    f"when ready {DESCEND_PHRASEOLOGY} flight level",
+                    flight_level_phraseology(value[0]),
+                    "level by",
+                    value[1],
+                ]
+            )
 
         case "descend_now,level_by_fix":
             assert isinstance(value, tuple)
             clearance_parts.extend(
                 [
                     f"{DESCEND_PHRASEOLOGY} flight level",
-                    spell_phonetically(str(value[0])),
+                    flight_level_phraseology(value[0]),
                     "level by",
                     value[1],
                 ]
@@ -1093,19 +1059,11 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
 
         case "expect_level_by_fix,descend":
             assert isinstance(value, tuple)
-            expeceted_level = value[2]
-            expected_phraseology = (
-                f"{spell_phonetically(str(expeceted_level)[0])} hundred"
-                if str(expeceted_level)[-2:] == "00"
-                else spell_phonetically(str(expeceted_level))
-            )
+            expected_level = value[2]
+            expected_phraseology = flight_level_phraseology(expected_level)
 
             cleared_level = value[0]
-            cleared_phraseology = (
-                f"{spell_phonetically(str(cleared_level)[0])} hundred"
-                if str(cleared_level)[-2:] == "00"
-                else spell_phonetically(str(cleared_level))
-            )
+            cleared_phraseology = flight_level_phraseology(cleared_level)
 
             on_route = "level by" if aircraft.on_route else "level abeam"
 
@@ -1115,26 +1073,18 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
                     expected_phraseology,
                     on_route,
                     value[1],
-                    "descend now flight level",
+                    f"{DESCEND_PHRASEOLOGY} now flight level",
                     cleared_phraseology,
                 ]
             )
 
         case "expect_level_by_fix,climb":
             assert isinstance(value, tuple)
-            expeceted_level = value[2]
-            expected_phraseology = (
-                f"{spell_phonetically(str(expeceted_level)[0])} hundred"
-                if str(expeceted_level)[-2:] == "00"
-                else spell_phonetically(str(expeceted_level))
-            )
+            expected_level = value[2]
+            expected_phraseology = flight_level_phraseology(expected_level)
 
             cleared_level = value[0]
-            cleared_phraseology = (
-                f"{spell_phonetically(str(cleared_level)[0])} hundred"
-                if str(cleared_level)[-2:] == "00"
-                else spell_phonetically(str(cleared_level))
-            )
+            cleared_phraseology = flight_level_phraseology(cleared_level)
 
             on_route = "level by" if aircraft.on_route else "level abeam"
 

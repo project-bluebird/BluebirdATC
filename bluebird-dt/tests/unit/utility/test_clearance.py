@@ -411,8 +411,8 @@ def test_expect_level_by_fix_descend_now(env: Environment):
             action,
             "AIR0 expect flight level 100 level by OCK descend now flight level 150",
             "expect flight level 100 level by OCK descend now flight level 150 AIR0",
-            "alpha india romeo zero expect flight level wun hundred level by OCK descend now flight level wun five zero",
-            "expect flight level wun hundred level by OCK descend now flight level wun five zero alpha india romeo zero",
+            "alpha india romeo zero expect flight level wun hundred level by OCK dee send now flight level wun five zero",
+            "expect flight level wun hundred level by OCK dee send now flight level wun five zero alpha india romeo zero",
             env,
             )
 
@@ -428,7 +428,7 @@ def test_expect_level_abeam_fix_descend_now(env: Environment):
             action,
             "AIR0 expect flight level 100 level abeam OCK descend now flight level 150",
             "expect flight level 100 level abeam OCK descend now flight level 150 AIR0",
-            "alpha india romeo zero expect flight level wun hundred level abeam OCK descend now flight level wun five zero",
-            "expect flight level wun hundred level abeam OCK descend now flight level wun five zero alpha india romeo zero",
+            "alpha india romeo zero expect flight level wun hundred level abeam OCK dee send now flight level wun five zero",
+            "expect flight level wun hundred level abeam OCK dee send now flight level wun five zero alpha india romeo zero",
             env,
             )
