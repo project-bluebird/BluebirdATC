@@ -1052,10 +1052,10 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
                         spell_phonetically(frequency_value[0:5]),
                     )
                 else:
-                    clearance_parts.extend("contact", frequency_callsign, spell_phonetically(frequency_value))
+                    clearance_parts.extend(["contact", frequency_callsign, spell_phonetically(frequency_value)])
 
             else:
-                clearance_parts.extend("contact next frequency")
+                clearance_parts.append("contact next frequency")
 
         case "expect_level_by_fix,descend":
             assert isinstance(value, tuple)
