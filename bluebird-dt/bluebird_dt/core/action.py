@@ -72,8 +72,8 @@ class Action(Comparison):
             - `using_speed_limit`: set whether aircraft needs to obey TMA speed limit (for basic training only)
             - `message`: pass a text string (primarily to display on the HMI)
             - `expect_level_by_fix,climb`: Instruct the aircraft to calculate the climb profile with the aim of
-            meeting a level by instruction at the instructed waypoint, but climbing only to the separately
-            instructed level. The value property should be (cleared level: int, target fix: str, expected level
+            meeting a level by instruction at the target waypoint, but climbing only to the separately
+            cleared level. The value property should be (cleared level: int, target fix: str, expected level
             at target fix: int)
             - `expect_level_by_fix,descend`: Equivalent to the expect_level_by_fix,climb, but for descends
 
