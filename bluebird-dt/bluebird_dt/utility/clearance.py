@@ -9,6 +9,7 @@ from bluebird_dt.core import (
     ClearanceAndResponse,
     Environment,
     FlightPlan,
+    HoldParameters,
     Route,
 )
 from bluebird_dt.logger import logger
@@ -764,6 +765,14 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
             else:
                 clearance_parts.extend(["resume own navigation", str(fix)])
 
+        case "route_direct_to,hold_at_location":
+            assert isinstance(value, HoldParameters)
+            minutes = f"{value.outbound_time_s / 60.0:g}"
+            location = value.fix or f"latitude {value.location[0]:g} longitude {value.location[1]:g}"
+            clearance_parts.extend(
+                ["hold at", location, value.turn_direction, "hand", "outbound time", minutes, "minutes"]
+            )
+
         case "change_cas_to":
             clearance_parts.extend(["fly speed", str(value), "knots"])
 
@@ -997,6 +1006,14 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
                 clearance_parts.extend(["route direct", fix])
             else:
                 clearance_parts.extend(["resume own navigation", str(fix)])
+
+        case "route_direct_to,hold_at_location":
+            assert isinstance(value, HoldParameters)
+            minutes = f"{value.outbound_time_s / 60.0:g}"
+            location = value.fix or f"latitude {value.location[0]:g} longitude {value.location[1]:g}"
+            clearance_parts.extend(
+                ["hold at", location, value.turn_direction, "hand", "outbound time", minutes, "minutes"]
+            )
 
         case "change_cas_to":
             clearance_parts.extend(["speed", spell_phonetically(str(value)), "knots"])

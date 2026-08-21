@@ -5,6 +5,7 @@ import typing
 from typing import TypedDict
 
 from bluebird_dt.core import Action
+from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.logger import logger
 from bluebird_dt.utility.convert import (
     timestamp_to_string,
@@ -214,9 +215,25 @@ class Pilot:
             Action issued to the Aircraft
         environment: Environment
             The simulation environment at the time step
+
+        Note
+        ----
+        Any new lateral clearance replaces an active hold. A new hold creates
+        fresh state after the old one has been discarded.
         """
 
         aircraft = environment.aircraft[self.callsign]
+
+        if (
+            action.kind == "route_direct_to,hold_at_location"
+            and action.value.fix is not None
+            and action.value.fix not in environment.airspace.fixes.places
+        ):
+            raise ValueError(f"Unknown holding fix: {action.value.fix}")
+
+        # Any new lateral clearance replaces the active hold. A new hold creates
+        # fresh state below after the old one has been discarded.
+        aircraft.predictor_params.pop("hold", None)
 
         if action.kind in ["change_heading_by", "change_heading_to", "change_heading_to_by_direction"]:
             match action.kind:
@@ -236,6 +253,29 @@ class Pilot:
             aircraft.selected_instructions.heading = heading % 360
 
             aircraft.heading_changing_to = aircraft.selected_instructions.heading
+
+        elif action.kind == "route_direct_to,hold_at_location":
+            hold = action.value
+            if hold.fix is not None:
+                target_pos = environment.airspace.fixes.places[hold.fix]
+            else:
+                assert hold.location is not None
+                target_pos = Pos2D(*hold.location)
+            aircraft.cleared_instructions.on_route = False
+            aircraft.selected_instructions.on_route = False
+            aircraft.cleared_instructions.heading = None
+            aircraft.selected_instructions.heading = None
+            aircraft.heading_changing_to = aircraft.pos2d().bearing_to(target_pos)
+            aircraft.predictor_params["hold"] = {
+                "fix": hold.fix,
+                "location": [target_pos.lat, target_pos.lon],
+                "outbound_time_s": hold.outbound_time_s,
+                "turn_direction": hold.turn_direction,
+                "phase": "direct_to_location",
+                "phase_elapsed": 0.0,
+                # Runtime state set from the ground track on first arrival; it defines the racetrack axis.
+                "inbound_track": None,
+            }
 
         elif action.kind == "route_direct_to":
             # create a new current route that starts with fix(es) provided in action

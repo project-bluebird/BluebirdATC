@@ -1,7 +1,8 @@
 import logging
+
 import pytest
 
-from bluebird_dt.core import Action, Environment
+from bluebird_dt.core import Action, Environment, HoldAtFixParameters, HoldAtLocationParameters
 from bluebird_dt.utility.clearance import (
     add_phraseology,
     beautify_callsign,
@@ -311,6 +312,40 @@ def test_change_mach_clearance(env: Environment):
             "speed mach zero decimal eight alpha india romeo zero",
             env,
             )
+
+
+def test_hold_clearance(env: Environment):
+    action = Action(
+        "AIR0",
+        "route_direct_to,hold_at_location",
+        HoldAtFixParameters(fix="ALPHA", outbound_time_s=90.0, turn_direction="right"),
+    )
+
+    assert_action_voice_and_text(
+        action,
+        "AIR0 hold at ALPHA right hand outbound time 1.5 minutes",
+        "hold at ALPHA right hand outbound time 1.5 minutes AIR0",
+        "alpha india romeo zero hold at ALPHA right hand outbound time 1.5 minutes",
+        "hold at ALPHA right hand outbound time 1.5 minutes alpha india romeo zero",
+        env,
+    )
+
+
+def test_coordinate_hold_clearance(env: Environment):
+    action = Action(
+        "AIR0",
+        "route_direct_to,hold_at_location",
+        HoldAtLocationParameters(location=(50.716667, -3.533333), outbound_time_s=90.0),
+    )
+
+    assert_action_voice_and_text(
+        action,
+        "AIR0 hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes",
+        "hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes AIR0",
+        "alpha india romeo zero hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes",
+        "hold at latitude 50.7167 longitude -3.53333 right hand outbound time 1.5 minutes alpha india romeo zero",
+        env,
+    )
 
 def test_outcomm_clearance(env: Environment):
     action = Action("AIR0", "outcomm", None)

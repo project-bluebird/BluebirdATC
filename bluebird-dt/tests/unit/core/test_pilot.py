@@ -1,7 +1,16 @@
 import logging
+
 import pytest
 
-from bluebird_dt.core import Action, Aircraft, Pilot, QueueItem
+from bluebird_dt.core import (
+    Action,
+    Aircraft,
+    HoldAtFixParameters,
+    HoldAtLocationParameters,
+    Pilot,
+    Pos2D,
+    QueueItem,
+)
 
 
 def test_init():
@@ -253,6 +262,70 @@ def test_receive_check_process_single_action(generate_simple_environment):
     assert aircraft.previous_sector == initial_sector
     # only one named sector in generate_simple_environment so new current sector is "background"
     assert aircraft.current_sector == "background"
+
+
+def test_hold_action_and_lateral_cancellation(generate_simple_environment):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    hold_fix = next(iter(environment.airspace.fixes.places))
+    hold_action = Action(
+        aircraft.callsign,
+        "route_direct_to,hold_at_location",
+        HoldAtFixParameters(fix=hold_fix, outbound_time_s=45, turn_direction="left"),
+    )
+
+    aircraft.pilot.receive_actions([hold_action], environment)
+    aircraft.pilot.process_actions(environment)
+
+    assert aircraft.predictor_params["hold"] == {
+        "fix": hold_fix,
+        "location": [
+            environment.airspace.fixes.places[hold_fix].lat,
+            environment.airspace.fixes.places[hold_fix].lon,
+        ],
+        "outbound_time_s": 45.0,
+        "turn_direction": "left",
+        "phase": "direct_to_location",
+        "phase_elapsed": 0.0,
+        "inbound_track": None,
+    }
+    assert aircraft.on_route is False
+
+    aircraft.pilot.receive_actions([Action(aircraft.callsign, "maintain_current_heading", 0)], environment)
+    aircraft.pilot.process_actions(environment)
+
+    assert "hold" not in aircraft.predictor_params
+
+
+def test_hold_rejects_unknown_fix(generate_simple_environment):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    action = Action(
+        aircraft.callsign,
+        "route_direct_to,hold_at_location",
+        HoldAtFixParameters(fix="NOT_A_FIX"),
+    )
+
+    aircraft.pilot.receive_actions([action], environment)
+    with pytest.raises(ValueError, match="Unknown holding fix"):
+        aircraft.pilot.process_actions(environment)
+
+
+def test_hold_at_coordinate(generate_simple_environment):
+    environment = generate_simple_environment
+    aircraft = environment.aircraft["AIR0"]
+    location = (51.25, -1.75)
+    action = Action(
+        aircraft.callsign,
+        "route_direct_to,hold_at_location",
+        HoldAtLocationParameters(location=location),
+    )
+
+    aircraft.pilot.process_lateral_actions(action, environment)
+
+    assert aircraft.predictor_params["hold"]["fix"] is None
+    assert aircraft.predictor_params["hold"]["location"] == list(location)
+    assert aircraft.heading_changing_to == pytest.approx(aircraft.pos2d().bearing_to(Pos2D(*location)))
 
 
 def test_pilot_from_complete_json():

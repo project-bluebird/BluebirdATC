@@ -22,6 +22,7 @@ from bluebird_dt.core import (
     Instructions,
     Route,
     WindField,
+    parse_hold_parameters,
 )
 from bluebird_dt.events.event_dtypes import EventDtypes
 from bluebird_dt.logger import logger
@@ -1966,11 +1967,17 @@ def update_from_clearances(
         if row.kind == "route_direct_to" and aircraft.flight_plan is None:
             continue
 
+        # Parse structured values at the clearance-log boundary. Action itself
+        # only accepts the corresponding domain model.
+        value = row.value
+        if row.kind == "route_direct_to,hold_at_location":
+            value = parse_hold_parameters(value)
+
         # update the aircraft using the clearance
         action = Action(
             callsign,
             row.kind,
-            row.value,
+            value,
             agent=row.agent,
             text_representation=ClearanceAndResponse(
                 clearance=row.text_clearance, pilot_response=row.text_pilot_response
