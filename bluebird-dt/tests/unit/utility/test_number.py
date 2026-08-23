@@ -32,8 +32,9 @@ def test_round_nearest():
     for val, amt, tar in zip(value, to, down_targets, strict=False):
         assert round_nearest(val, amt, direction="down") == tar
 
-    # test value error for invalid direction
+    # test value error for invalid direction, including that the message names
+    # the offending value and the valid options
     invalid_directions = ["this", "is", "wrong", 25]
     for d in invalid_directions:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=rf"Invalid direction given: {d} -- Must be one of"):
             round_nearest(1.1, 0.1, direction=d)
