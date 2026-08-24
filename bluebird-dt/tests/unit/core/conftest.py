@@ -554,6 +554,18 @@ def make_action(kind: str) -> Action:
         value = make_random_heading()
     if kind == "message":
         value = make_random_message()
+    if kind == "expect_level_by_fix,descend":
+        value = (
+                make_random_fl(), 
+                make_random_fix_name(), 
+                make_random_fl()
+                )
+    if kind == "expect_level_by_fix,climb":
+        value = (
+                make_random_fl(),
+                make_random_fix_name(),
+                make_random_fl()
+                )
     agent = random.choice(["Smith", "Bond", "Powers", "J"])
     clearance = " ".join((callsign, kind, str(value), agent))
     pilot_response = " ".join((kind, str(value), agent, callsign))

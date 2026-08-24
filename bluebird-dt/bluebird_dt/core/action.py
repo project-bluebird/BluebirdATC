@@ -18,6 +18,9 @@ class ClearanceAndResponse(BaseModel):
     pilot_response: str | None
 
 
+ActionValueType = int | float | str | list[str] | tuple[int, str] | tuple[int, str, int] | None
+
+
 class Action(Comparison):
     """
     Fundamental unit of communication between Agent and Predictor.
@@ -25,7 +28,7 @@ class Action(Comparison):
 
     callsign: str
     _kind: str
-    _value: int | float | str | list[str] | tuple[int, str] | None = None
+    _value: ActionValueType = None
     agent: str | None
     voice_representation: ClearanceAndResponse | None
     text_representation: ClearanceAndResponse | None
@@ -35,7 +38,7 @@ class Action(Comparison):
         self,
         callsign: str,
         kind: str,
-        value: int | float | str | list[str] | tuple[int, str] | None,
+        value: ActionValueType,
         agent: str | None = None,
         text_representation: ClearanceAndResponse | None = None,
         voice_representation: ClearanceAndResponse | None = None,
@@ -68,6 +71,11 @@ class Action(Comparison):
             - `outcomm`: hand control over to the named sector or next coordinated sector if no name given
             - `using_speed_limit`: set whether aircraft needs to obey TMA speed limit (for basic training only)
             - `message`: pass a text string (primarily to display on the HMI)
+            - `expect_level_by_fix,climb`: Instruct the aircraft to calculate the climb profile with the aim of
+            meeting a level by instruction at the target waypoint, but climbing only to the separately
+            cleared level. The value property should be (cleared level: int, target fix: str, expected level
+            at target fix: int)
+            - `expect_level_by_fix,descend`: Equivalent to the expect_level_by_fix,climb, but for descends
 
         value: Union[int, float, str]
             Allowed values for each Action kind differs:
@@ -82,6 +90,8 @@ class Action(Comparison):
             - `change_cas_to`: int or None (None indicates "fly at own speed")
             - `descend_when_ready,level_by_fix`: tuple[int, str]
             - `descend_now,level_by_fix`: tuple[int, str]
+            - `expect_level_by_fix,descend`: tuple[int, str, int]
+            - `expect_level_by_fix,climb`: tuple[int, str, int]
             - `change_cas_to`: float or None (None indicates "fly at own speed")
             - `change_mach_to`: float or None (None indicates "fly at own speed")
             - `change_vertical_speed_to`: float
@@ -140,12 +150,12 @@ class Action(Comparison):
         self._kind = kind
 
     @property
-    def value(self) -> int | float | str | list[str] | tuple[int, str] | None:
+    def value(self) -> ActionValueType:
         """The Action value"""
         return self._value
 
     @value.setter
-    def value(self, value: int | float | str | list[str] | tuple[int, str] | None) -> None:
+    def value(self, value: ActionValueType) -> None:
         """Set value and ensure correct type"""
         # raise error if value is None for action kinds that need a value
         if value is None and self.kind in [
@@ -164,6 +174,8 @@ class Action(Comparison):
             "heading_turn_segment",
             "message",
             "change_heading_to_by_direction",
+            "expect_level_by_fix,climb",
+            "expect_level_by_fix,descend",
         ]:
             raise Exception(f"Value cannot be None for action kind {self.kind}")
 
@@ -178,6 +190,12 @@ class Action(Comparison):
                 raise ValueError(f"Action value[0] must be an float or int for {self.kind}. Got {type(value[0])}.")
             if not isinstance(value[1], str):
                 raise ValueError(f"Action value[1] must be a string for {self.kind}. Got {type(value[1])}.")
+            if "expect_level_by_fix" in self.kind:
+                if len(value) != 3:
+                    raise ValueError(f"Action value for expect level bys should have 3 elements. Got {value}.")
+                if not isinstance(value[2], int):
+                    raise ValueError(f"Action value[2] myst be a int for {self.kind}. Got {type(value[2])}")
+
             self._value = value
         elif self.kind in ["route_direct_to", "route_segment", "route_turn_segment"]:
             # allow single fix or list of fixes, and for route_direct_to value

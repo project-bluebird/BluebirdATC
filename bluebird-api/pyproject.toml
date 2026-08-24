@@ -14,7 +14,7 @@ dependencies = [
   "bluebird-dt==0.2.0",
   "fastapi>=0.141.1,<0.142",
   "lxml-html-clean>=0.4.4",
-  "uvicorn>=0.52.1,<0.53",
+  "uvicorn>=0.52.3,<0.53",
 ]
 
 [project.urls]
