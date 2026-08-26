@@ -8,6 +8,7 @@ import typing
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
+import pandas as pd
 from typing_extensions import Self
 
 from bluebird_dt.core import Action, Aircraft, Coordination, WindField
@@ -125,7 +126,6 @@ class Simulator:
         self.use_wind = use_wind
         self.use_forecast = use_forecast
         self.predictor = predictor
-        self.save_log_to_file = save_log_to_file
 
         if attach_context_to_logger:
             if category is None or scenario_name is None:
@@ -865,11 +865,11 @@ class Simulator:
         -------
         bool
         """
-        save_data = self._prepare_save(autosave, end_save)
+        save_data = self._prepare_save_if_needed(autosave, end_save)
         if save_data is None:
             return False
 
-        self.saver.save_task(save_data)
+        self.saver.save(save_data)
 
         return True
 
@@ -888,14 +888,14 @@ class Simulator:
         -------
         bool
         """
-        savedata = self._prepare_save(autosave, end_save)
+        savedata = self._prepare_save_if_needed(autosave, end_save)
         if savedata is None:
-            await self.saver.update()
+            self.saver.update()
             return False
 
         return await self.saver.dispatch(savedata, force=not autosave)
 
-    def _prepare_save(self, autosave: bool, end_save: bool) -> SaveData | None:
+    def _prepare_save_if_needed(self, autosave: bool, end_save: bool) -> SaveData | None:
         """
         Prepare SaveData if saving is needed and execute chunking if needed.
         If no saving should be carried out, return None.
@@ -958,7 +958,7 @@ class Simulator:
         ):
             t0 = time.monotonic()
             self.manager.event_logger.trim_and_clip(
-                "<=", self.saver.save_status.last_save_task_save_simtime
+                "<=", pd.Timestamp(self.saver.save_status.last_save_task_save_simtime)
             )  # Empty logger completely
             self.manager.event_handler.trim(
                 "<=", self.saver.save_status.last_save_task_save_simtime - timedelta(minutes=5)

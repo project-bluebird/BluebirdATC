@@ -1058,7 +1058,7 @@ class EventLogger:
     def trim_and_clip(
         self,
         comparison_operator: typing.Literal["<", "<="],
-        comparison_datetime: datetime,
+        comparison_datetime: pd.Timestamp,
         expire: pd.Timedelta = DEFAULT_TRIM_AND_CUT_TIMEDELTA,
     ) -> Self:
         """

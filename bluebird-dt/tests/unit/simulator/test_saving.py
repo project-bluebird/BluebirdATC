@@ -1,21 +1,12 @@
-import asyncio
-import gc
 import os
 from unittest.mock import MagicMock, patch
 import uuid
-import weakref
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
-
-from bluebird_dt.core import Coordination
-from bluebird_dt.logger import logger
-from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
 from bluebird_dt.simulator import Simulator
 from bluebird_dt.simulator.saver import SaveData, Saver
-from bluebird_dt.simulator.simconfig import SimConfig
 from bluebird_dt.simulator.simconfig import SaveConfig
 from bluebird_dt.utility.paths import LOG_DIR
 
@@ -41,9 +32,18 @@ last_save_states = pytest.mark.parametrize("last_save_task_success", [True, Fals
 
 @skip_cases
 @autosave_cases
-def test_chunk_prepare_savedata_autosave_skip(sim_elapsed, real_elapsed, autosave):
+def test_prepare_savedata_if_needed_autosave_skip(sim_elapsed: float, real_elapsed: float, autosave: bool):
     """
-    Verify that _chunk_prepare_savedata autosave skipped when the interval has not elapsed.
+    Verify save data preparation is skipped for autosave before the interval elapses.
+
+    Parameters
+    ----------
+    sim_elapsed: float
+        Elapsed sim time in minutes
+    real_elapsed: float
+        Elapsed real time in minutes
+    autosave: bool
+        Autosave setting
     """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=timedelta(minutes=10))
 
@@ -54,18 +54,27 @@ def test_chunk_prepare_savedata_autosave_skip(sim_elapsed, real_elapsed, autosav
     sim.saver.save_config.save_realtime = now_realtime - timedelta(minutes=real_elapsed)
 
     if autosave:
-        assert sim._prepare_save(autosave=autosave, end_save=False) is None
+        assert sim._prepare_save_if_needed(autosave=autosave, end_save=False) is None
     else:
-        assert sim._prepare_save(autosave=autosave, end_save=False) is not None
+        assert sim._prepare_save_if_needed(autosave=autosave, end_save=False) is not None
         assert sim.saver.save_config.save_simtime == now_simtime
         assert sim.saver.save_config.save_realtime - now_realtime < timedelta(seconds=5)
 
 
 @proceed_cases
 @autosave_cases
-def test_chunk_prepare_savedata_autosave_proceed(sim_elapsed, real_elapsed, autosave):
+def test_prepare_savedata_if_needed_autosave_proceed(sim_elapsed: float, real_elapsed: float, autosave: bool):
     """
-    Verify _chunk_prepare_savedata autosave proceeds when the interval has elapsed.
+    Verify save data preparation proceeds when the autosave interval has elapsed.
+
+    Parameters
+    ----------
+    sim_elapsed: float
+        Elapsed sim time in minutes
+    real_elapsed: float
+        Elapsed real time in minutes
+    autosave: bool
+        Autosave setting
     """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=timedelta(minutes=10))
 
@@ -75,7 +84,7 @@ def test_chunk_prepare_savedata_autosave_proceed(sim_elapsed, real_elapsed, auto
     sim.saver.save_config.save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
     sim.saver.save_config.save_realtime = now_realtime - timedelta(minutes=real_elapsed)
 
-    assert sim._prepare_save(autosave=autosave, end_save=False) is not None
+    assert sim._prepare_save_if_needed(autosave=autosave, end_save=False) is not None
     assert sim.saver.save_config.save_simtime == now_simtime
     assert sim.saver.save_config.save_realtime - now_realtime < timedelta(seconds=5)
 
@@ -83,9 +92,20 @@ def test_chunk_prepare_savedata_autosave_proceed(sim_elapsed, real_elapsed, auto
 @skip_cases
 @autosave_cases
 @last_save_states
-def test_chunking_skipped(sim_elapsed, real_elapsed, autosave, last_save_task_success):
+def test_chunking_skipped(sim_elapsed: float, real_elapsed: float, autosave: bool, last_save_task_success: bool):
     """
-    Verify that _chunk_prepare_savedata chunking skipped when the interval has not elapsed.
+    Verify chunk preparation is skipped before the chunk interval elapses.
+
+    Parameters
+    ----------
+    sim_elapsed: float
+        Elapsed sim time in minutes
+    real_elapsed: float
+        Elapsed real time in minutes
+    autosave: bool
+        Autosave setting
+    last_save_task_success: bool
+        Mock last save status
     """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=timedelta(minutes=10), save_chunk_interval=timedelta(minutes=10))
 
@@ -105,7 +125,7 @@ def test_chunking_skipped(sim_elapsed, real_elapsed, autosave, last_save_task_su
     sim.saver.save_status.last_save_task_success = last_save_task_success
     sim.saver.save_status.last_save_task_save_simtime = now_simtime - timedelta(minutes=sim_elapsed)
 
-    sim._prepare_save(autosave=autosave, end_save=False)
+    sim._prepare_save_if_needed(autosave=autosave, end_save=False)
 
     trim_logger.assert_not_called()
     trim_handler.assert_not_called()
@@ -116,9 +136,22 @@ def test_chunking_skipped(sim_elapsed, real_elapsed, autosave, last_save_task_su
 @autosave_cases
 @last_save_states
 @pytest.mark.parametrize("last_save_delayed", [True, False], ids=["last_save_delayed_true", "last_save_delayed_false"],)
-def test_chunking_proceed(sim_elapsed, real_elapsed, autosave, last_save_task_success, last_save_delayed):
+def test_chunking_proceed(sim_elapsed: float, real_elapsed: float, autosave: bool, last_save_task_success: bool, last_save_delayed: bool):
     """
-    Verify that _chunk_prepare_savedata autosave proceed when the interval has elapsed.
+    Verify chunk preparation proceeds after a successful, timely save.
+
+    Parameters
+    ----------
+    sim_elapsed: float
+        Elapsed sim time in minutes
+    real_elapsed: float
+        Elapsed real time in minutes
+    autosave: bool
+        Autosave setting
+    last_save_task_success: bool
+        Mock last save status
+    last_save_delayed: bool
+        Mock last save delay
     """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=timedelta(minutes=10), save_chunk_interval=timedelta(minutes=10))
 
@@ -138,7 +171,7 @@ def test_chunking_proceed(sim_elapsed, real_elapsed, autosave, last_save_task_su
     sim.saver.save_status.last_save_task_success = last_save_task_success
     sim.saver.save_status.last_save_task_save_simtime = now_simtime - timedelta(minutes=sim_elapsed) - timedelta(minutes=10 if last_save_delayed else 0)
 
-    sim._prepare_save(autosave=autosave, end_save=False)
+    sim._prepare_save_if_needed(autosave=autosave, end_save=False)
 
     if last_save_task_success and not last_save_delayed:
         trim_logger.assert_called_once()
@@ -152,9 +185,18 @@ def test_chunking_proceed(sim_elapsed, real_elapsed, autosave, last_save_task_su
 
 @skip_cases
 @autosave_cases
-def test_save_skip(sim_elapsed, real_elapsed, autosave):
+def test_save_skip(sim_elapsed: float, real_elapsed: float, autosave: bool):
     """
-    Verify that _chunk_prepare_savedata autosave returns None when both simtime and realtime intervals have not elapsed.
+    Verify save skips autosave when neither time interval has elapsed.
+
+    Parameters
+    ----------
+    sim_elapsed: float
+        Elapsed sim time in minutes
+    real_elapsed: float
+        Elapsed real time in minutes
+    autosave: bool
+        Autosave setting
     """
     log_filename = f"test_save_skip_{uuid.uuid4()}"
 
@@ -178,9 +220,18 @@ def test_save_skip(sim_elapsed, real_elapsed, autosave):
 
 @proceed_cases
 @autosave_cases
-def test_save_proceed(sim_elapsed, real_elapsed, autosave):
+def test_save_proceed(sim_elapsed: float, real_elapsed: float, autosave: bool):
     """
-    Verify _chunk_prepare_savedata autosave proceeds once the interval has elapsed.
+    Verify save writes the archive when the required interval has elapsed.
+
+    Parameters
+    ----------
+    sim_elapsed: float
+        Elapsed sim time in minutes
+    real_elapsed: float
+        Elapsed real time in minutes
+    autosave: bool
+        Autosave setting
     """
     log_filename = f"test_save_proceed_{uuid.uuid4()}"
     
@@ -205,7 +256,16 @@ def test_save_proceed(sim_elapsed, real_elapsed, autosave):
 @pytest.mark.asyncio
 async def test_async_save_skip(sim_elapsed, real_elapsed, autosave):
     """
-    Verify that _chunk_prepare_savedata autosave returns None when both simtime and realtime intervals have not elapsed.
+    Verify async save skips autosave when neither time interval has elapsed.
+
+    Parameters
+    ----------
+    sim_elapsed: float
+        Elapsed sim time in minutes
+    real_elapsed: float
+        Elapsed real time in minutes
+    autosave: bool
+        Autosave setting
     """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=timedelta(minutes=10))
     await sim.async_evolve(6)
@@ -219,19 +279,27 @@ async def test_async_save_skip(sim_elapsed, real_elapsed, autosave):
     assert sim.saver.current_save_task is None
     if autosave:
         assert await sim.async_save(autosave=autosave) is False
-        assert sim.saver.current_save_task is None
     else:
         assert await sim.async_save(autosave=autosave) is True
-        assert sim.saver.current_save_task is not None
+    assert sim.saver.current_save_task is None
     assert sim.saver.next_save_data is None
 
 
 @proceed_cases
 @autosave_cases
 @pytest.mark.asyncio
-async def test_async_save_proceed(sim_elapsed, real_elapsed, autosave):
+async def test_async_save_proceed(sim_elapsed: float, real_elapsed: float, autosave: bool):
     """
-    Verify _chunk_prepare_savedata autosave proceeds once the interval has elapsed.
+    Verify async save schedules work when the required interval has elapsed.
+    
+    Parameters
+    ----------
+    sim_elapsed: float
+        Elapsed sim time in minutes
+    real_elapsed: float
+        Elapsed real time in minutes
+    autosave: bool
+        Autosave setting
     """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=timedelta(minutes=10))
     await sim.async_evolve(6)
@@ -244,7 +312,10 @@ async def test_async_save_proceed(sim_elapsed, real_elapsed, autosave):
 
     assert sim.saver.current_save_task is None
     assert await sim.async_save(autosave=autosave) is True
-    assert sim.saver.current_save_task is not None
+    if autosave:
+        assert sim.saver.current_save_task is not None
+    else:
+        assert sim.saver.current_save_task is None
 
 
 previous_save_data = object()
@@ -265,12 +336,12 @@ next_save_data = object()
     ],
 )
 def test_saver_update(
-    current_task_done,
-    previous_save_data,
-    next_save_data,
-    expected_create_task_calls,
-    expected_current_task_is_none,
-    expected_next_save_data,
+    current_task_done: bool | None,
+    previous_save_data: SaveData | None,
+    next_save_data: SaveData | None,
+    expected_create_task_calls: int,
+    expected_current_task_is_none: bool,
+    expected_next_save_data: SaveData | None,
 ):
     """
     Verify Saver.update moves queued autosave work through the current task lifecycle.
@@ -289,7 +360,7 @@ def test_saver_update(
     new_task.done.return_value = False
 
     with patch("bluebird_dt.simulator.saver.asyncio.create_task", return_value=new_task) as create_task:
-        asyncio.run(sim.saver.update())
+        sim.saver.update()
 
     assert create_task.call_count == expected_create_task_calls
 
@@ -310,9 +381,7 @@ def test_saver_update(
         assert sim.saver.current_save_task.done() is False
 
 
-def make_saver(
-    *, autosave_interval: timedelta | None = timedelta(minutes=10), save_chunk_interval: timedelta | None = None
-) -> Saver:
+def make_saver(autosave_interval: timedelta | None = timedelta(minutes=10), save_chunk_interval: timedelta | None = None) -> Saver:
     now = datetime.now(tz=timezone.utc)
     return Saver(
         SaveConfig(
@@ -335,7 +404,22 @@ def make_saver(
         pytest.param(False, 0, 0, True, id="manual_save_always_proceeds"),
     ],
 )
-def test_saver_should_save(autosave, sim_elapsed, real_elapsed, expected):
+def test_saver_should_save(autosave: bool, sim_elapsed: float, real_elapsed: float, expected: bool):
+    """
+    Verify should_save requires both intervals for autosave and always allows manual saves.
+    
+    Parameters
+    ----------
+    autosave: bool
+        Autosave setting
+    sim_elapsed: float
+        Elapsed sim time in minutes
+    real_elapsed: float
+        Elapsed real time in minutes
+    expected: bool
+        If save is expected
+    """
+    
     saver = make_saver()
     now = datetime.now(tz=timezone.utc)
     saver.save_config.save_simtime = now - timedelta(minutes=sim_elapsed)
@@ -353,7 +437,22 @@ def test_saver_should_save(autosave, sim_elapsed, real_elapsed, expected):
         pytest.param(True, 10, False, False, id="active_save_task_blocks_chunk"),
     ],
 )
-def test_saver_should_chunk(last_save_task_success, last_save_task_save_simtime, current_task_done, expected):
+def test_saver_should_chunk(last_save_task_success: bool, last_save_task_save_simtime: float, current_task_done: bool | None, expected: bool):
+    """
+    Verify should_chunk requires a timely successful save and no active save task.
+    
+    Parameters
+    ----------
+    last_save_task_success: bool
+        If last save is successful
+    last_save_task_save_simtime: float
+        Last save sim time in minutes
+    current_task_done: bool | None
+        Current task status
+    expected: bool
+        If chunk is expected
+    """
+    
     saver = make_saver(save_chunk_interval=timedelta(minutes=10))
     now = datetime.now(tz=timezone.utc)
     saver.save_config.chunk_start_simtime = now - timedelta(minutes=10)
@@ -391,7 +490,7 @@ async def test_saver_async_save_task_records_failure():
     savedata = SaveData(b"save contents", "failed-saver-test", saver.save_config.model_copy(deep=True))
 
     with patch("bluebird_dt.simulator.saver.os.makedirs", side_effect=OSError("disk unavailable")):
-        await saver.async_save_task(savedata)
+        await saver.async_save(savedata)
 
     assert saver.save_status.last_save_task_success is False
     assert saver.save_status.last_save_task_save_simtime == savedata.save_config.save_simtime
