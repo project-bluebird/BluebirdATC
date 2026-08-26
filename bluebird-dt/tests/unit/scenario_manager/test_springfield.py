@@ -10,7 +10,7 @@ def test_incomm():
     """
     sim = SpringfieldScenarioManager(scenario_name="testScenario").to_simulator(
         log_filename="test",
-        autosave=False,
+        autosave_interval=None,
     )
     # aircraft AIR01 starts off outside the sector
     assert "AIR01" in sim.manager.environment.aircraft
@@ -29,7 +29,7 @@ def test_outcomm():
     """
     sim = SpringfieldScenarioManager(scenario_name="testScenario").to_simulator(
         log_filename="test",
-        autosave=False,
+        autosave_interval=None,
     )
     # AIR01 is going from TERMI in the NE to LEGGO in the south.
     # If, when it gets close to SIMPS, it changes heading to 180,
@@ -59,7 +59,7 @@ def test_landing():
     """
     sim = SpringfieldScenarioManager(scenario_name="test-airport-scenario").to_simulator(
         log_filename="test",
-        autosave=False,
+        autosave_interval=None,
     )
     sim.evolve(800)
     # AIR03 has a route starting at CAKES and ending at EGRR
@@ -91,9 +91,10 @@ def test_to_simulator():
     Test the SpringfieldScenarioManager.to_simulator() method creates the required components and sets the appropriate variables correctly.
     """
     
-    simulator = SpringfieldScenarioManager(scenario_name="example-scenario",).to_simulator(
+    simulator = SpringfieldScenarioManager(scenario_name="example-scenario").to_simulator(
+        scenario_name="example-scenario",
         log_filename="test",
-        autosave=False,
+        autosave_interval=None,
     )
 
     assert isinstance(simulator.manager, EnvironmentManager)
@@ -105,7 +106,7 @@ def test_to_simulator():
     assert simulator.category is None
 
     assert simulator.manager.event_logger.log_name == "test"
-    assert simulator.autosave is False
+    assert simulator.saver.save_config.autosave_interval is None
 
     # Check returned simulator works as expected
     simulator.evolve(6)

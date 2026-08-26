@@ -82,7 +82,7 @@ class SpringfieldEnv(BaseEnv):
             scenario_name=self.config.scenario_config["scenario"],
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
-            autosave=False,
+            autosave_interval=None,
             save_log_to_file=False,
         )
         airspace = sim.manager.environment.airspace
@@ -125,7 +125,7 @@ class SpringfieldEnv(BaseEnv):
             category=category,
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
-            autosave=False,
+            autosave_interval=None,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,  # use the default in the scenario
