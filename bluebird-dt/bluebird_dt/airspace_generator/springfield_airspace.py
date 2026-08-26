@@ -9,7 +9,7 @@ from bluebird_dt.utility.airspace_data import create_sector, load_fixes
 from bluebird_dt.utility.paths import SPRINGFIELD_DIR
 
 
-class SpringfieldAirspace(AirspaceGenerator):
+class SpringfieldAirspaceGenerator(AirspaceGenerator):
     """
     Springfield airspace generator.
     """
