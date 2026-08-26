@@ -22,7 +22,7 @@ from bluebird_dt.utility.logging_utils import (
 )
 
 if typing.TYPE_CHECKING:
-    from bluebird_dt.simulator.simconfig import SaveConfig
+    from bluebird_dt.simulator.simconfig import SimConfig
 
 DEFAULT_TRIM_AND_CUT_TIMEDELTA = pd.Timedelta(hours=4)
 
@@ -955,7 +955,7 @@ class EventLogger:
 
             save_df_to_parquet_tar(self.fixes_df, tar, "fixes")
 
-    def _save_config(self, tar: tarfile.TarFile, sim_config: SaveConfig[BaseModel]):
+    def _save_config(self, tar: tarfile.TarFile, sim_config: SimConfig[BaseModel]):
         """
         Save the configuration as a json.
 
@@ -1014,7 +1014,7 @@ class EventLogger:
         json_str = json.dumps(self.individual_sectors_log, indent=4)
         save_json_to_tar(json_str, tar, "individual_sectors")
 
-    def write_logs_to_buffer(self, sim_config: SaveConfig[BaseModel], save_csv: bool | None = True) -> io.BytesIO:
+    def write_logs_to_buffer(self, sim_config: SimConfig[BaseModel], save_csv: bool | None = True) -> io.BytesIO:
         """
         Save all the logs to a tar buffer in memory.
 

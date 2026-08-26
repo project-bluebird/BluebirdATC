@@ -45,9 +45,21 @@ jobs:
         run: uv run ruff format bluebird-api bluebird-dt bluebird-gymnasium docs --check --diff
 
       - name: Check testing
-        run: uv run pytest -n auto
+        run: uv run pytest -n auto --cov=. --cov-report=xml
+
+      - name: Upload coverage report
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/upload-code-coverage@v1
+        with:
+          file: coverage.xml
+          language: Python
+          label: code-coverage/pytest
+          fail-on-error: false
 
       - name: Run notebooks
         if: github.base_ref == 'main' || github.base_ref == 'dev'
         working-directory: bluebird-dt
         run: uv run pytest --nbmake examples/
+        
+
+

@@ -436,6 +436,9 @@ class Custom(
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         predictor: Predictor | None = None,
         env_manager: TEnvironmentManager | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
@@ -463,6 +466,12 @@ class Custom(
             The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
@@ -498,6 +507,9 @@ class Custom(
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
             predictor=predictor,
         )
 
@@ -519,6 +531,9 @@ class Custom(
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         predictor: Predictor | None = None,
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
@@ -565,6 +580,12 @@ class Custom(
             The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
@@ -617,5 +638,8 @@ class Custom(
             autosave=autosave,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
             typeof_simulator=typeof_simulator,
         )
