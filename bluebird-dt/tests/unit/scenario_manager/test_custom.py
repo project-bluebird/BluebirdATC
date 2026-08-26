@@ -1,4 +1,5 @@
 from collections import defaultdict
+from bluebird_dt.core import Pos3D
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.simulator import Simulator
 
@@ -7,7 +8,7 @@ import numpy as np
 import pandas as pd
 from datetime import timedelta
 
-from bluebird_dt.scenario_manager import Tactical
+from bluebird_dt.scenario_manager import Custom
 from bluebird_dt.predictor import SimplePredictor
 
 @pytest.mark.parametrize(
@@ -25,25 +26,22 @@ def test_init_exceptions(lateral_offset, generate_i):
     airspace, routes = generate_i
 
     with pytest.raises(ValueError):
-        Tactical(0, lateral_offset=lateral_offset, airspace=airspace, routes=routes)
+        Custom(-1, lateral_offset=lateral_offset, airspace=airspace, routes=routes)
 
     with pytest.raises(ValueError):
-        Tactical(1, balance=[1], lateral_offset=lateral_offset, airspace=airspace, routes=routes)
+        Custom(1, balance=[1], lateral_offset=lateral_offset, airspace=airspace, routes=routes)
 
     with pytest.raises(ValueError):
-        Tactical(1, balance=[0.25, 0.25, 0.25], lateral_offset=lateral_offset, airspace=airspace, routes=routes)
+        Custom(1, balance=[0.25, 0.25, 0.25, 0.25], lateral_offset=lateral_offset, airspace=airspace, routes=routes)
 
     with pytest.raises(ValueError):
-        Tactical(1, balance=[0.25, 0.25, 0.25, 0.25], lateral_offset=lateral_offset, airspace=airspace, routes=routes)
+        Custom(1, speed_range=[300], lateral_offset=lateral_offset, airspace=airspace, routes=routes)
 
     with pytest.raises(ValueError):
-        Tactical(1, speed_range=[300], lateral_offset=lateral_offset, airspace=airspace, routes=routes)
+        Custom(1, speed_range=[300, 310, 320], lateral_offset=lateral_offset, airspace=airspace, routes=routes)
 
     with pytest.raises(ValueError):
-        Tactical(1, speed_range=[300, 310, 320], lateral_offset=lateral_offset, airspace=airspace, routes=routes)
-
-    with pytest.raises(ValueError):
-        Tactical(1, time_entry_gap=-1, lateral_offset=lateral_offset, airspace=airspace, routes=routes)
+        Custom(1, time_entry_gap=-1, lateral_offset=lateral_offset, airspace=airspace, routes=routes)
 
 
 @pytest.mark.parametrize(
@@ -72,7 +70,7 @@ def test_all_airspaces(airspace_routes, lateral_offset, request):
     volume = airspace.sectors[sector_name].volumes[0]
 
     for num_aircraft in [1, 2, 5, 10, 100]:
-        env_manager = Tactical(num_aircraft, lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager()
+        env_manager = Custom(num_aircraft, lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager()
 
         radar_events_df = env_manager.event_handler.radar_df
         ac_internal_events_df = env_manager.event_handler.aircraft_internals_df
@@ -105,7 +103,7 @@ def test_repeat(generate_i, lateral_offset):
     """
 
     airspace, routes = generate_i
-    gen = Tactical(5, lateral_offset=lateral_offset, airspace=airspace, routes=routes)
+    gen = Custom(5, lateral_offset=lateral_offset, airspace=airspace, routes=routes)
 
     for _ in range(5):
         env_manager = gen.create_env_manager()
@@ -137,7 +135,7 @@ def test_speed_range(generate_i, lateral_offset):
     airspace, routes = generate_i
 
     # uses default speed when not provided
-    env_manager = Tactical(10, lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager()
+    env_manager = Custom(10, lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager()
 
     radar_events_df = env_manager.event_handler.radar_df
 
@@ -146,7 +144,7 @@ def test_speed_range(generate_i, lateral_offset):
 
     # choose Tactically from speed range, test 10 times
     for _ in range(10):
-        env_manager = Tactical(10, speed_range=[100, 300], airspace=airspace, routes=routes).create_env_manager()
+        env_manager = Custom(10, speed_range=[100, 300], airspace=airspace, routes=routes).create_env_manager()
 
         radar_events_df = env_manager.event_handler.radar_df
         for _, row in radar_events_df.iterrows():
@@ -172,7 +170,7 @@ def test_balance(generate_i, lateral_offset):
 
     # only overfliers
     environment = (
-        Tactical(10, balance=[0, 0, 1], lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager().environment
+        Custom(10, balance=[0, 0, 1], lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager().environment
     )
     for callsign in environment.aircraft:
         entry_coord = environment.entry_coordination(sector_name, callsign)
@@ -183,7 +181,7 @@ def test_balance(generate_i, lateral_offset):
 
     # only descenders
     environment = (
-        Tactical(10, balance=[0, 1, 0], lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager().environment
+        Custom(10, balance=[0, 1, 0], lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager().environment
     )
     for callsign in environment.aircraft:
         entry_coord = environment.entry_coordination(sector_name, callsign)
@@ -194,7 +192,7 @@ def test_balance(generate_i, lateral_offset):
 
     # only climbers
     environment = (
-        Tactical(10, balance=[1, 0, 0], lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager().environment
+        Custom(10, balance=[1, 0, 0], lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager().environment
     )
     for callsign in environment.aircraft:
         entry_coord = environment.entry_coordination(sector_name, callsign)
@@ -218,7 +216,7 @@ def test_aircraft_entry_coordinations(generate_i, lateral_offset):
 
     airspace, routes = generate_i
     sector_name = list(airspace.sectors.keys())[0]
-    env_manager = Tactical(100, lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager()
+    env_manager = Custom(100, lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager()
 
     radar_events_df = env_manager.event_handler.radar_df
     coord_events_df = env_manager.event_handler.coordination_df
@@ -245,7 +243,7 @@ def test_aircraft_entry_spawn_point(generate_i):
     """
 
     airspace, routes = generate_i
-    em = Tactical(100, lateral_offset=(3, 5), airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(100, lateral_offset=(3, 5), airspace=airspace, routes=routes).create_env_manager()
 
     entries = defaultdict(list)
 
@@ -268,106 +266,28 @@ def test_aircraft_entry_spawn_point(generate_i):
             for j in range(i + 1, n_aircraft):
                 assert rows[i].lat != rows[j].lat and rows[i].lon != rows[j].lon
 
+
 @pytest.mark.parametrize(
-    "airspace_routes, expected_pairs_attr",
+    "lateral_offset",
     [
-        ("generate_i", "i_sector_pairs"),
-        ("generate_x", "x_sector_pairs"),
-        ("generate_y", "y_sector_pairs"),
+        (1, 2),
+        (4, 6),
+        (0, 10),
     ],
 )
-def test_set_up_lateral_start_points(airspace_routes, expected_pairs_attr, request):
+def test_laterally_offset_start_pos(lateral_offset):
     """
-    Test lateral start-point headings are correctly generated for valid airspaces by checking:
-    - the correct set of outer (spawn) fixes is used for each airspace type
-    - each fix is assigned exactly two headings
-    - the two headings are 180 degrees opposed (parallel to the sector boundary)
+    Test stochastic_start_pos generates a laterally offset start position by that
+    for each aircraft, the starting Pos2D is within the correct offset range from 
+    the starting fix.
     """
-    airspace, routes = request.getfixturevalue(airspace_routes)
-    gen = Tactical(1, airspace=airspace, routes=routes)
-
-    headings = gen.set_up_lateral_start_points(airspace)
-
-    expected_pairs = getattr(Tactical, expected_pairs_attr)
-    expected_outer_fixes = {outer for _inner, outer in expected_pairs}
-
-    # correct keys
-    assert set(headings.keys()) == expected_outer_fixes
-
-    # each is a 2-tuple and second heading is 180 degrees opposed (wrapped)
-    for outer_fix, (h1, h2) in headings.items():
-        assert outer_fix in expected_outer_fixes
-        assert 0.0 <= h1 < 360.0
-        assert 0.0 <= h2 < 360.0
-
-        expected_h2 = h1 + 180.0
-        expected_h2 = expected_h2 if expected_h2 < 360.0 else expected_h2 - 360.0
-        assert h2 == expected_h2
-
-
-def test_set_up_lateral_start_points_invalid_airspace_raises(generate_thunderdome):
-    """
-    Test ValueError is raised when lateral start points are requested
-    for an unsupported or invalid airspace configuration.
-    """
-    airspace, routes = generate_thunderdome
-    gen = Tactical(1, airspace=airspace, routes=routes)
-
-    with pytest.raises(ValueError, match="Invalid airspace"):
-        gen.set_up_lateral_start_points(airspace)
-
-
-def test_stochastic_start_pos(generate_i, monkeypatch):
-    """
-    Test stochastic_start_pos generates a laterally offset start position by checking:
-    - a heading is selected from the valid lateral offset headings
-    - a distance is sampled from the configured lateral offset range
-    - the GeoHelper.forward method is called with the correct parameters
-    - the returned longitude/latitude are correctly mapped into a Pos2D
-    """
-    airspace, routes = generate_i
-    route = routes[0]
-
-    gen = Tactical(1, lateral_offset=(3, 5), airspace=airspace, routes=routes)
-
-    # Force deterministic heading+distance
-    chosen_heading = 123.0
-    chosen_distance = 4.5
-
-    def fake_choice(options):
-        # options should be the tuple (h1, h2) for the first fix
-        assert len(options) == 2
-        return chosen_heading
-
-    def fake_uniform(low, high):
-        assert (low, high) == (3, 5)
-        return chosen_distance
-
-    monkeypatch.setattr(np.random, "choice", fake_choice)
-    monkeypatch.setattr(np.random, "uniform", fake_uniform)
-
-    # Patch geo_helper.forward to validate inputs and return a known lon/lat
-    first_fix_name = route.filed[0]
-    first_fix = airspace.fixes.places[first_fix_name]
-
-    returned_lon = first_fix.lon + 0.25
-    returned_lat = first_fix.lat + 0.50
-
-    def fake_forward(lon, lat, *, heading, distance):
-        assert lon == first_fix.lon
-        assert lat == first_fix.lat
-        assert heading == chosen_heading
-        assert distance == chosen_distance
-        # Many geo libs return (lon, lat); Tactical expects that and then swaps into Pos2D(lat, lon)
-        return (returned_lon, returned_lat)
-
-    monkeypatch.setattr(airspace.geo_helper, "forward", fake_forward)
-
-    pos2d = gen.stochastic_start_pos(airspace, route)
-
-    # Pos2D(lat, lon): should map returned_lat to lat and returned_lon to lon
-    assert pos2d.lat == returned_lat
-    assert pos2d.lon == returned_lon
+    
+    sim = Custom.setup(num_aircraft=2, lateral_offset=lateral_offset, scenario_name="X-Sector")
+    for aircraft in sim.manager.environment.aircraft.values():
+        start_fix = aircraft.flight_plan.route.filed[0]
+        start_fix_pos = sim.manager.environment.airspace.fixes.places[start_fix]
+        aircraft_pos = aircraft.pos2d()
+        assert lateral_offset[0] < start_fix_pos.distance(aircraft_pos) < lateral_offset[1]
 
 def _convert_datetime_index_to_column(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -389,11 +309,10 @@ def test_create_event_handler(generate_i, lateral_offset):
     - returns 2N coordination events
     - each callsign has 2 coords exactly 1 second before its radar event time
     """
-    np.random.seed(12345)
 
     airspace, routes = generate_i
     n = 20
-    gen = Tactical(n, lateral_offset=lateral_offset, airspace=airspace, routes=routes, start_time=0)
+    gen = Custom(n, lateral_offset=lateral_offset, airspace=airspace, routes=routes, start_time=0, random_seed=12345)
 
     eh = gen.create_event_handler()
 
@@ -422,13 +341,13 @@ def test_create_event_handler(generate_i, lateral_offset):
 
 def test_to_simulator(generate_i):
     """
-    Test the Tactical.to_simulator() method creates the required components and sets the appropriate variables correctly.
+    Test the Custom.to_simulator() method creates the required components and sets the appropriate variables correctly.
     """
 
     airspace, routes = generate_i
     num_aircraft = 10
 
-    simulator = Tactical(
+    simulator = Custom(
         num_aircraft=num_aircraft,
         airspace=airspace,
         routes=routes,
@@ -436,12 +355,12 @@ def test_to_simulator(generate_i):
     ).to_simulator(scenario_name="test-scenario",)
 
     assert isinstance(simulator.manager, EnvironmentManager)
-    assert isinstance(simulator.scenario_manager, Tactical)
+    assert isinstance(simulator.scenario_manager, Custom)
     assert simulator.projection_centre is None
     assert isinstance(simulator, Simulator)
 
     assert simulator.scenario_name == "test-scenario"
-    assert simulator.category is None
+    assert simulator.category == "Custom"
 
     radar_events_df = simulator.manager.event_handler.radar_df
     ac_internal_events_df = simulator.manager.event_handler.aircraft_internals_df
@@ -468,20 +387,94 @@ def test_create_env_manager(generate_i):
     """
     Test create_env_manager default behaviour and initialisation control by checking:
     - a SimplePredictor is created when no predictor is provided
-    - the environment is initialised with events when initialise_with_event_handler=True
-    - the environment remains empty when initialise_with_event_handler=False
     """
     airspace, routes = generate_i
 
     # When predictor is None, should create SimplePredictor(1.0, 2.0)
-    em = Tactical(3, airspace=airspace, routes=routes, initialise_with_event_handler=True).create_env_manager(predictor=None)
+    em = Custom(3, airspace=airspace, routes=routes).create_env_manager(predictor=None)
     assert isinstance(em.predictor, SimplePredictor)
-
-    # If initialise_with_event_handler=False, environment should not be pre-populated
-    em2 = Tactical(3, airspace=airspace, routes=routes, initialise_with_event_handler=False).create_env_manager(predictor=None)
 
     assert len(em.environment.aircraft) > 0
     assert len(em.environment.coordinations.values()) > 0
 
-    assert len(em2.environment.aircraft) == 0
-    assert len(em2.environment.coordinations.values()) == 0
+
+def test_add_custom_aircraft_only(generate_i):
+    """
+    Test that we can create a scenario with fully user-specified aircraft only
+    """
+    airspace, routes = generate_i
+    sm = Custom(0, airspace=airspace, routes=routes)
+    sm.add_aircraft_with_coordinations(
+        aircraft_start_time=10.0, 
+        callsign="TEST-1", 
+        pos=Pos3D(1,0,200),
+        heading=180, 
+        speed=350., 
+        route=routes[0], 
+        entry_fl=200, 
+        exit_fl=400
+    )
+    sm.add_aircraft_with_coordinations(
+        aircraft_start_time=20.0, 
+        callsign="TEST-2", 
+        pos=Pos3D(0,0,210),
+        heading=0, 
+        speed=350., 
+        route=routes[-1], 
+        entry_fl=200, 
+        exit_fl=400
+    )
+    sim = sm.to_simulator()
+    sim.evolve(6)
+    assert len(sim.manager.environment.aircraft) == 1
+    assert "TEST-1" in sim.manager.environment.aircraft
+    sim.evolve(6)
+    assert len(sim.manager.environment.aircraft) == 2
+    assert "TEST-2" in sim.manager.environment.aircraft
+
+
+def test_add_custom_aircraft_with_random_ones(generate_i):
+    """
+    Test that we can create a scenario with fully user-specified aircraft as
+    well as randomly-generated aircraft
+    """
+    airspace, routes = generate_i
+    sm = Custom(3, airspace=airspace, routes=routes)
+    sm.add_aircraft_with_coordinations(
+        aircraft_start_time=10.0, 
+        callsign="TEST-1", 
+        pos=Pos3D(1,0,200),
+        heading=180, 
+        speed=350., 
+        route=routes[0], 
+        entry_fl=200, 
+        exit_fl=400
+    )
+    sm.add_aircraft_with_coordinations(
+        aircraft_start_time=20.0, 
+        callsign="TEST-2", 
+        pos=Pos3D(0,0,210),
+        heading=0, 
+        speed=350., 
+        route=routes[-1], 
+        entry_fl=200, 
+        exit_fl=400
+    )
+    sim = sm.to_simulator()
+    # wait 1 minute for all aircraft to spawn
+    sim.evolve(60)
+    # should be 5 aircraft - 3 randomly generated and 2 user-specified.
+    assert len(sim.manager.environment.aircraft) == 5
+    assert "TEST-1" in sim.manager.environment.aircraft
+    assert "TEST-2" in sim.manager.environment.aircraft
+
+@pytest.mark.parametrize(
+        "scenario_name", 
+        ("I-Sector","Y-Sector", "X-Sector", "Xplus-Sector", "Springfield")
+)
+def test_sim_from_category(scenario_name):
+    """
+    Test that we can instantiate the simulator using "from_category"
+    """
+    s = Simulator.from_category("Custom", scenario_name)
+    assert isinstance(s, Simulator)

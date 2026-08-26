@@ -26,7 +26,7 @@ from bluebird_dt.core import Action
 from bluebird_dt.simulator.simulator import Simulator
 
 # Use Simulator
-sim = Simulator.from_category("Artificial", "I-Sector Two Aircraft")
+sim = Simulator.from_category("Two Aircraft", "I-Sector")
 
 # Evolve for 60 seconds, in 6 second radar sweeps
 for _ in range(0, 10):

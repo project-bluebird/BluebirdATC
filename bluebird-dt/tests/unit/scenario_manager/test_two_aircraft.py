@@ -289,3 +289,14 @@ def test_to_simulator(generate_i):
     # Check returned simulator works as expected
     simulator.evolve(6)
     assert len(simulator.manager.environment.aircraft) is not None
+
+@pytest.mark.parametrize(
+        "scenario_name", 
+        ("I-Sector","Y-Sector", "X-Sector", "Xplus-Sector", "Springfield")
+)        
+def test_sim_from_category(scenario_name):
+    """
+    Test that we can instantiate the simulator using "from_category"
+    """
+    s = Simulator.from_category("Two Aircraft", scenario_name)
+    assert isinstance(s, Simulator)

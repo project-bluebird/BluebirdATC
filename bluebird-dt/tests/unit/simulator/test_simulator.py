@@ -39,7 +39,7 @@ def test_springfield_simulation():
 @pytest.mark.parametrize(
     ("category", "scenario_name"),
     [
-        ("Artificial", "I-Sector Two Aircraft"),
+        ("Two Aircraft", "I-Sector"),
         ("Springfield", "testScenario"),
     ],
 )

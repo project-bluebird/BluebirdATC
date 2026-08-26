@@ -1,4 +1,3 @@
-import random
 import typing
 from datetime import datetime, timedelta, timezone
 
@@ -7,15 +6,15 @@ import typing_extensions
 from pydantic import BaseModel, Field
 from typing_extensions import override
 
-from bluebird_dt.airspace_generator.artificial_airspace import ArtificialAirspace
-from bluebird_dt.core import Aircraft, Airspace, Coordination, FlightPlan, Route, WindField
+from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
+from bluebird_dt.core import Aircraft, Airspace, Route, WindField
+from bluebird_dt.core.coordination import CoordinationsManager
 from bluebird_dt.events import EventHandler, EventLogger
 from bluebird_dt.logger import logger
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.artificial_airspace_defaults import AIRSPACE_SETTINGS
 
 
 class TwoAircraftScenarioManagerConfig(BaseModel):
@@ -55,37 +54,35 @@ class TwoAircraft(
     event_handler_ignore_flags: EventHandler.IgnoreFlags
     airspace: Airspace
     routes: list[Route]
+    sector_name: str
     total_time: float
-    speed_range: list[float] | None
-    scenario_type: typing.Literal["random", "overflier", "climber", "descender"]
-    env_manager_class: type[TEnvironmentManager] | None
+    speed_range: tuple[float, float] | None
     start_time: int
     vertical_buffer_distance: float | int
     lateral_buffer_distance: float | int
-    initialise_with_event_handler: bool
-    total_time: float
-    speed_range: list[float] | None
     scenario_type: typing.Literal["random", "overflier", "climber", "descender"]
+    random_seed: int | None
     typeof_environment_manager: type[TEnvironmentManager]
     typeof_event_handler: type[TEventHandler]
     typeof_aircraft: type[TAircraft]
-    typeof_eventlogger: type[TEventLogger]
+    typeof_event_logger: type[TEventLogger]
 
     def __init__(
         self,
         airspace: Airspace,
         routes: list[Route],
-        total_time: float,
-        speed_range: list[float] | None = None,
+        sector_name: str | None = None,
+        total_time: float = 100.0,
+        speed_range: tuple[float, float] | None = None,
         scenario_type: typing.Literal["random", "overflier", "climber", "descender"] = "random",
+        random_seed: int | None = None,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
-        typeof_eventlogger: type[TEventLogger] = EventLogger,
+        typeof_event_logger: type[TEventLogger] = EventLogger,
         start_time: int = 0,
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
-        initialise_with_event_handler: bool = True,
     ):
         """
         Construct a new instance.
@@ -96,57 +93,59 @@ class TwoAircraft(
             The airspace to be used in the environment
         routes: list[Route]
             The available Routes in the Airspace
+        sector_name: str | None
+            Name of Sector within the Airspace to be used for Coordinations.  If not specified,
+            use the first sector in the airspace.
         total_time: float
             The total time to travel the Route for both Aircraft (in seconds). If speed_range is not provided, speed of
             both Aircraft is chosen such that the FlightPlan coordinations can be satisfied.
-        speed_range: list[float, float]
+        speed_range: tuple[float, float] | None
             Optional range of [min,max] speeds from which to randomly choose Aircraft speed. If not provided,
             speed of both Aircraft is set based on the total_time parameter. If provided, total_time is not used.
-        scenario_type: str
+        scenario_type: typing.Literal
             One of "random", "overflier", "climber" or "descender". If "random" - choose one of
             ["overflier", "climber", "descender"].
             Describes the behaviour of the second Aircraft.
+        random_seed: int | None
+            If specified, set the seed for the random number generator for reproducibility.
         start_time: int
             Start time of scenario, in unix time (seconds)
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
             Distance to expand airspace lateral boundary by - UoM: NMI
-        initialise_with_event_handler: bool, default is True
-            Initialise the environment with the EventHandler
-        typeof_environmentmanager: type[EnvironmentManager], optional
+        typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
             If we want to use a derived class for the aircraft class, specify here.
-        typeof_eventlogger: type[EventLogger], optional
+        typeof_event_logger: type[EventLogger], optional
             If we want to use a derived class for the event logger, specify here.
-        typeof_eventhandler: type[EventHandler], optional
+        typeof_event_handler: type[EventHandler], optional
             If we want to use a derived class for the Event Handler, specify here.
         """
 
         if (total_time is not None) and total_time <= 0.0:
             raise ValueError("Total time must be positive.")
 
-        if (speed_range is not None) and len(speed_range) != 2:
-            raise ValueError("Speed range must be a list of length 2.")
-
-        if scenario_type not in ["random", "overflier", "climber", "descender"]:
-            raise ValueError("Scenario type must of one of ['random', 'overflier', 'climber', 'descender'].")
-
         self.total_time = total_time
         self.airspace = airspace
+        self.sector_name = sector_name if sector_name else next(iter(airspace.sectors.keys()))
         self.routes = routes
+        if speed_range is not None and len(speed_range) != 2:
+            raise ValueError("speed_range must be None or a tuple of 2 values")
         self.speed_range = speed_range
+        if scenario_type not in ["random", "overflier", "climber", "descender"]:
+            raise ValueError(f"scenario_type must be one of {['random', 'overflier', 'climber', 'descender']}")
         self.scenario_type = scenario_type
         self.start_time = start_time
         self.vertical_buffer_distance = vertical_buffer_distance
         self.lateral_buffer_distance = lateral_buffer_distance
-        self.initialise_with_event_handler = initialise_with_event_handler
         self.typeof_environment_manager = typeof_environment_manager
         self.typeof_event_handler = typeof_event_handler
         self.typeof_aircraft = typeof_aircraft
-        self.typeof_eventlogger = typeof_eventlogger
+        self.typeof_event_logger = typeof_event_logger
         self.event_handler_ignore_flags = typeof_event_handler.IgnoreFlags()
+        self.rng = np.random.default_rng(random_seed)
 
     def get_overflier_coordination_FLs(self, allowed_FLs: list[float], aircraft_scenario: str) -> tuple[float, float]:
         """
@@ -166,7 +165,7 @@ class TwoAircraft(
             FL of the [entry, exit] Coordination of overflier Aircraft.
         """
 
-        coordination_FL = random.choice(allowed_FLs)
+        coordination_FL = self.rng.choice(allowed_FLs)
 
         # make sure climber/descender can start below/above overflier
         # - leave lowest/highest FL band clear
@@ -195,10 +194,10 @@ class TwoAircraft(
         """
 
         # start above the overflier (up to the highest allowed entry FL limit)
-        start_fl = random.choice(np.arange(overflier_fl + 10, allowed_FLs[-1] + 10, 10, dtype="float"))
+        start_fl = self.rng.choice(np.arange(overflier_fl + 10, allowed_FLs[-1] + 10, 10, dtype="float"))
 
         # exit at or below the overflier FL to ensure paths cross
-        exit_fl = random.choice(np.arange(allowed_FLs[0], overflier_fl + 10, 10, dtype="float"))
+        exit_fl = self.rng.choice(np.arange(allowed_FLs[0], overflier_fl + 10, 10, dtype="float"))
 
         return start_fl, exit_fl
 
@@ -220,10 +219,10 @@ class TwoAircraft(
         """
 
         # start below the overflier (down to the lowest allowed entry FL)
-        start_fl = random.choice(np.arange(allowed_FLs[0], overflier_fl, 10, dtype="float"))
+        start_fl = self.rng.choice(np.arange(allowed_FLs[0], overflier_fl, 10, dtype="float"))
 
         # climb to FL at or above overflier FL to ensure paths cross
-        exit_fl = random.choice(np.arange(overflier_fl, allowed_FLs[-1] + 10, 10, dtype="float"))
+        exit_fl = self.rng.choice(np.arange(overflier_fl, allowed_FLs[-1] + 10, 10, dtype="float"))
 
         return start_fl, exit_fl
 
@@ -241,15 +240,14 @@ class TwoAircraft(
 
         # set or randomly select scenario type
         if self.scenario_type == "random":
-            aircraft_scenario = random.choice(["overflier", "climber", "descender"])
+            aircraft_scenario = self.rng.choice(["overflier", "climber", "descender"])
         else:
             aircraft_scenario = self.scenario_type
 
-        route_fwd = random.choice(self.routes)
+        route_fwd = self.rng.choice(self.routes)
         route_rev = Route(route_fwd.filed[::-1])
         routes = [route_fwd, route_rev]
-        sector_name = next(iter(self.airspace.sectors.keys()))
-        volume = self.airspace.sectors[sector_name].volumes[0]
+        volume = self.airspace.sectors[self.sector_name].volumes[0]
         allowed_FLs = [float(x) for x in np.arange(volume.min_fl, volume.max_fl + 10, 10)]
 
         # randomly generate entry/exit coordinations for first aircraft
@@ -275,7 +273,7 @@ class TwoAircraft(
             if self.speed_range is None:
                 speed = route_fwd.length(self.airspace.fixes) / (self.total_time / 3600.0)
             else:
-                speed = self.speed_range[0] + (self.speed_range[1] - self.speed_range[0]) * np.random.uniform()
+                speed = self.rng.uniform(self.speed_range[0], self.speed_range[1])
 
             route = routes[i]
             entry_fl, exit_fl = coordinations[i]
@@ -285,46 +283,20 @@ class TwoAircraft(
 
             the_datetime = datetime(1970, 1, 1)
 
-            coordination_entry = Coordination(
-                callsign=callsign,
-                from_sector=None,
-                to_sector=sector_name,
-                fl=entry_fl,
-                fix=route.filed[0],
-                direction="Horizontal",
-                level_by=False,
-                level_by_details=None,
-                secondary_coord_conditions=None,
-            )
-
-            coordination_exit = Coordination(
-                callsign=callsign,
-                from_sector=sector_name,
-                to_sector=None,
-                fl=exit_fl,
-                fix=route.filed[-1],
-                direction="Horizontal",
-                level_by=False,
-                level_by_details=None,
-                secondary_coord_conditions=None,
-            )
-
-            flight_plan = FlightPlan(route)
-
             pos = fix1.pos3d(entry_fl)
 
-            aircraft = self.typeof_aircraft(
-                pos.lat,
-                pos.lon,
-                pos.fl,
-                heading,
-                flight_plan,
-                callsign,
-                current_sector=sector_name,
+            aircraft, coordination_entry, coordination_exit = CoordinationsManager.aircraft_with_coordinations(
+                callsign=callsign,
+                pos=pos,
+                heading=heading,
+                speed=speed,
+                route=route,
+                sector_name=self.sector_name,
+                entry_fl=entry_fl,
+                exit_fl=exit_fl,
+                airspace=self.airspace,
+                typeof_aircraft=self.typeof_aircraft,
             )
-            aircraft.selected_instructions.cas = speed
-            aircraft.speed_tas = speed
-            aircraft.simulated = True
 
             event_handler.add_aircraft(the_datetime, aircraft)
             event_handler.add_coordination(the_datetime, coordination_exit)
@@ -375,9 +347,10 @@ Creating TwoAircraft Scenario
             penumbra_lat=self.lateral_buffer_distance,
             log_filename=log_filename,
         )
+        # set the visibility flag of fixes to True only if they are in the penumbra
+        em.set_local_fixes_visibility()
 
-        if self.initialise_with_event_handler:
-            em.initialise_env_with_event_handler()
+        em.initialise_env_with_event_handler()
 
         return em
 
@@ -389,6 +362,13 @@ Creating TwoAircraft Scenario
     def setup(
         cls,
         scenario_name: str,
+        start_time: int = 0,
+        total_time: float = 100.0,
+        speed_range: tuple[float, float] | None = None,
+        scenario_type: typing.Literal["random", "overflier", "climber", "descender"] = "random",
+        random_seed: int | None = None,
+        vertical_buffer_distance: float | int = 500,
+        lateral_buffer_distance: float | int = 20,
         use_wind: bool = True,
         use_forecast: bool = True,
         predictor: Predictor | None = None,
@@ -401,7 +381,7 @@ Creating TwoAircraft Scenario
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
-        typeof_eventlogger: type[TEventLogger] = EventLogger,
+        typeof_event_logger: type[TEventLogger] = EventLogger,
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:
         """Setup artificial scenarios based on scenario name.
@@ -410,6 +390,20 @@ Creating TwoAircraft Scenario
         ----------
         scenario_name: str
             The scenario name
+        total_time: float
+            Number of seconds that the scenario should run for
+        start_time: int
+            Start time of scenario, in unix time (seconds)
+        speed_range: tuple[float, float] | None
+            If specified, randomly choose speeds from within the range for the aircraft.
+        scenario_type: typing.Literal["random","overflier", "climber", "descender"]
+            Describes the behaviour of the second aircraft in the scenario. Default is "random".
+        random_seed: int | None
+            If specified, set the seed for the random generator, for reproducibility.
+        vertical_buffer_distance: int or float, default is 500
+            Distance to expand airspace vertical boundary by - UoM: FL
+        lateral_buffer_distance: int or float, default is 20
+            Distance to expand airspace lateral boundary by - UoM: NMI
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
@@ -435,62 +429,50 @@ Creating TwoAircraft Scenario
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
             If we want to use a derived class for the aircraft class, specify here.
-        typeof_eventlogger: type[EventLogger], optional
+        typeof_event_logger: type[EventLogger], optional
             If we want to use a derived class for the event logger, specify here.
-        typeof_eventhandler: type[EventHandler], optional
+        typeof_event_handler: type[EventHandler], optional
             If we want to use a derived class for the Event Handler, specify here.
+        typeof_simulator: type[Simulator], optional
+            If we want to create a derived Simulator class, specify here.
         Returns
         -------
         Simulator
             A fully configured simulator instance
         """
 
-        if scenario_name in [
-            "I-Sector Two Aircraft",
-            "X-Sector Two Aircraft",
-            "Y-Sector Two Aircraft",
-            "Two Sector Two Aircraft",
-        ]:
-            if scenario_name == "I-Sector Two Aircraft":
-                airspace, routes = ArtificialAirspace("i").generate_airspace()
-            elif scenario_name == "X-Sector Two Aircraft":
-                airspace, routes = ArtificialAirspace("x").generate_airspace()
-            elif scenario_name == "Y-Sector Two Aircraft":
-                airspace, routes = ArtificialAirspace("y").generate_airspace()
-            elif scenario_name == "Two Sector Two Aircraft":
-                airspace, routes = ArtificialAirspace("two").generate_airspace()
-            else:
-                raise ValueError(f"Scenario name {scenario_name} unknown")
+        airspace, routes, sector_name = AirspaceLoader.load(scenario_name)
 
-            # set up the simulator for "climber" scenario using TwoAircraft scenario manager
-            sim = cls(
-                total_time=1200,
-                scenario_type="climber",
-                airspace=airspace,
-                routes=routes,
-                vertical_buffer_distance=AIRSPACE_SETTINGS["penumbra_fl"],
-                lateral_buffer_distance=AIRSPACE_SETTINGS["penumbra_lat"],
-                typeof_aircraft=typeof_aircraft,
-                typeof_eventlogger=typeof_eventlogger,
-                typeof_event_handler=typeof_event_handler,
-                typeof_environment_manager=typeof_environment_manager,
-            ).to_simulator(
-                typeof_simulator=typeof_simulator,
-                scenario_name=scenario_name,
-                category="Artificial",
-                use_wind=use_wind,
-                use_forecast=use_forecast,
-                predictor=predictor,
-                attach_context_to_logger=attach_context_to_logger,
-                save_log_to_file=save_log_to_file,
-                log_filename=log_filename,
-                save_csv=save_csv,
-                autosave_interval=autosave_interval,
-                save_chunk_interval=save_chunk_interval,
-            )
-
-        else:
-            raise ValueError(f"Unknown artificial scenario name: {scenario_name}")
+        # set up the simulator for "climber" scenario using TwoAircraft scenario manager
+        sim = cls(
+            total_time=total_time,
+            start_time=start_time,
+            speed_range=speed_range,
+            scenario_type=scenario_type,
+            random_seed=random_seed,
+            airspace=airspace,
+            routes=routes,
+            sector_name=sector_name,
+            vertical_buffer_distance=vertical_buffer_distance,
+            lateral_buffer_distance=lateral_buffer_distance,
+            typeof_aircraft=typeof_aircraft,
+            typeof_event_logger=typeof_event_logger,
+            typeof_event_handler=typeof_event_handler,
+            typeof_environment_manager=typeof_environment_manager,
+        ).to_simulator(
+            log_filename=log_filename,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
+            predictor=predictor,
+            category="Two Aircraft",
+            scenario_name=scenario_name,
+            use_wind=use_wind,
+            use_forecast=use_forecast,
+            attach_context_to_logger=attach_context_to_logger,
+            save_log_to_file=save_log_to_file,
+            typeof_simulator=typeof_simulator,
+        )
 
         # if needed, fast-forward to the first aircraft entry time, ensuring that it is
         # a multiple of the evolve time-step

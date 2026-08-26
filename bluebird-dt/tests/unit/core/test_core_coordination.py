@@ -1,16 +1,18 @@
 import copy
 from datetime import datetime
+import io
 import json
-import pytest
-from bluebird_dt.core.coordination import Coordination, CoordinationsManager
-
-from typing import Any
+import pandas as pd
 from pydantic import ValidationError
 import pytest
+import random
 import tarfile
-import io
+from typing import Any
+
+from bluebird_dt.core.aircraft import Aircraft
+from bluebird_dt.core.coordination import Coordination, CoordinationsManager
 from bluebird_dt.utility.logging_utils import (save_df_to_parquet_tar)
-import pandas as pd
+
 from conftest import make_random_coordination
 
 @pytest.mark.parametrize(
@@ -196,3 +198,66 @@ def test_writing_coord_to_file(the_datetime: Any, expected_number_of_new_coordin
     tar_buffer = io.BytesIO()
     with tarfile.open(fileobj=tar_buffer, mode="w:gz") as tar:
         save_df_to_parquet_tar(coord_df, tar, "coordination")
+
+
+def test__aircraft_with_coordinations(generate_i):
+    """
+    Test the function that creates aircraft and entry and exit coordinations.
+    """
+    airspace, routes = generate_i
+    sector_name = "sector_i"
+    for i, route in enumerate(routes):
+        callsign = f"AIR-0{i}"
+        # spawn aircraft on first fix on the route
+        first_fix_pos = airspace.fixes.places[route.filed[0]]
+        next_fix_pos = airspace.fixes.places[route.filed[1]]
+        heading = first_fix_pos.bearing_to(next_fix_pos)
+        fl = random.randint(200,350)
+        pos = first_fix_pos.pos3d(fl)
+        speed = random.randint(300,500)
+        entry_fl = random.randint(200,350)
+        exit_fl = random.randint(200,350)
+        aircraft, coord_entry, coord_exit = CoordinationsManager.aircraft_with_coordinations(
+            callsign=callsign,
+            pos=pos,
+            heading=heading,
+            speed=speed,
+            route=route,
+            sector_name=sector_name,
+            entry_fl=entry_fl,
+            exit_fl=exit_fl,
+            airspace=airspace
+        )
+        assert isinstance(aircraft, Aircraft)
+        assert aircraft.callsign == callsign
+        assert aircraft.lat == pos.lat
+        assert aircraft.lon == pos.lon
+        assert aircraft.heading == heading
+        assert aircraft.speed_tas == speed
+        assert aircraft.selected_instructions.cas == speed
+        assert aircraft.flight_plan.route == route
+        assert isinstance(coord_entry, Coordination)
+        assert coord_entry.fl == entry_fl
+        assert coord_entry.from_sector == "background"
+        assert coord_entry.to_sector == sector_name
+        assert isinstance(coord_exit, Coordination)
+        assert coord_exit.fl == exit_fl
+        assert coord_exit.from_sector == sector_name
+        assert coord_exit.to_sector == "background"
+
+
+def test_find_entry_exit_fixes(generate_i):
+    """
+    Test the function that returns fixes nearest the entry and exit of 
+    a route through a sector.
+    """
+    airspace, routes = generate_i
+    # first route goes from "FIRE" to "SPIRIT", should enter sector at "EARTH"
+    # and exit at "AIR"
+    entry_fix, exit_fix = CoordinationsManager.find_entry_exit_fixes(airspace, routes[0], "sector_i")
+    assert entry_fix == "EARTH"
+    assert exit_fix == "AIR"
+    # second route should be the reverse
+    entry_fix, exit_fix = CoordinationsManager.find_entry_exit_fixes(airspace, routes[1], "sector_i")
+    assert entry_fix == "AIR"
+    assert exit_fix == "EARTH"
