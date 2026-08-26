@@ -1,5 +1,5 @@
 from bluebird_dt.airspace_generator.artificial_airspace import ArtificialAirspace
-from bluebird_dt.airspace_generator.springfield_airspace import SpringfieldAirspace
+from bluebird_dt.airspace_generator.springfield_airspace import SpringfieldAirspaceGenerator
 from bluebird_dt.core import Airspace, Route
 
 
@@ -28,7 +28,7 @@ class AirspaceLoader:
                 airspace, routes = ArtificialAirspace("two").generate_airspace()
                 return airspace, routes, "sector_1"
             case "Springfield":
-                airspace, routes = SpringfieldAirspace().generate_airspace()
+                airspace, routes = SpringfieldAirspaceGenerator().generate_airspace()
                 return airspace, routes, "SPRINGFIELD"
             case _:
                 raise ValueError(f"Scenario name {scenario_name} not recognized.")

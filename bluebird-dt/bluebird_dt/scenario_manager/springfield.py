@@ -8,7 +8,7 @@ import typing_extensions
 from pydantic import BaseModel
 from typing_extensions import override
 
-from bluebird_dt.airspace_generator import SpringfieldAirspace
+from bluebird_dt.airspace_generator import SpringfieldAirspaceGenerator
 from bluebird_dt.core import Aircraft, Environment, FlightPlan, Pos2D, Route, WindField
 from bluebird_dt.events import EventHandler, EventLogger
 from bluebird_dt.logger import logger
@@ -245,13 +245,15 @@ class SpringfieldScenarioManager(
 
         # create instance of base Predictor class if no predictor passed
         if predictor is None:
-            predictor = LinearPredictor(dt=1, fix_proximity_threshold=0.5, fixes=SpringfieldAirspace._fixes_init)
+            predictor = LinearPredictor(
+                dt=1, fix_proximity_threshold=0.5, fixes=SpringfieldAirspaceGenerator._fixes_init
+            )
 
         # create event handler from the events list
         event_handler = self.create_event_handler()
 
         em = self.typeof_environment_manager(
-            airspace=SpringfieldAirspace._airspace_init(),
+            airspace=SpringfieldAirspaceGenerator._airspace_init(),
             event_handler=event_handler,
             predictor=predictor,
             time=0,
