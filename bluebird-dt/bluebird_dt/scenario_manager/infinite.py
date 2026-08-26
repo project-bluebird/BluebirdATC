@@ -10,6 +10,7 @@ from typing_extensions import override
 
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.core import Aircraft, Airspace, Coordination, Environment, Pos2D, Pos3D, Route, WindField
+from bluebird_dt.core.coordination import CoordinationsManager
 from bluebird_dt.events import EventHandler, EventLogger
 from bluebird_dt.logger import logger
 from bluebird_dt.manager import EnvironmentManager
@@ -17,7 +18,7 @@ from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.outcomm_handler import OutcommHandler
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.scenario_manager_utils import create_aircraft_with_coordinations, laterally_offset_start_point
+from bluebird_dt.utility.scenario_manager_utils import laterally_offset_start_point
 
 
 class InfiniteScenarioManagerConfig(BaseModel):
@@ -280,7 +281,7 @@ class Infinite(
         )
         # pos3d will have latitude then longitude.
         pos = Pos3D(lat=updated_start_pos[1], lon=updated_start_pos[0], fl=entry_flight_level)
-        aircraft, coordination_entry, coordination_exit = create_aircraft_with_coordinations(
+        aircraft, coordination_entry, coordination_exit = CoordinationsManager.aircraft_with_coordinations(
             callsign=callsign,
             pos=pos,
             heading=heading,

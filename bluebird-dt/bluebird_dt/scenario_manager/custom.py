@@ -9,6 +9,7 @@ from typing_extensions import override
 
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.core import Aircraft, Airspace, Pos3D, Route, WindField
+from bluebird_dt.core.coordination import Coordination, CoordinationsManager
 from bluebird_dt.events.event_handler import EventHandler
 from bluebird_dt.events.event_logger import EventLogger
 from bluebird_dt.logger import logger
@@ -16,7 +17,7 @@ from bluebird_dt.manager.environment_manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.scenario_manager_utils import create_aircraft_with_coordinations, laterally_offset_start_point
+from bluebird_dt.utility.scenario_manager_utils import laterally_offset_start_point
 
 
 class CustomScenarioManagerConfig(BaseModel):
@@ -251,7 +252,7 @@ class Custom(
             # so take heading from start_fix to next_fix rather than aircraft pos to next_fix.
             heading = start_fix.bearing_to(self.airspace.fixes.places[route.filed[1]])
 
-            aircraft, coordination_entry, coordination_exit = create_aircraft_with_coordinations(
+            aircraft, coordination_entry, coordination_exit = CoordinationsManager.aircraft_with_coordinations(
                 callsign=callsign,
                 pos=pos,
                 heading=heading,
@@ -336,7 +337,7 @@ class Custom(
         self.user_added_aircraft.append(
             (
                 aircraft_start_time,
-                create_aircraft_with_coordinations(
+                CoordinationsManager.aircraft_with_coordinations(
                     callsign=callsign,
                     pos=pos,
                     heading=heading,

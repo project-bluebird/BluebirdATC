@@ -8,13 +8,13 @@ from typing_extensions import override
 
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.core import Aircraft, Airspace, Route, WindField
+from bluebird_dt.core.coordination import CoordinationsManager
 from bluebird_dt.events import EventHandler, EventLogger
 from bluebird_dt.logger import logger
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.scenario_manager_utils import create_aircraft_with_coordinations
 
 
 class RegularScenarioManagerConfig(BaseModel):
@@ -159,7 +159,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
             pos = self.airspace.fixes.places[route.filed[0]].pos3d(entry_fl)
             heading = self.airspace.fixes.places[route.filed[0]].bearing_to(self.airspace.fixes.places[route.filed[1]])
 
-            aircraft, coordination_entry, coordination_exit = create_aircraft_with_coordinations(
+            aircraft, coordination_entry, coordination_exit = CoordinationsManager.aircraft_with_coordinations(
                 callsign=callsign,
                 pos=pos,
                 heading=heading,
