@@ -22,6 +22,7 @@
    - [2. Fork the BluebirdATC repository to your profile](#2-fork-the-bluebird-atc-repository-to-your-profile)
    - [3. Make the changes you've discussed](#3-make-the-changes-youve-discussed)
    - [4. Submit a pull request](#4-submit-a-pull-request)
+ - [Running the tests](#running-the-tests)
  - [Style guide](#style-guide)
 
  ## Where to start: issues
@@ -111,6 +112,31 @@ We recognise that the use of AI tools for writing code is becoming more and more
  - We will reject any pull request that we judge to have been made by an autonomous AI agent.
  - If you have used AI tools to help write code in a pull request, we ask that you (the human) have a good understanding of what has been changed and why.
  - Please let us know in the pull request text if you have made use of AI tools, and roughly to what extent - this will help us to get a picture of where the code is coming from.
+
+ ## Running the tests
+
+ The project uses `pytest` and relies on `uv` to manage the virtual environment.
+ Assuming you have installed the dev dependencies (via `uv sync`), you can run the whole
+ test suite from the repository root with:
+
+ ```bash
+ uv run pytest -n auto
+ ```
+
+ The `-n auto` flag runs the tests in parallel across your CPU cores (via `pytest-xdist`).
+ This is the same command that continuous integration (CI) runs, so anything that passes
+ locally is expected to pass in CI too.
+
+ To run just one package's tests, pass its test directory explicitly. For example, to run
+ only the `bluebird-dt` tests:
+
+ ```bash
+ uv run pytest bluebird-dt/tests
+ ```
+
+ The same works for any of the other test suites, e.g. `bluebird-api/tests`,
+ `bluebird-gymnasium/tests` and `docs/tests`. See the `testpaths` setting in the root
+ `pyproject.toml` for the full list.
 
  ## Style Guide
 
