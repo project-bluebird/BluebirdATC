@@ -319,8 +319,8 @@ def test_outcomm_clearance(env: Environment):
             action,
             "AIR0 contact next frequency",
             "contact next frequency AIR0",
-            None,
-            None,
+            "alpha india romeo zero contact next frequency",
+            "contact next frequency alpha india romeo zero",
             env,
             )
 

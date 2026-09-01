@@ -1030,16 +1030,12 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
                 frequency_callsign = frequencies[next_sector][0]
 
                 if frequency_value[-2:] == "00":
-                    clearance_parts.extend(
-                        "contact",
-                        frequency_callsign,
-                        spell_phonetically(frequency_value[0:5]),
-                    )
+                    clearance_parts.extend(["contact", frequency_callsign, spell_phonetically(frequency_value[0:5])])
                 else:
-                    clearance_parts.extend("contact", frequency_callsign, spell_phonetically(frequency_value))
+                    clearance_parts.extend(["contact", frequency_callsign, spell_phonetically(frequency_value)])
 
             else:
-                clearance_parts.extend("contact next frequency")
+                clearance_parts.append("contact next frequency")
 
         # other actions not yet modelled. in theory, this should never be hit if the case statements above capture all
         # possible valid actions because the Action() class should prevent invalid actions from being created
