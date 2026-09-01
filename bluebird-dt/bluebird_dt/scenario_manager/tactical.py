@@ -463,38 +463,44 @@ class Tactical(ScenarioManager[TacticalScenarioManagerConfig]):
         category: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
     ) -> Simulator:
         """
         Create a Simulator instance for Tactical scenarios.
 
         Parameters
         ----------
-        scenario_name : str | None, optional
-            Name of the scenario. Default is None.
         category : str | None, optional
             Category of the simulation. Default is None.
+        scenario_name : str | None, optional
+                    Name of the scenario. Default is None.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
 
         Returns
         -------
@@ -514,13 +520,15 @@ class Tactical(ScenarioManager[TacticalScenarioManagerConfig]):
             scenario_manager=self,
             env_manager=env_manager,
             projection_centre=self.projection_centre,
-            scenario_name=scenario_name,
             category=category,
+            scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
-            predictor=predictor,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )

@@ -50,8 +50,8 @@ class Runner(typing.Generic[TSimulator]):
 
     async def close(self):
         self.kill = True
-        self.sim.save()
-        self.sim.close()
+        await self.sim.async_save(autosave=False, end_save=True)
+        await self.sim.async_close()
         await asyncio.sleep(3)
 
     def log_simrate(self):
@@ -79,7 +79,7 @@ class Runner(typing.Generic[TSimulator]):
                 start_time = datetime.now()
                 self.time_of_next_tick = start_time + timedelta(seconds=self.tick_frequency_period)
 
-                self.sim.evolve(self.evolve_period)
+                await self.sim.async_evolve(self.evolve_period)
                 self.tick += 1
                 logger.info(f"evolve time: {datetime.now() - start_time}")
 
