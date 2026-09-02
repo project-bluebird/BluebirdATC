@@ -58,7 +58,7 @@ def test_prepare_savedata_if_needed_autosave_skip(sim_elapsed: float, real_elaps
     else:
         assert sim._prepare_save_if_needed(autosave=autosave, end_save=False) is not None
         assert sim.saver.save_config.save_simtime == now_simtime
-        assert now_realtime - sim.saver.save_config.save_realtime < timedelta(seconds=5)
+        assert sim.saver.save_config.save_realtime - now_realtime < timedelta(seconds=5)
 
 
 @proceed_cases
@@ -86,7 +86,7 @@ def test_prepare_savedata_if_needed_autosave_proceed(sim_elapsed: float, real_el
 
     assert sim._prepare_save_if_needed(autosave=autosave, end_save=False) is not None
     assert sim.saver.save_config.save_simtime == now_simtime
-    assert now_realtime - sim.saver.save_config.save_realtime < timedelta(seconds=5)
+    assert sim.saver.save_config.save_realtime - now_realtime < timedelta(seconds=5)
 
 
 @skip_cases
