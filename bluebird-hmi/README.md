@@ -1,21 +1,22 @@
-# Bluebird-HMI
+# Bluebird-HMI <img src="../images/BBATC_logo.png" alt="BluebirdATC logo" align="right" height="160" />
 
 Bluebird-HMI is an optional package for visualizing simulations in the BluebirdATC digital twin.  It is designed to be viewed as a webpage, served from the user's local machine (`localhost`).  It is written in typescript in the React framework, and both the source code and the built (minified) application are available here.
 
-## Quickstart
 
-* Ensure that the BluebirdATC REST API is running, following the instructions in the [README](../bluebird-api/README.md).
-* You should be able to view the frontend application at the URL [http://localhost:8000/hmi](http://localhost:8000/hmi).
+## Quick start
 
-### Note: running on a remote machine/cloud
+1. Start the API server — follow the instructions in the [bluebird-api README](../bluebird-api/README.md).
+1. Navigate to [http://localhost:8000/hmi](http://localhost:8000/hmi).
+1. Select **Load new scenario** in the top left, choose a scenario, and press **Load**.
 
+> **Note: Running on a remote machine/cloud?**
 Currently, the built version of the app is configured to look for the API running on `localhost`.  For deploying on remote machines, or a cloud service, it will be necessary to modify `src/api/config.ts` accordingly, and rebuild via `npm run build`.
 
-## Developer instructions/details
+## Developer guide
 
 The source code for the application is provided in the `src/` directory. Use Node.js `^20.19.0 || >=22.12.0` with `npm` if you need to build a modified version of the code, or run the dev server to test updates/fixes.
 
-### Overview of the code
+### Architecture
 
 The application uses the redux/rtk toolkit to maintain a data store, which is continually refreshed by polling the backend API.  The "slices" of data can be seen in `src/slices/` and broadly represent:
 * *ScenarioData* containing the state of the simulation - if a scenario is currently loaded, and if so, what is its name and category, and current simulation time.
@@ -29,12 +30,12 @@ It is essentially a single page application, with the top-level page being defin
 * Install Node.js `^20.19.0 || >=22.12.0` if you don't already have it. The Node.js installer includes `npm`.
 * From the directory `BluebirdATC/bluebird-hmi` type the commands:
 
- ```shell
- npm install
- npm run dev
- ```
+```shell
+npm install
+npm run dev
+```
 
- then navigate your browser to `http://localhost:5173`.
+Then navigate to [http://localhost:5173](http://localhost:5173).
 
 ### Rebuilding
 
@@ -68,3 +69,4 @@ git commit -m "update HMI build"
 git push
 ```
 You can then make a Pull Request into the `dev` branch, following the CONTRIBUTING.md guidelines.
+<div align="center"><img src="../images/BB_logo.png" alt="ProjectBluebird"></div>

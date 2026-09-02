@@ -1,6 +1,7 @@
-# The REST API for BluebirdATC
+# The REST API for BluebirdATC [![PyPI version](https://img.shields.io/pypi/v/bluebird-api?logo=pypi&logoColor=white)](https://pypi.org/project/bluebird-api/) <img src="../images/BBATC_logo.png" alt="BluebirdATC logo" align="right" height="160" />
 
-It is possible to run the BluebirdATC digital twin in a server process, such that the simulation will evolve at regular time intervals, and Agents and/or frontend visualization software can interact with it via HTTP requests.
+
+`bluebird-api` runs the BluebirdATC digital twin in a server process, such that the simulation will evolve at regular time intervals, and Agents and/or frontend visualization software can interact with it via HTTP requests.
 In particular, users can:
 * Query available scenario categories and scenarios.
 * Load a selected scenario.
@@ -11,35 +12,34 @@ In particular, users can:
 
 ## Getting started
 
-### Running the server
-
-The simplest way to run the api is using uv [(installation guide)](https://docs.astral.sh/uv/getting-started/installation/) and running 
+The quickest way to start the server is with [uv](https://docs.astral.sh/uv/getting-started/installation/):
 
 ```bash
 uvx bluebird-api@latest
 ```
 
-You should then be able to go to [http://localhost:8000](http://localhost:8000) in a web browser, and see the message "Hello, BluebirdATC!".
+1. Open [http://localhost:8000](http://localhost:8000) — you should see `"Hello, BluebirdATC!"`.
+2. Navigate to [http://localhost:8000/hmi](http://localhost:8000/hmi) to open the radar visualisation.
+3. Select **Load new scenario** in the top left, choose a scenario type (eg. `Springfield`) and scenario (eg `test1`), and press **Load**.
 
 This package includes a prebuilt HMI available by navigating to [http://localhost:8000/hmi](http://localhost:8000/hmi).
 Initially, no scenario would be loaded, therefore showing the Bluebird logo on the radar.
 To load a scenario, the top left of the window select `Load new scenario`.
 A window will appear in the middle of the screen, select `Springfield`, then `example-scenario` and finally, `Load`.
 
-### Using the API
+> **Note: Running on a remote machine/cloud?**
+Currently, the built version of the app is configured to look for the API running on `localhost`.  For deploying on remote machines, or a cloud service, it will be necessary to modify `src/api/config.ts` accordingly, and rebuild via `npm run build`.
 
-Agents can interface with the simulator running behind a REST API, enabling its usage from any programming language.
+## Using the API
 
-The next script is an example of an agent in python, which requires the bluebird-dt and requests packages to be installed.
+Any language that can make HTTP requests can drive the simulation. The example below is a Python agent that directs each aircraft to its exit fix and cleared flight level as it enters the sector. Install the required packages first:
 
 ```bash
 pip install bluebird-dt requests
 ```
 
-It tells all aircraft, on incomm, to fly to their exit fix and climb directly to their exit flight level without ensuring safety or guaranteeing that aircraft will leave the sector.
-
 ```python
-from bluebird_dt.core import Environment, Action
+from bluebird_dt.core import Environment
 import time, requests
 
 callsigns_done = []
@@ -54,46 +54,38 @@ while True:
 
         if aircraft.callsign in callsigns_done or aircraft.current_sector != "SPRINGFIELD":
             continue
-        
+
         exit_coordination = environment.exit_coordination("SPRINGFIELD", aircraft.callsign)
-        
+
         if exit_coordination is not None:
-            actions_to_issue.extend(
-                        [
-                            {
-                                "callsign": aircraft.callsign,
-                                "kind": "change_flight_level_to",
-                                "value": exit_coordination.fl,
-                                "sector": "SPRINGFIELD",
-                                "agent": "agent"
-                            },
-                            {
-                                "callsign": aircraft.callsign,
-                                "kind": "route_direct_to",
-                                "value": exit_coordination.fix,
-                                "sector": "SPRINGFIELD",
-                                "agent": "agent"
-                            }
-                        ]
-                    )
+            actions_to_issue.extend([
+                {
+                    "callsign": aircraft.callsign,
+                    "kind": "change_flight_level_to",
+                    "value": exit_coordination.fl,
+                    "sector": "SPRINGFIELD",
+                    "agent": "agent"
+                },
+                {
+                    "callsign": aircraft.callsign,
+                    "kind": "route_direct_to",
+                    "value": exit_coordination.fix,
+                    "sector": "SPRINGFIELD",
+                    "agent": "agent"
+                }
+            ])
 
         callsigns_done.append(aircraft.callsign)
 
     if len(actions_to_issue) > 0:
-        response = requests.post(
-                "http://localhost:8000/actions",
-                json=actions_to_issue
-                )
-    
-    # Wait for the next tick
+        requests.post("http://localhost:8000/actions", json=actions_to_issue)
+
     time.sleep(4)
 ```
 
+A more complete multi-language example (including Julia) is in [NonPythonAgents.ipynb](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-api/examples/NonPythonAgents.ipynb).
+
 ## Documentation
-
-The documentation of the latest release is available at [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai).
-
-## OpenAPI
 
 Documentation of the endpoints of the API is available by running 
 
@@ -105,10 +97,4 @@ and navigating to [http://localhost:8000/docs](http://localhost:8000/docs).
 
 A json format of this API is also available in [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json) which can be used to generate clients automatically using OpenAPI generators for the language you are using.
 
-## Frontend visualisation
-
-The app also serves the frontend visualization (more details on that can be found [here](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-hmi/README.md)), at the URL [http://localhost:8000/hmi](http://localhost:8000/hmi).
-
-## Julia example
-
-A more complete example of how to use the API is available in [NonPythonAgents.ipynb](https://github.com/project-bluebird/BluebirdATC/blob/main/bluebird-api/examples/NonPythonAgents.ipynb)
+<div align="center"><img src="../images/BB_logo.png" alt="ProjectBluebird"></div>
