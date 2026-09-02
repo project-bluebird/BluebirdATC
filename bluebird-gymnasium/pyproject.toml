@@ -1,6 +1,6 @@
 [project]
 name = "bluebird-gymnasium"
-version = "0.2.0"
+version = "0.3.0"
 license = "AGPL-3.0-or-later"
 description = "An gymnasium environment for air traffic control."
 authors = [{name="Project Bluebird"}]
