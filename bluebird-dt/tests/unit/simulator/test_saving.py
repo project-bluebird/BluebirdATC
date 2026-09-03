@@ -472,14 +472,22 @@ async def test_saver_force_dispatch_writes_save_data(tmp_path):
     saver = make_saver()
     save_time = datetime.now(tz=timezone.utc)
     saver.save_config.save_simtime = save_time
+    saver.save_config.save_realtime = save_time
     savedata = SaveData(b"save contents", "direct-saver-test", saver.save_config.model_copy(deep=True))
+
+    assert saver.save_status.last_save_task_success is None
+    assert saver.save_status.last_save_task_save_simtime is None
+    assert saver.save_status.last_save_task_save_realtime is None
 
     with patch("bluebird_dt.simulator.saver.LOG_DIR", str(tmp_path)):
         assert await saver.dispatch(savedata, force=True) is True
 
     assert (tmp_path / "direct-saver-test.tar.gz").read_bytes() == b"save contents"
     assert saver.save_status.last_save_task_success is True
-    assert saver.save_status.last_save_task_save_simtime == save_time
+    assert saver.save_status.last_save_task_save_simtime is not None
+    assert saver.save_status.last_save_task_save_realtime is not None
+    assert saver.save_status.last_save_task_save_simtime == savedata.save_config.save_simtime
+    assert saver.save_status.last_save_task_save_realtime == savedata.save_config.save_realtime
     await saver.close()
 
 
@@ -487,10 +495,19 @@ async def test_saver_force_dispatch_writes_save_data(tmp_path):
 async def test_saver_async_save_task_records_failure():
     saver = make_saver()
     save_time = datetime.now(tz=timezone.utc)
+    saver.save_config.save_simtime = save_time
+    saver.save_config.save_realtime = save_time
     savedata = SaveData(b"save contents", "failed-saver-test", saver.save_config.model_copy(deep=True))
+
+    assert saver.save_status.last_save_task_success is None
+    assert saver.save_status.last_save_task_save_simtime is None
+    assert saver.save_status.last_save_task_save_realtime is None
 
     with patch("bluebird_dt.simulator.saver.os.makedirs", side_effect=OSError("disk unavailable")):
         await saver.async_save(savedata)
 
     assert saver.save_status.last_save_task_success is False
+    assert saver.save_status.last_save_task_save_simtime is not None
+    assert saver.save_status.last_save_task_save_realtime is not None
     assert saver.save_status.last_save_task_save_simtime == savedata.save_config.save_simtime
+    assert saver.save_status.last_save_task_save_realtime == savedata.save_config.save_realtime
