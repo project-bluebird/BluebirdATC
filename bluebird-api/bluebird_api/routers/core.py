@@ -210,7 +210,7 @@ async def runner_status(runner: RunnerDep):  # noqa: ANN201
         "tick_frequency_period": runner.tick_frequency_period,
         "kill": runner.kill,
         "reload": runner.sim.manager.reload_environment if runner.sim is not None else False,
-        "time_of_next_tick": runner.time_of_next_tick.isoformat(),
+        "time_of_next_tick": datetime.fromtimestamp(runner.time_of_next_tick, timezone.utc).isoformat(),
     }
 
 

@@ -19,10 +19,10 @@ a HTTP error 404 (Not found) will be returned before even running the function a
 """
 
 import asyncio
+import time
 import typing
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
 
 import typing_extensions
 from bluebird_dt.events.event_logger import SimRateUpdate
@@ -43,7 +43,7 @@ class Runner(typing.Generic[TSimulator]):
     tick_frequency_period: float = 6
     tick: int = 0
     kill: bool = False
-    time_of_next_tick: datetime = datetime.min
+    time_of_next_tick: float = 0
     hmi: defaultdict[str, HmiRunnerInformation] = field(
         default_factory=lambda: defaultdict(lambda: HmiRunnerInformation(selected_aircraft=None))
     )
@@ -69,19 +69,21 @@ class Runner(typing.Generic[TSimulator]):
         )
 
     async def run_main(self):
-        self.time_of_next_tick = datetime.now()
+        self.time_of_next_tick = time.monotonic()
 
         while True:
             if self.kill:
                 break
 
-            if self.running and datetime.now() >= self.time_of_next_tick:
-                start_time = datetime.now()
-                self.time_of_next_tick = start_time + timedelta(seconds=self.tick_frequency_period)
+            now = time.monotonic()
 
+            if self.running and now >= self.time_of_next_tick:
+                self.time_of_next_tick += self.tick_frequency_period
+                if self.time_of_next_tick < now:
+                    logger.warning(f"sim tick fell behind by {now - self.time_of_next_tick:.3f}s")
                 await self.sim.async_evolve(self.evolve_period)
                 self.tick += 1
-                logger.info(f"evolve time: {datetime.now() - start_time}")
+                logger.info(f"evolve time: {time.monotonic() - now}")
 
             await asyncio.sleep(0.1)
 

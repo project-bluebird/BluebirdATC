@@ -209,14 +209,14 @@ class TestFunctions:
                 "tick_frequency_period": runner.tick_frequency_period,
                 "kill": runner.kill,
                 "reload": runner.sim.manager.reload_environment if runner.sim is not None else False,
-                "time_of_next_tick": runner.time_of_next_tick.isoformat(),
+                "time_of_next_tick": datetime.datetime.fromtimestamp(runner.time_of_next_tick, datetime.timezone.utc).isoformat(),
             }
 
             assert received == expected
 
             # check time of next tick separately because times will differ slightly
             received_time = datetime.datetime.fromisoformat(received["time_of_next_tick"])
-            expected_time = datetime.datetime.fromisoformat('0001-01-01T00:00:00')
+            expected_time = datetime.datetime.fromisoformat('1970-01-01T00:00:00Z')
             assert received_time - expected_time < datetime.timedelta(seconds=1)
 
     class TestScenarios:
@@ -541,4 +541,3 @@ class TestFunctions:
 
             assert received is True
             assert runner.tick_frequency_period == 243
-
