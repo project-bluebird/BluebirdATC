@@ -428,7 +428,7 @@ class CoordinationsManager:
         entry_fl: float,
         exit_fl: float,
         airspace: Airspace,
-        on_route: bool = False,
+        on_route: bool = True,
         prev_sector: str = "background",
         next_sector: str = "background",
         coord_direction: typing.Literal["Horizontal", "Down", "Up"] = "Horizontal",
@@ -459,7 +459,7 @@ class CoordinationsManager:
         airspace: Airspace
             specify the airspace containing the sector being controlled.
         on_route: bool
-            Setting for  "on_route" flag on created aircraft. Default is False.
+            Setting for  "on_route" flag on created aircraft. Default is True.
         prev_sector: str
             "from_sector" for entry coordination. Default is "background".
         next_sector: str

@@ -72,7 +72,7 @@ class TwoAircraft(
         airspace: Airspace,
         routes: list[Route],
         sector_name: str | None = None,
-        total_time: float = 100.0,
+        total_time: float = 1200.0,
         speed_range: tuple[float, float] | None = None,
         scenario_type: typing.Literal["random", "overflier", "climber", "descender"] = "random",
         random_seed: int | None = None,

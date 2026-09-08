@@ -1,5 +1,5 @@
 from collections import defaultdict
-from bluebird_dt.core import Pos3D
+from bluebird_dt.core import Aircraft, Pos3D
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.simulator import Simulator
 
@@ -467,6 +467,34 @@ def test_add_custom_aircraft_with_random_ones(generate_i):
     assert len(sim.manager.environment.aircraft) == 5
     assert "TEST-1" in sim.manager.environment.aircraft
     assert "TEST-2" in sim.manager.environment.aircraft
+
+def test_different_aircraft_type(generate_i):
+    """
+    Test that we can use a custom Aircraft type.
+    """
+    class MyAircraft(Aircraft):
+        pass
+    airspace, routes = generate_i
+    sm = Custom(2, airspace=airspace, routes=routes, typeof_aircraft=MyAircraft)
+    sm.add_aircraft_with_coordinations(
+        aircraft_start_time=10.0, 
+        callsign="TEST-1", 
+        pos=Pos3D(1,0,200),
+        heading=180, 
+        speed=350., 
+        route=routes[0], 
+        entry_fl=200, 
+        exit_fl=400
+    )
+    sim = sm.to_simulator()
+    # wait 1 minute for all aircraft to spawn
+    sim.evolve(60)
+    # should be 3 aircraft - 2 randomly generated and 1 user-specified.
+    assert len(sim.manager.environment.aircraft) == 3
+    # should all be of type `MyAircraft`
+    for aircraft in sim.manager.environment.aircraft.values():
+        assert isinstance(aircraft, MyAircraft)
+
 
 @pytest.mark.parametrize(
         "scenario_name", 

@@ -132,7 +132,10 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
         EventHandler
         """
         # create empty event handler
-        event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
+        event_handler = self.typeof_event_handler(
+            ignore=self.event_handler_ignore_flags,
+            typeof_aircraft=self.typeof_aircraft,
+        )
 
         volume = self.airspace.sectors[self.sector_name].volumes[0]
         allowed_FLs = np.arange(volume.min_fl, volume.max_fl + 10, 10, dtype="float")
@@ -169,7 +172,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
                 entry_fl=entry_fl,
                 exit_fl=exit_fl,
                 airspace=self.airspace,
-                on_route=False,
+                on_route=True,
                 typeof_aircraft=self.typeof_aircraft,
             )
 
@@ -231,7 +234,8 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         # set the visibility flag of fixes to True only if they are in the penumbra
         em.set_local_fixes_visibility()
 
-        em.initialise_env_with_event_handler()
+        # Don't fast-forward to first aircraft entry here - do it in `setup` (to nearest timestep multiple).
+        em.initialise_env_with_event_handler(jump_to_first_event=False)
 
         return em
 
@@ -269,8 +273,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         ----------
         scenario_name: str
             The scenario name
-        scenario_type: typing.Literal["random","overflier", "climber", "descender"]
-            Describes the behaviour of the second aircraft in the scenario.
         total_time: float
             The total time in seconds for the scenario to run
         num_aircraft: int
@@ -349,23 +351,19 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             save_log_to_file=save_log_to_file,
             typeof_simulator=typeof_simulator,
         )
-        # if needed, fast-forward to the first aircraft entry time, ensuring that it is
-        # a multiple of the evolve time-step
+        start_time = sim.manager.environment.time
+        # fast-forward to the first multiple of the evolve time-step that is after the first aircraft entry time.
         first_entry_time = sim.manager.event_handler.radar_df.index.min().replace(tzinfo=timezone.utc).timestamp()
-
         time_step = 6.0
 
         # if the first time is a multiple of the time step, evolve one extra step.
         # note that 0 % anything == 0 (except 0!), so this accounts for the case where the first entry time is 0
-        if first_entry_time % time_step == 0:
+        if (first_entry_time - start_time) % time_step == 0:
             evolve_time = first_entry_time + time_step
-
         # otherwise, evolve to the smallest multiple of time_step that is higher than the entry time
         else:
-            evolve_time = ((first_entry_time // time_step) + 1) * time_step
-
+            evolve_time = (((first_entry_time - start_time) // time_step) + 1) * time_step
         sim.manager.evolve(evolve_time)
-
         return sim
 
     def to_simulator(

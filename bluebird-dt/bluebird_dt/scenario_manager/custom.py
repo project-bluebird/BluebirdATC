@@ -83,7 +83,7 @@ class Custom(
         speed_range: tuple[float, float] | None = None,
         time_entry_gap: float = 5,
         random_seed: int | None = None,
-        aircraft_on_route: bool = False,
+        aircraft_on_route: bool = True,
         lateral_offset: tuple[float, float] | None = None,
         start_time: int = 0,
         vertical_buffer_distance: float | int = 500,
@@ -115,7 +115,7 @@ class Custom(
             If not provided, speed of all Aircraft is set to 400.
         aircraft_on_route: bool
             If True, aircraft will automatically follow their route.  If False, they will travel on
-            constant heading unless they receive other instructions.  Default is False.
+            constant heading unless they receive other instructions.  Default is True.
         time_entry_gap: float
             Optional amount of time in seconds that must be maintained between two
             Aircraft entry Coordinations if they are at the same Fix and FL.
@@ -204,7 +204,9 @@ class Custom(
         entries = defaultdict(lambda: defaultdict(list))
 
         # create empty event handler
-        event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
+        event_handler = self.typeof_event_handler(
+            ignore=self.event_handler_ignore_flags, typeof_aircraft=self.typeof_aircraft
+        )
 
         for i in range(self.num_aircraft):
             route = self.rng.choice(self.routes)
@@ -348,6 +350,7 @@ class Custom(
                     exit_fl=exit_fl,
                     on_route=on_route,
                     airspace=self.airspace,
+                    typeof_aircraft=self.typeof_aircraft,
                 ),
             )
         )
@@ -375,17 +378,23 @@ class Custom(
         Returns
         ----------
         TEnvironmentManager
-            Environment Manager for Tactical scenario
+            Environment Manager for Custom scenario
         """
 
         logger.info(
             f"""
 
         ===================================================================
-        Creating Custom Scenario with {self.num_aircraft} aircraft.
+        Creating Custom Scenario with {self.num_aircraft} initial aircraft,
+        and {len(self.user_added_aircraft)} custom aircraft.
         """
         )
-
+        if self.num_aircraft + len(self.user_added_aircraft) == 0:
+            raise RuntimeError("""
+            No initial or custom aircraft specified.
+            To add custom aircraft, call the `add_aircraft_with_coordinations` method BEFORE
+            calling `create_env_manager`.
+            """)
         # create SimplePredictor if no Predictor passed
         if predictor is None:
             predictor = SimplePredictor(1.0, 2.0)
@@ -443,7 +452,7 @@ class Custom(
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> Simulator:
         """
-        Create a Simulator instance for Tactical scenarios.
+        Create a Simulator instance for Custom scenarios.
 
         Parameters
         ----------
@@ -516,7 +525,7 @@ class Custom(
         num_aircraft: int = 2,
         balance: tuple[float, float, float] = (1 / 3, 1 / 3, 1 / 3),
         speed_range: tuple[float, float] | None = None,
-        aircraft_on_route: bool = False,
+        aircraft_on_route: bool = True,
         lateral_offset: tuple[float, float] | None = None,
         time_entry_gap: float = 5.0,
         start_time: float = 0.0,
@@ -554,7 +563,7 @@ class Custom(
             Optional, if not set, aircraft speeds are set between 350 and 450 knots.
         aircraft_on_route: bool
             If True, aircraft will follow route by default, in False, they will travel
-            at constant heading until instructed otherwise.  Default is False.
+            at constant heading until instructed otherwise.  Default is True.
         lateral_offset: tuple[float, float]
             min, max values for laterally offsetting start position from route centreline.
         time_entry_gap: float

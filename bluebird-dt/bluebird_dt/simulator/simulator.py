@@ -240,6 +240,7 @@ class Simulator:
                 return TwoAircraft.setup(
                     typeof_simulator=cls,
                     scenario_name=scenario_name,
+                    random_seed=42,
                     use_wind=use_wind,
                     use_forecast=use_forecast,
                     predictor=predictor,
