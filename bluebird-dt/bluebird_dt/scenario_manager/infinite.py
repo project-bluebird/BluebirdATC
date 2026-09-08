@@ -570,6 +570,15 @@ Creating Infinite Scenario
     def setup(
         cls,
         scenario_name: str,
+        use_wind: bool = True,
+        use_forecast: bool = True,
+        predictor: Predictor | None = None,
+        attach_context_to_logger: bool = True,
+        save_log_to_file: bool = True,
+        log_filename: str | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         random_seed: int | None = None,
         num_starter_aircraft: int = 2,
         initial_spawn_rate: float = 0.01,
@@ -579,13 +588,6 @@ Creating Infinite Scenario
         total_time_seconds: float | None = None,
         speed_range: tuple[float, float] | None = None,
         spawn_distance_threshold: float = 10.0,
-        use_wind: bool = True,
-        use_forecast: bool = True,
-        autosave: bool = True,
-        attach_context_to_logger: bool = True,
-        save_log_to_file: bool = True,
-        log_filename: str | None = None,
-        predictor: Predictor | None = None,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -598,6 +600,27 @@ Creating Infinite Scenario
         ----------
         scenario_name: str
             The scenario name
+        use_wind: bool
+            Whether the wind, if available, is present in the scenario. Defaults to True.
+        use_forecast: bool
+            Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
+        attach_context_to_logger: bool
+            Adds the scenario name and scenario category as context to the active logger. This should be set to False if
+            you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
+            Defaults to True.
+        log_filename: str, optional
+            The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
         random_seed: int
             If specified, set the random seed for the generator
         num_starter_aircraft: int
@@ -616,25 +639,6 @@ Creating Infinite Scenario
             Optional, if not set, aircraft speeds are set between 350 and 450 knots.
         spawn_distance_threshold: float
             Minimum spawn distance from nearest aircraft with overlapping fl range.
-        use_wind: bool
-            Whether the wind, if available, is present in the scenario. Defaults to True.
-        use_forecast: bool
-            Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
-        attach_context_to_logger: bool
-            Adds the scenario name and scenario category as context to the active logger. This should be set to False if
-            you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
-            Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
-        log_filename: str, optional
-            The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
-        env_manager_class: type, optional
-            if specified, use this class (maybe a subclass of BluebirdATC EventManager).
         typeof_environmentmanager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -670,16 +674,18 @@ Creating Infinite Scenario
             typeof_event_handler=typeof_event_handler,
             typeof_environment_manager=typeof_environment_manager,
         ).to_simulator(
-            log_filename=log_filename,
-            predictor=predictor,
-            category="Infinite",
+            typeof_simulator=typeof_simulator,
             scenario_name=scenario_name,
+            category="Infinite",
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
-            typeof_simulator=typeof_simulator,
+            log_filename=log_filename,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )
 
         # if needed, fast-forward to the first aircraft entry time, ensuring that it is
@@ -707,11 +713,13 @@ Creating Infinite Scenario
         scenario_name: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:
         """
@@ -719,27 +727,33 @@ Creating Infinite Scenario
 
         Parameters
         ----------
-        scenario_name : str | None, optional
-            Name of the scenario. Default is None.
         category : str | None, optional
             Category of the simulation. Default is None.
+        scenario_name : str | None, optional
+                    Name of the scenario. Default is None.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
+        typeof_simulator: type[TSimulator], optional
+            If we want to use a derived class of simulator, specify here.
 
         Returns
         -------
@@ -759,15 +773,17 @@ Creating Infinite Scenario
             scenario_manager=self,
             env_manager=env_manager,
             projection_centre=self.projection_centre,
-            scenario_name=scenario_name,
             category=category,
+            scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
-            predictor=predictor,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )
 
 

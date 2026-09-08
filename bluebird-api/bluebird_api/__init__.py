@@ -23,6 +23,7 @@ bluebird_logger.setLevel(logging.DEBUG)
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(logger.CustomFormatter())
 bluebird_logger.addHandler(stream_handler)
+bluebird_logger.propagate = False
 
 
 @asynccontextmanager

@@ -53,10 +53,10 @@ TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindF
 class FlightPlanEvent(BaseModel):
     callsign: str
     datetime: datetime
-    route_filed: list[str] | None = None
+    route_filed: list[str]
     start_datetime: datetime | None = None
     end_datetime: datetime | None = None
-    squawk: int | None = None
+    squawk: str | None = None
     origin: str | None = None
     dest: str | None = None
     unexpanded_route: str | None = None
@@ -67,7 +67,7 @@ class FlightPlanEvent(BaseModel):
     filed_true_airspeed: float | int | None = None
     intention_code: str | None = None
     ufid: str | None = None
-    assigned_squawk: int | None = None
+    assigned_squawk: str | None = None
 
 
 class CoordinationEvent(BaseModel):
@@ -591,8 +591,11 @@ class EventHandler(typing.Generic[TAircraft]):
         self.radar_df = self.radar_df.sort_index()
 
     def extend_flight_plan_events(self, events: list[FlightPlanEvent]):
-        new_flights = pd.DataFrame([event.model_dump() for event in events])
 
+        if len(events) == 0:
+            return
+
+        new_flights = pd.DataFrame([event.model_dump() for event in events])
         new_flights = new_flights.set_index("datetime")
         new_flights.index.name = "datetime"
 
@@ -687,6 +690,9 @@ class EventHandler(typing.Generic[TAircraft]):
         self.flight_df = self.flight_df.sort_index()
 
     def extend_clearance_events(self, clearance_events: list[ClearanceEvent]):
+        if len(clearance_events) == 0:
+            return
+
         new_clearances = pd.DataFrame([event.model_dump() for event in clearance_events])
         new_clearances["text_clearance"] = [None] * new_clearances.shape[0]
         new_clearances["text_pilot_response"] = [None] * new_clearances.shape[0]
@@ -774,6 +780,9 @@ class EventHandler(typing.Generic[TAircraft]):
         self,
         incomm_events: list[IncommEvent],
     ):
+        if len(incomm_events) == 0:
+            return
+
         new_incomm_events = pd.DataFrame([incomm_event.model_dump() for incomm_event in incomm_events])
         new_incomm_events = new_incomm_events.set_index("datetime")
         new_incomm_events.index.name = "datetime"
@@ -813,7 +822,7 @@ class EventHandler(typing.Generic[TAircraft]):
         # ensure date ordering is preserved
         self.incomm_df = self.incomm_df.sort_index()
 
-    def extend_coordinations(self, events: list[CoordinationEvent]):
+    def extend_coordination_events(self, events: list[CoordinationEvent]):
         if len(events) == 0:
             return
 

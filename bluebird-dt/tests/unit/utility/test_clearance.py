@@ -45,7 +45,7 @@ def assert_action_voice_and_text(
         expected_voice_clearance: str | None,
         expected_voice_response: str | None,
         env: Environment,
-        ): 
+        ):
     text_representation = text_phraseology(action, env)
     assert text_representation.clearance == expected_text_clearance
     assert text_representation.pilot_response == expected_text_response
@@ -53,13 +53,13 @@ def assert_action_voice_and_text(
     voice_representation = voice_phraseology(action, env)
     if expected_voice_clearance is not None:
         assert voice_representation.clearance == expected_voice_clearance
-    
+
     if expected_voice_response is not None:
         assert voice_representation.pilot_response == expected_voice_response
 
 def test_missing_callsign(env: Environment, caplog: pytest.LogCaptureFixture):
     action = Action("MISS", "outcomm", None)
-    
+
     with caplog.at_level(logging.DEBUG):
         _ = text_phraseology(action, env)
         assert ("bluebird_dt.logger", logging.WARNING, "Callsign MISS unavailable in environment.") in caplog.record_tuples
@@ -156,7 +156,7 @@ def test_change_heading_clearance(env: Environment):
 
 def test_float_heading_clearance(env: Environment):
     action = Action("AIR0", "change_heading_to", 12.0)
-    
+
 
     assert_action_voice_and_text(
             action,
@@ -208,7 +208,7 @@ def test_change_vertical_speed_climbing_clearance(env: Environment):
 def test_change_vertical_speed_descending_clearance(env: Environment):
     action = Action("AIR1", "change_vertical_speed_to", 130)
     assert env.aircraft["AIR1"].cleared_fl < env.aircraft["AIR1"].fl
-    
+
     assert_action_voice_and_text(
             action,
             "AIR1 rate of descent 130 feet per minute",
@@ -319,8 +319,8 @@ def test_outcomm_clearance(env: Environment):
             action,
             "AIR0 contact next frequency",
             "contact next frequency AIR0",
-            None,
-            None,
+            "alpha india romeo zero contact next frequency",
+            "contact next frequency alpha india romeo zero",
             env,
             )
 
@@ -352,7 +352,7 @@ def test_route_direct_multi_waypoint_clearance(env: Environment):
 
 def test_using_speed_limit(env: Environment):
     action = Action("AIR0", "using_speed_limit", True)
-    
+
     assert_action_voice_and_text(
             action,
             "AIR0 obeying speed limit",
@@ -364,7 +364,7 @@ def test_using_speed_limit(env: Environment):
 
 def test_not_using_speed_limit(env: Environment):
     action = Action("AIR0", "using_speed_limit", False)
-    
+
     assert_action_voice_and_text(
             action,
             "AIR0 no speed restrictions",
@@ -372,4 +372,86 @@ def test_not_using_speed_limit(env: Environment):
             "alpha india romeo zero no a t c speed restrictions",
             "no speed restrictions alpha india romeo zero",
             env
+            )
+
+def test_descend_now_level_by_fix(env: Environment):
+    action = Action("AIR0", "descend_now,level_by_fix", (150, "OCK"))
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 descend flight level 150 level by OCK",
+            "descend flight level 150 level by OCK AIR0",
+            "alpha india romeo zero dee send flight level wun five zero level by OCK",
+            "dee send flight level wun five zero level by OCK alpha india romeo zero",
+            env,
+            )
+
+def test_descend_when_ready_level_by_fix(env: Environment):
+    action = Action("AIR0", "descend_when_ready,level_by_fix", (100, "OCK"))
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 when ready descend flight level 100 level by OCK",
+            "when ready descend flight level 100 level by OCK AIR0",
+            "alpha india romeo zero when ready dee send flight level wun hundred level by OCK",
+            "when ready dee send flight level wun hundred level by OCK alpha india romeo zero",
+            env,
+            )
+
+def test_expect_level_by_fix_climb_now(env: Environment):
+    action = Action("AIR0", "expect_level_by_fix,climb",
+                    (300, "OCK", 330)
+                    )
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 expect flight level 330 level by OCK climb now flight level 300",
+            "expect flight level 330 level by OCK climb now flight level 300 AIR0",
+            "alpha india romeo zero expect flight level tree tree zero level by OCK climb now flight level tree hundred",
+            "expect flight level tree tree zero level by OCK climb now flight level tree hundred alpha india romeo zero",
+            env,
+            )
+
+def test_expect_level_abeam_fix_climb_now(env: Environment):
+    aircraft = env.aircraft.get("AIR0")
+    assert aircraft is not None
+    aircraft.on_route = False
+
+    action = Action("AIR0", "expect_level_by_fix,climb", (300, "OCK", 330))
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 expect flight level 330 level abeam OCK climb now flight level 300",
+            "expect flight level 330 level abeam OCK climb now flight level 300 AIR0",
+            "alpha india romeo zero expect flight level tree tree zero level abeam OCK climb now flight level tree hundred",
+            "expect flight level tree tree zero level abeam OCK climb now flight level tree hundred alpha india romeo zero",
+            env,
+            )
+
+def test_expect_level_by_fix_descend_now(env: Environment):
+    action = Action("AIR0", "expect_level_by_fix,descend", (150, "OCK", 100))
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 expect flight level 100 level by OCK descend now flight level 150",
+            "expect flight level 100 level by OCK descend now flight level 150 AIR0",
+            "alpha india romeo zero expect flight level wun hundred level by OCK dee send now flight level wun five zero",
+            "expect flight level wun hundred level by OCK dee send now flight level wun five zero alpha india romeo zero",
+            env,
+            )
+
+def test_expect_level_abeam_fix_descend_now(env: Environment):
+    aircraft = env.aircraft.get("AIR0")
+    assert aircraft is not None
+    aircraft.on_route = False
+
+    action = Action("AIR0", "expect_level_by_fix,descend", (150, "OCK", 100))
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 expect flight level 100 level abeam OCK descend now flight level 150",
+            "expect flight level 100 level abeam OCK descend now flight level 150 AIR0",
+            "alpha india romeo zero expect flight level wun hundred level abeam OCK dee send now flight level wun five zero",
+            "expect flight level wun hundred level abeam OCK dee send now flight level wun five zero alpha india romeo zero",
+            env,
             )

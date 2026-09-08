@@ -67,7 +67,7 @@ async def evolve(runner: RunnerDep, time_delta: float) -> bool:
     update_amount = runner.evolve_period
 
     while time_delta > 0.0:
-        runner.sim.evolve(update_amount)
+        await runner.sim.async_evolve(update_amount)
         time_delta -= update_amount
 
     return True
@@ -219,9 +219,7 @@ async def save(runner: RunnerDep) -> bool:
     """
     Save sim state to JSON file.
     """
-    runner.sim.save()
-
-    return True
+    return await runner.sim.async_save()
 
 
 @core_router.post("/evolve_period/{evolve_period}", tags=["Evolve"])
