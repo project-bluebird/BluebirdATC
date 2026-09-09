@@ -264,7 +264,10 @@ class TwoAircraft(
         coordinations = [coordinations_fwd, coordinations_rev]
 
         # create empty event handler
-        event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
+        event_handler = self.typeof_event_handler(
+            ignore=self.event_handler_ignore_flags,
+            typeof_aircraft=self.typeof_aircraft,
+        )
 
         for i in range(2):
             callsign = f"AIR{i}"

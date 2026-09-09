@@ -1,4 +1,5 @@
 import pytest
+from bluebird_dt.core import Aircraft, Pos3D
 from bluebird_dt.events.event_handler import EventHandler
 from bluebird_dt.scenario_manager import Regular
 from bluebird_dt.manager import EnvironmentManager
@@ -100,7 +101,6 @@ def test_all_airspaces(airspace_routes, request):
             assert volume.min_fl <= entry_coord.fl <= volume.max_fl
             assert volume.min_fl <= exit_coord.fl <= volume.max_fl
 
-
 def test_repeat(generate_i):
     """
     Check generator works when called multiple times.
@@ -139,3 +139,39 @@ def test_create_env_manager(generate_i):
 
     assert em.environment.wind_field is None
     assert em.environment.forecast_wind_field is None
+
+def test_different_aircraft_type(generate_i):
+    """
+    Test that we can use a custom Aircraft type.
+    """
+    class MyAircraft(Aircraft):
+        pass
+    airspace, routes = generate_i
+    total_time = 600
+    num_aircraft = 4
+    sm = Regular(total_time, num_aircraft, airspace=airspace, routes=routes, typeof_aircraft=MyAircraft, random_seed=123)
+    
+    sim = sm.to_simulator()
+    # wait for all aircraft to spawn
+    sim.evolve(total_time)
+    assert len(sim.manager.environment.aircraft) == num_aircraft
+    # should all be of type `MyAircraft`
+    for aircraft in sim.manager.environment.aircraft.values():
+        assert isinstance(aircraft, MyAircraft)
+
+def test_different_start_time(generate_i):
+    """
+    Test that we can set the start timestamp
+    """
+    airspace, routes = generate_i
+    total_time = 800
+    start_time = 600
+    num_aircraft = 4
+    sm = Regular(total_time, num_aircraft, airspace=airspace, routes=routes, start_time=start_time, random_seed=123)
+    
+    sim = sm.to_simulator()
+    assert sim.manager.environment.time == start_time
+    # wait for all aircraft to spawn
+    sim.evolve(total_time)
+    assert len(sim.manager.environment.aircraft) == 4 
+

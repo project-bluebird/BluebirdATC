@@ -91,8 +91,8 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
             The available Routes in the Airspace (choose one at random for each Aircraft Route).
         sector_name: str | None,
             The sector name to be used in Coordinations.  If not specified, use the first sector in airspace.
-        start_time: int
-            Start time of scenario, in unix time (seconds)
+        start_time: float
+            Start time of scenario, in unix time (seconds), default is 0.
         random_seed: int | None
             If given, set the seed for the random number generator, for reproducibility.
         vertical_buffer_distance: int or float, default is 500
@@ -147,7 +147,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
         t = -start_times[0] * 0.5
         for i in range(len(start_times)):
             t += start_times[i]
-            start_times[i] = (t / total) * self.total_time
+            start_times[i] = self.start_time + (t / total) * self.total_time
 
         for i, start_t in enumerate(start_times):
             flight_time = 1800.0  # in seconds
@@ -249,6 +249,7 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         scenario_name: str,
         total_time: float,
         num_aircraft: int,
+        start_time: float = 0.0,
         random_seed: int | None = None,
         vertical_buffer_distance: int | float = 500,
         lateral_buffer_distance: int | float = 20,
@@ -277,6 +278,8 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             The total time in seconds for the scenario to run
         num_aircraft: int
             The total number of aircraft that will be generated, evenly spaced throughout total_time.
+        start_time: float
+            Start time of scenario, in unix time (seconds). Default is 0.
         random_seed: int | None
             Optionally set the seed for the random number generator.
         vertical_buffer_distance: int or float, default is 500
@@ -330,6 +333,7 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             sector_name=sector_name,
             total_time=total_time,
             num_aircraft=num_aircraft,
+            start_time=start_time,
             random_seed=random_seed,
             vertical_buffer_distance=vertical_buffer_distance,
             lateral_buffer_distance=lateral_buffer_distance,

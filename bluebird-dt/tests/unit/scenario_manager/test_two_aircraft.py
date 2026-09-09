@@ -1,3 +1,4 @@
+from bluebird_dt.core import Aircraft
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.simulator import Simulator
 import pytest
@@ -289,6 +290,26 @@ def test_to_simulator(generate_i):
     # Check returned simulator works as expected
     simulator.evolve(6)
     assert len(simulator.manager.environment.aircraft) is not None
+
+def test_different_aircraft_type():
+    """
+    Test that we can use a custom Aircraft type.
+    """
+    class MyAircraft(Aircraft):
+        pass
+    sim = TwoAircraft.setup(
+            "X-Sector",
+            typeof_aircraft=MyAircraft,
+        )
+    
+    # wait for both aircraft to spawn
+    sim.evolve(12)
+    # should be some aircraft by now
+    assert len(sim.manager.environment.aircraft) == 2
+    # should all be of type `MyAircraft`
+    for aircraft in sim.manager.environment.aircraft.values():
+        assert isinstance(aircraft, MyAircraft)
+
 
 @pytest.mark.parametrize(
         "scenario_name", 
