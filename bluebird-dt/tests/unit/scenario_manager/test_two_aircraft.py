@@ -310,6 +310,35 @@ def test_different_aircraft_type():
     for aircraft in sim.manager.environment.aircraft.values():
         assert isinstance(aircraft, MyAircraft)
 
+def test_dont_set_random_seed():
+    """
+    If we don't set the random seed, we should get different results every run.
+    """
+    sim1 = Simulator.from_category("Two Aircraft", "X-Sector")
+    # another instance, all settings the same, no random seed set
+    sim2 = Simulator.from_category("Two Aircraft", "X-Sector")
+    for _ in range(5):
+        sim1.evolve(6)
+        sim2.evolve(6)
+    for k, v in sim1.manager.environment.aircraft.items():
+        if not k in sim2.manager.environment.aircraft:
+            continue
+        assert sim2.manager.environment.aircraft[k].data() != v.data()
+
+def test_set_random_seed():
+    """
+    If we do set the random seed, we should get identical results every run.
+    """
+    sim1 = Simulator.from_category("Two Aircraft", "X-Sector", random_seed=1234)
+    # another identical instance, including same random seed
+    sim2 = Simulator.from_category("Two Aircraft", "X-Sector", random_seed=1234)
+    # evolve both simulators 100 steps of 6s.
+    for _ in range(100):
+        sim1.evolve(6)
+        sim2.evolve(6)
+    for k, v in sim1.manager.environment.aircraft.items():
+        assert sim2.manager.environment.aircraft[k].data() == v.data()
+
 
 @pytest.mark.parametrize(
         "scenario_name", 
