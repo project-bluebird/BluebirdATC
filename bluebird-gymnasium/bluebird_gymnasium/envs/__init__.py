@@ -7,6 +7,14 @@ from dataclasses import dataclass
 from typing import TypeAlias
 
 import numpy  # noqa: ICN001
+
+# aircraft scenario generator class(es)
+from bluebird_dt.scenario_manager import (
+    Custom,
+    Regular,
+    ScenarioManager,
+    TwoAircraft,
+)
 from numpy.typing import NDArray
 
 ActionConfig: TypeAlias = dict[str, bool | list[int]]
@@ -150,17 +158,9 @@ class EnvConfig:
     use_default_outcomm_policy: bool = (False,)
 
 
-# aircraft scenario generator class(es)
-from bluebird_dt.scenario_manager import (  # noqa: E402
-    Regular,
-    Tactical,
-    TwoAircraft,
-)
-from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager  # noqa: E402
-
 SCENARIO_CLS: dict[str, ScenarioManager] = {
+    "custom": Custom,
     "regular": Regular,
-    "tactical": Tactical,
     "twoaircraft": TwoAircraft,
 }
 

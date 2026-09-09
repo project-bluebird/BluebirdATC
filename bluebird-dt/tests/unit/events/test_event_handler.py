@@ -2,7 +2,7 @@ import copy
 from datetime import datetime, timedelta
 from typing import Any, TypeVar
 import typing
-from bluebird_dt.scenario_manager import Tactical
+from bluebird_dt.scenario_manager import Custom
 from bluebird_dt.simulator import Simulator
 from bluebird_dt.events.event_handler import (
     EventHandler, update_incomm, update_coordination, set_cleared_fl_to_selected_fl, update_from_clearances, 
@@ -1604,7 +1604,7 @@ def test_update_flight_plan(generate_i):
     airspace, routes = generate_i
 
     # Single simulated aircraft
-    em = Tactical(1, airspace=airspace, routes=routes, initialise_with_event_handler=False).create_env_manager()
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
 
     # duplicate the flight plan event, give the first an earlier end time and the second a different route
     df = em.event_handler.flight_df

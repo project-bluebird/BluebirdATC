@@ -261,4 +261,35 @@ def test_check_safe_to_spawn(generate_simple_environment, min_spawn_distance):
                 expected_safe = False
                 break
         assert expected_safe == check_safe_to_spawn(a, env, min_spawn_distance)
-        
+
+def test_different_aircraft_type():
+    """
+    Test that we can use a custom Aircraft type.
+    """
+    class MyAircraft(Aircraft):
+        pass
+    sim = Infinite.setup(
+            "X-Sector",
+            initial_spawn_rate=0.05,
+            max_spawn_rate=0.1,
+            typeof_aircraft=MyAircraft,
+        )
+    
+    # wait for some aircraft to spawn
+    sim.evolve(60)
+    # should be some aircraft by now
+    assert len(sim.manager.environment.aircraft) > 0
+    # should all be of type `MyAircraft`
+    for aircraft in sim.manager.environment.aircraft.values():
+        assert isinstance(aircraft, MyAircraft)
+
+@pytest.mark.parametrize(
+        "scenario_name", 
+        ("I-Sector","Y-Sector", "X-Sector", "Xplus-Sector", "Springfield")
+)        
+def test_sim_from_category(scenario_name):
+    """
+    Test that we can instantiate the simulator using "from_category"
+    """
+    s = Simulator.from_category("Infinite", scenario_name)
+    assert isinstance(s, Simulator)
