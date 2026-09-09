@@ -78,6 +78,6 @@ class OutcommHandler:
                     ):
                         env_manager.receive_actions([Action(aircraft.callsign, "outcomm", "background")])
 
-                # Aircraft doens't have an exit coordination
+                # Aircraft doesn't have an exit coordination
                 else:
                     env_manager.receive_actions([Action(aircraft.callsign, "outcomm", "background")])

@@ -2,13 +2,13 @@ import typing
 from datetime import datetime, timezone
 
 import pandas as pd
+from bluebird_dt.core import WindField
 from bluebird_dt.events.event_logger import SimStartStop
 from bluebird_dt.simulator.common import list_sim_scenario_categories, list_sim_scenarios
 from fastapi import APIRouter
 
-from bluebird_api.models import ActionInput, RunnerStore
-
-from ..runnerabc import RunnerDep
+from bluebird_api.models import ActionInput
+from bluebird_api.runner import RunnerDep, RunnerStoreDep
 
 core_router = APIRouter()
 
@@ -45,13 +45,12 @@ async def list_scenarios(category: str):  # noqa: ANN201
 
 
 @core_router.post("/close", tags=["Control"])
-async def close(runner: RunnerDep) -> bool:
+async def close(runner_store: RunnerStoreDep) -> bool:
     """
     Unload a given simulator scenario.
     """
 
-    await runner.delete()
-    RunnerStore.current_runner = None
+    await runner_store.delete()
     return True
 
 
@@ -68,7 +67,7 @@ async def evolve(runner: RunnerDep, time_delta: float) -> bool:
     update_amount = runner.evolve_period
 
     while time_delta > 0.0:
-        runner.sim.evolve(update_amount)
+        await runner.sim.async_evolve(update_amount)
         time_delta -= update_amount
 
     return True
@@ -94,43 +93,36 @@ async def start(runner: RunnerDep, tick_frequency_period: float) -> bool:
 
 
 @core_router.get("/environment", tags=["State"])
-async def complete_environment(  # noqa: ANN201
+async def environment(  # noqa: ANN201
     runner: RunnerDep, no_airspace: bool = False, last_n_observations: int = 0
 ):
     """
-    Get the all of the environment data.
+    Get all of the environment data excluding wind fields.
     """
-    if RunnerStore.current_runner is None or runner.sim is None:
-        return {"exists": False}
     # HMI doesn't need to reload the environment again
     runner.sim.manager.reload_environment = False
 
     return runner.sim.environment(
         sim_time=runner.sim.manager.environment.time,
-        sector_id=None,
         no_airspace=no_airspace,
         last_n_observations=last_n_observations,
     )
 
 
-@core_router.get("/environment/{sector_id}", tags=["State"])
-async def environment(  # noqa: ANN201
-    runner: RunnerDep, sector_id: str | None = None, no_airspace: bool = False, last_n_observations: int = 0
-):
+@core_router.get("/wind_field", tags=["State"])
+async def wind_field(runner: RunnerDep) -> WindField | None:
     """
-    Get the environment data for a given sector.
+    Get the wind field data for current environment.
     """
-    if RunnerStore.current_runner is None or runner.sim is None:
-        return {"exists": False}
-    # HMI doesn't need to reload the environment again
-    runner.sim.manager.reload_environment = False
+    return runner.sim.manager.environment.wind_field
 
-    return runner.sim.environment(
-        sim_time=runner.sim.manager.environment.time,
-        sector_id=sector_id,
-        no_airspace=no_airspace,
-        last_n_observations=last_n_observations,
-    )
+
+@core_router.get("/forecast_wind_field", tags=["State"])
+async def forecast_wind_field(runner: RunnerDep) -> WindField | None:  # noqa: ANN201
+    """
+    Get the forecast wind field data for current environment.
+    """
+    return runner.sim.manager.environment.forecast_wind_field
 
 
 @core_router.get("/static_data", tags=["State"])
@@ -140,8 +132,7 @@ async def static_data(  # noqa: ANN201
     """
     Get the static data for the scenario.
     """
-    if RunnerStore.current_runner is None or runner.sim is None:
-        return {"exists": False}
+
     return {"exists": True} | runner.sim.static_data(
         sim_time=runner.sim.manager.environment.time,
     )
@@ -154,8 +145,7 @@ async def dynamic_data(  # noqa: ANN201
     """
     Get the dynamic data for the scenario.
     """
-    if RunnerStore.current_runner is None or runner.sim is None:
-        return {"exists": False}
+
     sim_time = runner.sim.manager.environment.time
     if sector_id.lower() == "none" or sector_id.lower() == "all":
         return {"exists": True} | runner.sim.dynamic_data(sim_time)
@@ -209,13 +199,12 @@ async def runner_status(runner: RunnerDep):  # noqa: ANN201
     """
     Get the current state of the current run.
     """
-    if RunnerStore.current_runner is None:
-        return {"exists": False}
+
     return {
-        "exists": runner.scenario_name is not None,
+        "exists": runner.sim.scenario_name is not None,
         "iterations": runner.tick,
-        "category": runner.category,
-        "scenario": runner.scenario_name,
+        "category": runner.sim.category,
+        "scenario": runner.sim.scenario_name,
         "running": runner.running,
         "evolve_period": runner.evolve_period,
         "tick_frequency_period": runner.tick_frequency_period,
@@ -230,9 +219,7 @@ async def save(runner: RunnerDep) -> bool:
     """
     Save sim state to JSON file.
     """
-    runner.sim.save()
-
-    return True
+    return await runner.sim.async_save()
 
 
 @core_router.post("/evolve_period/{evolve_period}", tags=["Evolve"])

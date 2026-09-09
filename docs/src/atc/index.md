@@ -5,16 +5,16 @@ Air Traffic Control (ATC) is a service provided to direct and organise the flow 
 <div class="grid cards" markdown>
 
 - :material-cube-outline: Airspace:
-  [Read more](atc/airspace.md)
+  [Read more](airspace.md)
 
 - :fontawesome-solid-plane: Aircraft: 
-  [Read more](atc/aircraft.md)
+  [Read more](aircraft.md)
 
 - :material-account-voice: Clearances: 
-  [Read more](atc/clearances.md)
+  [Read more](clearances.md)
 
 - :fontawesome-solid-user-group: Coordinations: 
-  [Read more](atc/coordinations.md)
+  [Read more](coordinations.md)
 
 </div>
 

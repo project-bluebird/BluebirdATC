@@ -7,13 +7,13 @@ url: https://arxiv.org/abs/2308.04958
 
 """
 
-from bluebird_gymnasium.envs.base import BaseEnv
-from bluebird_gymnasium.utils.types import InteractionRelevance
-
 from bluebird_dt.utility.convert import (
     FT_TO_FL,  # feet to flight level
     FT_TO_NMI,  # feet to nautical miles
 )
+
+from bluebird_gymnasium.envs.base import BaseEnv
+from bluebird_gymnasium.utils.types import InteractionRelevance
 
 DEFAULT_DX_NMAC = 500 * FT_TO_NMI
 DEFAULT_DZ_NMAC = 100 * FT_TO_FL
@@ -26,9 +26,7 @@ DEFAULT_LAMBDA = 1e-2
 DEFAULT_OMEGA = 1e-3
 
 
-def reward_drlan(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def reward_drlan(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward function implementation for IASA_DRLAN.
 
     Improving Autonomous Separation Assurance through Distributed Reinforcement
@@ -67,25 +65,14 @@ def reward_drlan(
     else:
         # get information of the closest aircraft to the current aircraft
         closest_interaction = interactions[0]
-        simulator_env = gym_env.get_simulator_env()
-        other_callsign = closest_interaction.other_callsign
-        other_aircraft = simulator_env.aircraft[other_callsign]
         distance_aircraft_other_aircraft = closest_interaction.dist_ac_other
         fl_diff_aircraft_other_aircraft = closest_interaction.fl_diff_ac_other
 
-        if (
-            distance_aircraft_other_aircraft < DEFAULT_DX_NMAC
-            and fl_diff_aircraft_other_aircraft < DEFAULT_DZ_NMAC
-        ):
+        if distance_aircraft_other_aircraft < DEFAULT_DX_NMAC and fl_diff_aircraft_other_aircraft < DEFAULT_DZ_NMAC:
             r_st_ht = -1.0
 
-        elif (
-            distance_aircraft_other_aircraft >= DEFAULT_DX_NMAC
-            and distance_aircraft_other_aircraft < DEFAULT_D_MAX
-        ):
-            r_st_ht = -coeff_chi + (
-                coeff_delta * distance_aircraft_other_aircraft
-            )
+        elif distance_aircraft_other_aircraft >= DEFAULT_DX_NMAC and distance_aircraft_other_aircraft < DEFAULT_D_MAX:
+            r_st_ht = -coeff_chi + (coeff_delta * distance_aircraft_other_aircraft)
 
         else:
             r_st_ht = 0.0
@@ -99,10 +86,7 @@ def reward_drlan(
     elif action in action_parser.get_relative_fl_actions():
         r_at = -coeff_lambda
     else:
-        msg = (
-            "`iasa_drlan` only support set up where relative speed,"
-            "relative flight level actions/clearances are used."
-        )
+        msg = "`iasa_drlan` only support set up where relative speed,relative flight level actions/clearances are used."
         raise ValueError(msg)
 
     return r_st_ht + r_at - coeff_omega

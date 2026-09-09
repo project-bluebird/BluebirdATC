@@ -21,6 +21,8 @@ from bluebird_dt.utility.convert import nan_to_none
 if typing.TYPE_CHECKING:
     from bluebird_dt.core import Airspace
 
+LATERAL_SPEED_RANK_KEYS = ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl"]
+
 
 class FlightState(Enum):
     CLIMB = "climb"
@@ -172,6 +174,28 @@ class Aircraft(Comparison):
     it is viewed from an air traffic control point of view.
     """
 
+    lat: float
+    lon: float
+    fl: float
+    heading: float
+    flight_plan: FlightPlan | None
+    callsign: str | None
+    ufid: str | None
+    rate_of_turn: float | None
+    aircraft_type: str | None
+    operation_params: dict | None
+    controllable: bool
+    simulated: bool
+    _current_sector: str | None
+    random_seed: int | None
+    pilot: Pilot
+    squawk: str | None
+    squawk_ident_until: float | None
+    last_passed_filed_idx: int | None
+    last_passed_current_idx: int | None
+    cleared_instructions: Instructions
+    selected_instructions: Instructions
+
     def __init__(
         self,
         lat: float,
@@ -254,8 +278,8 @@ class Aircraft(Comparison):
             The instructions enacted by the Pilot.
         percentile_rank_dict: dict[str, [float, None]], optional
             The percentile rank dictionary of the aircraft. The allowed keys in the dict are: "cas_cr", "cas_cl",
-            "cas_des", "rocd_cl" and "rocd_des". The values to these keys are used to assign the aircraft a horizontal
-            and vertical speed scores from a probability distribution.
+            "cas_des", "mach_cr", "mach_cl", "mach_des", "rocd_cl" and "rocd_des". The values to these keys are used
+            to assign the aircraft horizontal and vertical speed scores from a probability distribution.
         cleared_fl: float, multiple of 10.
             Last-cleared flight level.
             Upon instantiation this is set to the current flight level.
@@ -354,7 +378,7 @@ class Aircraft(Comparison):
         self.ground_track_angle: float | None = None
 
         # By default the aircraft will maintain current heading and flight level
-        self.heading_changing_to: None | float = None
+        self.heading_changing_to: float | None = None
 
         # Set the percentile rank dictionary, based on random seed
         self.percentile_rank_dict: dict[str, float | None] = {}
@@ -875,9 +899,9 @@ class Aircraft(Comparison):
             # set random seed of random generator
             random.seed(self.random_seed)
 
-            # Select a CAS percentile rank
+            # Select a lateral speed percentile rank, shared by the CAS and Mach speeds
             cas_percentile_rank = random.uniform(0, 100.0)
-            for key in ["cas_des", "cas_cr", "cas_cl"]:
+            for key in LATERAL_SPEED_RANK_KEYS:
                 self.percentile_rank_dict[key] = cas_percentile_rank
 
             # Select a ROCD percentile rank
@@ -886,7 +910,7 @@ class Aircraft(Comparison):
                 self.percentile_rank_dict[key] = rocd_percentile_rank
 
         else:
-            for key in ["cas_des", "cas_cr", "cas_cl", "rocd_des", "rocd_cl"]:
+            for key in ["cas_des", "cas_cr", "cas_cl", "mach_des", "mach_cr", "mach_cl", "rocd_des", "rocd_cl"]:
                 self.percentile_rank_dict[key] = None
 
     def set_performance(self, cas_pr: float | None = None, rocd_pr: float | None = None):
@@ -903,10 +927,10 @@ class Aircraft(Comparison):
         if cas_pr:
             if cas_pr < 0.0 or cas_pr > 100.0:
                 raise ValueError("Trying to set aircraft performance using a invalid CAS percentile rank")
-            for key in ["cas_des", "cas_cr", "cas_cl"]:
+            for key in LATERAL_SPEED_RANK_KEYS:
                 self.percentile_rank_dict[key] = cas_pr
         else:
-            for key in ["cas_des", "cas_cr", "cas_cl"]:
+            for key in LATERAL_SPEED_RANK_KEYS:
                 self.percentile_rank_dict[key] = None
 
         if rocd_pr:

@@ -12,9 +12,7 @@ if typing.TYPE_CHECKING:
 EPSILON = 0.5
 
 
-def route_parallel_const(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def route_parallel_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for flying parallel to the aircraft's current route.
 
     Apply a constant penalty of -1.0 when the aircraft is not flying parallel
@@ -38,11 +36,9 @@ def route_parallel_const(
         return 0.0
 
     if forward_fixes_info.use_filed_route:
-        route = aircraft.flight_plan.route.filed
         prev_fix = tracked_data.previous_fix_fr
         next_fix = tracked_data.next_fix_fr
     else:
-        route = aircraft.flight_plan.route.current
         prev_fix = tracked_data.previous_fix_cr
         next_fix = tracked_data.next_fix_cr
 
@@ -62,16 +58,13 @@ def route_parallel_const(
     # apply threshold: if diff < epsilon, clip it to zero
     if diff < EPSILON:
         return 0.0
-    else:
-        return -1.0
+    return -1.0
 
 
-def route_parallel_linear(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def route_parallel_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for flying parallel to the aircraft's current route.
 
-    Linearly penalize the aircraft for not flying parallel to its
+    Linearly penalise the aircraft for not flying parallel to its
     current route.
 
     Args:
@@ -92,11 +85,9 @@ def route_parallel_linear(
         return 0.0
 
     if forward_fixes_info.use_filed_route:
-        route = aircraft.flight_plan.route.filed
         prev_fix = tracked_data.previous_fix_fr
         next_fix = tracked_data.next_fix_fr
     else:
-        route = aircraft.flight_plan.route.current
         prev_fix = tracked_data.previous_fix_cr
         next_fix = tracked_data.next_fix_cr
 
@@ -118,12 +109,10 @@ def route_parallel_linear(
     return -1.0 * diff
 
 
-def route_parallel_quad(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def route_parallel_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for flying parallel to the aircraft's current route.
 
-    Quadratically penalize the aircraft for not flying parallel to its
+    Quadratically penalise the aircraft for not flying parallel to its
     current route.
 
     Args:
@@ -144,11 +133,9 @@ def route_parallel_quad(
         return 0.0
 
     if forward_fixes_info.use_filed_route:
-        route = aircraft.flight_plan.route.filed
         prev_fix = tracked_data.previous_fix_fr
         next_fix = tracked_data.next_fix_fr
     else:
-        route = aircraft.flight_plan.route.current
         prev_fix = tracked_data.previous_fix_cr
         next_fix = tracked_data.next_fix_cr
 
@@ -170,9 +157,7 @@ def route_parallel_quad(
     return -1.0 * diff**2
 
 
-def route_parallel_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def route_parallel_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for flying parallel to the aircraft's current route.
 
     Exponentially reward the aircraft for flying parallel to its
@@ -196,11 +181,9 @@ def route_parallel_exp(
         return 1.0
 
     if forward_fixes_info.use_filed_route:
-        route = aircraft.flight_plan.route.filed
         prev_fix = tracked_data.previous_fix_fr
         next_fix = tracked_data.next_fix_fr
     else:
-        route = aircraft.flight_plan.route.current
         prev_fix = tracked_data.previous_fix_cr
         next_fix = tracked_data.next_fix_cr
 

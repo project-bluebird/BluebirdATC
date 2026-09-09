@@ -6,13 +6,12 @@ from bluebird_dt.core import Action
 
 if typing.TYPE_CHECKING:
     from bluebird_gymnasium.envs.base import BaseEnv
-    from bluebird_gymnasium.utils.types import Number
 
 
 def outcomm(
     callsign: str,
     gym_env: BaseEnv,
-    value: str | None = None,
+    value: str | None = None,  # noqa: ARG001
     agent: str = "Agent",
 ) -> Action:
     """Generate a simulator action to outcomm an aircraft.
@@ -37,4 +36,4 @@ def outcomm(
     exit_coord = tracked_data.exit_coords[active_airspace_sector]
 
     next_sector = exit_coord.to_sector
-    return Action(callsign, "outcomm", next_sector, agent="Agent")
+    return Action(callsign, "outcomm", next_sector, agent=agent)

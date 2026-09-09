@@ -93,7 +93,6 @@ validation:
 
 nav:
   - Project Bluebird: index.md
-  - Neurips competition: examples/competition/Competition-Intro.ipynb
   - User guide:
     - Getting started: getting-started.md
 

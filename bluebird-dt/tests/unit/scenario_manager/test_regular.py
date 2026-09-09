@@ -4,7 +4,7 @@ from bluebird_dt.simulator import Simulator
 
 def test_to_simulator(generate_i):
     """
-    Test the Regular.to_simulator() method creates the required components and sets the appropriate variables correectly.
+    Test the Regular.to_simulator() method creates the required components and sets the appropriate variables correctly.
     """
         
     airspace, routes = generate_i
@@ -38,4 +38,3 @@ def test_to_simulator(generate_i):
 
     # check start time
     assert simulator.manager.environment.start_time == 12
-

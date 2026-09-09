@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import numpy as np
-
 import typing
+
+import numpy as np
 
 if typing.TYPE_CHECKING:
     import numpy.typing as npt
 
-    from bluebird_dt.core import Environment as SimulatorEnv
     from bluebird_gymnasium.envs.base import BaseEnv
-    from bluebird_gymnasium.utils.types import ACStateTracker, InteractionInfo
+    from bluebird_gymnasium.utils.types import InteractionInfo
 
 
 class BaseRepresentation:
@@ -41,14 +40,10 @@ class BaseRepresentation:
             raise ValueError("`knn` should be set to an integer value >= 0")
 
         if num_forward_fixes < 0:
-            raise ValueError(
-                "`num_forward_fixes` should be set to an integer value >= 0"
-            )
+            raise ValueError("`num_forward_fixes` should be set to an integer value >= 0")
 
         if num_actions is not None and num_actions < 1:
-            raise ValueError(
-                "`num_actions` should be set to `None` or integer value >= 1"
-            )
+            raise ValueError("`num_actions` should be set to `None` or integer value >= 1")
 
         self.knn = knn
         self.num_forward_fixes = num_forward_fixes
@@ -67,7 +62,7 @@ class BaseRepresentation:
         self.low = None
         self.high = None
 
-    def repr(self, gym_env: baseEnv, callsign: str) -> np.ndarray:
+    def repr(self, gym_env: BaseEnv, callsign: str) -> np.ndarray:
         """Generate a vectorised representation of an aircraft's state.
 
         Args:
@@ -90,7 +85,7 @@ class BaseRepresentation:
         self,
         callsign: str,
         gym_env: BaseEnv,
-        relevant_interactions_only=True,
+        relevant_interactions_only: bool = True,
     ) -> list[InteractionInfo]:
         """Gets statistics about relevant aircraft interaction with others."""
 
@@ -98,14 +93,9 @@ class BaseRepresentation:
         if relevant_interactions_only:
             return traffic_monitor.get_relevant_traffic(callsign)
 
-        else:
-            return traffic_monitor.get_aircraft_interaction_info(
-                callsign, gym_env
-            )
+        return traffic_monitor.get_aircraft_interaction_info(callsign, gym_env)
 
-    def generate_forward_fixes_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_forward_fixes_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N forward fixes.
 
         The forward fixes are derived using the aircraft's filed route
@@ -122,9 +112,7 @@ class BaseRepresentation:
 
         raise NotImplementedError
 
-    def generate_neighbours_features(
-        self, gym_env, callsign
-    ) -> list[npt.NDArray[np.float32]]:
+    def generate_neighbours_features(self, gym_env: BaseEnv, callsign: str) -> list[npt.NDArray[np.float32]]:
         """Generate features for N neighbour aircraft.
 
         Args:

@@ -1,6 +1,6 @@
 [project]
 name = "bluebird-dt-docs"
-version = "0.2.0"
+version = "0.3.0"
 requires-python = ">=3.10"
 
 dependencies = [
@@ -8,16 +8,16 @@ dependencies = [
     "bluebird-api==0.2.0",
     "bluebird-gymnasium==0.2.0",
     "mkdocs==1.6.1",
-    "mkdocs-jupyter==0.26.1",
-    "mkdocs-material==9.7.6",
-    "mkdocstrings[python]==1.0.3",
+    "mkdocs-jupyter==0.26.3",
+    "mkdocs-material==9.7.7",
+    "mkdocstrings[python]==1.0.6",
     "mkdocs-monorepo-plugin==1.1.2",
     "mkdocs-macros-plugin==1.5.0",
 ]
 
 [dependency-groups]
 dev = [ 
-  "pytest>=9.0.3,<10",
+  "pytest>=9.1.1,<10",
   "mktestdocs"
 ]
 
@@ -25,3 +25,10 @@ dev = [
 bluebird-dt = { workspace = true }
 bluebird-api = { workspace = true }
 bluebird-gymnasium = { workspace = true }
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "double"

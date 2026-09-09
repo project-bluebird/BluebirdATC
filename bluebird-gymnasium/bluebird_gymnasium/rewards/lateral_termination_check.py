@@ -1,13 +1,13 @@
 from bluebird_gymnasium.envs.base import BaseEnv
 
 
-def lateral_termination_check_sac(
+def lateral_termination_check_sac(  # noqa: ARG001, ANN003
     gym_env: BaseEnv,
     callsign: str,
-    action: int,
+    action: int,  # noqa: ARG001
     timestep: int,
     maxstep: int,
-    **kwargs,
+    **kwargs,  # noqa: ARG001, ANN003
 ) -> float:
     """Reward for aircraft's termination from the sector
 
@@ -32,9 +32,7 @@ def lateral_termination_check_sac(
     reward = 0
     if timestep >= maxstep:
         ac = simulator_env.aircraft[callsign]
-        exit_loc_ac = simulator_env.airspace.route_exit_fix(
-            ac.flight_plan.route
-        )
+        exit_loc_ac = simulator_env.airspace.route_exit_fix(ac.flight_plan.route)
         exit_dist = ac.pos2d().distance(exit_loc_ac)
         reward = -1.0 * exit_dist
     return reward
@@ -43,11 +41,11 @@ def lateral_termination_check_sac(
 def lateral_termination_check_mac(
     gym_env: BaseEnv,
     callsign: str,
-    action: int,
+    action: int,  # noqa: ARG001
     timestep: int,
     maxstep: int,
     transferred: bool,
-    **kwargs,
+    **kwargs,  # noqa: ARG001, ANN003
 ) -> float:
     """Reward for aircraft termination from the sector.
 
@@ -78,9 +76,7 @@ def lateral_termination_check_mac(
         for callsign in simulator_env.aircraft:
             if not transferred:
                 ac = simulator_env.aircraft[callsign]
-                exit_loc_ac = simulator_env.airspace.route_exit_fix(
-                    ac.flight_plan.route
-                )
+                exit_loc_ac = simulator_env.airspace.route_exit_fix(ac.flight_plan.route)
                 exit_dist = ac.pos2d().distance(exit_loc_ac)
                 reward -= exit_dist
     return reward

@@ -25,9 +25,12 @@ from bluebird_dt.utility.paths import (
     SIMPLE_PERFORMANCE_UNCERTAINTY_FILE,
 )
 from bluebird_dt.utility.performance import (
+    apply_lateral_speed_uncertainty,
     cas_and_mach_from_table,
     get_performance_table,
     get_performance_uncertainty_table,
+    lateral_speed_keys,
+    lateral_speed_offset,
     rocd_from_table,
 )
 
@@ -215,21 +218,15 @@ class LinearPredictor(Predictor):
         # Get aircraft CAS and Mach speeds
         cas_KT, mach = self.get_aircraft_cas_mach_speeds(aircraft)
 
-        # Simple-mode tables may not include Mach values.
-        if mach is None:
-            tas_KT = cas_to_tas(aircraft.fl, cas_KT * KT_TO_MPS, self.delta_T) * MPS_TO_KT
+        # Determine aircraft location relative to Mach/CAS transition altitude
+        is_below_transition = self.is_aircraft_below_transition(aircraft)
 
-        else:
-            # Determine aircraft location relative to Mach/CAS transition altitude
-            is_below_transition = self.is_aircraft_below_transition(aircraft)
-
+        if is_below_transition or mach is None:
             # If below transition, aircraft is flying on cleared_cas
-            if is_below_transition:
-                tas_KT = cas_to_tas(aircraft.fl, cas_KT * KT_TO_MPS, self.delta_T) * MPS_TO_KT
-
+            tas_KT = cas_to_tas(aircraft.fl, cas_KT * KT_TO_MPS, self.delta_T) * MPS_TO_KT
+        else:
             # If above transition, aircraft is flying on cleared_mach
-            else:
-                tas_KT = mach_to_tas(aircraft.fl, mach, self.delta_T) * MPS_TO_KT
+            tas_KT = mach_to_tas(aircraft.fl, mach, self.delta_T) * MPS_TO_KT
 
         # Set the aircraft TAS
         aircraft.speed_tas = tas_KT
@@ -304,15 +301,16 @@ class LinearPredictor(Predictor):
             The aircraft Mach value, dimensionless. If unavailable from performance tables, None is returned.
         """
 
-        if aircraft.selected_instructions.cas is None:
-            cas, _ = self.speed_from_tables(aircraft)
-        else:
-            cas = aircraft.selected_instructions.cas
+        cas = aircraft.selected_instructions.cas
+        mach = aircraft.selected_instructions.mach
 
-        if aircraft.selected_instructions.mach is None:
-            _, mach = self.speed_from_tables(aircraft)
-        else:
-            mach = aircraft.selected_instructions.mach
+        # Only consult the speed tables (a single lookup covers both speeds) if either is unset.
+        if cas is None or mach is None:
+            table_cas, table_mach = self.speed_from_tables(aircraft)
+            if cas is None:
+                cas = table_cas
+            if mach is None:
+                mach = table_mach
 
         return cas, mach
 
@@ -349,7 +347,10 @@ class LinearPredictor(Predictor):
 
         To calculate the transition altitude, we need to find cas_trans and mach_trans. These are equal to the cleared
         values if set (i.e. not None). Otherwise (i.e. when None), cas_trans and mach_trans are found from the speed
-        tables as the max cas_cr value, and the max mach_cr value respectively.
+        tables for the aircraft's current flight phase as the max cas value, and the max mach value respectively, with
+        the aircraft's speed uncertainty offset applied so the transition altitude is consistent with the
+        (uncertainty-perturbed) speeds the aircraft actually flies. Cleared values are exact commanded speeds, so no
+        uncertainty is applied to them.
 
         A vertical distance is used to calculate the is_below_transition boolean. If this transition_delta is negative,
         the aircraft is flying below the Mach/CAS transition altitude, and True is returned. If positive, the aircraft
@@ -367,22 +368,28 @@ class LinearPredictor(Predictor):
         """
         ac_lookup_key = self._get_aircraft_lookup_key(aircraft.aircraft_type)
         performance_table = self._get_performance_profile(ac_lookup_key)
+        speed_uncertainty = self._get_performance_uncertainty(ac_lookup_key)
+
+        # Use the speed schedule for the aircraft's current flight phase, so the transition altitude is consistent
+        # with the speeds it is actually flying.
+        cas_key, mach_key = lateral_speed_keys(aircraft.flight_state)
+        ranks = aircraft.percentile_rank_dict
 
         if aircraft.selected_instructions.cas is None:
-            cas_trans = max(value for value in performance_table["cas_cr"] if value is not None)
+            cas_values = [value for value in performance_table[cas_key] if value is not None]
+            if not cas_values:
+                return False  # no CAS schedule — aircraft always uses Mach
+            cas_trans = max(cas_values)
+            cas_trans += lateral_speed_offset(speed_uncertainty, cas_key, ranks.get(cas_key))
         else:
             cas_trans = aircraft.selected_instructions.cas
 
         if aircraft.selected_instructions.mach is None:
-            mach_data = performance_table.get("mach_cr")
-            if not isinstance(mach_data, list):
-                return True
-
-            valid_mach_values = [value for value in mach_data if value is not None]
-            if not valid_mach_values:
-                return True
-
-            mach_trans = max(valid_mach_values)
+            mach_values = [value for value in (performance_table.get(mach_key) or []) if value is not None]
+            if not mach_values:
+                return True  # no Mach schedule — aircraft always uses CAS
+            mach_trans = max(mach_values)
+            mach_trans += lateral_speed_offset(speed_uncertainty, mach_key, ranks.get(mach_key))
         else:
             mach_trans = aircraft.selected_instructions.mach
 
@@ -393,7 +400,8 @@ class LinearPredictor(Predictor):
 
     def speed_from_tables(self, aircraft: Aircraft) -> tuple[float, float | None]:
         """
-        Returns the predicted aircraft CAS and mach number using linear interpolation of the CAS table data.
+        Returns the predicted aircraft CAS and mach number using linear interpolation of the CAS table data, with
+        the aircraft's speed uncertainty offset applied.
 
         Parameters
         ----------
@@ -408,14 +416,12 @@ class LinearPredictor(Predictor):
 
         ac_lookup_key = self._get_aircraft_lookup_key(aircraft.aircraft_type)
         performance_profile = self._get_performance_profile(ac_lookup_key)
-        performance_uncertainty = self._get_performance_uncertainty(ac_lookup_key)
+        speed_uncertainty = self._get_performance_uncertainty(ac_lookup_key)
 
-        return cas_and_mach_from_table(
-            performance_profile,
-            performance_uncertainty,
-            aircraft.percentile_rank_dict,
-            aircraft.fl,
-            aircraft.flight_state,
+        cas, mach = cas_and_mach_from_table(performance_profile, aircraft.fl, aircraft.flight_state)
+
+        return apply_lateral_speed_uncertainty(
+            cas, mach, speed_uncertainty, aircraft.percentile_rank_dict, aircraft.flight_state
         )
 
     def vertical_speed_from_tables(self, aircraft: Aircraft) -> float:

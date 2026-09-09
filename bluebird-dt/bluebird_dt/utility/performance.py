@@ -12,6 +12,14 @@ from bluebird_dt.utility.paths import (
 )
 from bluebird_dt.utility.sample import apply_rocd_uncertainty, apply_speed_uncertainty
 
+STATE_LABELS = {FlightState.CRUISE: "cr", FlightState.CLIMB: "cl", FlightState.DESCEND: "des"}
+
+
+def lateral_speed_keys(aircraft_flight_state: FlightState) -> tuple[str, str]:
+    """Return the (cas_key, mach_key) speed-table keys for a given flight state."""
+    label = STATE_LABELS[aircraft_flight_state]
+    return f"cas_{label}", f"mach_{label}"
+
 
 @functools.cache
 def get_performance_table(
@@ -36,10 +44,16 @@ def get_performance_table(
 
     try:
         with open(path) as aircraft_speed_profile:
-            return json.load(aircraft_speed_profile)["aircraft"]
-
+            data = json.load(aircraft_speed_profile)["aircraft"]
     except FileNotFoundError as e:
         raise FileNotFoundError("Speed profile data file could not be found!") from e
+
+    for aircraft_type, table in data.items():
+        fls = table.get("flight_level", [])
+        if any(fls[i] >= fls[i + 1] for i in range(len(fls) - 1)):
+            raise ValueError(f"flight_level for '{aircraft_type}' in {path} must be strictly increasing, got {fls}")
+
+    return data
 
 
 @functools.cache
@@ -102,22 +116,20 @@ def get_aircraft_key_mapping(path: str | None = None) -> dict[str, str]:
 
 def cas_and_mach_from_table(
     aircraft_speed_table: dict[str, list[float | None] | float],
-    speed_uncertainty_table: dict[str, dict[str, float]] | None,
-    percentile_rank_table: dict[str, float | None] | None,
     aircraft_fl: float,
     aircraft_flight_state: FlightState,
-) -> tuple[float, float]:
+) -> tuple[float, float | None]:
     """
-    Returns the predicted aircraft CAS and mach number using linear interpolation of the CAS and mach table data.
+    Returns the nominal predicted aircraft CAS and mach number using linear interpolation of the CAS and mach
+    table data.
+
+    Speed uncertainty is not applied here. The uncertainty offset is flight-level-independent, so callers add it
+    to these nominal values (see LinearPredictor._speed_offset).
 
     Parameters
     ----------
     aircraft_speed_table: dict[str, list[float | None] | float]
         Speed table of the aircraft
-    speed_uncertainty_table: dict[str, dict[str, float]] | None
-        Uncertainty table of the aircraft
-    percentile_rank_table: dict[str, float | None] | None
-        Percentile rank table of the aircraft
     airacrft_fl: float
         Flight level of the aircraft
     aircraft_flight_state: FlightState
@@ -126,7 +138,8 @@ def cas_and_mach_from_table(
     Returns
     -------
     Tuple:
-        Tuple of two floats which are the predicted CAS (in knots) and the mach number, in that order
+        Tuple of the predicted CAS (in knots) and the mach number, in that order. Mach may be None if it is
+        unavailable in the speed profile.
     """
 
     flight_levels = aircraft_speed_table["flight_level"]
@@ -156,10 +169,7 @@ def cas_and_mach_from_table(
             flight_levels[fl_index + 1] - flight_levels[fl_index]
         )
 
-    state_labels = {FlightState.CRUISE: "cr", FlightState.CLIMB: "cl", FlightState.DESCEND: "des"}
-    label = state_labels[aircraft_flight_state]
-    cas_key = f"cas_{label}"
-    mach_key = f"mach_{label}"
+    cas_key, mach_key = lateral_speed_keys(aircraft_flight_state)
 
     cas_lo = aircraft_speed_table[cas_key][fl_index]
     cas_hi = aircraft_speed_table[cas_key][fl_index + 1]
@@ -188,21 +198,6 @@ def cas_and_mach_from_table(
     else:
         cas = (1.0 - interp_weight) * cas_lo + interp_weight * cas_hi
 
-        # If percentile rank has been specified, use the uncertainty data to draw a speed score
-        # from the speed probability distribution.
-        if (
-            percentile_rank_table is not None
-            and cas_key in percentile_rank_table
-            and percentile_rank_table[cas_key] is not None
-            and speed_uncertainty_table is not None
-            and cas_key in speed_uncertainty_table
-            and speed_uncertainty_table[cas_key] is not None
-        ):
-            speed_uncertainty = speed_uncertainty_table[cas_key]
-            percentile_rank = percentile_rank_table[cas_key]
-
-            cas = apply_speed_uncertainty(cas, speed_uncertainty, percentile_rank)
-
     # same edge cases as for cas
     if mach_lo is None and mach_hi is not None:
         mach = mach_hi
@@ -225,6 +220,67 @@ def cas_and_mach_from_table(
     return cas, mach
 
 
+def lateral_speed_offset(
+    speed_uncertainty_table: dict[str, dict[str, float]] | None,
+    speed_key: str,
+    percentile_rank: float | None,
+) -> float:
+    """
+    Return the (flight-level-independent) speed uncertainty offset, in the speed's own units, for a given speed
+    key (e.g. "cas_cr", "mach_cl") and percentile rank. Returns 0.0 when no uncertainty applies (no percentile
+    rank, or no uncertainty data for the key).
+
+    The offset is additive and flight-level-independent for speeds, so evaluating apply_speed_uncertainty at a
+    nominal of 0.0 yields the offset to add to any nominal speed at any flight level.
+    """
+    if percentile_rank is None or speed_uncertainty_table is None:
+        return 0.0
+    speed_uncertainty = speed_uncertainty_table.get(speed_key)
+    if speed_uncertainty is None:
+        return 0.0
+    return apply_speed_uncertainty(0.0, speed_uncertainty, percentile_rank)
+
+
+def apply_lateral_speed_uncertainty(
+    cas: float,
+    mach: float | None,
+    speed_uncertainty_table: dict[str, dict[str, float]] | None,
+    percentile_rank_table: dict[str, float | None] | None,
+    aircraft_flight_state: FlightState,
+) -> tuple[float, float | None]:
+    """
+    Apply the speed uncertainty offset to nominal CAS and mach speeds for the given flight phase.
+
+    The nominal speeds come from cas_and_mach_from_table. Speeds without a rank or without uncertainty data are
+    returned unchanged.
+
+    Parameters
+    ----------
+    cas: float
+        The nominal CAS (knots)
+    mach: float | None
+        The nominal mach number, or None if unavailable in the speed profile
+    speed_uncertainty_table: dict[str, dict[str, float]] | None
+        Uncertainty table of the aircraft
+    percentile_rank_table: dict[str, float | None] | None
+        Percentile rank table of the aircraft
+    aircraft_flight_state: FlightState
+        Flight state of the aircraft
+
+    Returns
+    -------
+    Tuple:
+        Tuple of the CAS (in knots) and mach number with uncertainty applied, in that order.
+    """
+    cas_key, mach_key = lateral_speed_keys(aircraft_flight_state)
+    ranks = percentile_rank_table or {}
+    cas += lateral_speed_offset(speed_uncertainty_table, cas_key, ranks.get(cas_key))
+    if mach is not None:
+        mach += lateral_speed_offset(speed_uncertainty_table, mach_key, ranks.get(mach_key))
+
+    return cas, mach
+
+
 def rocd_from_table(
     aircraft_speed_table: dict[str, list[float | None]],
     speed_uncertainty_table: dict[str, dict[str, float]] | None,
@@ -233,7 +289,8 @@ def rocd_from_table(
     aircraft_flight_state: FlightState,
 ) -> float:
     """
-    Return the predicted aircraft vertical speed using linear interpolation on the ROCD table data
+    Return the predicted aircraft vertical speed using linear interpolation on the ROCD table data.
+    Returns 0.0 when climbing at or above the table ceiling (aircraft has reached its performance limit).
 
     Parameters
     ----------
@@ -258,6 +315,9 @@ def rocd_from_table(
     min_fl = flight_levels[0]
     max_fl = flight_levels[-1]
 
+    if aircraft_fl >= max_fl and aircraft_flight_state is FlightState.CLIMB:
+        return 0.0
+
     # behave appropriately for each edge case of fl vs available speed profile flight levels
     # NOTE: fl_index corresponds to the lower of the two indices in the flight level array that bounds
     # the flight level, and interp_weight to how far along the fl is between the two flight levels indexed
@@ -281,8 +341,7 @@ def rocd_from_table(
             flight_levels[fl_index + 1] - flight_levels[fl_index]
         )
 
-    state_labels = {FlightState.CRUISE: "cr", FlightState.CLIMB: "cl", FlightState.DESCEND: "des"}
-    label = state_labels[aircraft_flight_state]
+    label = STATE_LABELS[aircraft_flight_state]
     rocd_key = f"rocd_{label}"
 
     if rocd_key != "rocd_cr":

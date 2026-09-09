@@ -18,57 +18,11 @@ from bluebird_dt.predictor import RouteFollowPredictor, SimplePredictor, LinearP
 from bluebird_dt.scenario_manager import TwoAircraft
 from bluebird_dt.simulator import Simulator
 
-from bluebird_dt.simulator.simconfig import SaveConfig, SimulatorConfig
+from bluebird_dt.simulator.simconfig import SimConfig, SimulatorConfig
 from bluebird_dt.utility.logging_utils import read_tar_csv_to_df, read_tar_json_to_dict, read_tar_parquet_to_df
 from bluebird_dt.utility.paths import LOG_DIR
 
 from tests.unit.logging.conftest import extract_first_row_from_df, query_row_from_df, pick_random_next_sector
-
-def test_run_scenario():
-    """
-    Test that running a scenario gives rise to a tarfile with expected contents.
-    """
-    # create Scenario Manager
-    predictor = SimplePredictor(dt=1.0, fix_proximity_threshold=2.0)
-    airspace, routes = SectorI(50,100,[150,300]).generate_airspace()
-    scenario_manager = TwoAircraft(total_time=60, scenario_type="overflier", airspace=airspace, routes=routes)
-    manager = scenario_manager.create_env_manager(predictor=predictor)
-    # evolve for 1 minutes
-    total_time = 0
-    time_step = 6
-    time_to_evolve = 60
-
-    # evolve for required time
-    while total_time < time_to_evolve:
-        manager.evolve(step_time=time_step)
-        # add in Actions
-        if total_time == 18:
-            callsign = sorted(manager.environment.aircraft.keys())[0]
-            new_action = Action(callsign, "change_flight_level_to", 250)
-            manager.receive_actions([new_action])
-        if total_time == 30:
-            callsign = sorted(manager.environment.aircraft.keys())[1]
-            new_action = Action(callsign, "change_heading_to", 20)
-            manager.receive_actions([new_action])
-
-        total_time += time_step
-
-    with open(os.path.join(LOG_DIR, manager.event_logger.log_name + ".tar.gz"), "wb") as tar:
-        tar.write(manager.write_logs_to_buffer(
-            SaveConfig(
-                    scenario_name=None,
-                    scenario_category=None,
-                    save_real_datetime=datetime.fromtimestamp(0),
-                    load_real_datetime=datetime.fromtimestamp(0),
-                    save_simulator_datetime=manager.environment.datetime,
-                    simulator=SimulatorConfig(
-                        projection_centre=None
-                        ),
-                    scenario=None,
-                    environment_manager=manager.config()
-                )
-            ).getvalue())
-
 
 @pytest.mark.parametrize(
     ("scenario_category", "scenario_name", "predictor_type", "fix_proximity", "projection_lon", "projection_lat"),
@@ -122,7 +76,7 @@ def test_config_logged(
     try:
         with tarfile.open(tar_file_name, "r:gz") as tar:
             data = read_tar_json_to_dict(tar, "config")
-            config = SaveConfig.model_validate(data)
+            config = SimConfig.model_validate(data)
 
             assert config.environment_manager.predictor.predictor_type == predictor_type
             assert config.environment_manager.predictor.fix_proximity == fix_proximity
@@ -360,11 +314,54 @@ def test_sectors_log_as_df(generate_two_sector):
     logged_sectors = [key for key, _ in log_entry["sectors_configuration"]]
     assert all(sector in logged_sectors for sector in sectors)
 
-def test_trim(unique_log_name: str):
+
+
+@pytest.mark.parametrize(
+    ("time_period", "ticks_to_evolve", "ticks_to_trim"),
+    [
+        (6, 20, 9),
+        (3, 20, 10),
+        (3, 11, 10),
+        (6, 20, 12)
+    ],
+)
+def test_trim_and_clip(time_period: int, ticks_to_evolve: int, ticks_to_trim: int):
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
+
+    for _ in range(0, ticks_to_evolve):
+        sim.evolve(time_period)
+
+    sim.manager.event_logger.trim_and_clip("<=", pd.Timestamp(year=1970, month=1, day=1, hour=9, minute=0, second=0) + pd.Timedelta(seconds=ticks_to_trim * time_period))
+
+    # Sectorisation in Springfield is constant, so we need to ensure that after trimming the event is still there
+    assert len(sim.manager.event_logger.sectors_log) == 1
+    assert sim.manager.event_logger.sectors_log[0]["datetime"] == pd.Timestamp(year=1970, month=1, day=1, hour=9, minute=0, second=0)
+
+
+    log = sim.manager.event_logger
+    
+    # Aircraft will appear with time, so this depends on where we trim. The following should always be true because the radar log should get trimmed as it gets updated every tick
+    assert len(log.radar_log) <= len(sim.manager.environment.aircraft) * (ticks_to_evolve - ticks_to_trim)
+
+    # The tests don't have any aircraft disappear, so we expect at least an equal set of initialisers of aircraft internals as aircraft we have in the airspace
+    assert set(log["callsign"] for log in log.aircraft_internals_log) == set(sim.manager.environment.aircraft.keys())
+
+
+    # The tests don't have any aircraft disappear, so we expect at least an equal set of initialisers of aircraft incomms as aircraft we have in the airspace
+    assert len(log.incomm_log) == len(sim.manager.environment.aircraft)
+
+    # We inject zero clearances so expect zero of these
+    assert len(log.clearances_log) == 0
+
+    # Expect two coordinations per aircraft in the airspace
+    assert len(log.coordination_log) == 2 * len(sim.manager.environment.aircraft)
+
+
+def test_trim():
     """
     Test that trimming a simulation run removes events
     """
-    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", log_filename=unique_log_name)
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
     em = sim.manager
 
     # Prepare inputs for incomm and coordination
@@ -383,7 +380,6 @@ def test_trim(unique_log_name: str):
     em.event_handler.add_coordination_event(event_time, callsign, current_sector, to_sector, fl, fix, direction)
     em.event_handler.add_incomm_event(event_time, callsign, to_sector)
     sim.evolve(2)
-    sim.save()
     del sim
 
     assert em.environment.aircraft[callsign].current_sector == to_sector

@@ -240,7 +240,7 @@ class Radar(Render):
             if self.scaled:
                 ax.axis("scaled")
 
-            # remove the visbility of the axes boundaries.
+            # remove the visibility of the axes boundaries.
             if not self.show_spines:
                 ax.spines["top"].set_visible(False)
                 ax.spines["right"].set_visible(False)

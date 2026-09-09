@@ -149,7 +149,6 @@ venv.bak/
 /bluebird-dt/docs/examples/**/*.ipynb
 /bluebird-dt/docs/examples/**/*.gif
 /bluebird-gymnasium/docs/examples/**/*.ipynb
-/docs/src/examples/**/*.ipynb
 
 # mypy
 .mypy_cache/
@@ -187,9 +186,6 @@ cython_debug/
 
 # emacs autosave
 *~
-
-# BluebirdATC files
-bluebird-dt/bluebird_dt/scenario_data/scenario_logs/*
 
 # MacOS files
 .DS_store

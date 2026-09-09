@@ -11,6 +11,7 @@ from bluebird_dt.core import (
     FlightPlan,
     Route,
 )
+from bluebird_dt.core.action import ActionValueType
 from bluebird_dt.logger import logger
 
 phonetic = {
@@ -600,6 +601,15 @@ def spell_phonetically(spelled_output: str) -> str:
     return " ".join([phonetic[character.capitalize()] for character in spelled_output])
 
 
+def flight_level_phraseology(flight_level: int) -> str:
+    value_string = str(int(flight_level))
+
+    if len(value_string) == 3 and value_string[-2:] == "00":
+        return f"{spell_phonetically(value_string[0])} hundred"
+
+    return spell_phonetically(value_string)
+
+
 def beautify_callsign(callsign: str) -> str:
     """
     Abbreviates or reads out callsign
@@ -681,7 +691,7 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
     """
     callsign: str = action.callsign
     action_kind: str = action.kind
-    value: int | float | str | list[str] | tuple[int, str] | None = action.value
+    value: ActionValueType = action.value
 
     aircraft: Aircraft | None = environment.aircraft.get(callsign, None)
 
@@ -725,6 +735,34 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
                 clearance_parts.extend(["when ready descend flight level", str(value[0]), "level by", value[1]])
             else:
                 clearance_parts.extend(["when ready descend flight level", str(value[0]), "level abeam", value[1]])
+
+        case "expect_level_by_fix,descend":
+            assert isinstance(value, tuple)
+            on_route = "level by" if aircraft.on_route else "level abeam"
+            clearance_parts.extend(
+                [
+                    "expect flight level",
+                    str(value[2]),
+                    on_route,
+                    value[1],
+                    "descend now flight level",
+                    str(value[0]),
+                ]
+            )
+
+        case "expect_level_by_fix,climb":
+            assert isinstance(value, tuple)
+            on_route = "level by" if aircraft.on_route else "level abeam"
+            clearance_parts.extend(
+                [
+                    "expect flight level",
+                    str(value[2]),
+                    on_route,
+                    value[1],
+                    "climb now flight level",
+                    str(value[0]),
+                ]
+            )
 
         case "descend_now,level_by_fix":
             assert isinstance(value, tuple)
@@ -855,7 +893,7 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
     """
     callsign: str = action.callsign
     action_kind: str = action.kind
-    value: int | float | str | list[str] | tuple[int, str] | None = action.value
+    value: ActionValueType = action.value
 
     aircraft: Aircraft | None = environment.aircraft.get(callsign, None)
 
@@ -879,20 +917,9 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
         # vertical actions: "change_flight_level_to", "change_flight_level_by", "change_vertical_speed_to",
         #                   "descend_when_ready,level_by_fix", "descend_now,level_by_fix"
         case "change_flight_level_to":
-            direction = "climb" if value > fl else "dee send"
+            direction = "climb" if value > fl else DESCEND_PHRASEOLOGY
             # Aircraft flight level stored as a float - change to int
-            value_string = str(int(value))
-            if value_string[-2:] == "00":
-                clearance_parts.extend(
-                    [
-                        direction,
-                        "flight level",
-                        spell_phonetically(value_string[0]),
-                        "hundred",
-                    ]
-                )
-            else:
-                clearance_parts.extend([direction, "flight level", spell_phonetically(value_string)])
+            clearance_parts.extend([direction, "flight level", flight_level_phraseology(int(value))])
 
         # case "change_flight_level_by":
         # Possibly doesn't exist as a required action/clearance
@@ -904,32 +931,21 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
 
         case "descend_when_ready,level_by_fix":
             assert isinstance(value, tuple)
-            value_string = str(int(value[0]))
-            if value_string[-2:] == "00":
-                clearance_parts.extend(
-                    [
-                        f"when ready {DESCEND_PHRASEOLOGY} flight level",
-                        spell_phonetically(str(value[0])[0]),
-                        "hundred level by",
-                        value[1],
-                    ]
-                )
-            else:
-                clearance_parts.extend(
-                    [
-                        f"when ready {DESCEND_PHRASEOLOGY} flight level",
-                        spell_phonetically(str(value[0])),
-                        "level by",
-                        value[1],
-                    ]
-                )
+            clearance_parts.extend(
+                [
+                    f"when ready {DESCEND_PHRASEOLOGY} flight level",
+                    flight_level_phraseology(value[0]),
+                    "level by",
+                    value[1],
+                ]
+            )
 
         case "descend_now,level_by_fix":
             assert isinstance(value, tuple)
             clearance_parts.extend(
                 [
                     f"{DESCEND_PHRASEOLOGY} flight level",
-                    spell_phonetically(str(value[0])),
+                    flight_level_phraseology(value[0]),
                     "level by",
                     value[1],
                 ]
@@ -1031,15 +1047,55 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
 
                 if frequency_value[-2:] == "00":
                     clearance_parts.extend(
-                        "contact",
-                        frequency_callsign,
-                        spell_phonetically(frequency_value[0:5]),
+                        ["contact", frequency_callsign, spell_phonetically(frequency_value[0:5])],
                     )
                 else:
-                    clearance_parts.extend("contact", frequency_callsign, spell_phonetically(frequency_value))
+                    clearance_parts.extend(["contact", frequency_callsign, spell_phonetically(frequency_value)])
 
             else:
-                clearance_parts.extend("contact next frequency")
+                clearance_parts.append("contact next frequency")
+
+        case "expect_level_by_fix,descend":
+            assert isinstance(value, tuple)
+            expected_level = value[2]
+            expected_phraseology = flight_level_phraseology(expected_level)
+
+            cleared_level = value[0]
+            cleared_phraseology = flight_level_phraseology(cleared_level)
+
+            on_route = "level by" if aircraft.on_route else "level abeam"
+
+            clearance_parts.extend(
+                [
+                    "expect flight level",
+                    expected_phraseology,
+                    on_route,
+                    value[1],
+                    f"{DESCEND_PHRASEOLOGY} now flight level",
+                    cleared_phraseology,
+                ]
+            )
+
+        case "expect_level_by_fix,climb":
+            assert isinstance(value, tuple)
+            expected_level = value[2]
+            expected_phraseology = flight_level_phraseology(expected_level)
+
+            cleared_level = value[0]
+            cleared_phraseology = flight_level_phraseology(cleared_level)
+
+            on_route = "level by" if aircraft.on_route else "level abeam"
+
+            clearance_parts.extend(
+                [
+                    "expect flight level",
+                    expected_phraseology,
+                    on_route,
+                    value[1],
+                    "climb now flight level",
+                    cleared_phraseology,
+                ]
+            )
 
         # other actions not yet modelled. in theory, this should never be hit if the case statements above capture all
         # possible valid actions because the Action() class should prevent invalid actions from being created

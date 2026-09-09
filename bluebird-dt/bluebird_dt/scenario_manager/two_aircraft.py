@@ -1,8 +1,9 @@
 import random
 import typing
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
+import typing_extensions
 from pydantic import BaseModel, Field
 from typing_extensions import override
 
@@ -25,13 +26,17 @@ class TwoAircraftScenarioManagerConfig(BaseModel):
     scenario_manager: typing.Literal["two_aircraft"] = Field(default="two_aircraft")
 
 
-TAircraft = typing.TypeVar("TAircraft", bound=Aircraft)
-TWindField = typing.TypeVar("TWindField", bound=WindField)
-TForecastWindField = typing.TypeVar("TForecastWindField", bound=WindField)
-TEnvironmentManager = typing.TypeVar("TEnvironmentManager", bound=EnvironmentManager[Aircraft, WindField, WindField])
-TEventHandler = typing.TypeVar("TEventHandler", bound=EventHandler[Aircraft])
-TEventLogger = typing.TypeVar("TEventLogger", bound=EventLogger)
-TSimulator = typing.TypeVar("TSimulator", bound=Simulator)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
+TEnvironmentManager = typing_extensions.TypeVar(
+    "TEnvironmentManager",
+    bound=EnvironmentManager[Aircraft, WindField, WindField],
+    default=EnvironmentManager[Aircraft, WindField, WindField],
+)
+TEventHandler = typing_extensions.TypeVar("TEventHandler", bound=EventHandler[Aircraft], default=EventHandler[Aircraft])
+TEventLogger = typing_extensions.TypeVar("TEventLogger", bound=EventLogger, default=EventLogger)
+TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator, default=Simulator)
 
 
 class TwoAircraft(
@@ -53,7 +58,7 @@ class TwoAircraft(
     total_time: float
     speed_range: list[float] | None
     scenario_type: typing.Literal["random", "overflier", "climber", "descender"]
-    env_manager_class: type[EnvironmentManager] | None
+    env_manager_class: type[TEnvironmentManager] | None
     start_time: int
     vertical_buffer_distance: float | int
     lateral_buffer_distance: float | int
@@ -101,8 +106,6 @@ class TwoAircraft(
             One of "random", "overflier", "climber" or "descender". If "random" - choose one of
             ["overflier", "climber", "descender"].
             Describes the behaviour of the second Aircraft.
-        env_manager_class: type, optional
-            if specified, use this class (maybe a subclass of BluebirdATC EventManager).
         start_time: int
             Start time of scenario, in unix time (seconds)
         vertical_buffer_distance: int or float, default is 500
@@ -262,7 +265,7 @@ class TwoAircraft(
             coordinations_rev = self.get_descender_coordination_FLs(overflier_fl, allowed_FLs)
         coordinations = [coordinations_fwd, coordinations_rev]
 
-        # create emtpy event handler
+        # create empty event handler
         event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
 
         for i in range(2):
@@ -388,12 +391,13 @@ Creating TwoAircraft Scenario
         scenario_name: str,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -410,24 +414,23 @@ Creating TwoAircraft Scenario
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
-        env_manager_class: type, optional
-            if specified, use this class (maybe a subclass of BluebirdATC EventManager).
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
         typeof_environmentmanager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -472,17 +475,18 @@ Creating TwoAircraft Scenario
                 typeof_event_handler=typeof_event_handler,
                 typeof_environment_manager=typeof_environment_manager,
             ).to_simulator(
-                log_filename=log_filename,
-                predictor=predictor,
-                category="Artificial",
+                typeof_simulator=typeof_simulator,
                 scenario_name=scenario_name,
+                category="Artificial",
                 use_wind=use_wind,
                 use_forecast=use_forecast,
-                autosave=autosave,
+                predictor=predictor,
                 attach_context_to_logger=attach_context_to_logger,
                 save_log_to_file=save_log_to_file,
-                simulated_sectors=simulated_sectors,
-                typeof_simulator=typeof_simulator,
+                log_filename=log_filename,
+                save_csv=save_csv,
+                autosave_interval=autosave_interval,
+                save_chunk_interval=save_chunk_interval,
             )
 
         else:
@@ -509,16 +513,17 @@ Creating TwoAircraft Scenario
 
     def to_simulator(
         self,
-        scenario_name: str | None = None,
         category: str | None = None,
+        scenario_name: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:
         """
@@ -526,30 +531,33 @@ Creating TwoAircraft Scenario
 
         Parameters
         ----------
+         category : str | None, optional
+            Category of the simulation. Default is None.
         scenario_name : str | None, optional
             Name of the scenario. Default is None.
-        category : str | None, optional
-            Category of the simulation. Default is None.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], optional
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios. Defaults to "ALL".
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
+        typeof_simulator: type[TSimulator], optional
+            If we want to use a derived class of simulator, specify here.
 
         Returns
         -------
@@ -569,14 +577,15 @@ Creating TwoAircraft Scenario
             scenario_manager=self,
             env_manager=env_manager,
             projection_centre=self.projection_centre,
-            scenario_name=scenario_name,
             category=category,
+            scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
-            predictor=predictor,
-            simulated_sectors=simulated_sectors,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )

@@ -1,0 +1,6 @@
+datetime,callsign,event_type,event_subtype,fl_value,hdg_value,spd_value,ssr_code,ssr_state,fix,hdg_fix_value,hold_fix,rnn_fix,sector
+1970-01-01T09:04:36.000,AAL3467,incomm,incomm,,,,,,,,,,SPRINGFIELD
+1970-01-01T09:06:31.000,AFR5461,incomm,incomm,,,,,,,,,,SPRINGFIELD
+1970-01-01T09:11:32.000,GCRDJ,incomm,incomm,,,,,,,,,,SPRINGFIELD
+1970-01-01T09:20:45.000,BAW9553,incomm,incomm,,,,,,,,,,SPRINGFIELD
+1970-01-01T09:21:29.000,BAW5067,incomm,incomm,,,,,,,,,,SPRINGFIELD
