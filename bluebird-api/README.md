@@ -51,29 +51,30 @@ while True:
     actions_to_issue = []
 
     for aircraft in environment.aircraft.values():
-
         if aircraft.callsign in callsigns_done or aircraft.current_sector != "SPRINGFIELD":
             continue
 
         exit_coordination = environment.exit_coordination("SPRINGFIELD", aircraft.callsign)
 
         if exit_coordination is not None:
-            actions_to_issue.extend([
-                {
-                    "callsign": aircraft.callsign,
-                    "kind": "change_flight_level_to",
-                    "value": exit_coordination.fl,
-                    "sector": "SPRINGFIELD",
-                    "agent": "agent"
-                },
-                {
-                    "callsign": aircraft.callsign,
-                    "kind": "route_direct_to",
-                    "value": exit_coordination.fix,
-                    "sector": "SPRINGFIELD",
-                    "agent": "agent"
-                }
-            ])
+            actions_to_issue.extend(
+                [
+                    {
+                        "callsign": aircraft.callsign,
+                        "kind": "change_flight_level_to",
+                        "value": exit_coordination.fl,
+                        "sector": "SPRINGFIELD",
+                        "agent": "agent",
+                    },
+                    {
+                        "callsign": aircraft.callsign,
+                        "kind": "route_direct_to",
+                        "value": exit_coordination.fix,
+                        "sector": "SPRINGFIELD",
+                        "agent": "agent",
+                    },
+                ]
+            )
 
         callsigns_done.append(aircraft.callsign)
 

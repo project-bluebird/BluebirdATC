@@ -10,11 +10,8 @@ This is a simple linear sector, with only two entry/exit windows at the North an
 
 ```python
 from bluebird_dt.airspace_generator import SectorI
-airspace, routes = SectorI(
-                        width=20, 
-                        height=60, 
-                        fl_limits=(200, 300)
-                    ).generate_airspace()
+
+airspace, routes = SectorI(width=20, height=60, fl_limits=(200, 300)).generate_airspace()
 ```
 
 <div style="text-align: center;">
@@ -29,12 +26,13 @@ This Y-shaped sector can have aircraft coming from any of three directions, and 
 
 ```python
 from bluebird_dt.airspace_generator import SectorY
+
 airspace, routes = SectorY(
-                        width=20, 
-                        height=60, 
-                        fl_limits=(200, 300),
-                        alpha=52.5,
-                    ).generate_airspace()
+    width=20,
+    height=60,
+    fl_limits=(200, 300),
+    alpha=52.5,
+).generate_airspace()
 ```
 
 <div style="text-align: center;">
@@ -49,12 +47,13 @@ The X-sector is essentially two I-sectors at 90 degree angle to one another, cro
 
 ```python
 from bluebird_dt.airspace_generator import SectorX
+
 airspace, routes = SectorX(
-                        width=20, 
-                        height=60, 
-                        fl_limits=(200, 300),
-                        alpha=52.5,
-                    ).generate_airspace()
+    width=20,
+    height=60,
+    fl_limits=(200, 300),
+    alpha=52.5,
+).generate_airspace()
 ```
 
 <div style="text-align: center;">
@@ -70,6 +69,7 @@ The Xplus-sector is similar to the X-sector, but with an asymmetric cutout, mean
 
 ```python
 from bluebird_dt.airspace_generator import SectorXPlus
+
 airspace, routes = SectorXPlus().generate_airspace()
 ```
 
