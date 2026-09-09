@@ -34,4 +34,4 @@ class ActionInput(BaseModel):
 
 
 class HmiRunnerInformation(BaseModel):
-    selected_aircraft: None | str
+    selected_aircraft: str | None

@@ -76,7 +76,7 @@ class Sector(Comparison):
         self.area_of_responsibility = area_of_responsibility
 
         # lazily-cached bounds storage
-        self._bounds: None | tuple[np.ndarray, np.ndarray] = None
+        self._bounds: tuple[np.ndarray, np.ndarray] | None = None
 
         # mapping of conditional route fix pairs (as sorted strings like "FIXA_FIXB") to their corresponding Volume
         self.conditional_volume_dict = conditional_volume_dict
