@@ -1,21 +1,20 @@
-# Bluebird Gymnasium
+# Bluebird Gymnasium [![PyPI version](https://img.shields.io/pypi/v/bluebird-gymnasium?logo=pypi&logoColor=white)](https://pypi.org/project/bluebird-gymnasium/) <img src="../images/BBATC_logo.png" alt="BluebirdATC logo" align="right" height="160" />
 
-A suite of gymnasium environments for air traffic control (ATC).
+`bluebird-gymnasium` is suite of gymnasium environments for air traffic control (ATC).
 The environments are based on [bluebird-dt](https://github.com/project-bluebird/BluebirdATC/tree/main/bluebird-dt) (an ATC simulator).
-
 The environments support research in agent-based learning (e.g. reinforcement learning) for ATC.
 It supports either single agent or multi-agents scenarios.
-
 ## Installation
 
-`bluebird-gymnasium` is available on pypi, therefore it can be installed using
+Install from PyPI:
 
-```
+```bash
 pip install bluebird-gymnasium
 ```
 
-or, if using [UV](https://docs.astral.sh/uv/), you can add it to your environment using
-```
+Or, if you're using [uv](https://docs.astral.sh/uv/), you can add it to your environment:
+
+```bash
 uv add bluebird-gymnasium
 ```
 
@@ -23,7 +22,7 @@ uv add bluebird-gymnasium
 
 ### Basic usage
 
-bluebird-gymnasium currently supports the following environments/airspace:
+`bluebird-gymnasium` currently supports the following environments/airspace:
 X sector, Y sector, I sector, Xplus sector and Springfield sector.
 
 To instantiate a X sector environment with the default config, run:
@@ -51,6 +50,10 @@ while not done:
     obs, reward, done, truncated, info = env.step(action)
 ```
 
+Various examples of using the `bluebird-gymnasium` package can be found in the form of Jupyter notebooks in the [examples](https://github.com/project-bluebird/BluebirdATC/tree/main/bluebird-gymnasium/examples) directory or in the [documentation](https://docs.projectbluebird.ai/examples/competition/Competition-Intro/) for the AI(r) Traffic Controller Challenge.
+
 ## Documentation
 
 The documentation of the latest release is available at [https://docs.projectbluebird.ai](https://docs.projectbluebird.ai).
+
+<div align="center"><img src="../images/BB_logo.png" alt="ProjectBluebird"></div>

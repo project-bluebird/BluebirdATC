@@ -23,19 +23,22 @@ class SaveStatus(BaseModel):
     is_saving: bool = False
     last_save_task_success: bool | None = None
     last_save_task_save_simtime: datetime | None = None
+    last_save_task_save_realtime: datetime | None = None
 
     def set_saving(self):
         self.is_saving = True
 
-    def set_success(self, simtime: datetime | None):
+    def set_success(self, simtime: datetime | None, realtime: datetime | None):
         self.is_saving = False
         self.last_save_task_success = True
         self.last_save_task_save_simtime = simtime
+        self.last_save_task_save_realtime = realtime
 
-    def set_fail(self, simtime: datetime | None):
+    def set_fail(self, simtime: datetime | None, realtime: datetime | None):
         self.is_saving = False
         self.last_save_task_success = False
         self.last_save_task_save_simtime = simtime
+        self.last_save_task_save_realtime = realtime
 
 
 @dataclass
@@ -217,7 +220,7 @@ class Saver:
         with open(log_path, "wb") as tar:
             tar.write(save_data.log_buffer)
         logger.info(f"sync save task - log saved to {log_path}")
-        self.save_status.set_success(save_data.save_config.save_simtime)
+        self.save_status.set_success(save_data.save_config.save_simtime, save_data.save_config.save_realtime)
 
     async def async_save(self, save_data: SaveData) -> None:
         """
@@ -243,7 +246,7 @@ class Saver:
             async with aiofiles.open(log_path, "wb") as tar:
                 await tar.write(save_data.log_buffer)
             logger.info(f"async save task - log saved to {log_path}")
-            self.save_status.set_success(save_data.save_config.save_simtime)
+            self.save_status.set_success(save_data.save_config.save_simtime, save_data.save_config.save_realtime)
         except Exception as e:
             logger.error(f"async save task - log failed to saved to {log_path} with exception {e}")
-            self.save_status.set_fail(save_data.save_config.save_simtime)
+            self.save_status.set_fail(save_data.save_config.save_simtime, save_data.save_config.save_realtime)

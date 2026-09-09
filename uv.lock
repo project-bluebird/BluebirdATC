@@ -220,7 +220,7 @@ css = [
 
 [[package]]
 name = "bluebird-api"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "bluebird-api" }
 dependencies = [
     { name = "bluebird-dt" },
@@ -259,7 +259,7 @@ dev = [
 
 [[package]]
 name = "bluebird-dt"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "bluebird-dt" }
 dependencies = [
     { name = "aiofiles" },
@@ -330,7 +330,7 @@ notebook = [{ name = "jupyter", specifier = ">=1.1.1" }]
 
 [[package]]
 name = "bluebird-dt-docs"
-version = "0.2.0"
+version = "0.3.0"
 source = { virtual = "docs" }
 dependencies = [
     { name = "bluebird-api" },
@@ -371,7 +371,7 @@ dev = [
 
 [[package]]
 name = "bluebird-gymnasium"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "bluebird-gymnasium" }
 dependencies = [
     { name = "bluebird-dt" },
