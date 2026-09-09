@@ -355,7 +355,10 @@ class Infinite(
         """
 
         # create empty event handler
-        event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
+        event_handler = self.typeof_event_handler(
+            ignore=self.event_handler_ignore_flags,
+            typeof_aircraft=self.typeof_aircraft,
+        )
 
         # add starter aircraft
         event_handler = self.add_starting_aircraft(event_handler)
