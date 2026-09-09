@@ -36,11 +36,7 @@ for _ in range(0, 10):
 print(sim.manager.environment.aircraft)
 
 # Issue an action to one of the aircraft
-sim.manager.receive_actions(
-        [
-            Action("AIR0", "change_flight_level_to", 200)
-            ]
-        )
+sim.manager.receive_actions([Action("AIR0", "change_flight_level_to", 200)])
 ```
 
 This example is very simple, various examples of using the `bluebird_dt` package can be found in Jupyter notebooks, that can be viewed or downloaded via the *Examples* tab.

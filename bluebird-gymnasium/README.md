@@ -30,6 +30,7 @@ To instantiate a X sector environment with the default config, run:
 ```python
 import gymnasium as gym
 import bluebird_gymnasium
+
 env = gym.make("SectorXEnv-v0")
 ```
 
