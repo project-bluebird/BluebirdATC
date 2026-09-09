@@ -24,7 +24,7 @@ Repository = "https://github.com/project-bluebird/BluebirdATC"
 [dependency-groups]
 dev = [
   "pre-commit>=4.2.0",
-  "ruff>=0.15.11,<0.16",
+  "ruff>=0.16.5,<0.17",
   "pytest>=9.0.3,<10",
   "pytest-xdist>=3.8.0,<4.0.0",
   "pytest-asyncio>=1.3.0,<1.4.0",

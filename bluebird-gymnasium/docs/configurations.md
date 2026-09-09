@@ -9,6 +9,7 @@ The sample code snippet below fetches the default configuration for the `SectorX
 
 ```python
 from bluebird_gymnasium.envs import SectorXPlusEnv
+
 env_config = SectorXPlusEnv.get_default_env_config()
 ```
 
@@ -20,6 +21,7 @@ The sample code snippet below demonstrates how to instantiate the `SectorXPlusEn
 
 ```python
 from bluebird_gymnasium.envs import SectorXPlusEnv
+
 env_config = SectorXPlusEnv.get_default_env_config()
 
 # method 1: direct object creation interface
@@ -28,6 +30,7 @@ env_1 = SectorXPlusEnv(config=env_config)
 # method 2: gymnasium `make` function interface
 import gymnasium as gym
 import bluebird_gymnasium.envs
+
 env_2 = gym.make("SectorXPlusEnv-v0", config=env_config)
 ```
 
