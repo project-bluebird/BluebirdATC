@@ -21,6 +21,7 @@ from bluebird_dt.utility.convert import timestamp_to_string
 from bluebird_dt.utility.paths import LOG_DIR
 
 if typing.TYPE_CHECKING:
+    from bluebird_dt.scenario_manager.custom import Custom, CustomScenarioManagerConfig
     from bluebird_dt.scenario_manager.infinite import Infinite, InfiniteScenarioManagerConfig
     from bluebird_dt.scenario_manager.regular import Regular, RegularScenarioManagerConfig
     from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
