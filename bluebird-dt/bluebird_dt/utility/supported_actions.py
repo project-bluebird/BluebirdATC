@@ -15,6 +15,7 @@ SUPPORTED_ACTIONS = {
         "change_heading_to_by_direction",
         "change_heading_by",
         "maintain_current_heading",
+        "intercept_radial",
     ],
     "speed": [
         "change_cas_to",
@@ -28,6 +29,9 @@ SUPPORTED_ACTIONS = {
         "route_turn_segment",
         "heading_segment",
         "heading_turn_segment",
+        "track_segment",
+        "fixed_radius_turn",
+        "fixed_rate_turn",
     ],
     "message": ["message"],
 }

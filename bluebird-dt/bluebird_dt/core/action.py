@@ -60,6 +60,7 @@ class Action(Comparison):
             direction
             - `change_heading_by`: change heading by given degrees
             - `maintain_current_heading`: follow the current heading (useful if was following route)
+            - `intercept_radial`: intercept the radial at the specified degrees from the specified named Fix
             - `change_flight_level_to`: go to the specified flight level
             - `change_flight_level_by`: descend/ascend by specified flight levels
             - `descend_when_ready,level_by_fix`: descend when ready to the specified flight level by the named Fix
@@ -85,6 +86,7 @@ class Action(Comparison):
             - `change_heading_to_by_direction`: tuple[int, Literal['left', 'right', 'shortest']]
             - `change_heading_by`: int
             - `maintain_current_heading`: value will be automatically set to 0
+            - `intercept_radial`: tuple[Literal['immediate', 'when_ready', 'target_fix'], str, int]
             - `change_flight_level_to`: int
             - `change_flight_level_by`: int
             - `change_cas_to`: int or None (None indicates "fly at own speed")
@@ -120,6 +122,7 @@ class Action(Comparison):
         >>> action = Action("AIR123", "route_direct_to", ["PORT1"], sector="sector_xplus")
         >>> action = Action("XYZ567", "change_cas_to", 450.0, "human", sector="sector_xplus")
         >>> action = Action("AIR23", "descend_when_ready,level_by_fix", (200, "FIX1"), sector="sector_xplus")
+        >>> action = Action("AIR23", "intercept_radial", ("immediate", "FIX1", 200), sector="sector_xplus")
         """
 
         if len(callsign) == 0:
@@ -172,6 +175,10 @@ class Action(Comparison):
             "route_turn_segment",
             "heading_segment",
             "heading_turn_segment",
+            "track_segment",
+            "fixed_rate_turn",
+            "fixed_radius_turn",
+            "intercept_radial",
             "message",
             "change_heading_to_by_direction",
             "expect_level_by_fix,climb",
@@ -197,6 +204,32 @@ class Action(Comparison):
                     raise ValueError(f"Action value[2] myst be a int for {self.kind}. Got {type(value[2])}")
 
             self._value = value
+        if self.kind in ["fixed_rate_turn", "fixed_radius_turn"]:
+            # first, check if it is a string (from the clearance df) and convert it back to a tuple.
+            # the string should be of the form "(int/float, int/float)"
+            if isinstance(value, str):
+                value = ast.literal_eval(value)
+            if not isinstance(value, tuple):
+                raise ValueError(f"Action value must be a tuple for {self.kind}. Got {type(value)}.")
+            if not isinstance(value[0], int | float | np.integer | np.floating):
+                raise ValueError(f"Action value[0] must be an float or int for {self.kind}. Got {type(value[0])}.")
+            if not isinstance(value[1], int | float | np.integer | np.floating):
+                raise ValueError(f"Action value[1] must be a float or int for {self.kind}. Got {type(value[1])}.")
+            self._value = value
+        if self.kind == "intercept_radial":
+            # first, check if it is a string (from the clearance df) and convert it back to a tuple.
+            # the string should be of the form "(str, str, int/float)"
+            if isinstance(value, str):
+                value = ast.literal_eval(value)
+            if not isinstance(value, tuple):
+                raise ValueError(f"Action value must be a tuple for {self.kind}. Got {type(value)}.")
+            if not isinstance(value[0], str):
+                raise ValueError(f"Action value[0] must be a string for {self.kind}. Got {type(value[0])}.")
+            if not isinstance(value[1], str):
+                raise ValueError(f"Action value[1] must be a string for {self.kind}. Got {type(value[1])}.")
+            if not isinstance(value[2], int | float | np.integer | np.floating):
+                raise ValueError(f"Action value[2] must be a float or int for {self.kind}. Got {type(value[2])}.")
+            self._value = value
         elif self.kind in ["route_direct_to", "route_segment", "route_turn_segment"]:
             # allow single fix or list of fixes, and for route_direct_to value
             # to be a string representing a list
@@ -211,6 +244,9 @@ class Action(Comparison):
             self._value = int(float(value))  # accepts e.g "300.0" as input
         elif self.kind == "heading_segment" or self._kind == "heading_turn_segment":
             # system generated heading so allow for floating point headings
+            self._value = float(value)
+        elif self.kind == "track_segment":
+            # system generated ground track so allow for floating point headings
             self._value = float(value)
         elif self.kind == "maintain_current_heading":
             # value is irrelevant. Always set to zero for consistency
@@ -353,7 +389,12 @@ class Action(Comparison):
         kind = data["kind"]
         value = data["value"]
 
-        if "level_by_fix" in kind or kind == "change_heading_to_by_direction":
+        if "level_by_fix" in kind or kind in [
+            "change_heading_to_by_direction",
+            "fixed_rate_turn",
+            "fixed_radius_turn",
+            "intercept_radial",
+        ]:
             value = tuple(value)
 
         voice_representation: str | None = data.get("voice_representation", None)
