@@ -36,3 +36,12 @@ updates:
         update-types:
           - "minor"
           - "patch"
+
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "C-dependencies"
+    cooldown:
+      default-days: 7
