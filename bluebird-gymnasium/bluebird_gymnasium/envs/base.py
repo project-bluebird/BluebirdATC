@@ -123,7 +123,22 @@ class ScenarioGenSeedMode(Enum):
 def _configure_airspace_metadata(env: BaseEnv, scenario_name: str) -> None:
     """Set airspace-derived metadata needed before scenario reset."""
 
-    airspace, _routes, _sector_name = AirspaceLoader.load(scenario_name)
+    # Forward the airspace geometry already chosen for this env (if any) so the
+    # airspace loaded here - used below for the rollout predictor's fixes and
+    # as a fallback origin - matches the one `_setup_airspace()` builds later,
+    # rather than always falling back to `ArtificialAirspace`'s defaults.
+    artificial_airspace_kwargs = {
+        key: env.config.airspace_config[key]
+        for key in ("width", "height", "fl_limits", "alpha")
+        if key in env.config.airspace_config
+    }
+    if "origin" in env.config.airspace_config:
+        # airspace_config stores origin as (lat, lon); the airspace generator
+        # expects (lon, lat).
+        lat, lon = env.config.airspace_config["origin"]
+        artificial_airspace_kwargs["origin"] = (lon, lat)
+
+    airspace, _routes, _sector_name = AirspaceLoader.load(scenario_name, **artificial_airspace_kwargs)
 
     if "origin" not in env.config.airspace_config:
         # the airspace generator stores the origin in reverse order
