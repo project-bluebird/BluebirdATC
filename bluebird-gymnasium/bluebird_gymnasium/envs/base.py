@@ -153,7 +153,6 @@ def _configure_airspace_metadata(env: BaseEnv, scenario_name: str) -> None:
         dt=12,
         fix_proximity_threshold=2.0,
         fixes=airspace.fixes,
-        use_turn_model=False,
     )
     # if the `exit_window_width` value was originally None, override the
     # default set in the parent class with a new default here (based on
