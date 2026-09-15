@@ -1,5 +1,5 @@
 ---
-name: BluebirdATC linting and tests
+name: BluebirdATC docs test
 
 on:
   pull_request:
@@ -30,14 +30,5 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Display Python version
-        run: uv run python -c "import sys; print(sys.version)"
-
-      - name: Check linting
-        run: uv run ruff check bluebird-api bluebird-dt bluebird-gymnasium docs --output-format=github
-
-      - name: Check formatting
-        run: uv run ruff format bluebird-api bluebird-dt bluebird-gymnasium docs --check --diff
-
-      - name: Check testing
-        run: uv run pytest -n auto
+      - name: Check doc build
+        run: ./scripts/docs-build

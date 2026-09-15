@@ -353,7 +353,7 @@ class EventHandler(typing.Generic[TAircraft]):
         the_datetime: datetime,
         callsign: str,
         attribute_name: str,
-        value: None | float | int | str | list,
+        value: float | int | str | list | None,
     ) -> None:
         """
         Add an aircraft_attribute_update event.

@@ -614,7 +614,7 @@ class BaseEnv(gym.Env):
 
         return ignore_aircraft, bkgnd
 
-    def _is_background_traffic(self, callsign: str, entry_coord: None | Coordination) -> bool:  # noqa: ARG002
+    def _is_background_traffic(self, callsign: str, entry_coord: Coordination | None) -> bool:  # noqa: ARG002
         """Check if an aircraft is a background traffic."""
 
         # False by default, as is the case for artificial sectors
@@ -727,7 +727,7 @@ class BaseEnv(gym.Env):
         return self.traffic_monitor
 
     def get_tracked_aircraft_data_previous(
-        self, callsign: None | str = None, copy_data: bool = False
+        self, callsign: str | None = None, copy_data: bool = False
     ) -> dict[str, ACStateTracker] | ACStateTracker | None:
         """Returns aircraft tracked data for the previous step.
 
@@ -764,7 +764,7 @@ class BaseEnv(gym.Env):
         return ret
 
     def get_tracked_aircraft_data(
-        self, callsign: None | str = None, copy_data: bool = False
+        self, callsign: str | None = None, copy_data: bool = False
     ) -> dict[str, ACStateTracker] | ACStateTracker | None:
         """Returns aircraft tracked data.
 
@@ -2469,7 +2469,7 @@ class BaseEnv(gym.Env):
         prev_position_status: int,
         prev_incomm_status: bool,
         prev_outcomm_status: bool,
-        prev_incorrect_exit_position: None | Pos2D,
+        prev_incorrect_exit_position: Pos2D | None,
     ) -> ACPositionInfo:
         """Check the status of an aircraft in relation to the sector.
 
@@ -2914,7 +2914,7 @@ class BaseEnv(gym.Env):
             _msg = "`render_mode` can only be set to `None` or one of the following: {0}"
             raise ValueError(_msg.format(self.metadata["render_modes"]))
 
-    def render(self) -> None | NDArray[numpy.float32]:
+    def render(self) -> NDArray[numpy.float32] | None:
         """Render a frame and save to disk the current simulator state.
 
         Render a frame based on the current state of simulator and
@@ -2994,7 +2994,7 @@ class BaseEnv(gym.Env):
             return _mpl_to_rgb_array(figure, "png")
         return None
 
-    def render_w_overlay_trajectory(self, traj_dict: None | dict[str, list[Pos4D]] = None) -> None:
+    def render_w_overlay_trajectory(self, traj_dict: dict[str, list[Pos4D]] | None = None) -> None:
         """Render a frame and save to disk the current simulator state.
 
         Render a frame based on the current state of simulator and

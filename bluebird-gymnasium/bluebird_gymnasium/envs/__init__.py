@@ -10,9 +10,9 @@ import numpy  # noqa: ICN001
 from numpy.typing import NDArray
 
 ActionConfig: TypeAlias = dict[str, bool | list[int]]
-AirspaceConfig: TypeAlias = dict[str, None | bool | str | list]
+AirspaceConfig: TypeAlias = dict[str, bool | str | list | None]
 ForwardFixesConfig: TypeAlias = dict[str, bool | int]
-RadarConfig: TypeAlias = dict[str, None | bool | str]
+RadarConfig: TypeAlias = dict[str, bool | str | None]
 RewardConfig: TypeAlias = dict[str, list[str | int | float]]
 ScenarioConfig: TypeAlias = dict[str, str | dict | int | float]
 SimulationLogConfig: TypeAlias = dict[str, bool | str]
@@ -146,7 +146,7 @@ class EnvConfig:
     view_config: ViewConfig | None = None
     scenario_duration: int = 1800
     scenario_sec_per_step: int = 6
-    diagnostics_level: None | Diagnostics = (None,)
+    diagnostics_level: Diagnostics | None = (None,)
     use_default_outcomm_policy: bool = (False,)
 
 

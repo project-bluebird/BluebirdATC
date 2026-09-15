@@ -35,7 +35,7 @@ import time, requests
 callsigns_done = []
 
 while True:
-    # Request and deserialize the environment from the server
+    # Request and deserialize the environment from the server
     response = requests.get("http://localhost:8000/environment")
     environment = Environment.from_json(response.text)
 
@@ -43,46 +43,42 @@ while True:
 
     # Iterate through all the aircraft in the airspace
     for aircraft in environment.aircraft.values():
-
         # If we have already issued the instructions to the aircraft, or it is
         # not yet incommed into the sector, we ignore this aircraft
         if aircraft.callsign in callsigns_done or aircraft.current_sector != "SPRINGFIELD":
             continue
-        
+
         # Get the aircraft's exit coordination for the sector we are currently controlling.
         exit_coordination = environment.exit_coordination("SPRINGFIELD", aircraft.callsign)
-        
+
         # If an exit coordination exist, issue two instructions.
         if exit_coordination is not None:
             actions_to_issue.extend(
-                        [
-                            {
-                                "callsign": aircraft.callsign,
-                                "kind": "change_flight_level_to",
-                                "value": exit_coordination.fl,
-                                "sector": "SPRINGFIELD",
-                                "agent": "agent"
-                            },
-                            {
-                                "callsign": aircraft.callsign,
-                                "kind": "route_direct_to",
-                                "value": exit_coordination.fix,
-                                "sector": "SPRINGFIELD",
-                                "agent": "agent"
-                            }
-                        ]
-                    )
+                [
+                    {
+                        "callsign": aircraft.callsign,
+                        "kind": "change_flight_level_to",
+                        "value": exit_coordination.fl,
+                        "sector": "SPRINGFIELD",
+                        "agent": "agent",
+                    },
+                    {
+                        "callsign": aircraft.callsign,
+                        "kind": "route_direct_to",
+                        "value": exit_coordination.fix,
+                        "sector": "SPRINGFIELD",
+                        "agent": "agent",
+                    },
+                ]
+            )
 
         # Append the actions to be issued after the loop
         callsigns_done.append(aircraft.callsign)
 
-    # If there are any action, send them to the 
+    # If there are any action, send them to the
     if len(actions_to_issue) > 0:
-        response = requests.post(
-                "http://localhost:8000/actions",
-                json=actions_to_issue
-                )
-    
+        response = requests.post("http://localhost:8000/actions", json=actions_to_issue)
+
     # Wait for the next tick
     time.sleep(4)
 ```
