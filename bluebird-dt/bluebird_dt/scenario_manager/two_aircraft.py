@@ -366,7 +366,7 @@ Creating TwoAircraft Scenario
         cls,
         scenario_name: str,
         start_time: int = 0,
-        total_time: float = 100.0,
+        total_time: float = 1200.0,
         speed_range: tuple[float, float] | None = None,
         scenario_type: typing.Literal["random", "overflier", "climber", "descender"] = "random",
         random_seed: int | None = None,
