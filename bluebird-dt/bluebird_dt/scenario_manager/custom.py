@@ -68,6 +68,7 @@ class Custom(
     start_time: int
     vertical_buffer_distance: float | int
     lateral_buffer_distance: float | int
+    fl_limits: tuple[int, int]
     typeof_environment_manager: type[TEnvironmentManager]
     typeof_event_handler: type[TEventHandler]
     typeof_aircraft: type[TAircraft]
@@ -88,6 +89,7 @@ class Custom(
         start_time: int = 0,
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
+        fl_limits: tuple[int, int] = (50, 400),
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_event_logger: type[TEventLogger] = EventLogger,
@@ -133,6 +135,10 @@ class Custom(
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
             Distance to expand airspace lateral boundary by - UoM: NMI
+        fl_limits: tuple[int, int], default is (50, 400).
+            Outer limits of FL at which aircraft can spawn.
+            (Note that if the airspace itself has more constrictive limits,
+            they will be used instead.)
         typeof_environment_manager: type[TEnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[TAircraft], optional
@@ -169,6 +175,7 @@ class Custom(
         self.start_time = start_time
         self.vertical_buffer_distance = vertical_buffer_distance
         self.lateral_buffer_distance = lateral_buffer_distance
+        self.fl_limits = fl_limits
         self.rng = np.random.default_rng(random_seed)
         self.typeof_environment_manager = typeof_environment_manager
         self.typeof_event_handler = typeof_event_handler
@@ -196,8 +203,10 @@ class Custom(
         journey_type = ["climb"] * climbers + ["descend"] * descenders + ["overfly"] * overfliers
         self.rng.shuffle(journey_type)
         # sector.get_bounds returns two arrays of [lat, lon, fl] - we want the last element of each.
-        min_fl, max_fl = [b[2] for b in self.airspace.sectors[self.sector_name].get_bounds()]
-
+        sector_min_fl, sector_max_fl = [b[2] for b in self.airspace.sectors[self.sector_name].get_bounds()]
+        # take the more restrictive of the sector bounds and the requested fl bounds.
+        min_fl = max(sector_min_fl, self.fl_limits[0])
+        max_fl = min(sector_max_fl, self.fl_limits[1])
         allowed_FLs = np.arange(min_fl, max_fl + 10, 10, dtype="float")
 
         # keep track of start fixes and entry coordinations to avoid clashes
@@ -541,6 +550,7 @@ class Custom(
         predictor: Predictor | None = None,
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
+        fl_limits: tuple[int, int] = (50, 400),
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -595,6 +605,9 @@ class Custom(
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
             Distance to expand airspace lateral boundary by - UoM: NMI
+        fl_limits: tuple[int, int], default is (50, 400).
+            min, max FL at which aircraft can be spawned.
+            Note that the airspace itself may have more restrictive limits.
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -626,6 +639,7 @@ class Custom(
             random_seed=random_seed,
             vertical_buffer_distance=vertical_buffer_distance,
             lateral_buffer_distance=lateral_buffer_distance,
+            fl_limits=fl_limits,
             typeof_aircraft=typeof_aircraft,
             typeof_event_logger=typeof_event_logger,
             typeof_event_handler=typeof_event_handler,

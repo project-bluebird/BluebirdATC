@@ -1,4 +1,5 @@
 import pytest
+from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.core import Aircraft, Pos3D
 from bluebird_dt.events.event_handler import EventHandler
 from bluebird_dt.scenario_manager import Regular
@@ -175,3 +176,26 @@ def test_different_start_time(generate_i):
     sim.evolve(total_time)
     assert len(sim.manager.environment.aircraft) == 4 
 
+@pytest.mark.parametrize(
+        "fl_limits",
+        ((50,400), (300,350))
+)
+def test_springfield_fl_limits(fl_limits):
+    """
+    Test that on the Springfield sector, we only spawn aircraft within the
+    specified FL range.
+    """
+    for _ in range(10):
+        airspace, routes, _ = AirspaceLoader.load("Springfield")
+        sm = Regular(
+            airspace=airspace, 
+            routes=routes,
+            total_time=500,
+            num_aircraft=10,
+            fl_limits=fl_limits
+        )
+        em = sm.create_env_manager()
+        em.evolve(60)
+        for ac in em.environment.aircraft.values():
+            assert ac.fl >= fl_limits[0]
+            assert ac.fl <= fl_limits[1]

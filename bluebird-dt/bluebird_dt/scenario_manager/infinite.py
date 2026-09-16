@@ -84,6 +84,7 @@ class Infinite(
     lats_spawn_rate_increase: float
     min_spawn_delta: float
     next_callsign_number: int
+    fl_limits: tuple[int, int]
     typeof_environment_manager: type[TEnvironmentManager]
     typeof_event_handler: type[TEventHandler]
     typeof_aircraft: type[TAircraft]
@@ -105,16 +106,17 @@ class Infinite(
         automatic_outcomm: bool = True,
         num_starter_aircraft: int = 2,
         speed_range: tuple[float, float] | None = None,
-        aircraft_on_route: bool = False,
-        typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
-        typeof_event_handler: type[TEventHandler] = EventHandler,
-        typeof_aircraft: type[TAircraft] = Aircraft,
-        typeof_event_logger: type[TEventLogger] = EventLogger,
+        aircraft_on_route: bool = True,
         start_time: int = 0,
         max_spawn_attempts: int = 10,
         min_spawn_delta: float = 6.0,
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
+        fl_limits: tuple[int, int] = (50, 400),
+        typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
+        typeof_event_handler: type[TEventHandler] = EventHandler,
+        typeof_aircraft: type[TAircraft] = Aircraft,
+        typeof_event_logger: type[TEventLogger] = EventLogger,
     ):
         """
         Construct a new instance.
@@ -164,6 +166,9 @@ class Infinite(
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
             Distance to expand airspace lateral boundary by - UoM: NMI
+        fl_limits: tuple[int, int]
+            min, max FL at which aircraft can be spawned.
+            Note that these values may be superseded if the airspace has more restrictive limits.
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -196,6 +201,7 @@ class Infinite(
         self.start_time = start_time
         self.vertical_buffer_distance = vertical_buffer_distance
         self.lateral_buffer_distance = lateral_buffer_distance
+        self.fl_limits = fl_limits
         self.max_spawn_attempts = max_spawn_attempts
         self.typeof_environment_manager = typeof_environment_manager
         self.typeof_event_handler = typeof_event_handler
@@ -239,7 +245,10 @@ class Infinite(
         if len(self.airspace.sectors[self.sector_name].volumes) == 0:
             raise ValueError("Selected airspace has no Volumes.  Please choose another airspace.")
         volume = self.airspace.sectors[self.sector_name].volumes[0]
-        possible_flight_levels = np.arange(volume.min_fl, volume.max_fl + 10, 10, dtype="float")  # ensure floats
+        # choose the more restrictive of the sectors FL bounds and this instance's bounds.
+        min_fl = max(volume.min_fl, self.fl_limits[0])
+        max_fl = min(volume.max_fl, self.fl_limits[1])
+        possible_flight_levels = np.arange(min_fl, max_fl + 10, 10, dtype="float")  # ensure floats
 
         route = self.rng.choice(np.asarray(possible_routes))
         first_fix = self.airspace.fixes.places[route.filed[0]]
@@ -522,6 +531,7 @@ Creating Infinite Scenario
         aircraft_on_route: bool = False,
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
+        fl_limits: tuple[int, int] = (50, 400),
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -606,6 +616,9 @@ Creating Infinite Scenario
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
+        fl_limits: tuple[int, int], optional
+            The min, max FL at which aircraft can spawn. Default is (50, 400).
+            Note that the airspace itself may have more restrictive limits.
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -644,6 +657,7 @@ Creating Infinite Scenario
             spawn_distance_threshold=spawn_distance_threshold,
             vertical_buffer_distance=vertical_buffer_distance,
             lateral_buffer_distance=lateral_buffer_distance,
+            fl_limits=fl_limits,
             typeof_aircraft=typeof_aircraft,
             typeof_event_logger=typeof_event_logger,
             typeof_event_handler=typeof_event_handler,

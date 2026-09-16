@@ -62,6 +62,7 @@ class TwoAircraft(
     lateral_buffer_distance: float | int
     scenario_type: typing.Literal["random", "overflier", "climber", "descender"]
     random_seed: int | None
+    fl_limits: tuple[int, int]
     typeof_environment_manager: type[TEnvironmentManager]
     typeof_event_handler: type[TEventHandler]
     typeof_aircraft: type[TAircraft]
@@ -76,6 +77,7 @@ class TwoAircraft(
         speed_range: tuple[float, float] | None = None,
         scenario_type: typing.Literal["random", "overflier", "climber", "descender"] = "random",
         random_seed: int | None = None,
+        fl_limits: tuple[int, int] = (50, 400),
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -114,6 +116,9 @@ class TwoAircraft(
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
             Distance to expand airspace lateral boundary by - UoM: NMI
+        fl_limits: tuple[int, int], default is (50,400)
+            The min,max FL at which aircraft can be spawned.
+            Note that the airspace itself may have more restrictive bounds.
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -140,6 +145,7 @@ class TwoAircraft(
         self.start_time = start_time
         self.vertical_buffer_distance = vertical_buffer_distance
         self.lateral_buffer_distance = lateral_buffer_distance
+        self.fl_limits = fl_limits
         self.typeof_environment_manager = typeof_environment_manager
         self.typeof_event_handler = typeof_event_handler
         self.typeof_aircraft = typeof_aircraft
@@ -248,7 +254,10 @@ class TwoAircraft(
         route_rev = Route(route_fwd.filed[::-1])
         routes = [route_fwd, route_rev]
         volume = self.airspace.sectors[self.sector_name].volumes[0]
-        allowed_FLs = [float(x) for x in np.arange(volume.min_fl, volume.max_fl + 10, 10)]
+        # use the more restrictive out of this instances fl_limits and the airspace bounds.
+        min_fl = max(volume.min_fl, self.fl_limits[0])
+        max_fl = min(volume.max_fl, self.fl_limits[1])
+        allowed_FLs = [float(x) for x in np.arange(min_fl, max_fl + 10, 10)]
 
         # randomly generate entry/exit coordinations for first aircraft
         coordinations_fwd = self.get_overflier_coordination_FLs(allowed_FLs, aircraft_scenario)
@@ -381,6 +390,7 @@ Creating TwoAircraft Scenario
         save_csv: bool = True,
         autosave_interval: timedelta | None = timedelta(minutes=5),
         save_chunk_interval: timedelta | None = None,
+        fl_limits: tuple[int, int] = (50, 400),
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -428,6 +438,9 @@ Creating TwoAircraft Scenario
             The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
         save_chunk_interval: timedelta | None
             The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
+        fl_limits: tuple[int, int]
+            The min, max FL values at which aircraft can spawn. Default is (50, 400).
+            Note that the airspace itself may have more restrictive bounds.
         typeof_environmentmanager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -458,6 +471,7 @@ Creating TwoAircraft Scenario
             sector_name=sector_name,
             vertical_buffer_distance=vertical_buffer_distance,
             lateral_buffer_distance=lateral_buffer_distance,
+            fl_limits=fl_limits,
             typeof_aircraft=typeof_aircraft,
             typeof_event_logger=typeof_event_logger,
             typeof_event_handler=typeof_event_handler,

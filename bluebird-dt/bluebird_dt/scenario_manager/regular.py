@@ -53,6 +53,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
     random_seed: int | None
     vertical_buffer_distance: int | float
     lateral_buffer_distance: int | float
+    fl_limits: tuple[int, int]
     typeof_environment_manager: type[TEnvironmentManager]
     typeof_event_handler: type[TEventHandler]
     typeof_aircraft: type[TAircraft]
@@ -69,6 +70,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
         random_seed: int | None = None,
         vertical_buffer_distance: int | float = 500,
         lateral_buffer_distance: int | float = 20,
+        fl_limits: tuple[int, int] = (50, 400),
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -99,6 +101,17 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
             Distance to expand airspace lateral boundary by - UoM: NMI
+        fl_limits: tuple[int, int], default is (50, 400)
+            The min, max FL at which aircraft can spawn.
+            Note that the airspace itself may have more restrictive limits.
+        typeof_environment_manager: type[EnvironmentManager], optional
+            If we want to use a derived class of env manager, specify here.
+        typeof_aircraft: type[Aircraft], optional
+            If we want to use a derived class for the aircraft class, specify here.
+        typeof_event_logger: type[EventLogger], optional
+            If we want to use a derived class for the event logger, specify here.
+        typeof_event_handler: type[EventHandler], optional
+            If we want to use a derived class for the Event Handler, specify here.
         """
 
         if total_time <= 0.0:
@@ -121,6 +134,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
         self.typeof_aircraft = typeof_aircraft
         self.event_handler_ignore_flags = typeof_event_handler.IgnoreFlags()
         self.rng = np.random.default_rng(random_seed)
+        self.fl_limits = fl_limits
 
     @override
     def create_event_handler(self) -> EventHandler:
@@ -138,7 +152,10 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
         )
 
         volume = self.airspace.sectors[self.sector_name].volumes[0]
-        allowed_FLs = np.arange(volume.min_fl, volume.max_fl + 10, 10, dtype="float")
+        # take the more restrictive of the airspace FL limits and this instance's.
+        min_fl = max(volume.min_fl, self.fl_limits[0])
+        max_fl = min(volume.max_fl, self.fl_limits[1])
+        allowed_FLs = np.arange(min_fl, max_fl + 10, 10, dtype="float")
 
         # Create start times for all Aircraft ensuring that the Aircraft starts
         # are quasi-regularly spaced between start of scenario and self.total_time.
@@ -262,6 +279,7 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         autosave_interval: timedelta | None = timedelta(minutes=5),
         save_chunk_interval: timedelta | None = None,
         predictor: Predictor | None = None,
+        fl_limits: tuple[int, int] = (50, 400),
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_event_logger: type[TEventLogger] = EventLogger,
@@ -307,8 +325,9 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        env_manager_class: type, optional
-            if specified, use this class (maybe a subclass of BluebirdATC EventManager).
+        fl_limits: tuple[int, int], optional
+            The min, max FL at which aircraft can spawn. Default is (50, 400).
+            Note that the airspace itself may have more restrictive limits.
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -337,6 +356,7 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             random_seed=random_seed,
             vertical_buffer_distance=vertical_buffer_distance,
             lateral_buffer_distance=lateral_buffer_distance,
+            fl_limits=fl_limits,
             typeof_aircraft=typeof_aircraft,
             typeof_event_handler=typeof_event_handler,
             typeof_event_logger=typeof_event_logger,
