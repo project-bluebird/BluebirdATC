@@ -21,27 +21,16 @@ class SpringfieldAirspaceGenerator(AirspaceGenerator):
     airways_path: str = os.path.join(SPRINGFIELD_DIR, "airways.json")
     routes_path: str = os.path.join(SPRINGFIELD_DIR, "routes_and_exits.json")
 
-    def __init__(
-        self,
-    ):
-        """
-        Construct a new instance.
-
-        Parameters
-        ----------
-
-        """
-
     def generate_airspace(self) -> tuple[Airspace, list[Route]]:
         """
-        Generate an Airspace.
+        Generate an Airspace and Routes.
 
         Returns
         ----------
         tuple[Airspace, list[Route]]
             A tuple containing the new airspace object and its corresponding routes.
         """
-        # Generate airspace and set up geo_helper
+        # Generate airspace and routes.
         airspace = self._airspace_init()
         routes = self._routes_init()
 
