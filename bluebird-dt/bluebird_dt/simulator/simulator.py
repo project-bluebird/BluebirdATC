@@ -21,10 +21,10 @@ from bluebird_dt.utility.convert import timestamp_to_string
 from bluebird_dt.utility.paths import LOG_DIR
 
 if typing.TYPE_CHECKING:
+    from bluebird_dt.scenario_manager.custom import Custom, CustomScenarioManagerConfig
     from bluebird_dt.scenario_manager.infinite import Infinite, InfiniteScenarioManagerConfig
     from bluebird_dt.scenario_manager.regular import Regular, RegularScenarioManagerConfig
     from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
-    from bluebird_dt.scenario_manager.tactical import Tactical, TacticalScenarioManagerConfig
     from bluebird_dt.scenario_manager.two_aircraft import TwoAircraft, TwoAircraftScenarioManagerConfig
 
 
@@ -47,7 +47,7 @@ class Simulator:
 
     def __init__(
         self,
-        scenario_manager: SpringfieldScenarioManager | Infinite | TwoAircraft | Tactical | Regular,
+        scenario_manager: SpringfieldScenarioManager | Infinite | TwoAircraft | Custom | Regular,
         env_manager: EnvironmentManager,
         projection_centre: tuple[float, float] | None = None,
         category: str | None = None,
@@ -68,7 +68,7 @@ class Simulator:
 
         Parameters
         ----------
-        scenario_manager : SpringfieldScenarioManager | Infinite | TwoAircraft | Tactical | Regular
+        scenario_manager : SpringfieldScenarioManager | Infinite | TwoAircraft | Custom | Regular
             The scenario manager instance to use for this simulator.
         env_manager : EnvironmentManager
             The environment manager instance to use for this simulator.
@@ -183,6 +183,7 @@ class Simulator:
         cls,
         category: str,
         scenario_name: str,
+        random_seed: int | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
         predictor: Predictor | None = None,
@@ -202,6 +203,8 @@ class Simulator:
             Scenario name.
         category: str
             Category of the simulation.
+        random_seed: int | None
+            If the scenario manager uses random number generation, set the seed here.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
@@ -228,18 +231,20 @@ class Simulator:
         -------
         Simulator
         """
+        from bluebird_dt.scenario_manager.custom import Custom
         from bluebird_dt.scenario_manager.infinite import Infinite
+        from bluebird_dt.scenario_manager.regular import Regular
         from bluebird_dt.scenario_manager.springfield import (
             SpringfieldScenarioManager,
         )
         from bluebird_dt.scenario_manager.two_aircraft import TwoAircraft
 
         match category:
-            # lots of additional steps for the artificial airspace
-            case "Artificial":
+            case "Two Aircraft":
                 return TwoAircraft.setup(
                     typeof_simulator=cls,
                     scenario_name=scenario_name,
+                    random_seed=random_seed,
                     use_wind=use_wind,
                     use_forecast=use_forecast,
                     predictor=predictor,
@@ -250,10 +255,45 @@ class Simulator:
                     autosave_interval=autosave_interval,
                     save_chunk_interval=save_chunk_interval,
                 )
+            case "Regular":
+                return Regular.setup(
+                    total_time=1000.0,
+                    num_aircraft=10,
+                    scenario_name=scenario_name,
+                    random_seed=random_seed,
+                    log_filename=log_filename,
+                    predictor=predictor,
+                    use_wind=use_wind,
+                    use_forecast=use_forecast,
+                    attach_context_to_logger=attach_context_to_logger,
+                    save_log_to_file=save_log_to_file,
+                    save_csv=save_csv,
+                    autosave_interval=autosave_interval,
+                    save_chunk_interval=save_chunk_interval,
+                )
+            case "Custom":
+                return Custom.setup(
+                    num_aircraft=2,
+                    aircraft_on_route=False,
+                    lateral_offset=[0.0, 10.0],
+                    speed_range=[350.0, 450.0],
+                    random_seed=random_seed,
+                    scenario_name=scenario_name,
+                    log_filename=log_filename,
+                    predictor=predictor,
+                    use_wind=use_wind,
+                    use_forecast=use_forecast,
+                    attach_context_to_logger=attach_context_to_logger,
+                    save_log_to_file=save_log_to_file,
+                    save_csv=save_csv,
+                    autosave_interval=autosave_interval,
+                    save_chunk_interval=save_chunk_interval,
+                )
             case "Infinite":
                 return Infinite.setup(
                     typeof_simulator=cls,
                     scenario_name=scenario_name,
+                    random_seed=random_seed,
                     use_wind=use_wind,
                     use_forecast=use_forecast,
                     predictor=predictor,
@@ -794,7 +834,7 @@ class Simulator:
         self,
     ) -> SimConfig[
         RegularScenarioManagerConfig
-        | TacticalScenarioManagerConfig
+        | CustomScenarioManagerConfig
         | SpringfieldScenarioManagerConfig
         | TwoAircraftScenarioManagerConfig
         | InfiniteScenarioManagerConfig
@@ -806,7 +846,7 @@ class Simulator:
         -------
         SimConfig[
             RegularScenarioManagerConfig
-            | TacticalScenarioManagerConfig
+            | CustomScenarioManagerConfig
             | SpringfieldScenarioManagerConfig
             | TwoAircraftScenarioManagerConfig
             | InfiniteScenarioManagerConfig

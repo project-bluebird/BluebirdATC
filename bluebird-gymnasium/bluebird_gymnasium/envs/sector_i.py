@@ -7,7 +7,7 @@ import typing
 from bluebird_dt.airspace_generator.artificial_airspace import (
     ArtificialAirspace,
 )
-from bluebird_dt.predictor import LinearPredictor
+from bluebird_dt.core import Airspace, Route
 from bluebird_dt.utility.geo_helper import GeoHelper
 
 # simulator gymnasium wrapper
@@ -17,7 +17,7 @@ from bluebird_gymnasium.envs import (
     EnvConfig,
     ViewType,
 )
-from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
+from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode, _configure_airspace_metadata
 
 # constants
 from bluebird_gymnasium.utils.constants import (
@@ -48,7 +48,7 @@ class SectorIEnv(BaseEnv):
             environment and the underlying simulator.
     """
 
-    scenario_seed_mode = ScenarioGenSeedMode.LEGACY_MODULE_RNGS
+    scenario_seed_mode = ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE
 
     def __init__(
         self,
@@ -60,14 +60,15 @@ class SectorIEnv(BaseEnv):
             config,
         )
 
-        # if the `exit_window_width` value was originally None, override the
-        # default set in the parent class with a new default here (based on
-        # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
-        if exit_window_width is None:
-            self.exit_window_width = self.config.airspace_config["width"] // 2
-        else:
-            self.exit_window_width = exit_window_width
+        self.scenario_manager = None  # set in _generate_scenario
+
+        ####### airspace metadata
+        _configure_airspace_metadata(self, "I-Sector")
+
+        ####### reset env
+        self.reset()
+
+    def _setup_airspace(self) -> tuple[Airspace, list[Route]]:
 
         ####### airspace
         # the airspace generator expects the origin in reverse order
@@ -85,38 +86,12 @@ class SectorIEnv(BaseEnv):
             origin=origin,
         ).generate_airspace()
         airspace.geo_helper = GeoHelper(self.config.airspace_config["origin"])
-
-        ####### scenario manager
-        _scenario_cls = SCENARIO_CLS[self.config.scenario_config["cls"]]
-        self.scenario_manager = _scenario_cls(
-            airspace=airspace,
-            routes=routes,
-            **self.config.scenario_config["args"],
-        )
-
-        ####### trajectory predictor (world model)
-        # trajectory predictor for computing an estimated
-        # future (rollout) trajectories. used in safety reward functions.
-        self.rollout_predictor = LinearPredictor(
-            dt=12,
-            fix_proximity_threshold=2.0,
-            fixes=airspace.fixes,
-        )
-
-        ####### active airspace sector
-        airspace_sectors = list(airspace.sectors.keys())
-        if len(airspace_sectors) == 1 and airspace_sectors[0] == "sector_i":
-            self.active_airspace_sector = airspace_sectors[0]
-        else:
-            raise ValueError("Could not initialise sector")
-
-        ####### reset env
-        self.reset()
+        return airspace, routes
 
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
-        category = "Artificial"
-        scenario = "I-Sector Custom"
+        category = "Custom"
+        scenario = "I-Sector"
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
@@ -124,6 +99,11 @@ class SectorIEnv(BaseEnv):
         log_filename = f"{category}_{scenario}_{timestamp}{suffix}"
 
         ####### setup the sim env manager
+        airspace, routes = self._setup_airspace()
+        _scenario_cls = SCENARIO_CLS[self.config.scenario_config["cls"]]
+        self.scenario_manager = _scenario_cls(
+            airspace=airspace, routes=routes, random_seed=self._reset_seed, **self.config.scenario_config["args"]
+        )
         return self.scenario_manager.to_simulator(
             category=category,
             scenario_name=scenario,
@@ -219,7 +199,7 @@ class SectorIEnv(BaseEnv):
                 "coeffs": [1.0, 1.0],
             },
             "scenario_config": {
-                "cls": "tactical",
+                "cls": "custom",
                 "args": {
                     "num_aircraft": 1,
                     "vertical_buffer_distance": 100,

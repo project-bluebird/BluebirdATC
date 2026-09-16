@@ -587,7 +587,7 @@ def test_predict_aircraft_on_route(
     assert predictor_aircraft.on_route == on_route
 
 def test_predict_aircraft_change_heading_to_by_direction():
-    sim = Simulator.from_category(category="Artificial", scenario_name="I-Sector Two Aircraft")
+    sim = Simulator.from_category(category="Two Aircraft", scenario_name="I-Sector")
     
     callsign = list(sim.manager.environment.aircraft.keys())[0]
     aircraft = sim.manager.environment.aircraft[callsign]
