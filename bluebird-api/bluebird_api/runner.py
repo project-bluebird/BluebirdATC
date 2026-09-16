@@ -57,7 +57,6 @@ class Runner(typing.Generic[TSimulator]):
         if self.task is not None:
             await self.task
             self.task = None
-        await self.sim.async_save(autosave=False, end_save=True)
         await self.sim.async_close()
         await asyncio.sleep(3)
 

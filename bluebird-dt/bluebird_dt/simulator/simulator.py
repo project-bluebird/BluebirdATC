@@ -847,6 +847,7 @@ class Simulator:
         """
         Clean up the simulator asynchronously, otherwise it doesn't get garbage collected.
         """
+        await self.async_save(autosave=False, end_save=True)
         await self.saver.close()
         self.close()
 
