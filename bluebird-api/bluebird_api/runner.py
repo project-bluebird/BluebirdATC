@@ -19,6 +19,7 @@ a HTTP error 404 (Not found) will be returned before even running the function a
 """
 
 import asyncio
+import contextlib
 import typing
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -54,9 +55,20 @@ class Runner(typing.Generic[TSimulator]):
 
     async def close(self):
         self.kill = True
+
         if self.task is not None:
-            await self.task
-            self.task = None
+            try:
+                await asyncio.wait_for(self.task, timeout=10)
+            except asyncio.TimeoutError:
+                self.task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await self.task
+            except Exception:
+                logger.exception("Runner task failed during shutdown")
+            finally:
+                self.task = None
+
+        await self.sim.async_save(autosave=False, end_save=True)
         await self.sim.async_close()
         await asyncio.sleep(3)
 
