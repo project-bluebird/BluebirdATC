@@ -24,7 +24,7 @@ class ArtificialAirspace(AirspaceGenerator):
         height: int = 60,
         fl_limits: tuple[int, int] = (200, 300),
         alpha: float = 52.5,
-        origin: tuple[float, float] = (-3.533333, 50.716667),
+        origin: tuple[float, float] = (0.0, 0.0) # rme (-3.533333, 50.716667),
     ):
         """
         Construct a new instance.
@@ -80,7 +80,8 @@ class ArtificialAirspace(AirspaceGenerator):
             case "two":
                 self.generator = TwoSectors(width=width, height=height, fl_limits=fl_limits, origin=origin)
             case "xplus":
-                self.generator = SectorXPlus(origin=origin, fl_limits=fl_limits)
+                self.origin = (0.0, 0.0)
+                self.generator = SectorXPlus(origin=self.origin, fl_limits=fl_limits)
             case _:
                 raise ValueError(f"Unknown artificial sector type: {sector_type}")
 

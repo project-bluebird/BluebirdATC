@@ -340,16 +340,16 @@ def test_route_direct_waypoint_clearance(env: Environment):
 def test_route_direct_multi_waypoint_clearance(env: Environment):
     action = Action("AIR0", "route_direct_to", ["ALPHA", "LON"])
     assert env.aircraft["AIR0"].cleared_instructions.on_route
+    assert action.value == ["ALPHA", "LON"]
 
     assert_action_voice_and_text(
             action,
-            "AIR0 route direct [ALPHA, London]",
-            "route direct [ALPHA, London] AIR0",
-            "alpha india romeo zero route direct [ALPHA, London]",
-            "route direct [ALPHA, London] alpha india romeo zero",
+            "AIR0 route direct ALPHA",
+            "route direct ALPHA AIR0",
+            "alpha india romeo zero route direct ALPHA",
+            "route direct ALPHA alpha india romeo zero",
             env,
             )
-
 def test_using_speed_limit(env: Environment):
     action = Action("AIR0", "using_speed_limit", True)
 

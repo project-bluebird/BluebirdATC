@@ -791,7 +791,7 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
                 fix: str = WAYPOINTS.get(value, value)
 
             elif isinstance(value, list):
-                fix = "[" + ", ".join(WAYPOINTS.get(v, str(v)) for v in value) + "]"
+                fix = WAYPOINTS.get(value[0], str(value[0])) if value else "[]"
 
             else:
                 # Values other than strings or lists can still be converted
@@ -1003,7 +1003,7 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
                 fix: str = WAYPOINTS.get(value, value)
 
             elif isinstance(value, list):
-                fix = "[" + ", ".join(WAYPOINTS.get(v, str(v)) for v in value) + "]"
+                fix = WAYPOINTS.get(value[0], str(value[0])) if value else "[]"
 
             else:
                 # Values other than strings or lists can still be converted
