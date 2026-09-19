@@ -118,3 +118,5 @@ sim = Regular(
 
 See the [source code reference](../source.md#bluebird_dt.scenario_manager.Regular) for documentation on all the parameters which could be passed in.
 
+
+See [migration guidance](migration.md) when upgrading consumers of the previous scenario-manager interface.

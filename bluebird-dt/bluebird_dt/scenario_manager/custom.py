@@ -398,17 +398,11 @@ class Custom(
         and {len(self.user_added_aircraft)} custom aircraft.
         """
         )
-        if self.num_aircraft + len(self.user_added_aircraft) == 0:
-            raise RuntimeError("""
-            No initial or custom aircraft specified.
-            To add custom aircraft, call the `add_aircraft_with_coordinations` method BEFORE
-            calling `create_env_manager`.
-            """)
         # create SimplePredictor if no Predictor passed
         if predictor is None:
             predictor = SimplePredictor(1.0, 2.0)
 
-        if not event_handler:
+        if event_handler is None:
             # create event handler from the events list
             event_handler = self.create_event_handler()
 
@@ -422,6 +416,13 @@ class Custom(
             # ensure coordinations are in the environment before the aircraft
             event_handler.add_coordination(event_start_time - timedelta(seconds=1), coord_exit)
             event_handler.add_coordination(event_start_time - timedelta(seconds=1), coord_entry)
+
+        if event_handler.radar_df.empty:
+            raise RuntimeError("""
+            No initial or custom aircraft specified.
+            To add custom aircraft, call the `add_aircraft_with_coordinations` method BEFORE
+            calling `create_env_manager`.
+            """)
 
         em = self.typeof_environment_manager(
             airspace=self.airspace,
