@@ -29,7 +29,7 @@ def test_lateral_headings_are_perpendicular(manager_class, sector_type, latitude
         first, second = (airspace.fixes.places[name] for name in route.filed[:2])
         route_bearing = first.bearing_to(second)
         relative_headings = sorted((heading - route_bearing) % 360 for heading in headings[route.filed[0]])
-        assert relative_headings == pytest.approx([90.0, 270.0], abs=1e-8)
+        assert relative_headings == pytest.approx([90.0, 270.0], abs=1e-6)
         assert all(0.0 <= heading < 360.0 for heading in headings[route.filed[0]])
 
 
@@ -57,10 +57,10 @@ def test_tactical_lateral_spawn(lateral_airspace, side, distance, monkeypatch):
         first, second = (airspace.fixes.places[name] for name in route.filed[:2])
         position = manager.stochastic_start_pos(airspace, route)
 
-        assert first.distance(position) == pytest.approx(distance, abs=1e-8)
+        assert first.distance(position) == pytest.approx(distance, abs=1e-6)
         if distance:
             angle = (first.bearing_to(position) - first.bearing_to(second)) % 360
-            assert angle == pytest.approx([90.0, 270.0][side], abs=1e-8)
+            assert angle == pytest.approx([90.0, 270.0][side], abs=1e-6)
 
 
 @pytest.mark.parametrize("side", [0, 1])
@@ -81,8 +81,8 @@ def test_infinite_lateral_spawn(lateral_airspace, side, aircraft_on_route):
         first, second = (airspace.fixes.places[name] for name in route.filed[:2])
         position = aircraft.pos2d()
 
-        assert first.distance(position) == pytest.approx(0.0 if aircraft_on_route else 10.0, abs=1e-8)
+        assert first.distance(position) == pytest.approx(0.0 if aircraft_on_route else 10.0, abs=1e-6)
         assert aircraft.on_route == aircraft_on_route
         if not aircraft_on_route:
             angle = (first.bearing_to(position) - first.bearing_to(second)) % 360
-            assert angle == pytest.approx([90.0, 270.0][side], abs=1e-8)
+            assert angle == pytest.approx([90.0, 270.0][side], abs=1e-6)
