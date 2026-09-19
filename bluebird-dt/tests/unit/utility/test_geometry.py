@@ -26,27 +26,22 @@ from bluebird_dt.utility.geometry import (
     (-1., -1., 1., 1.),
     # another diagonal
     (1., -1., -1., 1.),
+    # diagonal paths north and south of the equator
+    (50.6, -3.6, 50.8, -3.4),
+    (-50.6, -3.6, -50.8, -3.4),
 ])
 def test_get_perpendicular_line(start_lat, start_lon, end_lat, end_lon):
     """
-    Test the function that gives perpendicular to the line from start_pos to end_pos.
+    Check that the lines form a right angle when latitude and longitude are treated as a flat grid.
     """
     start_pos = Pos2D(lat=start_lat, lon=start_lon)
     end_pos = Pos2D(lat=end_lat, lon=end_lon)
-    init_heading = start_pos.bearing_to(end_pos)
     c, d, u = get_perpendicular_line(start_pos, end_pos)
-    # should return c, d as endpoints on line perpendicular
-    # to input line, centered on end_pos.
-    perp_line_start = Pos2D(lat=c[0], lon=c[1])
-    perp_line_end = Pos2D(lat=d[0], lon=d[1])
-    # heading from perp_line_start to perp_line_end should be 90 degrees from init_heading
-    perp_heading = perp_line_start.bearing_to(perp_line_end)
-    heading_difference =  (perp_heading - init_heading) % 180
-    assert abs(heading_difference - 90.0) < 1 # allow 1 degree error.
-    # also check that line from c to end_pos is in same direction as end_pos to d
-    half_perp_heading_1 = perp_line_start.bearing_to(end_pos)
-    half_perp_heading_2 = end_pos.bearing_to(perp_line_end)
-    assert abs(half_perp_heading_1 - half_perp_heading_2) % 360 < 1
+    direction = end_pos.location - start_pos.location
+    assert np.dot(direction, d - c) == pytest.approx(0.0, abs=1e-12)
+    assert np.linalg.norm(d - c) == pytest.approx(1.0)
+    assert u == 0.5
+    assert c + u * (d - c) == pytest.approx(end_pos.location)
 
 
 def test_get_perpendicular_line_start_end_points_equal():
