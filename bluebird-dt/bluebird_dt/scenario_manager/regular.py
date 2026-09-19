@@ -15,6 +15,7 @@ from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
+from bluebird_dt.utility.scenario_manager_utils import initial_evolve_duration
 
 
 class RegularScenarioManagerConfig(BaseModel):
@@ -375,19 +376,10 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             save_log_to_file=save_log_to_file,
             typeof_simulator=typeof_simulator,
         )
-        start_time = sim.manager.environment.time
-        # fast-forward to the first multiple of the evolve time-step that is after the first aircraft entry time.
         first_entry_time = sim.manager.event_handler.radar_df.index.min().replace(tzinfo=timezone.utc).timestamp()
-        time_step = 6.0
-
-        # if the first time is a multiple of the time step, evolve one extra step.
-        # note that 0 % anything == 0 (except 0!), so this accounts for the case where the first entry time is 0
-        if (first_entry_time - start_time) % time_step == 0:
-            evolve_time = first_entry_time + time_step
-        # otherwise, evolve to the smallest multiple of time_step that is higher than the entry time
-        else:
-            evolve_time = (((first_entry_time - start_time) // time_step) + 1) * time_step
+        evolve_time = initial_evolve_duration(sim.manager.environment.time, first_entry_time, sim.manager.predictor.dt)
         sim.manager.evolve(evolve_time)
+
         return sim
 
     def to_simulator(

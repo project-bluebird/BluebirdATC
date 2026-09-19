@@ -1,3 +1,5 @@
+import math
+
 from numpy.random import Generator
 
 from bluebird_dt.core import Airspace, Pos2D, Route
@@ -56,3 +58,14 @@ def laterally_offset_start_point(
         distance=offset_distance,
     )
     return Pos2D(lat=lat, lon=lon)
+
+
+def initial_evolve_duration(current_time: float, first_entry_time: float, predictor_dt: float) -> float:
+    """Advance past the first entry using a predictor-compatible radar interval.
+
+    Retain the six-second default, rounded up to whole predictor steps and at
+    least two such steps, as required by EnvironmentManager.evolve.
+    """
+    interval = max(2, math.ceil(6.0 / predictor_dt)) * predictor_dt
+    intervals = max(1, math.floor((first_entry_time - current_time) / interval) + 1)
+    return intervals * interval

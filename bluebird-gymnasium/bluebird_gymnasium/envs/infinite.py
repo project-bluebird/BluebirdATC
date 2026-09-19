@@ -8,7 +8,7 @@ from bluebird_dt.scenario_manager.infinite import Infinite
 
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import CentralizedSampler, EnvConfig, ViewType
-from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode, _configure_airspace_metadata
+from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
 
 # constants
 from bluebird_gymnasium.utils.constants import (
@@ -59,9 +59,6 @@ class InfiniteEnv(BaseEnv):
         ####### scenario manager
         self.scenario_manager = None  # set in `_generate_scenario`
 
-        ####### airspace metadata
-        _configure_airspace_metadata(self, self.config.scenario_config["scenario_name"])
-
         ####### reset env
         self.reset()
 
@@ -87,6 +84,7 @@ class InfiniteEnv(BaseEnv):
             predictor=None,
         )
         self.scenario_manager = sim.scenario_manager
+        self._configure_airspace_metadata(self.scenario_manager.airspace)
 
         return sim
 
@@ -234,9 +232,6 @@ class CustomInfiniteEnv(BaseEnv):
         ####### scenario manager
         self.scenario_manager = None  # set in `_generate_scenario`
 
-        ####### airspace metadata
-        _configure_airspace_metadata(self, self.config.scenario_config["scenario_name"])
-
         ####### reset env
         self.reset()
 
@@ -272,6 +267,7 @@ class CustomInfiniteEnv(BaseEnv):
             predictor=None,
         )
         self.scenario_manager = sim.scenario_manager
+        self._configure_airspace_metadata(self.scenario_manager.airspace)
 
         return sim
 

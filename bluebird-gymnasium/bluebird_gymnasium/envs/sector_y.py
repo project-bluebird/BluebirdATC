@@ -17,7 +17,7 @@ from bluebird_gymnasium.envs import (
     EnvConfig,
     ViewType,
 )
-from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode, _configure_airspace_metadata
+from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
 
 # constants
 from bluebird_gymnasium.utils.constants import (
@@ -62,9 +62,6 @@ class SectorYEnv(BaseEnv):
 
         self.scenario_manager = None  # created in _generate_scenario
 
-        ####### airspace metadata
-        _configure_airspace_metadata(self, "Y-Sector")
-
         ####### reset env
         self.reset()
 
@@ -73,10 +70,8 @@ class SectorYEnv(BaseEnv):
         ####### airspace
         # the airspace generator expects the origin in reverse order
         # i.e., lon, lat
-        origin = (
-            self.config.airspace_config["origin"][1],
-            self.config.airspace_config["origin"][0],
-        )
+        lat, lon = self._airspace_origin("Y-Sector")
+        origin = (lon, lat)
         airspace, routes = ArtificialAirspace(
             sector_type="y",
             width=self.config.airspace_config["width"],
@@ -100,12 +95,15 @@ class SectorYEnv(BaseEnv):
 
         ####### setup the sim env manager
         airspace, routes = self._setup_airspace()
+        self._configure_airspace_metadata(airspace)
+        scenario_args = dict(self.config.scenario_config["args"])
+        if self._reset_seed is not None:
+            scenario_args["random_seed"] = self._reset_seed
         _scenario_cls = SCENARIO_CLS[self.config.scenario_config["cls"]]
         self.scenario_manager = _scenario_cls(
             airspace=airspace,
             routes=routes,
-            random_seed=self._reset_seed,
-            **self.config.scenario_config["args"],
+            **scenario_args,
         )
         return self.scenario_manager.to_simulator(
             category=category,

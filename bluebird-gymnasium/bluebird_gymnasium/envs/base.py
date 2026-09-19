@@ -14,7 +14,7 @@ import numpy as np
 
 # simulator package
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
-from bluebird_dt.core import Pos2D, Pos3D, Pos4D
+from bluebird_dt.core import Airspace, Pos2D, Pos3D, Pos4D
 from bluebird_dt.predictor import LinearPredictor
 from bluebird_dt.render.radar import Radar
 from gymnasium import spaces
@@ -118,57 +118,6 @@ class ScenarioGenSeedMode(Enum):
     NONE = auto()
     RESET_SEED_ATTRIBUTE = auto()
     LEGACY_MODULE_RNGS = auto()
-
-
-def _configure_airspace_metadata(env: BaseEnv, scenario_name: str) -> None:
-    """Set airspace-derived metadata needed before scenario reset."""
-
-    # Forward the airspace geometry already chosen for this env (if any) so the
-    # airspace loaded here - used below for the rollout predictor's fixes and
-    # as a fallback origin - matches the one `_setup_airspace()` builds later,
-    # rather than always falling back to `ArtificialAirspace`'s defaults.
-    artificial_airspace_kwargs = {
-        key: env.config.airspace_config[key]
-        for key in ("width", "height", "fl_limits", "alpha")
-        if key in env.config.airspace_config
-    }
-    if "origin" in env.config.airspace_config:
-        # airspace_config stores origin as (lat, lon); the airspace generator
-        # expects (lon, lat).
-        lat, lon = env.config.airspace_config["origin"]
-        artificial_airspace_kwargs["origin"] = (lon, lat)
-
-    airspace, _routes, _sector_name = AirspaceLoader.load(scenario_name, **artificial_airspace_kwargs)
-
-    if "origin" not in env.config.airspace_config:
-        # the airspace generator stores the origin in reverse order
-        # i.e., lon, lat
-        origin = airspace.geo_helper.origin  # format: (lon, lat)
-        origin = (origin[1], origin[0])  # format: (lat, lon)
-        env.config.airspace_config["origin"] = origin
-
-    # trajectory predictor for computing an estimated
-    # future (rollout) trajectories. used in safety reward functions.
-    env.rollout_predictor = LinearPredictor(
-        dt=12,
-        fix_proximity_threshold=2.0,
-        fixes=airspace.fixes,
-    )
-    # if the `exit_window_width` value was originally None, override the
-    # default set in the parent class with a new default here (based on
-    # the sector/airspace geometry).
-    exit_window_width = env.config.airspace_config.get("exit_window_width", None)
-    if exit_window_width is None:
-        default_width = env.config.airspace_config.get("width", 20)
-        env.exit_window_width = default_width // 2
-    else:
-        env.exit_window_width = exit_window_width
-    # set the active airspace sector.
-    airspace_sectors = list(airspace.sectors.keys())
-    if len(airspace_sectors) == 1:
-        env.active_airspace_sector = airspace_sectors[0]
-    else:
-        raise ValueError("Could not initialise Sector")
 
 
 def _concat_state_action(state: NDArray[np.float32], action: int, num_actions: int) -> NDArray[np.float32]:
@@ -538,6 +487,46 @@ class BaseEnv(gym.Env):
 
         # used when `.render_mode` is set to 'human'
         self.screen = None
+
+    def _airspace_origin(self, scenario_name: str) -> tuple[float, float]:
+        """Resolve the configured (lat, lon) origin, preserving the loader fallback."""
+        if "origin" not in self.config.airspace_config:
+            airspace, _, _ = AirspaceLoader.load(scenario_name)
+            lon, lat = airspace.geo_helper.origin
+            self.config.airspace_config["origin"] = (lat, lon)
+        return self.config.airspace_config["origin"]
+
+    def _configure_airspace_metadata(self, airspace: Airspace) -> None:
+        """Use the episode airspace for rollout prediction and sector metadata."""
+        if "origin" not in self.config.airspace_config:
+            # the airspace generator stores the origin in reverse order
+            # i.e., lon, lat
+            origin = airspace.geo_helper.origin  # format: (lon, lat)
+            origin = (origin[1], origin[0])  # format: (lat, lon)
+            self.config.airspace_config["origin"] = origin
+
+        # trajectory predictor for computing an estimated
+        # future (rollout) trajectories. used in safety reward functions.
+        self.rollout_predictor = LinearPredictor(
+            dt=12,
+            fix_proximity_threshold=2.0,
+            fixes=airspace.fixes,
+        )
+        # if the `exit_window_width` value was originally None, override the
+        # default set in the parent class with a new default here (based on
+        # the sector/airspace geometry).
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
+        if exit_window_width is None:
+            default_width = self.config.airspace_config.get("width", 20)
+            self.exit_window_width = default_width // 2
+        else:
+            self.exit_window_width = exit_window_width
+        # set the active airspace sector.
+        airspace_sectors = list(airspace.sectors.keys())
+        if len(airspace_sectors) == 1:
+            self.active_airspace_sector = airspace_sectors[0]
+        else:
+            raise ValueError("Could not initialise Sector")
 
     def _generate_scenario(self) -> Simulator:
         """Generate a scenario in the simulator."""

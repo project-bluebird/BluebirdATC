@@ -239,109 +239,58 @@ class Simulator:
         )
         from bluebird_dt.scenario_manager.two_aircraft import TwoAircraft
 
+        # Keep shared simulator options in one call so new categories preserve
+        # subclass hooks and logging/predictor settings automatically.
+        scenario_kwargs = {}
         match category:
             case "Two Aircraft":
-                return TwoAircraft.setup(
-                    typeof_simulator=cls,
-                    scenario_name=scenario_name,
-                    random_seed=random_seed,
-                    use_wind=use_wind,
-                    use_forecast=use_forecast,
-                    predictor=predictor,
-                    attach_context_to_logger=attach_context_to_logger,
-                    save_log_to_file=save_log_to_file,
-                    log_filename=log_filename,
-                    save_csv=save_csv,
-                    autosave_interval=autosave_interval,
-                    save_chunk_interval=save_chunk_interval,
-                )
+                scenario_manager = TwoAircraft
             case "Regular":
-                return Regular.setup(
-                    total_time=1000.0,
-                    num_aircraft=10,
-                    scenario_name=scenario_name,
-                    random_seed=random_seed,
-                    log_filename=log_filename,
-                    predictor=predictor,
-                    use_wind=use_wind,
-                    use_forecast=use_forecast,
-                    attach_context_to_logger=attach_context_to_logger,
-                    save_log_to_file=save_log_to_file,
-                    save_csv=save_csv,
-                    autosave_interval=autosave_interval,
-                    save_chunk_interval=save_chunk_interval,
-                )
+                scenario_manager = Regular
+                scenario_kwargs = {"total_time": 1000.0, "num_aircraft": 10}
             case "Custom":
-                return Custom.setup(
-                    num_aircraft=2,
-                    aircraft_on_route=False,
-                    lateral_offset=[0.0, 10.0],
-                    speed_range=[350.0, 450.0],
-                    random_seed=random_seed,
-                    scenario_name=scenario_name,
-                    log_filename=log_filename,
-                    predictor=predictor,
-                    use_wind=use_wind,
-                    use_forecast=use_forecast,
-                    attach_context_to_logger=attach_context_to_logger,
-                    save_log_to_file=save_log_to_file,
-                    save_csv=save_csv,
-                    autosave_interval=autosave_interval,
-                    save_chunk_interval=save_chunk_interval,
-                )
+                scenario_manager = Custom
+                scenario_kwargs = {
+                    "num_aircraft": 2,
+                    "aircraft_on_route": False,
+                    "lateral_offset": [0.0, 10.0],
+                    "speed_range": [350.0, 450.0],
+                }
             case "Infinite":
-                return Infinite.setup(
-                    typeof_simulator=cls,
-                    scenario_name=scenario_name,
-                    random_seed=random_seed,
-                    use_wind=use_wind,
-                    use_forecast=use_forecast,
-                    predictor=predictor,
-                    attach_context_to_logger=attach_context_to_logger,
-                    save_log_to_file=save_log_to_file,
-                    log_filename=log_filename,
-                    save_csv=save_csv,
-                    autosave_interval=autosave_interval,
-                    save_chunk_interval=save_chunk_interval,
-                )
+                scenario_manager = Infinite
             case "Springfield":
-                return SpringfieldScenarioManager.setup(
-                    typeof_simulator=cls,
-                    scenario_name=scenario_name,
-                    use_wind=use_wind,
-                    use_forecast=use_forecast,
-                    predictor=predictor,
-                    attach_context_to_logger=attach_context_to_logger,
-                    save_log_to_file=save_log_to_file,
-                    log_filename=log_filename,
-                    save_csv=save_csv,
-                    autosave_interval=autosave_interval,
-                    save_chunk_interval=save_chunk_interval,
-                )
+                scenario_manager = SpringfieldScenarioManager
             case "Flight School":
-                return Infinite.setup(
-                    typeof_simulator=cls,
-                    scenario_name="Xplus-Sector",
-                    use_wind=use_wind,
-                    use_forecast=use_forecast,
-                    predictor=predictor,
-                    attach_context_to_logger=attach_context_to_logger,
-                    save_log_to_file=save_log_to_file,
-                    log_filename=log_filename,
-                    save_csv=save_csv,
-                    autosave_interval=autosave_interval,
-                    save_chunk_interval=save_chunk_interval,
-                    # Flight school specific param
-                    random_seed=None,
-                    num_starter_aircraft=2,
-                    initial_spawn_rate=0.005,
-                    spawn_rate_increment=0.005,
-                    spawn_rate_increase_interval=30,
-                    max_spawn_rate=0.1,
-                    total_time_seconds=3600.0,
-                )
+                scenario_manager = Infinite
+                scenario_name = "Xplus-Sector"
+                random_seed = None
+                scenario_kwargs = {
+                    "num_starter_aircraft": 2,
+                    "initial_spawn_rate": 0.005,
+                    "spawn_rate_increment": 0.005,
+                    "spawn_rate_increase_interval": 30,
+                    "max_spawn_rate": 0.1,
+                    "total_time_seconds": 3600.0,
+                }
             case _:
                 raise ValueError(f"Unknown scenario category: {category}")
+
+        if category != "Springfield":
+            scenario_kwargs["random_seed"] = random_seed
+        return scenario_manager.setup(
+            typeof_simulator=cls,
+            scenario_name=scenario_name,
+            use_wind=use_wind,
+            use_forecast=use_forecast,
+            predictor=predictor,
+            attach_context_to_logger=attach_context_to_logger,
+            save_log_to_file=save_log_to_file,
+            log_filename=log_filename,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
+            **scenario_kwargs,
+        )
 
     def _evolve_core(self, delta: float) -> None:
         """
