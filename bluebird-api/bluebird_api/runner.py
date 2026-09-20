@@ -19,7 +19,6 @@ a HTTP error 404 (Not found) will be returned before even running the function a
 """
 
 import asyncio
-import contextlib
 import typing
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -59,12 +58,8 @@ class Runner(typing.Generic[TSimulator]):
         if self.task is not None:
             try:
                 await asyncio.wait_for(self.task, timeout=10)
-            except asyncio.TimeoutError:
-                self.task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await self.task
-            except Exception:
-                logger.exception("Runner task failed during shutdown")
+            except Exception as e:
+                logger.exception(f"Runner task failed during shutdown: {e}")
             finally:
                 self.task = None
 
