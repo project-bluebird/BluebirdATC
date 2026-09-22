@@ -38,6 +38,7 @@ TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator, default=Si
 @dataclass(init=True, slots=True)
 class Runner(typing.Generic[TSimulator]):
     sim: TSimulator
+    task: asyncio.Task | None = None
     running: bool = False
     evolve_period: float = 6
     tick_frequency_period: float = 6
@@ -48,8 +49,20 @@ class Runner(typing.Generic[TSimulator]):
         default_factory=lambda: defaultdict(lambda: HmiRunnerInformation(selected_aircraft=None))
     )
 
+    def start(self):
+        self.task = asyncio.create_task(self.run_main())
+
     async def close(self):
         self.kill = True
+
+        if self.task is not None:
+            try:
+                await asyncio.wait_for(self.task, timeout=10)
+            except Exception as e:
+                logger.exception(f"Runner task failed during shutdown: {e}")
+            finally:
+                self.task = None
+
         await self.sim.async_save(autosave=False, end_save=True)
         await self.sim.async_close()
         await asyncio.sleep(3)
@@ -95,13 +108,20 @@ class RunnerStore(typing.Generic[TRunner, TSimulator]):
     typeof_simulator: type[TSimulator]
     current_runner: TRunner | None = None
 
+    def initialise_from_simulator(self, sim: Simulator):
+        self.current_runner = self.typeof_runner(sim)
+
+    def initialise_from_category(self, category: str, scenario_name: str):
+        self.initialise_from_simulator(self.typeof_simulator.from_category(category, scenario_name))
+
+    def start(self):
+        assert self.current_runner is not None
+        self.current_runner.start()
+
     async def delete(self):
         if self.current_runner is not None:
             await self.current_runner.close()
             self.current_runner = None
-
-    def initialise_from_category(self, category: str, scenario_name: str):
-        self.current_runner = self.typeof_runner(self.typeof_simulator.from_category(category, scenario_name))
 
 
 async def runner(request: Request) -> Runner[Simulator]:  # noqa: ARG001
