@@ -329,7 +329,6 @@ class Infinite(
         lateral_offset_headings: {str:[float, float]} fix name: list of two headings
             Key is starter fix, value is the two perpendicular headings to the route direction.
         """
-        gh = self.airspace.geo_helper
         lateral_offset_headings: dict[str, tuple[float, float]] = {}
 
         for route in self.routes:
@@ -337,14 +336,9 @@ class Infinite(
             inner_fix = self.airspace.fixes.places[inner]
             outer_fix = self.airspace.fixes.places[outer]
 
-            # Get a perpendicular line between the inner (or boundary) fix and the outer (or spawning) fix
-            perp, _, _ = geometry.get_perpendicular_line(inner_fix, outer_fix)
-
-            # Calculate the heading from the outer (spawning) fix along this perpendicular line in one direction
-            heading_1 = gh.bearing_to(lat=perp[0], lon=perp[1], lat_origin=outer_fix.lat, lon_origin=outer_fix.lon)
-            # and the opposite direction
-            heading_2 = (heading_1 + 180.0) % 360
-            lateral_offset_headings[outer] = (heading_1, heading_2)
+            lateral_offset_headings[outer] = geometry.get_perpendicular_headings(
+                outer_fix, inner_fix, self.airspace.geo_helper
+            )
         return lateral_offset_headings
 
     def add_starting_aircraft(self, event_handler: TEventHandler) -> TEventHandler:
