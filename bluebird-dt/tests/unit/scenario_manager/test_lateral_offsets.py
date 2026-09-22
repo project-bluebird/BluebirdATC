@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from bluebird_dt.airspace_generator.artificial_airspace import ArtificialAirspace
+from bluebird_dt.core import Airspace, Route
 from bluebird_dt.scenario_manager import Infinite, Tactical
 
 
@@ -15,7 +16,7 @@ def lateral_airspace(request):
 @pytest.mark.parametrize("manager_class", [Infinite, Tactical])
 @pytest.mark.parametrize("sector_type", ["i", "x", "y"])
 @pytest.mark.parametrize("latitude", [0.0, 50.716667, -50.716667, 75.0])
-def test_lateral_headings_are_perpendicular(manager_class, sector_type, latitude):
+def test_lateral_headings_are_perpendicular(manager_class: type[Infinite | Tactical], sector_type: str, latitude: float):
     airspace, routes = ArtificialAirspace(sector_type, origin=(-3.533333, latitude)).generate_airspace()
     if manager_class is Infinite:
         manager = Infinite(airspace=airspace, routes=routes)
@@ -34,7 +35,7 @@ def test_lateral_headings_are_perpendicular(manager_class, sector_type, latitude
 
 
 @pytest.mark.parametrize("manager_class", [Infinite, Tactical])
-def test_lateral_headings_reject_coincident_fixes(manager_class, generate_i):
+def test_lateral_headings_reject_coincident_fixes(manager_class: type[Infinite | Tactical], generate_i: tuple[Airspace, list[Route]]):
     airspace, routes = generate_i
     first, second = (airspace.fixes.places[name] for name in routes[0].filed[:2])
     second.lat, second.lon = first.lat, first.lon
@@ -48,7 +49,7 @@ def test_lateral_headings_reject_coincident_fixes(manager_class, generate_i):
 
 @pytest.mark.parametrize("side", [0, 1])
 @pytest.mark.parametrize("distance", [0.0, 10.0])
-def test_tactical_lateral_spawn(lateral_airspace, side, distance, monkeypatch):
+def test_tactical_lateral_spawn(lateral_airspace: tuple[Airspace, list[Route]], side: int, distance: int, monkeypatch: pytest.MonkeyPatch):
     airspace, routes = lateral_airspace
     manager = Tactical(1, airspace=airspace, routes=routes, lateral_offset=(distance, distance))
     monkeypatch.setattr(np.random, "choice", lambda headings: headings[side])
@@ -65,7 +66,7 @@ def test_tactical_lateral_spawn(lateral_airspace, side, distance, monkeypatch):
 
 @pytest.mark.parametrize("side", [0, 1])
 @pytest.mark.parametrize("aircraft_on_route", [False, True])
-def test_infinite_lateral_spawn(lateral_airspace, side, aircraft_on_route):
+def test_infinite_lateral_spawn(lateral_airspace: tuple[Airspace, list[Route]], side: int, aircraft_on_route: bool):
     airspace, routes = lateral_airspace
     manager = Infinite(airspace=airspace, routes=routes, aircraft_on_route=aircraft_on_route)
     # Choose which side of the route to test, and use fixed choices for the route and altitude.
