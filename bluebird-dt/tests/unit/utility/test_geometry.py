@@ -32,7 +32,7 @@ from bluebird_dt.utility.geometry import (
 ])
 def test_get_perpendicular_line(start_lat, start_lon, end_lat, end_lon):
     """
-    Check that the lines form a right angle when latitude and longitude are treated as a flat grid.
+    Check that the lines form a right angle when latitude and longitude are treated as a cartesian coordinate system for small distances.
     """
     start_pos = Pos2D(lat=start_lat, lon=start_lon)
     end_pos = Pos2D(lat=end_lat, lon=end_lon)
