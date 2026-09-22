@@ -236,7 +236,6 @@ class Tactical(ScenarioManager[TacticalScenarioManagerConfig]):
             two headings which would run parallel to the sector boundary.
         """
 
-        gh = airspace.geo_helper
         lateral_offset_headings: dict[str, tuple[float, float]] = {}
 
         sectors_ = list(airspace.sectors.keys())
@@ -253,24 +252,9 @@ class Tactical(ScenarioManager[TacticalScenarioManagerConfig]):
             inner_fix = airspace.fixes.places[inner]
             outer_fix = airspace.fixes.places[outer]
 
-            # Get a perpendicular line between the inner (or boundary) fix and the outer (or spawning) fix
-            start, _end, _ = geometry.get_perpendicular_line(inner_fix, outer_fix)
-
-            # Calculate the heading from the outer (spawning) fix along this perpendicular line in one direction
-            heading_1 = gh.bearing_to(
-                lat=start[0],
-                lon=start[1],
-                lat_origin=outer_fix.lat,
-                lon_origin=outer_fix.lon,
+            lateral_offset_headings[outer] = geometry.get_perpendicular_headings(
+                outer_fix, inner_fix, airspace.geo_helper
             )
-
-            # Calculate the heading from the outer (spawning) fix along this perpendicular line in the other direction
-            # trick: cheaper computation below instead of computing the heading based on bearing to
-            # `end` from `outer_fix`
-            heading_2 = heading_1 + 180.0
-            heading_2 = heading_2 if heading_2 < 360.0 else heading_2 - 360.0
-
-            lateral_offset_headings[outer] = (heading_1, heading_2)
 
         return lateral_offset_headings
 
