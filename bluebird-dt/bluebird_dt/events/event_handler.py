@@ -1517,7 +1517,9 @@ def update_aircraft_attribute(
     Environment
         Environment with aircraft updated using aircraft internal attribute events
     """
-
+    # do nothing if we have a missing or empty dataframe
+    if df_ac_attribute is None or (isinstance(df_ac_attribute, pd.DataFrame) and df_ac_attribute.empty):
+        return environment
     # filter to relevant time window
     df = df_ac_attribute[(df_ac_attribute.index > episode_start) & (df_ac_attribute.index <= episode_end)]
 
@@ -1568,6 +1570,9 @@ def update_from_radar(
     Environment
         Environment with aircraft updated using radar events
     """
+    # do nothing if we have a missing or empty dataframe
+    if df_rad is None or (isinstance(df_rad, pd.DataFrame) and df_rad.empty):
+        return environment
 
     # if all radar events is before episode_start then bypass this function
     # this is a speedup for fully artificial scenarios once all aircraft have been created
@@ -1693,6 +1698,9 @@ def update_from_flight_plans(
     Environment
         Environment with aircraft updated using flight plan events
     """
+    # do nothing if we have a missing or empty dataframe
+    if df_fl is None or (isinstance(df_fl, pd.DataFrame) and df_fl.empty):
+        return environment
     # flight_plans may be available many hours before the flight, or from data have a time stamp after the flight
     # has started. For aircraft that have just appeared in the environment, we allow
     # the flight plan to have been on the system for up to 24 hours
@@ -1826,6 +1834,9 @@ def update_selected_fl_from_radar(
     Environment
         Environment with aircraft selected flight level set to the values in the radar events dataframe
     """
+    # do nothing if we have a missing or empty dataframe
+    if df_radar is None or (isinstance(df_radar, pd.DataFrame) and df_radar.empty):
+        return environment
 
     # filter to relevant time window
     df = df_radar[(df_radar.index > episode_start) & (df_radar.index <= episode_end)]
@@ -1875,6 +1886,9 @@ def set_cleared_fl_to_selected_fl(
     Environment
         Environment with aircraft updated using radar events
     """
+    # do nothing if we have a missing or empty dataframe
+    if df_radar is None or (isinstance(df_radar, pd.DataFrame) and df_radar.empty):
+        return environment
 
     # filter to relevant time window
     df = df_radar[(df_radar.index > episode_start) & (df_radar.index <= episode_end)]
@@ -1929,6 +1943,9 @@ def update_from_clearances(
     Environment
         Environment with new clearances received from clearance events
     """
+    # do nothing if we have an empty or missing dataframe
+    if df_clr is None or (isinstance(df_clr, pd.DataFrame) and df_clr.empty):
+        return environment
     # filter to relevant time window
     df = df_clr[(df_clr.index > episode_start) & (df_clr.index <= episode_end)]
 
@@ -2018,7 +2035,7 @@ def update_airspace_configuration(
     Environment
         Environment with bandboxing updated according to events occurring in the the desired time period
     """
-    if df_sectors is None:
+    if df_sectors is None or (isinstance(df_sectors, pd.DataFrame) and df_sectors.empty):
         return environment
     # get relevant time period
     df = df_sectors[(df_sectors.index > episode_start) & (df_sectors.index <= episode_end)].tail(1)
@@ -2096,6 +2113,9 @@ def update_coordination(
     Environment
         Environment with coordinations updated according to events occurring in the the desired time period
     """
+    # do nothing if we have a missing or empty dataframe
+    if df_coord is None or (isinstance(df_coord, pd.DataFrame) and df_coord.empty):
+        return environment
     # keep coordinations between start and end time
     df = df_coord[(df_coord.index > episode_start) & (df_coord.index <= episode_end)]
     if ignore_simmed:
@@ -2183,6 +2203,9 @@ def update_incomm(
     Environment
         Environment with aircraft updated using incomm events
     """
+    # do nothing if we have a missing or empty dataframe
+    if df_incomm is None or (isinstance(df_incomm, pd.DataFrame) and df_incomm.empty):
+        return environment
     df = df_incomm[(df_incomm.index > episode_start) & (df_incomm.index <= episode_end)]
 
     # no update if no events in timeframe
@@ -2249,6 +2272,12 @@ def update_aircraft_internals(
     Environment
         Environment with aircraft updated using aircraft internal attribute events
     """
+    # do nothing if we have a missing or empty dataframe
+    if df_aircraft_internals is None or (
+        isinstance(df_aircraft_internals, pd.DataFrame) and df_aircraft_internals.empty
+    ):
+        return environment
+
     df = df_aircraft_internals[
         (df_aircraft_internals.index > episode_start) & (df_aircraft_internals.index <= episode_end)
     ]

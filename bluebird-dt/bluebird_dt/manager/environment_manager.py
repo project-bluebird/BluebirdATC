@@ -818,6 +818,8 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
         self.environment.aircraft = new_aircraft
 
         self.event_handler.reset_events()
+        for ac in new_aircraft.values():
+            self.event_handler.add_aircraft(self.environment.datetime, ac)
 
     def replace_environment(
         self,
