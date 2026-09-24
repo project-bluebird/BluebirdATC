@@ -58,13 +58,13 @@ class Custom(
     num_aircraft: int
     airspace: Airspace
     routes: list[Route]
-    sector_name: str | None
-    balance: list[float] | None
-    speed_range: list[float] | None
+    sector_name: str
+    balance: tuple[float, float, float]
+    speed_range: tuple[float, float]
     time_entry_gap: float
     random_seed: int | None
     aircraft_on_route: bool
-    lateral_offset: tuple[int, int] | None
+    lateral_offset: tuple[float, float] | None
     start_time: int
     vertical_buffer_distance: float | int
     lateral_buffer_distance: float | int
@@ -80,7 +80,7 @@ class Custom(
         airspace: Airspace,
         routes: list[Route],
         sector_name: str | None = None,
-        balance: tuple[float, float, float] | None = None,
+        balance: tuple[float, float, float] = (1 / 3, 1 / 3, 1 / 3),
         speed_range: tuple[float, float] | None = None,
         time_entry_gap: float = 5,
         random_seed: int | None = None,
@@ -109,10 +109,10 @@ class Custom(
             The available Routes in the Airspace (choose one at random for each Aircraft Route).
         sector_name: str | None
             The name of the sector being simulated.  If not specified, use first sector in the airspace.
-        balance: list[float, float, float]
+        balance: tuple[float, float, float]
             Probabilities of any given Aircraft being one of climber/descender/overflier.
             The probabilities have to sum to 1 (Multinomial distribution parameter).
-        speed_range: list[float, float]
+        speed_range: tuple[float, float] | None
             Optional range of [min,max] speeds from which to randomly generate Aircraft speed.
             If not provided, speed of all Aircraft is set to 400.
         aircraft_on_route: bool
@@ -148,16 +148,14 @@ class Custom(
         typeof_event_handler: type[TEventHandler], optional
             If we want to use a derived class for the Event Handler, specify here.
         """
-        if balance is None:
-            balance = (1 / 3, 1 / 3, 1 / 3)
-        elif len(balance) != 3:
-            raise ValueError("balance must be None or a tuple of 3 values")
-        elif sum(balance) != 1.0:
+        if len(balance) != 3:
+            raise ValueError("balance must be a tuple of 3 values")
+        if sum(balance) != 1.0:
             # scale probabilities so they sum to 1
             balance = tuple([b / sum(balance) for b in balance])
         self.balance = balance
         if speed_range is None:
-            speed_range = [400.0, 400.0]
+            speed_range = (400.0, 400.0)
         elif len(speed_range) != 2:
             raise ValueError("speed_range must be None or a tuple of 2 values")
         self.speed_range = speed_range
@@ -210,7 +208,7 @@ class Custom(
         allowed_FLs = np.arange(min_fl, max_fl + 10, 10, dtype="float")
 
         # keep track of start fixes and entry coordinations to avoid clashes
-        entries = defaultdict(lambda: defaultdict(list))
+        entries: dict[str, dict[int, list[int]]] = defaultdict(lambda: defaultdict(list))
 
         # create empty event handler
         event_handler = self.typeof_event_handler(
@@ -459,7 +457,7 @@ class Custom(
         predictor: Predictor | None = None,
         env_manager: TEnvironmentManager | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
-    ) -> Simulator:
+    ) -> TSimulator:
         """
         Create a Simulator instance for Custom scenarios.
 
