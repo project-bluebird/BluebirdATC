@@ -31,19 +31,8 @@ def laterally_offset_start_point(
     first_fix_name, second_fix_name = route.filed[:2]
     first_fix = airspace.fixes.places[first_fix_name]
     second_fix = airspace.fixes.places[second_fix_name]
-    # geometry.get_perpendicular_line(a,b) returns start and end points of a line
-    # perpendicular to the line from a to b, centred on b.
-    start, _, _ = geometry.get_perpendicular_line(second_fix, first_fix)
-    # Calculate the heading from the outer (spawning) fix along this perpendicular line in one direction
-    heading_1 = airspace.geo_helper.bearing_to(
-        lat=start[0],
-        lon=start[1],
-        lat_origin=first_fix.lat,
-        lon_origin=first_fix.lon,
-    )
-    # calculate the opposite heading
-    heading_2 = (heading_1 + 180.0) % 360.0
-
+    # calculate headings perpendicular to the line from first to second fix.
+    heading_1, heading_2 = geometry.get_perpendicular_headings(first_fix, second_fix, airspace.geo_helper)
     # pick one of the two directions
     offset_heading = float(rng.choice((heading_1, heading_2)))
     # random offset distance
