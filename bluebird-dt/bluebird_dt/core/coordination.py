@@ -365,8 +365,14 @@ class CoordinationsManager:
     @staticmethod
     def find_entry_exit_fixes(airspace: Airspace, route: Route, sector_name: str) -> tuple[str, str]:
         """
-        Given a route and a sector name, find the fixes to use
-        for entry and exit coordinations.
+        Given a route and a sector name, find the fixes to use for entry and exit coordinations.
+        The following methodology is used:
+        * If the route starts inside the sector, entry fix is first fix on route.
+          - Otherwise, iterate forward through the fixes on the route - if one is found on the
+        sector boundary, assign this as entry fix.
+          - If no boundary fix is found, revert to first fix on route for entry fix.
+        * Do the same in reverse for finding the exit fix, with additional check that the exit
+        fix is not the same as the entry fix.
 
         Parameters
         ==========
