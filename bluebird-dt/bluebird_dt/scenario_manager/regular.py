@@ -1,5 +1,5 @@
 import typing
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -37,18 +37,21 @@ TSimulator = typing.TypeVar("TSimulator", bound=Simulator)
 TAirspaceLoader = typing.TypeVar("TAirspaceLoader", bound=AirspaceLoader)
 
 
-class Regular(ScenarioManager[RegularScenarioManagerConfig]):
+class Regular(
+    ScenarioManager[RegularScenarioManagerConfig],
+    typing.Generic[TAircraft, TWindField, TForecastWindField, TEnvironmentManager, TEventLogger, TEventHandler],
+):
     """
     Quasi-regularly spaced Aircraft emitted from Route starts.
     """
 
     projection_centre: tuple[float, float] | None = None
-    event_handler_ignore_flags: typing.ClassVar[EventHandler.IgnoreFlags]
+    event_handler_ignore_flags: EventHandler.IgnoreFlags
     total_time: float
     num_aircraft: int
     airspace: Airspace
     routes: list[Route]
-    sector_name: str | None
+    sector_name: str
     start_time: float
     random_seed: int | None
     vertical_buffer_distance: int | float
@@ -57,7 +60,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
     typeof_environment_manager: type[TEnvironmentManager]
     typeof_event_handler: type[TEventHandler]
     typeof_aircraft: type[TAircraft]
-    typeof_eventlogger: type[TEventLogger]
+    typeof_event_logger: type[TEventLogger]
 
     def __init__(
         self,
@@ -252,7 +255,7 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         em.set_local_fixes_visibility()
 
         # Don't fast-forward to first aircraft entry here - do it in `setup` (to nearest timestep multiple).
-        em.initialise_env_with_event_handler(jump_to_first_event=False)
+        em.initialise_env_with_event_handler()
 
         return em
 
@@ -346,7 +349,7 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
 
         airspace, routes, sector_name = AirspaceLoader.load(scenario_name)
 
-        sim = cls(
+        return cls(
             airspace=airspace,
             routes=routes,
             sector_name=sector_name,
@@ -375,20 +378,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             save_log_to_file=save_log_to_file,
             typeof_simulator=typeof_simulator,
         )
-        start_time = sim.manager.environment.time
-        # fast-forward to the first multiple of the evolve time-step that is after the first aircraft entry time.
-        first_entry_time = sim.manager.event_handler.radar_df.index.min().replace(tzinfo=timezone.utc).timestamp()
-        time_step = 6.0
-
-        # if the first time is a multiple of the time step, evolve one extra step.
-        # note that 0 % anything == 0 (except 0!), so this accounts for the case where the first entry time is 0
-        if (first_entry_time - start_time) % time_step == 0:
-            evolve_time = first_entry_time + time_step
-        # otherwise, evolve to the smallest multiple of time_step that is higher than the entry time
-        else:
-            evolve_time = (((first_entry_time - start_time) // time_step) + 1) * time_step
-        sim.manager.evolve(evolve_time)
-        return sim
 
     def to_simulator(
         self,
