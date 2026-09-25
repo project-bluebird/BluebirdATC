@@ -433,7 +433,7 @@ class CoordinationsManager:
         next_sector: str = "background",
         coord_direction: typing.Literal["Horizontal", "Down", "Up"] = "Horizontal",
         typeof_aircraft: type[TAircraft] = Aircraft,
-    ) -> tuple[TAircraft, Coordination, Coordination]:
+    ) -> tuple[TAircraft, Self, Self]:
         """
         Create an Aircraft instance, and entry and exit Coordinations,
         given the necessary input parameters.
