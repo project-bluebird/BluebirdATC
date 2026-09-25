@@ -1,3 +1,5 @@
+from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
+from bluebird_dt.core import Aircraft
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.simulator import Simulator
 import pytest
@@ -289,3 +291,85 @@ def test_to_simulator(generate_i):
     # Check returned simulator works as expected
     simulator.evolve(6)
     assert len(simulator.manager.environment.aircraft) is not None
+
+def test_different_aircraft_type():
+    """
+    Test that we can use a custom Aircraft type.
+    """
+    class MyAircraft(Aircraft):
+        pass
+    sim = TwoAircraft.setup(
+            "X-Sector",
+            typeof_aircraft=MyAircraft,
+        )
+    
+    # wait for both aircraft to spawn
+    sim.evolve(12)
+    # should be some aircraft by now
+    assert len(sim.manager.environment.aircraft) == 2
+    # should all be of type `MyAircraft`
+    for aircraft in sim.manager.environment.aircraft.values():
+        assert isinstance(aircraft, MyAircraft)
+
+def test_dont_set_random_seed():
+    """
+    If we don't set the random seed, we should get different results every run.
+    """
+    sim1 = Simulator.from_category("Two Aircraft", "X-Sector")
+    # another instance, all settings the same, no random seed set
+    sim2 = Simulator.from_category("Two Aircraft", "X-Sector")
+    for _ in range(5):
+        sim1.evolve(6)
+        sim2.evolve(6)
+    for k, v in sim1.manager.environment.aircraft.items():
+        if not k in sim2.manager.environment.aircraft:
+            continue
+        assert sim2.manager.environment.aircraft[k].data() != v.data()
+
+def test_set_random_seed():
+    """
+    If we do set the random seed, we should get identical results every run.
+    """
+    sim1 = Simulator.from_category("Two Aircraft", "X-Sector", random_seed=1234)
+    # another identical instance, including same random seed
+    sim2 = Simulator.from_category("Two Aircraft", "X-Sector", random_seed=1234)
+    # evolve both simulators 100 steps of 6s.
+    for _ in range(100):
+        sim1.evolve(6)
+        sim2.evolve(6)
+    for k, v in sim1.manager.environment.aircraft.items():
+        assert sim2.manager.environment.aircraft[k].data() == v.data()
+
+@pytest.mark.parametrize(
+        "fl_limits",
+        ((50,400), (300,350))
+)
+def test_springfield_fl_limits(fl_limits):
+    """
+    Test that on the Springfield sector, we only spawn aircraft within the
+    specified FL range.
+    """
+    for _ in range(10):
+        airspace, routes, _ = AirspaceLoader.load("Springfield")
+        sm = TwoAircraft(
+            airspace=airspace, 
+            routes=routes,
+            fl_limits=fl_limits
+        )
+        em = sm.create_env_manager()
+        em.evolve(60)
+        for ac in em.environment.aircraft.values():
+            assert ac.fl >= fl_limits[0]
+            assert ac.fl <= fl_limits[1]
+
+
+@pytest.mark.parametrize(
+        "scenario_name", 
+        ("I-Sector","Y-Sector", "X-Sector", "Xplus-Sector", "Springfield")
+)        
+def test_sim_from_category(scenario_name):
+    """
+    Test that we can instantiate the simulator using "from_category"
+    """
+    s = Simulator.from_category("Two Aircraft", scenario_name)
+    assert isinstance(s, Simulator)
