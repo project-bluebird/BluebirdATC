@@ -3,7 +3,7 @@
 
 ## Project Overview
 
-Project Bluebird is a £13.7m EPSRC Prosperity Partnership between NATS, The University of Exeter and The Alan Turing Institute to augment and optimise air-traffic control using multi-agent systems. Our ambition is to deliver the world’s first AI system to control a section of airspace in live shadow trials, working with Air Traffic Controllers to help manage the complexities of their role.
+[Project Bluebird](https://www.projectbluebird.ai/) is a £13.7m EPSRC Prosperity Partnership between NATS, The University of Exeter and The Alan Turing Institute to augment and optimise air-traffic control using multi-agent systems. Our ambition is to deliver the world’s first AI system to control a section of airspace in live shadow trials, working with Air Traffic Controllers to help manage the complexities of their role.
 
 The project has three research themes:
 
