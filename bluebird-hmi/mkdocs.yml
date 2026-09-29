@@ -1,4 +1,6 @@
 site_name: bluebird-hmi
+# Where these pages live in the repository, for the "edit this page" links.
+edit_uri: edit/main/bluebird-hmi/docs/
 
 nav:
   - Developer Guide: developer.md
