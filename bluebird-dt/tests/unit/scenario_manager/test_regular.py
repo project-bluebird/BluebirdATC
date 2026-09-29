@@ -160,18 +160,24 @@ def test_different_aircraft_type(generate_i):
     for aircraft in sim.manager.environment.aircraft.values():
         assert isinstance(aircraft, MyAircraft)
 
-def test_different_start_time(generate_i):
+@pytest.mark.parametrize("start_time",
+    [
+        0,
+        500,
+        1000,
+    ],
+)
+def test_different_start_time(generate_i, start_time):
     """
     Test that we can set the start timestamp
     """
     airspace, routes = generate_i
     total_time = 800
-    start_time = 600
     num_aircraft = 4
     sm = Regular(total_time, num_aircraft, airspace=airspace, routes=routes, start_time=start_time, random_seed=123)
     
     sim = sm.to_simulator()
-    assert sim.manager.environment.time == start_time
+    assert sim.manager.environment.time > start_time and sim.manager.environment.time < start_time + total_time
     # wait for all aircraft to spawn
     sim.evolve(total_time)
     assert len(sim.manager.environment.aircraft) == 4 
