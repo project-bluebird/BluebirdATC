@@ -3,13 +3,6 @@ from __future__ import annotations
 import datetime
 import typing
 
-# simulator package
-from bluebird_dt.airspace_generator.artificial_airspace import (
-    ArtificialAirspace,
-)
-from bluebird_dt.core import Airspace, Route
-from bluebird_dt.utility.geo_helper import GeoHelper
-
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import (
     SCENARIO_CLS,
@@ -17,7 +10,7 @@ from bluebird_gymnasium.envs import (
     EnvConfig,
     ViewType,
 )
-from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode, _configure_airspace_metadata
+from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
 
 # constants
 from bluebird_gymnasium.utils.constants import (
@@ -62,31 +55,8 @@ class SectorIEnv(BaseEnv):
 
         self.scenario_manager = None  # set in _generate_scenario
 
-        ####### airspace metadata
-        _configure_airspace_metadata(self, "I-Sector")
-
         ####### reset env
         self.reset()
-
-    def _setup_airspace(self) -> tuple[Airspace, list[Route]]:
-
-        ####### airspace
-        # the airspace generator expects the origin in reverse order
-        # i.e., lon, lat
-        origin = (
-            self.config.airspace_config["origin"][1],
-            self.config.airspace_config["origin"][0],
-        )
-        airspace, routes = ArtificialAirspace(
-            sector_type="i",
-            width=self.config.airspace_config["width"],
-            height=self.config.airspace_config["height"],
-            fl_limits=self.config.airspace_config["fl_limits"],
-            alpha=self.config.airspace_config["alpha"],
-            origin=origin,
-        ).generate_airspace()
-        airspace.geo_helper = GeoHelper(self.config.airspace_config["origin"])
-        return airspace, routes
 
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
@@ -99,7 +69,7 @@ class SectorIEnv(BaseEnv):
         log_filename = f"{category}_{scenario}_{timestamp}{suffix}"
 
         ####### setup the sim env manager
-        airspace, routes = self._setup_airspace()
+        airspace, routes = self._setup_airspace(scenario)
         _scenario_cls = SCENARIO_CLS[self.config.scenario_config["cls"]]
         self.scenario_manager = _scenario_cls(
             airspace=airspace, routes=routes, random_seed=self._reset_seed, **self.config.scenario_config["args"]
