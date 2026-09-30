@@ -898,7 +898,7 @@ class Environment(
         self.remove_coordinations_within_sector(aircraft.current_sector, callsign)
 
     def remove_obsolete_aircraft(self, maximum_track_age: timedelta | None = None) -> dict[str, TAircraft]:
-        maximum_track_age = maximum_track_age or timedelta(seconds=25)
+        maximum_track_age = maximum_track_age or timedelta(minutes=2)
 
         remove: dict[str, TAircraft] = {}
         keep: dict[str, TAircraft] = {}

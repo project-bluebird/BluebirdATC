@@ -52,7 +52,7 @@ def create_airspace(
     for sector_geojson_path in sector_geojson_paths:
         # TODO: Re-evaluate sector naming logic. Is filename reliable?
         # get filename without extension, take last 2 chars as sector name
-        sector_name = Path(sector_geojson_path).stem[-2:]
+        sector_name = Path(sector_geojson_path).stem[-9:]
         if not sector_name:
             logger.warning(
                 f"Could not derive sector name from filename: {sector_geojson_path}",
@@ -65,6 +65,7 @@ def create_airspace(
         except FileNotFoundError:
             logger.warning(f"Sector file not found: {sector_geojson_path}", stacklevel=2)
         except Exception as e:
+            raise e
             logger.warning(
                 f"Failed to load sector {sector_name} from {sector_geojson_path} because: {e}",
                 stacklevel=2,
@@ -118,7 +119,7 @@ def load_volumes(geojson_path: str) -> list[Volume]:
         A list of Volume objects, each representing a volume defined in the GeoJSON file.
     """
     from bluebird_dt.core import Pos2D, Volume
-
+    print(geojson_path)
     with open(geojson_path) as sector_geojson_file:
         sector_dict_full = json.load(sector_geojson_file)
 
@@ -134,10 +135,11 @@ def load_volumes(geojson_path: str) -> list[Volume]:
         sector_name = props.get("sector")
         description = props.get("description")
         airspace_id = props.get("airspace_id")
+        print(props)
 
         # extract the flight levels. note #SFC = SurFaCe (height = 0), otherwise it is of form e.g. FL250
-        min_fl = 0 if props["base"] == "SFC" else int(props["base"][2:])
-        max_fl = int(props["top"][2:])
+        min_fl = 0 if props["base"] == "SFC" else int(float(props["base"][2:]))
+        max_fl = int(float(props["top"][2:]))
 
         # extract the area coordinates; stored in the first element of the coordinates list
         area_coordinates = [Pos2D(coordinate[1], coordinate[0]) for coordinate in coords[0]]

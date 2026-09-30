@@ -18,6 +18,7 @@ from bluebird_dt.core import (
     Coordination,
     Environment,
     Fixes,
+    Pos2D,
 )
 from bluebird_dt.core.wind import WindField
 from bluebird_dt.events import EventHandler, EventLogger
@@ -321,7 +322,9 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
         """
         if sector_names is None:
             # use whole airspace
-            boundary_points = self.environment.airspace.boundary().boundary_vertices
+            boundary_points = [
+                    p for sector in self.environment.airspace.sectors.values() for p in [Pos2D.from_array(sector.get_bounds()[0][:2][::-1]), Pos2D.from_array(sector.get_bounds()[1][:2][::-1])]
+            ]
         else:
             boundary_points = [
                 p for name in sector_names for p in self.environment.airspace.sectors[name].boundary().boundary_vertices

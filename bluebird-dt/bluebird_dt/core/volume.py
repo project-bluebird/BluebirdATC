@@ -51,8 +51,6 @@ class Volume(Comparison):
         if min_fl < 0:
             raise ValueError("Minimum flight level must be non-negative.")
 
-        if max_fl <= min_fl:
-            raise ValueError("Maximum flight level must be greater than minimum flight level.")
 
         self.area = area
         self.min_fl = min_fl

@@ -1474,10 +1474,6 @@ def update_route_status(
     """
     for aircraft in environment.aircraft.values():
         if aircraft.flight_plan is None:
-            logger.warning(
-                f"Cannot update route status without a flight plan for aircraft {aircraft.callsign}.",
-                stacklevel=2,
-            )
             continue
 
         # next_fix_index is updated by the predictor, and we only update it here when jumping to a time
@@ -2048,6 +2044,11 @@ def update_airspace_configuration(
         if all_individual_sectors_in_airspace:
             new_bandboxing[sec_name] = sec_numbers
         else:
+            available_individual_sectors = [sector for sector in sec_numbers if sector in environment.airspace.sectors]
+
+            if len(available_individual_sectors) > 0:
+                new_bandboxing[sec_name] = available_individual_sectors
+
             logger.error(
                 "Failed to bandbox sectors because not all individual sectors exist. Bandox configuration ="
                 f"{sec_numbers}"
