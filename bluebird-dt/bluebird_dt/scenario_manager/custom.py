@@ -43,7 +43,8 @@ class Custom(
     typing.Generic[TAircraft, TWindField, TForecastWindField, TEnvironmentManager, TEventLogger, TEventHandler],
 ):
     """
-    Aircraft generator for simple custom scenarios:
+    Aircraft generator for simple custom scenarios.
+    Scenarios can contain a set of starter aircraft with:
     - configurable number of Aircraft and balance of
       climbers/descenders/overfliers
     - randomly selected entry and exit Coordinations
@@ -52,6 +53,8 @@ class Custom(
       (same Fix, Flight Level and time)
     - ability to randomize the start position of aircraft within an entry fix
       through a stochastic sample of lateral distance from the entry fix.
+    Users can also add fully specified aircraft via the method
+    `add_aircraft_with_coordinations`.
     """
 
     projection_centre: tuple[float, float] | None = None
@@ -73,6 +76,7 @@ class Custom(
     typeof_event_handler: type[TEventHandler]
     typeof_aircraft: type[TAircraft]
     typeof_event_logger: type[TEventLogger]
+    user_added_aircraft: list[tuple[float, tuple[TAircraft, Coordination, Coordination]]]
 
     def __init__(
         self,
@@ -183,7 +187,7 @@ class Custom(
         # If users want to fully customize the scenario, specifying every aircraft,
         # we keep a list of custom aircraft, with their coordinations, and their start times.
         # i.e. [(start_time, (Aircraft, Coordination, Coordination)), ...]
-        self.user_added_aircraft: list[tuple[float, tuple[Aircraft, Coordination, Coordination]]] = []
+        self.user_added_aircraft: list[tuple[float, tuple[TAircraft, Coordination, Coordination]]] = []
 
     @override
     def create_event_handler(self) -> TEventHandler:
