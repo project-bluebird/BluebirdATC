@@ -254,7 +254,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         # set the visibility flag of fixes to True only if they are in the penumbra
         em.set_local_fixes_visibility()
 
-        # Don't fast-forward to first aircraft entry here - do it in `setup` (to nearest timestep multiple).
         em.initialise_env_with_event_handler()
 
         return em
