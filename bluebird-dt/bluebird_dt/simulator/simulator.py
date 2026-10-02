@@ -183,7 +183,6 @@ class Simulator:
         cls,
         category: str,
         scenario_name: str,
-        random_seed: int | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
         predictor: Predictor | None = None,
@@ -203,8 +202,6 @@ class Simulator:
             Scenario name.
         category: str
             Category of the simulation.
-        random_seed: int | None
-            If the scenario manager uses random number generation, set the seed here.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
@@ -244,7 +241,6 @@ class Simulator:
                 return TwoAircraft.setup(
                     typeof_simulator=cls,
                     scenario_name=scenario_name,
-                    random_seed=random_seed,
                     use_wind=use_wind,
                     use_forecast=use_forecast,
                     predictor=predictor,
@@ -260,7 +256,6 @@ class Simulator:
                     total_time=1000.0,
                     num_aircraft=10,
                     scenario_name=scenario_name,
-                    random_seed=random_seed,
                     log_filename=log_filename,
                     predictor=predictor,
                     use_wind=use_wind,
@@ -277,7 +272,6 @@ class Simulator:
                     aircraft_on_route=False,
                     lateral_offset=[0.0, 10.0],
                     speed_range=[350.0, 450.0],
-                    random_seed=random_seed,
                     scenario_name=scenario_name,
                     log_filename=log_filename,
                     predictor=predictor,
@@ -293,7 +287,6 @@ class Simulator:
                 return Infinite.setup(
                     typeof_simulator=cls,
                     scenario_name=scenario_name,
-                    random_seed=random_seed,
                     use_wind=use_wind,
                     use_forecast=use_forecast,
                     predictor=predictor,

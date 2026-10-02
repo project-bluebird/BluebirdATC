@@ -311,13 +311,16 @@ def test_different_aircraft_type():
     for aircraft in sim.manager.environment.aircraft.values():
         assert isinstance(aircraft, MyAircraft)
 
-def test_dont_set_random_seed():
+def test_dont_set_random_seed(generate_i):
     """
     If we don't set the random seed, we should get different results every run.
     """
-    sim1 = Simulator.from_category("Two Aircraft", "X-Sector")
+    airspace, routes = generate_i
+
+    sim1 = TwoAircraft(total_time=1000, airspace=airspace, routes=routes).to_simulator()
     # another instance, all settings the same, no random seed set
-    sim2 = Simulator.from_category("Two Aircraft", "X-Sector")
+    sim2 = TwoAircraft(total_time=1000, airspace=airspace, routes=routes).to_simulator()
+    
     for _ in range(5):
         sim1.evolve(6)
         sim2.evolve(6)
@@ -326,13 +329,16 @@ def test_dont_set_random_seed():
             continue
         assert sim2.manager.environment.aircraft[k].data() != v.data()
 
-def test_set_random_seed():
+def test_set_random_seed(generate_i):
     """
     If we do set the random seed, we should get identical results every run.
     """
-    sim1 = Simulator.from_category("Two Aircraft", "X-Sector", random_seed=1234)
-    # another identical instance, including same random seed
-    sim2 = Simulator.from_category("Two Aircraft", "X-Sector", random_seed=1234)
+    airspace, routes = generate_i
+
+    sim1 = TwoAircraft(total_time=1000, airspace=airspace, routes=routes, random_seed=1234).to_simulator()
+    # another instance, all settings the same, including same random seed.
+    sim2 = TwoAircraft(total_time=1000, airspace=airspace, routes=routes, random_seed=1234).to_simulator()
+    
     # evolve both simulators 100 steps of 6s.
     for _ in range(100):
         sim1.evolve(6)
