@@ -112,7 +112,7 @@ def test_action_str_roundtrip(kind: str, value: str | int | tuple[int, str], age
     assert action == action_from_str
 
 def test_outcomm():
-    sim = TwoAircraft.setup(scenario_name="Two Sector Two Aircraft", log_filename=None, predictor=None)
+    sim = TwoAircraft.setup(scenario_name="Two Sector", log_filename=None, predictor=None)
 
     sim.manager.receive_actions([Action("AIR1", "outcomm", "sector_2", "Test", sector=["sector_1"])])
     sim.manager.evolve(10)

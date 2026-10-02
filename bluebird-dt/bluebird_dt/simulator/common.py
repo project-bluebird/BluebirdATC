@@ -1,5 +1,7 @@
 import os
 
+from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
+from bluebird_dt.logger import logger
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager
 from bluebird_dt.utility.paths import LOG_DIR
 
@@ -9,7 +11,7 @@ def list_sim_scenario_categories() -> list[str]:
     List the available scenario categories.
     """
 
-    return ["Artificial", "Springfield", "Infinite", "Flight School"]
+    return ["Two Aircraft", "Regular", "Custom", "Infinite", "Springfield", "Flight School"]
 
 
 def list_sim_scenarios(category: str) -> list[str]:
@@ -23,23 +25,19 @@ def list_sim_scenarios(category: str) -> list[str]:
     if category == "Springfield":
         return SpringfieldScenarioManager.list_scenarios()
 
-    if category == "Artificial":
-        return [
-            "I-Sector Two Aircraft",
-            "X-Sector Two Aircraft",
-            "Y-Sector Two Aircraft",
-        ]
-
-    if category == "Infinite":
-        return [
-            "X-Sector",
-            "Xplus-Sector",
-            "Y-Sector",
-            "I-Sector",
-            "Two Sector",
-        ]
+    if category in ["Two Aircraft", "Regular", "Custom", "Infinite"]:
+        # These scenario categories can use any of the artificial airspaces.
+        return AirspaceLoader.list_airspaces()
 
     if category == "Flight School":
         return ["Xplus-Sector"]
+
+    if category == "Artificial":
+        logger.warning(
+            """
+            The 'Artificial' scenario category is deprecated.
+            Please use 'Two Aircraft', 'Regular', 'Custom' or 'Infinite'.
+            """
+        )
 
     raise ValueError(f"Unknown scenario category: {category}")

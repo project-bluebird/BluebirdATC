@@ -3,11 +3,6 @@ from __future__ import annotations
 import datetime
 import typing
 
-# simulator package
-from bluebird_dt.airspace_generator import SectorXPlus
-from bluebird_dt.predictor import LinearPredictor
-from bluebird_dt.utility.geo_helper import GeoHelper
-
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import (
     SCENARIO_CLS,
@@ -46,7 +41,7 @@ class SectorXPlusEnv(BaseEnv):
             environment and the underlying simulator.
     """
 
-    scenario_seed_mode = ScenarioGenSeedMode.LEGACY_MODULE_RNGS
+    scenario_seed_mode = ScenarioGenSeedMode.RESET_SEED_ATTRIBUTE
 
     def __init__(
         self,
@@ -58,72 +53,15 @@ class SectorXPlusEnv(BaseEnv):
             config,
         )
 
-        # if the `exit_window_width` value was originally None, override the
-        # default set in the parent class with a new default here (based on
-        # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
-        if exit_window_width is None:
-            # TODO: fix hardcode using airspace config. either
-            # W or half_width_nmi
-            self.exit_window_width = 10
-        else:
-            self.exit_window_width = exit_window_width
-
-        ####### airspace
-        # the airspace generator expects the origin in reverse order
-        # i.e., lon, lat
-        origin = (
-            self.config.airspace_config["origin"][1],
-            self.config.airspace_config["origin"][0],
-        )
-        airspace, routes = SectorXPlus(
-            origin=origin,
-            fl_limits=self.config.airspace_config["fl_limits"],
-            rotation_deg=self.config.airspace_config["rotation_deg"],
-            half_width_nmi=self.config.airspace_config["half_width_nmi"],
-            L1=self.config.airspace_config["L1"],
-            L2=self.config.airspace_config["L2"],
-            L3=self.config.airspace_config["L3"],
-            L4=self.config.airspace_config["L4"],
-            W=self.config.airspace_config["W"],
-            D=self.config.airspace_config["D"],
-            F=self.config.airspace_config["F"],
-            southern_leg_rotation_deg=self.config.airspace_config["southern_leg_rotation_deg"],
-            max_turn_angle_deg=self.config.airspace_config["max_turn_angle_deg"],
-        ).generate_airspace()
-        airspace.geo_helper = GeoHelper(self.config.airspace_config["origin"])
-
-        ####### scenario manager
-        _scenario_cls = SCENARIO_CLS[self.config.scenario_config["cls"]]
-        self.scenario_manager = _scenario_cls(
-            airspace=airspace,
-            routes=routes,
-            **self.config.scenario_config["args"],
-        )
-
-        ####### trajectory predictor (world model)
-        # trajectory predictor for computing an estimated
-        # future (rollout) trajectories. used in safety reward functions.
-        self.rollout_predictor = LinearPredictor(
-            dt=12,
-            fix_proximity_threshold=2.0,
-            fixes=airspace.fixes,
-        )
-
-        ####### active airspace sector
-        airspace_sectors = list(airspace.sectors.keys())
-        if len(airspace_sectors) == 1 and airspace_sectors[0] == "sector_xplus":
-            self.active_airspace_sector = airspace_sectors[0]
-        else:
-            raise ValueError("Could not initialise sector")
+        self.scenario_manager = None  # set in _generate_scenario
 
         ####### reset env
         self.reset()
 
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
-        category = "Artificial"
-        scenario = "XPlus-Sector-Custom-Scenario"
+        category = "Custom"
+        scenario = "Xplus-Sector"
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
@@ -131,6 +69,14 @@ class SectorXPlusEnv(BaseEnv):
         log_filename = f"{category}_{scenario}_{timestamp}{suffix}"
 
         ####### setup the sim env manager
+        airspace, routes = self._setup_airspace(scenario)
+        _scenario_cls = SCENARIO_CLS[self.config.scenario_config["cls"]]
+        self.scenario_manager = _scenario_cls(
+            airspace=airspace,
+            routes=routes,
+            random_seed=self._reset_seed,
+            **self.config.scenario_config["args"],
+        )
         return self.scenario_manager.to_simulator(
             category=category,
             scenario_name=scenario,
@@ -233,7 +179,7 @@ class SectorXPlusEnv(BaseEnv):
                 "coeffs": [1.0, 1.0],
             },
             "scenario_config": {
-                "cls": "tactical",
+                "cls": "custom",
                 "args": {
                     "num_aircraft": 1,
                     "vertical_buffer_distance": 100,

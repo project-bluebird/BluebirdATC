@@ -1,3 +1,4 @@
+import pytest
 from bluebird_dt.core import Action, Pos2D
 from bluebird_dt.scenario_manager import SpringfieldScenarioManager
 from bluebird_dt.manager import EnvironmentManager
@@ -111,3 +112,14 @@ def test_to_simulator():
     # Check returned simulator works as expected
     simulator.evolve(6)
     assert len(simulator.manager.environment.aircraft) is not None
+
+@pytest.mark.parametrize(
+        "scenario_name", 
+        ("llm-scenario", "example-scenario", "testScenario")
+)
+def test_sim_from_category(scenario_name):
+    """
+    Test that we can instantiate the simulator using "from_category"
+    """
+    s = Simulator.from_category("Springfield", scenario_name)
+    assert isinstance(s, Simulator)
