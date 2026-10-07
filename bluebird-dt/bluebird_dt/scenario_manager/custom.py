@@ -553,6 +553,7 @@ class Custom(
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
         fl_limits: tuple[int, int] = (50, 400),
+        typeof_airspace_loader: type[TAirspaceLoader] = AirspaceLoader,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -610,6 +611,8 @@ class Custom(
         fl_limits: tuple[int, int], default is (50, 400).
             min, max FL at which aircraft can be spawned.
             Note that the airspace itself may have more restrictive limits.
+        typeof_airspace_loader: type[AirspaceLoader], optional
+            If we want to use a derived class of airspace loader, specify here.
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -626,7 +629,7 @@ class Custom(
             A fully configured simulator instance
         """
 
-        airspace, routes, sector_name = AirspaceLoader.load(scenario_name)
+        airspace, routes, sector_name = typeof_airspace_loader.load(scenario_name)
         return cls(
             airspace=airspace,
             routes=routes,

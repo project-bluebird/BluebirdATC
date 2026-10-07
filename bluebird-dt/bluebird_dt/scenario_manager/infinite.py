@@ -30,6 +30,7 @@ class InfiniteScenarioManagerConfig(BaseModel):
 
 
 TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TAirspaceLoader = typing_extensions.TypeVar("TAirspaceLoader", bound=AirspaceLoader, default=AirspaceLoader)
 TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
 TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
 TEnvironmentManager = typing_extensions.TypeVar(
@@ -532,6 +533,7 @@ Creating Infinite Scenario
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
         fl_limits: tuple[int, int] = (50, 400),
+        typeof_airspace_loader: type[TAirspaceLoader] = AirspaceLoader,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -619,6 +621,8 @@ Creating Infinite Scenario
         fl_limits: tuple[int, int], optional
             The min, max FL at which aircraft can spawn. Default is (50, 400).
             Note that the airspace itself may have more restrictive limits.
+        typeof_airspace_loader: type[AirspaceLoader], optional
+            If we want to use a derived class of airspace loader, specify here.
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -636,7 +640,7 @@ Creating Infinite Scenario
             A fully configured simulator instance
         """
 
-        airspace, routes, sector_name = AirspaceLoader.load(scenario_name)
+        airspace, routes, sector_name = typeof_airspace_loader.load(scenario_name)
         sim = cls(
             airspace=airspace,
             routes=routes,

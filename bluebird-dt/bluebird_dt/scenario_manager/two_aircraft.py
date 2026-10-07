@@ -25,6 +25,7 @@ class TwoAircraftScenarioManagerConfig(BaseModel):
     scenario_manager: typing.Literal["two_aircraft"] = Field(default="two_aircraft")
 
 
+TAirspaceLoader = typing_extensions.TypeVar("TAirspaceLoader", bound=AirspaceLoader, default=AirspaceLoader)
 TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
 TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
 TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
@@ -391,6 +392,7 @@ Creating TwoAircraft Scenario
         autosave_interval: timedelta | None = timedelta(minutes=5),
         save_chunk_interval: timedelta | None = None,
         fl_limits: tuple[int, int] = (50, 400),
+        typeof_airspace_loader: type[TAirspaceLoader] = AirspaceLoader,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -441,6 +443,8 @@ Creating TwoAircraft Scenario
         fl_limits: tuple[int, int]
             The min, max FL values at which aircraft can spawn. Default is (50, 400).
             Note that the airspace itself may have more restrictive bounds.
+        typeof_airspace_loader: type[AirspaceLoader], optional
+            If we want to use a derived class of airspace loader, specify here.
         typeof_environmentmanager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -457,7 +461,7 @@ Creating TwoAircraft Scenario
             A fully configured simulator instance
         """
 
-        airspace, routes, sector_name = AirspaceLoader.load(scenario_name)
+        airspace, routes, sector_name = typeof_airspace_loader.load(scenario_name)
 
         # set up the simulator for "climber" scenario using TwoAircraft scenario manager
         sim = cls(

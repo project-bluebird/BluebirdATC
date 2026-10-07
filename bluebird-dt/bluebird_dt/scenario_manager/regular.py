@@ -282,6 +282,7 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         save_chunk_interval: timedelta | None = None,
         predictor: Predictor | None = None,
         fl_limits: tuple[int, int] = (50, 400),
+        typeof_airspace_loader: type[TAirspaceLoader] = AirspaceLoader,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_event_logger: type[TEventLogger] = EventLogger,
@@ -330,6 +331,8 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         fl_limits: tuple[int, int], optional
             The min, max FL at which aircraft can spawn. Default is (50, 400).
             Note that the airspace itself may have more restrictive limits.
+        typeof_airspace_loader: type[AirspaceLoader], optional
+            If we want to use a derived class of airspace loader, specify here.
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -346,7 +349,7 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             A fully configured simulator instance
         """
 
-        airspace, routes, sector_name = AirspaceLoader.load(scenario_name)
+        airspace, routes, sector_name = typeof_airspace_loader.load(scenario_name)
 
         return cls(
             airspace=airspace,
