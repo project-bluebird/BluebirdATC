@@ -7,7 +7,7 @@ import aiofiles
 from pydantic import BaseModel
 
 from bluebird_dt.logger import logger
-from bluebird_dt.simulator.simconfig import SaveConfig
+from bluebird_dt.utility.config_models import SaveConfig
 from bluebird_dt.utility.paths import LOG_DIR
 
 

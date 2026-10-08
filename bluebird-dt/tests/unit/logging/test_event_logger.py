@@ -344,7 +344,7 @@ def test_trim_and_clip(time_period: int, ticks_to_evolve: int, ticks_to_trim: in
     assert len(log.radar_log) <= len(sim.manager.environment.aircraft) * (ticks_to_evolve - ticks_to_trim)
 
     # The tests don't have any aircraft disappear, so we expect at least an equal set of initialisers of aircraft internals as aircraft we have in the airspace
-    assert set(log["callsign"] for log in log.aircraft_internals_log) == set(sim.manager.environment.aircraft.keys())
+    assert set(log["callsign"] for log in log.ac_internals_log) == set(sim.manager.environment.aircraft.keys())
 
 
     # The tests don't have any aircraft disappear, so we expect at least an equal set of initialisers of aircraft incomms as aircraft we have in the airspace

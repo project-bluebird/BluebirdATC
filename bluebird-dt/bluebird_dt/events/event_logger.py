@@ -22,7 +22,7 @@ from bluebird_dt.utility.logging_utils import (
 )
 
 if typing.TYPE_CHECKING:
-    from bluebird_dt.simulator.simconfig import SimConfig
+    from bluebird_dt.utility.config_models import SimConfig
 
 DEFAULT_TRIM_AND_CUT_TIMEDELTA = pd.Timedelta(hours=4)
 
@@ -1129,13 +1129,13 @@ class EventLogger:
         last_aircraft_internals_log_per_callsign: dict[str, typing.Any] = {}
         future_aircraft_internal_logs: list[typing.Any] = []
 
-        for log in self.aircraft_internals_log:
+        for log in self.ac_internals_log:
             if not comp(log["datetime"], comparison_datetime):
                 future_aircraft_internal_logs.append(log)
             elif not comp(log["datetime"], comparison_datetime - expire):
                 last_aircraft_internals_log_per_callsign[log["callsign"]] = log
 
-        self.aircraft_internals_log = (
+        self.ac_internals_log = (
             sorted(last_aircraft_internals_log_per_callsign.values(), key=lambda x: x["datetime"])
             + future_aircraft_internal_logs
         )
@@ -1204,9 +1204,7 @@ class EventLogger:
         self.sectors_log = [log for log in self.sectors_log if not comp(log["datetime"], comparison_datetime)]
         self.incomm_log = [log for log in self.incomm_log if not comp(log["datetime"], comparison_datetime)]
         self.coordination_log = [log for log in self.coordination_log if not comp(log["datetime"], comparison_datetime)]
-        self.aircraft_internals_log = [
-            log for log in self.aircraft_internals_log if not comp(log["datetime"], comparison_datetime)
-        ]
+        self.ac_internals_log = [log for log in self.ac_internals_log if not comp(log["datetime"], comparison_datetime)]
 
         return self
 

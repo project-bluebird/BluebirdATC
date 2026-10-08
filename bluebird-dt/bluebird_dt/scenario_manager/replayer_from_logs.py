@@ -4,8 +4,8 @@ import json
 import os
 import tarfile
 import warnings
-from datetime import datetime
-from typing import Generic, Literal, TypeVar
+from datetime import datetime, timedelta
+from typing import Generic, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -26,16 +26,16 @@ from bluebird_dt.scenario_manager.scenario_manager import (
     TSimulator,
     TWindField,
 )
-from bluebird_dt.scenario_manager.scenario_manager_configs import BluebirdSaveConfig, ReplayScenarioConfig, SaveConfig
+from bluebird_dt.scenario_manager.scenario_manager_configs import BluebirdSimConfig, ReplayScenarioConfig, SimConfig
 from bluebird_dt.simulator import Simulator
 from bluebird_dt.utility.logging_utils import read_logs_from_tar
 from bluebird_dt.utility.paths import LOG_DIR
 
-TSaveConfig = TypeVar("TSaveConfig", bound=SaveConfig)
+TSimConfig = TypeVar("TSimConfig", bound=SimConfig)
 
 
 class ReplayerFromLogs(
-    ScenarioManager[ReplayScenarioConfig], Generic[TAircraft, TEventHandler, TEventHandlerArgs, TSaveConfig]
+    ScenarioManager[ReplayScenarioConfig], Generic[TAircraft, TEventHandler, TEventHandlerArgs, TSimConfig]
 ):
     """
     Construct and manage a scenario from log files.
@@ -48,7 +48,7 @@ class ReplayerFromLogs(
     typeof_eventhandler: type[TEventHandler] = EventHandler
     typeof_eventhandler_args: type[TEventHandlerArgs] = EventHandlerArgs
     typeof_simulator: type[TSimulator] = Simulator
-    typeof_saveconfig: type[TSaveConfig] = BluebirdSaveConfig
+    typeof_simconfig: type[TSimConfig] = BluebirdSimConfig
 
     def __init__(self, replay_dir_name: str, replay_buffer: tarfile.TarFile):
         """
@@ -71,8 +71,8 @@ class ReplayerFromLogs(
 
         file = replay_buffer.extractfile("config.json")
         try:
-            original_sim_config: TSaveConfig | None = (
-                self.typeof_saveconfig.model_validate_json(file.read()) if file else None
+            original_sim_config: TSimConfig | None = (
+                self.typeof_simconfig.model_validate_json(file.read()) if file else None
             )
             if original_sim_config is None:
                 self._config = ReplayScenarioConfig(original_scenario_manager=None)
@@ -230,7 +230,7 @@ Loading Replay Scenario:- Sectors: {self.replay_dir_name}
             all_sectors[sector_name] = sector
 
         if "config" in self.replay_data and len(self.replay_data["config"]) > 0:
-            config = self.typeof_saveconfig.model_validate(self.replay_data["config"])
+            config = self.typeof_simconfig.model_validate(self.replay_data["config"])
             penumbra_lat = config.environment_manager.penumbra_latitude
             penumbra_fl = config.environment_manager.penumbra_flight_level
             self.projection_centre = (
@@ -343,11 +343,13 @@ Loading Replay Scenario:- Sectors: {self.replay_dir_name}
         scenario_name: str,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
     ) -> TSimulator:
         """Set up a replay scenario
 
@@ -361,8 +363,6 @@ Loading Replay Scenario:- Sectors: {self.replay_dir_name}
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
@@ -373,6 +373,12 @@ Loading Replay Scenario:- Sectors: {self.replay_dir_name}
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
         predictor: Predictor, optional
             Aircraft Trajectory prediction used to evolve Aircraft. If None, then LinearPredictor will be created.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
 
         Returns
         -------
@@ -387,11 +393,13 @@ Loading Replay Scenario:- Sectors: {self.replay_dir_name}
             category="Replay",
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
             predictor=predictor,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )
 
         sim.scenario_manager.replay.close()
@@ -404,12 +412,13 @@ Loading Replay Scenario:- Sectors: {self.replay_dir_name}
         category: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | Literal["ALL"] = "ALL",
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
     ) -> TSimulator:
         """
         Create a Simulator instance for Replay scenarios.
@@ -424,8 +433,6 @@ Loading Replay Scenario:- Sectors: {self.replay_dir_name}
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
@@ -437,9 +444,12 @@ Loading Replay Scenario:- Sectors: {self.replay_dir_name}
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], optional
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios. Defaults to "ALL".
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
 
         Returns
         -------
@@ -463,10 +473,11 @@ Loading Replay Scenario:- Sectors: {self.replay_dir_name}
             category=category,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
             predictor=predictor,
-            simulated_sectors=simulated_sectors,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )

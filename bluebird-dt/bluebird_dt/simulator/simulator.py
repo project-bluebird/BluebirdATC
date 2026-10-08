@@ -16,7 +16,7 @@ from bluebird_dt.logger import ContextFilter, CustomFormatter, logger
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor
 from bluebird_dt.simulator.saver import SaveData, Saver
-from bluebird_dt.utility.config_models import SaveConfig, SimulatorConfig
+from bluebird_dt.utility.config_models import SaveConfig, SimConfig, SimulatorConfig
 from bluebird_dt.utility.convert import timestamp_to_string
 from bluebird_dt.utility.paths import LOG_DIR
 
@@ -340,11 +340,13 @@ class Simulator:
                     scenario_name=scenario_name,
                     use_wind=use_wind,
                     use_forecast=use_forecast,
-                    autosave=autosave,
                     attach_context_to_logger=attach_context_to_logger,
                     save_log_to_file=save_log_to_file,
                     log_filename=log_filename,
                     predictor=predictor,
+                    save_csv=save_csv,
+                    autosave_interval=autosave_interval,
+                    save_chunk_interval=save_chunk_interval,
                 )  # TODO: add use_wind as parameter
             case _:
                 raise ValueError(f"Unknown scenario category: {category}")

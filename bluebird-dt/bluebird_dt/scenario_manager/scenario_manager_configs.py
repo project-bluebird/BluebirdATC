@@ -7,7 +7,7 @@ from bluebird_dt.scenario_manager.infinite import InfiniteScenarioManagerConfig
 from bluebird_dt.scenario_manager.regular import RegularScenarioManagerConfig
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManagerConfig
 from bluebird_dt.scenario_manager.two_aircraft import TwoAircraftScenarioManagerConfig
-from bluebird_dt.utility.config_models import SaveConfig
+from bluebird_dt.utility.config_models import SimConfig
 
 
 class FallbackScenarioManagerConfig(BaseModel):
@@ -42,7 +42,7 @@ class ReplayScenarioConfig(BaseModel):
     scenario_manager: Literal["replay"] = Field(default="replay")
 
 
-BluebirdSaveConfig: TypeAlias = SaveConfig[
+BluebirdSimConfig: TypeAlias = SimConfig[
     ReplayScenarioConfig
     | RegularScenarioManagerConfig
     | CustomScenarioManagerConfig

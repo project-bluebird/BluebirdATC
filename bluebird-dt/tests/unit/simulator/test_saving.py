@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from bluebird_dt.simulator import Simulator
 from bluebird_dt.simulator.saver import SaveData, Saver
-from bluebird_dt.simulator.simconfig import SaveConfig
+from bluebird_dt.utility.config_models import SaveConfig
 from bluebird_dt.utility.paths import LOG_DIR
 
 skip_cases = pytest.mark.parametrize(
