@@ -29,12 +29,12 @@ from tests.unit.logging.conftest import extract_first_row_from_df, query_row_fro
     [
         ("Springfield", "example-scenario", "LinearPredictor", 3, 0.2, 51),
         ("Springfield", "llm-scenario", "LinearPredictor", 5, -3, 23),
-        ("Artificial", "I-Sector Two Aircraft", "SimplePredictor", 3, 0.2, 51),
-        ("Artificial", "Y-Sector Two Aircraft", "SimplePredictor", 5, -3, 23),
+        ("Two Aircraft", "I-Sector", "SimplePredictor", 3, 0.2, 51),
+        ("Two Aircraft", "Y-Sector", "SimplePredictor", 5, -3, 23),
         ("Springfield", "example-scenario", "RouteFollowPredictor", 3, 0.2, 51),
         ("Springfield", "llm-scenario", "RouteFollowPredictor", 5, -3, 23),
-        ("Artificial", "I-Sector Two Aircraft", "RouteFollowPredictor", 3, 0.2, 51),
-        ("Artificial", "Y-Sector Two Aircraft", "RouteFollowPredictor", 5, -3, 23),
+        ("Two Aircraft", "I-Sector", "RouteFollowPredictor", 3, 0.2, 51),
+        ("Two Aircraft", "Y-Sector", "RouteFollowPredictor", 5, -3, 23),
     ],
 )
 def test_config_logged(

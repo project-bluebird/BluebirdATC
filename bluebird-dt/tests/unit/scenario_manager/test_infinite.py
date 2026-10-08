@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.core.aircraft import Aircraft
 from bluebird_dt.core.airspace import Airspace
 from bluebird_dt.core.route import Route
@@ -261,4 +262,60 @@ def test_check_safe_to_spawn(generate_simple_environment, min_spawn_distance):
                 expected_safe = False
                 break
         assert expected_safe == check_safe_to_spawn(a, env, min_spawn_distance)
-        
+
+def test_different_aircraft_type():
+    """
+    Test that we can use a custom Aircraft type.
+    """
+    class MyAircraft(Aircraft):
+        pass
+    sim = Infinite.setup(
+            "X-Sector",
+            initial_spawn_rate=0.05,
+            max_spawn_rate=0.1,
+            typeof_aircraft=MyAircraft,
+        )
+    
+    # wait for some aircraft to spawn
+    sim.evolve(60)
+    # should be some aircraft by now
+    assert len(sim.manager.environment.aircraft) > 0
+    # should all be of type `MyAircraft`
+    for aircraft in sim.manager.environment.aircraft.values():
+        assert isinstance(aircraft, MyAircraft)
+
+@pytest.mark.parametrize(
+        "fl_limits",
+        ((50,400), (300,350))
+)
+def test_springfield_fl_limits(fl_limits):
+    """
+    Test that on the Springfield sector, we only spawn aircraft within the
+    specified FL range.
+    """
+    for _ in range(10):
+        airspace, routes, _ = AirspaceLoader.load("Springfield")
+        sm = Infinite(
+            airspace=airspace, 
+            routes=routes, 
+            initial_spawn_rate=0.1,
+            max_spawn_rate=0.1,
+            fl_limits=fl_limits
+        )
+        em = sm.create_env_manager()
+        em.evolve(60)
+        for ac in em.environment.aircraft.values():
+            assert ac.fl >= fl_limits[0]
+            assert ac.fl <= fl_limits[1]
+
+
+@pytest.mark.parametrize(
+        "scenario_name", 
+        ("I-Sector","Y-Sector", "X-Sector", "Xplus-Sector", "Springfield")
+)        
+def test_sim_from_category(scenario_name):
+    """
+    Test that we can instantiate the simulator using "from_category"
+    """
+    s = Simulator.from_category("Infinite", scenario_name)
+    assert isinstance(s, Simulator)
