@@ -12,7 +12,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck":"npx --no-install tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch",
     "generate-client": "npx @rtk-query/codegen-openapi ./src/api/config.ts"
   },
@@ -50,7 +50,7 @@
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.12.0",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.69.0",
-    "vite": "^8.3.0"
+    "typescript-eslint": "^8.70.1",
+    "vite": "^8.3.1"
   }
 }
