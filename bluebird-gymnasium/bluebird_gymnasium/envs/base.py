@@ -77,6 +77,7 @@ from bluebird_gymnasium.utils.types import (
 
 if typing.TYPE_CHECKING:
     import matplotlib  # noqa: ICN001
+    from bluebird_dt.core import Airspace, Route
     from bluebird_dt.core.action import Action as SimAction
     from bluebird_dt.core.coordination import Coordination
     from bluebird_dt.core.environment import Environment as SimulatorEnv
@@ -118,43 +119,6 @@ class ScenarioGenSeedMode(Enum):
     NONE = auto()
     RESET_SEED_ATTRIBUTE = auto()
     LEGACY_MODULE_RNGS = auto()
-
-
-def _configure_airspace_metadata(env: BaseEnv, scenario_name: str) -> None:
-    """Set airspace-derived metadata needed before scenario reset."""
-
-    airspace, _routes, _sector_name = AirspaceLoader.load(scenario_name)
-
-    if "origin" not in env.config.airspace_config:
-        # the airspace generator stores the origin in reverse order
-        # i.e., lon, lat
-        origin = airspace.geo_helper.origin  # format: (lon, lat)
-        origin = (origin[1], origin[0])  # format: (lat, lon)
-        env.config.airspace_config["origin"] = origin
-
-    # trajectory predictor for computing an estimated
-    # future (rollout) trajectories. used in safety reward functions.
-    env.rollout_predictor = LinearPredictor(
-        dt=12,
-        fix_proximity_threshold=2.0,
-        fixes=airspace.fixes,
-        use_turn_model=False,
-    )
-    # if the `exit_window_width` value was originally None, override the
-    # default set in the parent class with a new default here (based on
-    # the sector/airspace geometry).
-    exit_window_width = env.config.airspace_config.get("exit_window_width", None)
-    if exit_window_width is None:
-        default_width = env.config.airspace_config.get("width", 20)
-        env.exit_window_width = default_width // 2
-    else:
-        env.exit_window_width = exit_window_width
-    # set the active airspace sector.
-    airspace_sectors = list(airspace.sectors.keys())
-    if len(airspace_sectors) == 1:
-        env.active_airspace_sector = airspace_sectors[0]
-    else:
-        raise ValueError("Could not initialise Sector")
 
 
 def _concat_state_action(state: NDArray[np.float32], action: int, num_actions: int) -> NDArray[np.float32]:
@@ -530,6 +494,48 @@ class BaseEnv(gym.Env):
 
         raise NotImplementedError
 
+    def _setup_airspace(self, scenario_name: str) -> tuple[Airspace, list[Route]]:
+        """Build the airspace and set airspace-derived metadata.
+
+        Args:
+            scenario_name: the `AirspaceLoader` scenario name for this env's
+                sector (e.g. "I-Sector").
+        """
+
+        airspace, routes, _ = AirspaceLoader.load(scenario_name, self.config.airspace_config)
+
+        if "origin" not in self.config.airspace_config:
+            # the airspace generator stores the origin in reverse order
+            # i.e., lon, lat
+            origin = airspace.geo_helper.origin  # format: (lon, lat)
+            origin = (origin[1], origin[0])  # format: (lat, lon)
+            self.config.airspace_config["origin"] = origin
+
+        # trajectory predictor for computing an estimated
+        # future (rollout) trajectories. used in safety reward functions.
+        self.rollout_predictor = LinearPredictor(
+            dt=12,
+            fix_proximity_threshold=2.0,
+            fixes=airspace.fixes,
+        )
+        # if the `exit_window_width` value was originally None, override the
+        # default set in the parent class with a new default here (based on
+        # the sector/airspace geometry).
+        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
+        if exit_window_width is None:
+            default_width = self.config.airspace_config.get("width", 20)
+            self.exit_window_width = default_width // 2
+        else:
+            self.exit_window_width = exit_window_width
+        # set the active airspace sector.
+        airspace_sectors = list(airspace.sectors.keys())
+        if len(airspace_sectors) == 1:
+            self.active_airspace_sector = airspace_sectors[0]
+        else:
+            raise ValueError("Could not initialise Sector")
+
+        return airspace, routes
+
     @contextlib.contextmanager
     def _use_reset_seed_for_scenario_generation(self, seed: int | None):
         """Apply the reset seed while generating a scenario.
@@ -649,7 +655,7 @@ class BaseEnv(gym.Env):
 
         return ignore_aircraft, bkgnd
 
-    def _is_background_traffic(self, callsign: str, entry_coord: None | Coordination) -> bool:  # noqa: ARG002
+    def _is_background_traffic(self, callsign: str, entry_coord: Coordination | None) -> bool:  # noqa: ARG002
         """Check if an aircraft is a background traffic."""
 
         # False by default, as is the case for artificial sectors
@@ -762,7 +768,7 @@ class BaseEnv(gym.Env):
         return self.traffic_monitor
 
     def get_tracked_aircraft_data_previous(
-        self, callsign: None | str = None, copy_data: bool = False
+        self, callsign: str | None = None, copy_data: bool = False
     ) -> dict[str, ACStateTracker] | ACStateTracker | None:
         """Returns aircraft tracked data for the previous step.
 
@@ -799,7 +805,7 @@ class BaseEnv(gym.Env):
         return ret
 
     def get_tracked_aircraft_data(
-        self, callsign: None | str = None, copy_data: bool = False
+        self, callsign: str | None = None, copy_data: bool = False
     ) -> dict[str, ACStateTracker] | ACStateTracker | None:
         """Returns aircraft tracked data.
 
@@ -2504,7 +2510,7 @@ class BaseEnv(gym.Env):
         prev_position_status: int,
         prev_incomm_status: bool,
         prev_outcomm_status: bool,
-        prev_incorrect_exit_position: None | Pos2D,
+        prev_incorrect_exit_position: Pos2D | None,
     ) -> ACPositionInfo:
         """Check the status of an aircraft in relation to the sector.
 
@@ -2949,7 +2955,7 @@ class BaseEnv(gym.Env):
             _msg = "`render_mode` can only be set to `None` or one of the following: {0}"
             raise ValueError(_msg.format(self.metadata["render_modes"]))
 
-    def render(self) -> None | NDArray[numpy.float32]:
+    def render(self) -> NDArray[numpy.float32] | None:
         """Render a frame and save to disk the current simulator state.
 
         Render a frame based on the current state of simulator and
@@ -3029,7 +3035,7 @@ class BaseEnv(gym.Env):
             return _mpl_to_rgb_array(figure, "png")
         return None
 
-    def render_w_overlay_trajectory(self, traj_dict: None | dict[str, list[Pos4D]] = None) -> None:
+    def render_w_overlay_trajectory(self, traj_dict: dict[str, list[Pos4D]] | None = None) -> None:
         """Render a frame and save to disk the current simulator state.
 
         Render a frame based on the current state of simulator and

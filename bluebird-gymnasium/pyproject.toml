@@ -1,6 +1,6 @@
 [project]
 name = "bluebird-gymnasium"
-version = "0.2.0"
+version = "0.3.1"
 license = "AGPL-3.0-or-later"
 description = "An gymnasium environment for air traffic control."
 authors = [{name="Project Bluebird"}]
@@ -9,9 +9,9 @@ requires-python = ">=3.10,<3.15"
 
 dependencies = [
     "gymnasium>=0.29.1",
-    "imageio>=2.37.3,<3",
+    "imageio>=2.37.4,<3",
     "jupyter>=1.1.1,<2",
-    "bluebird-dt==0.2.0",
+    "bluebird-dt==0.3.0",
 ]
 
 # list of extras (optional dependencies)
@@ -21,7 +21,7 @@ dependencies = [
 dev = [
     "pytest>=9.0.3,<10",
     "pytest-xdist>=3.8.0,<4.0.0",
-    "ruff>=0.15.11,<0.16",
+    "ruff>=0.16.9,<0.17",
 ]
 
 [project.urls]

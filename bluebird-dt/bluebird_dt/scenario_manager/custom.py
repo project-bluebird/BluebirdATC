@@ -9,6 +9,7 @@ from typing_extensions import override
 
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.core import Aircraft, Airspace, Pos3D, Route, WindField
+from bluebird_dt.core.coordination import Coordination, CoordinationsManager
 from bluebird_dt.events.event_handler import EventHandler
 from bluebird_dt.events.event_logger import EventLogger
 from bluebird_dt.logger import logger
@@ -16,7 +17,7 @@ from bluebird_dt.manager.environment_manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.scenario_manager_utils import create_aircraft_with_coordinations, laterally_offset_start_point
+from bluebird_dt.utility.scenario_manager_utils import laterally_offset_start_point
 
 
 class CustomScenarioManagerConfig(BaseModel):
@@ -42,7 +43,8 @@ class Custom(
     typing.Generic[TAircraft, TWindField, TForecastWindField, TEnvironmentManager, TEventLogger, TEventHandler],
 ):
     """
-    Aircraft generator for simple custom scenarios:
+    Aircraft generator for simple custom scenarios.
+    Scenarios can contain a set of starter aircraft with:
     - configurable number of Aircraft and balance of
       climbers/descenders/overfliers
     - randomly selected entry and exit Coordinations
@@ -51,26 +53,30 @@ class Custom(
       (same Fix, Flight Level and time)
     - ability to randomize the start position of aircraft within an entry fix
       through a stochastic sample of lateral distance from the entry fix.
+    Users can also add fully specified aircraft via the method
+    `add_aircraft_with_coordinations`.
     """
 
     projection_centre: tuple[float, float] | None = None
     num_aircraft: int
     airspace: Airspace
     routes: list[Route]
-    sector_name: str | None
-    balance: list[float] | None
-    speed_range: list[float] | None
+    sector_name: str
+    balance: tuple[float, float, float]
+    speed_range: tuple[float, float]
     time_entry_gap: float
     random_seed: int | None
     aircraft_on_route: bool
-    lateral_offset: tuple[int, int] | None
+    lateral_offset: tuple[float, float] | None
     start_time: int
     vertical_buffer_distance: float | int
     lateral_buffer_distance: float | int
+    fl_limits: tuple[int, int]
     typeof_environment_manager: type[TEnvironmentManager]
     typeof_event_handler: type[TEventHandler]
     typeof_aircraft: type[TAircraft]
     typeof_event_logger: type[TEventLogger]
+    user_added_aircraft: list[tuple[float, tuple[TAircraft, Coordination, Coordination]]]
 
     def __init__(
         self,
@@ -78,15 +84,16 @@ class Custom(
         airspace: Airspace,
         routes: list[Route],
         sector_name: str | None = None,
-        balance: tuple[float, float, float] | None = None,
+        balance: tuple[float, float, float] = (1 / 3, 1 / 3, 1 / 3),
         speed_range: tuple[float, float] | None = None,
         time_entry_gap: float = 5,
         random_seed: int | None = None,
-        aircraft_on_route: bool = False,
+        aircraft_on_route: bool = True,
         lateral_offset: tuple[float, float] | None = None,
         start_time: int = 0,
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
+        fl_limits: tuple[int, int] = (50, 400),
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_event_logger: type[TEventLogger] = EventLogger,
@@ -106,15 +113,15 @@ class Custom(
             The available Routes in the Airspace (choose one at random for each Aircraft Route).
         sector_name: str | None
             The name of the sector being simulated.  If not specified, use first sector in the airspace.
-        balance: list[float, float, float]
+        balance: tuple[float, float, float]
             Probabilities of any given Aircraft being one of climber/descender/overflier.
             The probabilities have to sum to 1 (Multinomial distribution parameter).
-        speed_range: list[float, float]
+        speed_range: tuple[float, float] | None
             Optional range of [min,max] speeds from which to randomly generate Aircraft speed.
             If not provided, speed of all Aircraft is set to 400.
         aircraft_on_route: bool
             If True, aircraft will automatically follow their route.  If False, they will travel on
-            constant heading unless they receive other instructions.  Default is False.
+            constant heading unless they receive other instructions.  Default is True.
         time_entry_gap: float
             Optional amount of time in seconds that must be maintained between two
             Aircraft entry Coordinations if they are at the same Fix and FL.
@@ -132,6 +139,10 @@ class Custom(
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
             Distance to expand airspace lateral boundary by - UoM: NMI
+        fl_limits: tuple[int, int], default is (50, 400).
+            Outer limits of FL at which aircraft can spawn.
+            (Note that if the airspace itself has more constrictive limits,
+            they will be used instead.)
         typeof_environment_manager: type[TEnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[TAircraft], optional
@@ -141,16 +152,14 @@ class Custom(
         typeof_event_handler: type[TEventHandler], optional
             If we want to use a derived class for the Event Handler, specify here.
         """
-        if balance is None:
-            balance = (1 / 3, 1 / 3, 1 / 3)
-        elif len(balance) != 3:
-            raise ValueError("balance must be None or a tuple of 3 values")
-        elif sum(balance) != 1.0:
+        if len(balance) != 3:
+            raise ValueError("balance must be a tuple of 3 values")
+        if sum(balance) != 1.0:
             # scale probabilities so they sum to 1
             balance = tuple([b / sum(balance) for b in balance])
         self.balance = balance
         if speed_range is None:
-            speed_range = [400.0, 400.0]
+            speed_range = (400.0, 400.0)
         elif len(speed_range) != 2:
             raise ValueError("speed_range must be None or a tuple of 2 values")
         self.speed_range = speed_range
@@ -168,6 +177,7 @@ class Custom(
         self.start_time = start_time
         self.vertical_buffer_distance = vertical_buffer_distance
         self.lateral_buffer_distance = lateral_buffer_distance
+        self.fl_limits = fl_limits
         self.rng = np.random.default_rng(random_seed)
         self.typeof_environment_manager = typeof_environment_manager
         self.typeof_event_handler = typeof_event_handler
@@ -177,7 +187,7 @@ class Custom(
         # If users want to fully customize the scenario, specifying every aircraft,
         # we keep a list of custom aircraft, with their coordinations, and their start times.
         # i.e. [(start_time, (Aircraft, Coordination, Coordination)), ...]
-        self.user_added_aircraft: list[tuple[float, tuple[Aircraft, Coordination, Coordination]]] = []
+        self.user_added_aircraft: list[tuple[float, tuple[TAircraft, Coordination, Coordination]]] = []
 
     @override
     def create_event_handler(self) -> TEventHandler:
@@ -195,15 +205,19 @@ class Custom(
         journey_type = ["climb"] * climbers + ["descend"] * descenders + ["overfly"] * overfliers
         self.rng.shuffle(journey_type)
         # sector.get_bounds returns two arrays of [lat, lon, fl] - we want the last element of each.
-        min_fl, max_fl = [b[2] for b in self.airspace.sectors[self.sector_name].get_bounds()]
-
+        sector_min_fl, sector_max_fl = [b[2] for b in self.airspace.sectors[self.sector_name].get_bounds()]
+        # take the more restrictive of the sector bounds and the requested fl bounds.
+        min_fl = max(sector_min_fl, self.fl_limits[0])
+        max_fl = min(sector_max_fl, self.fl_limits[1])
         allowed_FLs = np.arange(min_fl, max_fl + 10, 10, dtype="float")
 
         # keep track of start fixes and entry coordinations to avoid clashes
-        entries = defaultdict(lambda: defaultdict(list))
+        entries: dict[str, dict[int, list[int]]] = defaultdict(lambda: defaultdict(list))
 
         # create empty event handler
-        event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
+        event_handler = self.typeof_event_handler(
+            ignore=self.event_handler_ignore_flags, typeof_aircraft=self.typeof_aircraft
+        )
 
         for i in range(self.num_aircraft):
             route = self.rng.choice(self.routes)
@@ -251,7 +265,7 @@ class Custom(
             # so take heading from start_fix to next_fix rather than aircraft pos to next_fix.
             heading = start_fix.bearing_to(self.airspace.fixes.places[route.filed[1]])
 
-            aircraft, coordination_entry, coordination_exit = create_aircraft_with_coordinations(
+            aircraft, coordination_entry, coordination_exit = CoordinationsManager.aircraft_with_coordinations(
                 callsign=callsign,
                 pos=pos,
                 heading=heading,
@@ -336,7 +350,7 @@ class Custom(
         self.user_added_aircraft.append(
             (
                 aircraft_start_time,
-                create_aircraft_with_coordinations(
+                CoordinationsManager.aircraft_with_coordinations(
                     callsign=callsign,
                     pos=pos,
                     heading=heading,
@@ -347,6 +361,7 @@ class Custom(
                     exit_fl=exit_fl,
                     on_route=on_route,
                     airspace=self.airspace,
+                    typeof_aircraft=self.typeof_aircraft,
                 ),
             )
         )
@@ -374,17 +389,23 @@ class Custom(
         Returns
         ----------
         TEnvironmentManager
-            Environment Manager for Tactical scenario
+            Environment Manager for Custom scenario
         """
 
         logger.info(
             f"""
 
         ===================================================================
-        Creating Custom Scenario with {self.num_aircraft} aircraft.
+        Creating Custom Scenario with {self.num_aircraft} initial aircraft,
+        and {len(self.user_added_aircraft)} custom aircraft.
         """
         )
-
+        if self.num_aircraft + len(self.user_added_aircraft) == 0:
+            raise RuntimeError("""
+            No initial or custom aircraft specified.
+            To add custom aircraft, call the `add_aircraft_with_coordinations` method BEFORE
+            calling `create_env_manager`.
+            """)
         # create SimplePredictor if no Predictor passed
         if predictor is None:
             predictor = SimplePredictor(1.0, 2.0)
@@ -431,17 +452,18 @@ class Custom(
         category: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         env_manager: TEnvironmentManager | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
-    ) -> Simulator:
+    ) -> TSimulator:
         """
-        Create a Simulator instance for Tactical scenarios.
+        Create a Simulator instance for Custom scenarios.
 
         Parameters
         ----------
@@ -453,8 +475,6 @@ class Custom(
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
@@ -463,12 +483,15 @@ class Custom(
             The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], optional
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios. Defaults to "ALL".
         env_manager: TEnvironmentManager | None
             If given, use this EnvironmentManager as the Simulator's `manager`.
             Default is None, in which case a new EnvironmentManager will be created.
@@ -497,12 +520,13 @@ class Custom(
             category="Custom",
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
             predictor=predictor,
-            simulated_sectors=simulated_sectors,
         )
 
     @classmethod
@@ -512,21 +536,24 @@ class Custom(
         num_aircraft: int = 2,
         balance: tuple[float, float, float] = (1 / 3, 1 / 3, 1 / 3),
         speed_range: tuple[float, float] | None = None,
-        aircraft_on_route: bool = False,
+        aircraft_on_route: bool = True,
         lateral_offset: tuple[float, float] | None = None,
         time_entry_gap: float = 5.0,
         start_time: float = 0.0,
         random_seed: int | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
+        fl_limits: tuple[int, int] = (50, 400),
+        typeof_airspace_loader: type[TAirspaceLoader] = AirspaceLoader,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -549,7 +576,7 @@ class Custom(
             Optional, if not set, aircraft speeds are set between 350 and 450 knots.
         aircraft_on_route: bool
             If True, aircraft will follow route by default, in False, they will travel
-            at constant heading until instructed otherwise.  Default is False.
+            at constant heading until instructed otherwise.  Default is True.
         lateral_offset: tuple[float, float]
             min, max values for laterally offsetting start position from route centreline.
         time_entry_gap: float
@@ -560,8 +587,6 @@ class Custom(
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
@@ -570,16 +595,24 @@ class Custom(
             The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
             Distance to expand airspace lateral boundary by - UoM: NMI
+        fl_limits: tuple[int, int], default is (50, 400).
+            min, max FL at which aircraft can be spawned.
+            Note that the airspace itself may have more restrictive limits.
+        typeof_airspace_loader: type[AirspaceLoader], optional
+            If we want to use a derived class of airspace loader, specify here.
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -596,7 +629,7 @@ class Custom(
             A fully configured simulator instance
         """
 
-        airspace, routes, sector_name = AirspaceLoader.load(scenario_name)
+        airspace, routes, sector_name = typeof_airspace_loader.load(scenario_name)
         return cls(
             airspace=airspace,
             routes=routes,
@@ -611,6 +644,7 @@ class Custom(
             random_seed=random_seed,
             vertical_buffer_distance=vertical_buffer_distance,
             lateral_buffer_distance=lateral_buffer_distance,
+            fl_limits=fl_limits,
             typeof_aircraft=typeof_aircraft,
             typeof_event_logger=typeof_event_logger,
             typeof_event_handler=typeof_event_handler,
@@ -622,9 +656,10 @@ class Custom(
             scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
-            simulated_sectors=simulated_sectors,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
             typeof_simulator=typeof_simulator,
         )

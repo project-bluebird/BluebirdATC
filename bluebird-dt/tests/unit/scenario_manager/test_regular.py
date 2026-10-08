@@ -1,4 +1,6 @@
 import pytest
+from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
+from bluebird_dt.core import Aircraft, Pos3D
 from bluebird_dt.events.event_handler import EventHandler
 from bluebird_dt.scenario_manager import Regular
 from bluebird_dt.manager import EnvironmentManager
@@ -100,7 +102,6 @@ def test_all_airspaces(airspace_routes, request):
             assert volume.min_fl <= entry_coord.fl <= volume.max_fl
             assert volume.min_fl <= exit_coord.fl <= volume.max_fl
 
-
 def test_repeat(generate_i):
     """
     Check generator works when called multiple times.
@@ -139,3 +140,68 @@ def test_create_env_manager(generate_i):
 
     assert em.environment.wind_field is None
     assert em.environment.forecast_wind_field is None
+
+def test_different_aircraft_type(generate_i):
+    """
+    Test that we can use a custom Aircraft type.
+    """
+    class MyAircraft(Aircraft):
+        pass
+    airspace, routes = generate_i
+    total_time = 600
+    num_aircraft = 4
+    sm = Regular(total_time, num_aircraft, airspace=airspace, routes=routes, typeof_aircraft=MyAircraft, random_seed=123)
+    
+    sim = sm.to_simulator()
+    # wait for all aircraft to spawn
+    sim.evolve(total_time)
+    assert len(sim.manager.environment.aircraft) == num_aircraft
+    # should all be of type `MyAircraft`
+    for aircraft in sim.manager.environment.aircraft.values():
+        assert isinstance(aircraft, MyAircraft)
+
+@pytest.mark.parametrize("start_time",
+    [
+        0,
+        500,
+        1000,
+    ],
+)
+def test_different_start_time(generate_i, start_time):
+    """
+    Test that we can set the start timestamp
+    """
+    airspace, routes = generate_i
+    total_time = 800
+    num_aircraft = 4
+    sm = Regular(total_time, num_aircraft, airspace=airspace, routes=routes, start_time=start_time, random_seed=123)
+    
+    sim = sm.to_simulator()
+    assert sim.manager.environment.time > start_time and sim.manager.environment.time < start_time + total_time
+    # wait for all aircraft to spawn
+    sim.evolve(total_time)
+    assert len(sim.manager.environment.aircraft) == 4 
+
+@pytest.mark.parametrize(
+        "fl_limits",
+        ((50,400), (300,350))
+)
+def test_springfield_fl_limits(fl_limits):
+    """
+    Test that on the Springfield sector, we only spawn aircraft within the
+    specified FL range.
+    """
+    for _ in range(10):
+        airspace, routes, _ = AirspaceLoader.load("Springfield")
+        sm = Regular(
+            airspace=airspace, 
+            routes=routes,
+            total_time=500,
+            num_aircraft=10,
+            fl_limits=fl_limits
+        )
+        em = sm.create_env_manager()
+        em.evolve(60)
+        for ac in em.environment.aircraft.values():
+            assert ac.fl >= fl_limits[0]
+            assert ac.fl <= fl_limits[1]

@@ -303,7 +303,7 @@ def predict_trajectory(
 
 def aircraft_entry_coordination(
     callsign: str, simulator_env: SimulatorEnv, sector_name: str | None = None
-) -> None | Coordination | list[Coordination]:
+) -> Coordination | list[Coordination] | None:
     """Get the entry coordination of an aircraft.
 
     Args:
@@ -340,7 +340,7 @@ def aircraft_entry_coordination(
 
 def aircraft_exit_coordination(
     callsign: str, simulator_env: SimulatorEnv, sector_name: str | None = None
-) -> None | Coordination | list[Coordination]:
+) -> Coordination | list[Coordination] | None:
     """Get the exit coordination of an aircraft.
 
     Args:

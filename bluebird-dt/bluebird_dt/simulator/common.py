@@ -1,6 +1,7 @@
 import os
 
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
+from bluebird_dt.logger import logger
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager
 from bluebird_dt.utility.paths import LOG_DIR
 
@@ -38,6 +39,13 @@ def list_sim_scenarios(category: str) -> list[str]:
                 for file in os.listdir(LOG_DIR)
                 if file.endswith(".tar.gz") and not file.startswith(".")
             ]
+        )
+    if category == "Artificial":
+        logger.warning(
+            """
+            The 'Artificial' scenario category is deprecated.
+            Please use 'Two Aircraft', 'Regular', 'Custom' or 'Infinite'.
+            """
         )
 
     raise ValueError(f"Unknown scenario category: {category}")

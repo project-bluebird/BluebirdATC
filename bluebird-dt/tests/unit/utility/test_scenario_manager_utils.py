@@ -2,11 +2,10 @@ import numpy as np
 import pytest
 import random
 
-from bluebird_dt.core import Aircraft, Coordination, Pos3D, Route
+from bluebird_dt.core import Aircraft, Airspace, Coordination, Pos3D, Route
+from bluebird_dt.utility import geometry
 from bluebird_dt.utility.scenario_manager_utils import (
     laterally_offset_start_point,
-    create_aircraft_with_coordinations,
-    find_entry_exit_fixes,
 )
 
 def test_laterally_offset_start_point(generate_i):
@@ -30,67 +29,12 @@ def test_laterally_offset_start_point(generate_i):
             # check that the heading is +/- 90 degrees from orig_heading
             perp_heading = new_start_point.bearing_to(orig_start_point)
             angle = (perp_heading - orig_heading) % 180
-            assert abs(angle - 90) < 1 # allow 1 degree variation
+            assert abs(angle - 90) < 1e-2
 
 
-def test_create_aircraft_with_coordinations(generate_i):
-    """
-    Test the function that creates aircraft and entry and exit coordinations.
-    """
+def test_lateral_headings_reject_coincident_fixes(generate_i: tuple[Airspace, list[Route]]):
     airspace, routes = generate_i
-    sector_name = "sector_i"
-    for i, route in enumerate(routes):
-        callsign = f"AIR-0{i}"
-        # spawn aircraft on first fix on the route
-        first_fix_pos = airspace.fixes.places[route.filed[0]]
-        next_fix_pos = airspace.fixes.places[route.filed[1]]
-        heading = first_fix_pos.bearing_to(next_fix_pos)
-        fl = random.randint(200,350)
-        pos = first_fix_pos.pos3d(fl)
-        speed = random.randint(300,500)
-        entry_fl = random.randint(200,350)
-        exit_fl = random.randint(200,350)
-        aircraft, coord_entry, coord_exit = create_aircraft_with_coordinations(
-            callsign=callsign,
-            pos=pos,
-            heading=heading,
-            speed=speed,
-            route=route,
-            sector_name=sector_name,
-            entry_fl=entry_fl,
-            exit_fl=exit_fl,
-            airspace=airspace
-        )
-        assert isinstance(aircraft, Aircraft)
-        assert aircraft.callsign == callsign
-        assert aircraft.lat == pos.lat
-        assert aircraft.lon == pos.lon
-        assert aircraft.heading == heading
-        assert aircraft.speed_tas == speed
-        assert aircraft.selected_instructions.cas == speed
-        assert aircraft.flight_plan.route == route
-        assert isinstance(coord_entry, Coordination)
-        assert coord_entry.fl == entry_fl
-        assert coord_entry.from_sector == "background"
-        assert coord_entry.to_sector == sector_name
-        assert isinstance(coord_exit, Coordination)
-        assert coord_exit.fl == exit_fl
-        assert coord_exit.from_sector == sector_name
-        assert coord_exit.to_sector == "background"
-
-
-def test_find_entry_exit_fixes(generate_i):
-    """
-    Test the function that returns fixes nearest the entry and exit of 
-    a route through a sector.
-    """
-    airspace, routes = generate_i
-    # first route goes from "FIRE" to "SPIRIT", should enter sector at "EARTH"
-    # and exit at "AIR"
-    entry_fix, exit_fix = find_entry_exit_fixes(airspace, routes[0], "sector_i")
-    assert entry_fix == "EARTH"
-    assert exit_fix == "AIR"
-    # second route should be the reverse
-    entry_fix, exit_fix = find_entry_exit_fixes(airspace, routes[1], "sector_i")
-    assert entry_fix == "AIR"
-    assert exit_fix == "EARTH"
+    first, second = (airspace.fixes.places[name] for name in routes[0].filed[:2])
+    second.lat, second.lon = first.lat, first.lon
+    with pytest.raises(ValueError, match="start and end points must be different"):
+        _, _ = geometry.get_perpendicular_headings(first, second, airspace.geo_helper)

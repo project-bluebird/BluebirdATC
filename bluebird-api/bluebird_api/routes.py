@@ -3,48 +3,28 @@ The routes module builds the router for the provided endpoint and adds any endpo
 BluebirdATC, including loading which is implementation dependent.
 """
 
-import asyncio
+from fastapi import APIRouter
 
-from fastapi import APIRouter, Depends, Request
-
-from bluebird_api.models import RunnerStore
-from bluebird_api.routers.core import background_tasks
-from bluebird_api.runner import Runner
+from bluebird_api.runner import RunnerStoreDep
 
 from .routers import (
     core_router,
 )
 
-
-async def simulator(request: Request):
-    """
-    The simulator dependency, available to endpoints using the RunnerDep dependency, provides access to the runner.
-    """
-
-    request.state.runner = RunnerStore.current_runner
-
-
-router = APIRouter(dependencies=[Depends(simulator)])
-
+router = APIRouter()
 router.include_router(core_router)
 
 
 @router.post("/load/{category}/{scenario_name}", tags=["Control"])
-async def load(category: str, scenario_name: str) -> bool:  # noqa: ARG001
+async def load(category: str, scenario_name: str, runner_store: RunnerStoreDep) -> bool:  # noqa: ARG001
     """
     End any existing run, then create a new Runner and load a given simulator scenario.
     """
+    if runner_store.current_runner is not None:
+        await runner_store.delete()
 
-    if RunnerStore.current_runner is not None:
-        await RunnerStore.current_runner.delete()
+    runner_store.initialise_from_category(category, scenario_name)
 
-    RunnerStore.current_runner = Runner(category, scenario_name)
-
-    # start the task
-    task = asyncio.create_task(RunnerStore.current_runner.run_main())
-
-    # add the task to the background tasks set and have it auto-remove its reference from the set when done
-    background_tasks.add(task)
-    task.add_done_callback(background_tasks.remove)
+    runner_store.start()
 
     return True

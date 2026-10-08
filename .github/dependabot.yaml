@@ -1,9 +1,42 @@
 version: 2
+
+multi-ecosystem-groups:
+  ruff:
+    schedule:
+      interval: weekly
+    labels:
+    - "C-dependencies"
+
 updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
   - package-ecosystem: "uv"
     directory: "/"
-    target-branch: "dev"
     versioning-strategy: "increase-if-necessary"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "C-dependencies"
+    cooldown:
+      default-days: 7
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "ruff"
+        update-types:
+          - "minor"
+          - "patch"
+    patterns:
+      - "ruff"
+    multi-ecosystem-group: "ruff"
+
+  - package-ecosystem: "npm"
+    directory: "/bluebird-hmi"
     schedule:
       interval: "weekly"
     labels:
@@ -18,19 +51,14 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "npm"
-    directory: "/bluebird-hmi"
-    target-branch: "dev"
+  - package-ecosystem: "pre-commit"
+    directory: "/"
     schedule:
       interval: "weekly"
     labels:
       - "C-dependencies"
     cooldown:
       default-days: 7
-    groups:
-      all-dependencies:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
+    patterns:
+      - "astral-sh/ruff-pre-commit"
+    multi-ecosystem-group: "ruff"

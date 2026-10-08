@@ -1,5 +1,5 @@
 import typing
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -8,13 +8,13 @@ from typing_extensions import override
 
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.core import Aircraft, Airspace, Route, WindField
+from bluebird_dt.core.coordination import CoordinationsManager
 from bluebird_dt.events import EventHandler, EventLogger
 from bluebird_dt.logger import logger
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.scenario_manager_utils import create_aircraft_with_coordinations
 
 
 class RegularScenarioManagerConfig(BaseModel):
@@ -37,26 +37,30 @@ TSimulator = typing.TypeVar("TSimulator", bound=Simulator)
 TAirspaceLoader = typing.TypeVar("TAirspaceLoader", bound=AirspaceLoader)
 
 
-class Regular(ScenarioManager[RegularScenarioManagerConfig]):
+class Regular(
+    ScenarioManager[RegularScenarioManagerConfig],
+    typing.Generic[TAircraft, TWindField, TForecastWindField, TEnvironmentManager, TEventLogger, TEventHandler],
+):
     """
     Quasi-regularly spaced Aircraft emitted from Route starts.
     """
 
     projection_centre: tuple[float, float] | None = None
-    event_handler_ignore_flags: typing.ClassVar[EventHandler.IgnoreFlags]
+    event_handler_ignore_flags: EventHandler.IgnoreFlags
     total_time: float
     num_aircraft: int
     airspace: Airspace
     routes: list[Route]
-    sector_name: str | None
+    sector_name: str
     start_time: float
     random_seed: int | None
     vertical_buffer_distance: int | float
     lateral_buffer_distance: int | float
+    fl_limits: tuple[int, int]
     typeof_environment_manager: type[TEnvironmentManager]
     typeof_event_handler: type[TEventHandler]
     typeof_aircraft: type[TAircraft]
-    typeof_eventlogger: type[TEventLogger]
+    typeof_event_logger: type[TEventLogger]
 
     def __init__(
         self,
@@ -69,6 +73,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
         random_seed: int | None = None,
         vertical_buffer_distance: int | float = 500,
         lateral_buffer_distance: int | float = 20,
+        fl_limits: tuple[int, int] = (50, 400),
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -91,14 +96,25 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
             The available Routes in the Airspace (choose one at random for each Aircraft Route).
         sector_name: str | None,
             The sector name to be used in Coordinations.  If not specified, use the first sector in airspace.
-        start_time: int
-            Start time of scenario, in unix time (seconds)
+        start_time: float
+            Start time of scenario, in unix time (seconds), default is 0.
         random_seed: int | None
             If given, set the seed for the random number generator, for reproducibility.
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
             Distance to expand airspace lateral boundary by - UoM: NMI
+        fl_limits: tuple[int, int], default is (50, 400)
+            The min, max FL at which aircraft can spawn.
+            Note that the airspace itself may have more restrictive limits.
+        typeof_environment_manager: type[EnvironmentManager], optional
+            If we want to use a derived class of env manager, specify here.
+        typeof_aircraft: type[Aircraft], optional
+            If we want to use a derived class for the aircraft class, specify here.
+        typeof_event_logger: type[EventLogger], optional
+            If we want to use a derived class for the event logger, specify here.
+        typeof_event_handler: type[EventHandler], optional
+            If we want to use a derived class for the Event Handler, specify here.
         """
 
         if total_time <= 0.0:
@@ -121,6 +137,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
         self.typeof_aircraft = typeof_aircraft
         self.event_handler_ignore_flags = typeof_event_handler.IgnoreFlags()
         self.rng = np.random.default_rng(random_seed)
+        self.fl_limits = fl_limits
 
     @override
     def create_event_handler(self) -> EventHandler:
@@ -132,10 +149,16 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
         EventHandler
         """
         # create empty event handler
-        event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
+        event_handler = self.typeof_event_handler(
+            ignore=self.event_handler_ignore_flags,
+            typeof_aircraft=self.typeof_aircraft,
+        )
 
         volume = self.airspace.sectors[self.sector_name].volumes[0]
-        allowed_FLs = np.arange(volume.min_fl, volume.max_fl + 10, 10, dtype="float")
+        # take the more restrictive of the airspace FL limits and this instance's.
+        min_fl = max(volume.min_fl, self.fl_limits[0])
+        max_fl = min(volume.max_fl, self.fl_limits[1])
+        allowed_FLs = np.arange(min_fl, max_fl + 10, 10, dtype="float")
 
         # Create start times for all Aircraft ensuring that the Aircraft starts
         # are quasi-regularly spaced between start of scenario and self.total_time.
@@ -144,7 +167,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
         t = -start_times[0] * 0.5
         for i in range(len(start_times)):
             t += start_times[i]
-            start_times[i] = (t / total) * self.total_time
+            start_times[i] = self.start_time + (t / total) * self.total_time
 
         for i, start_t in enumerate(start_times):
             flight_time = 1800.0  # in seconds
@@ -159,7 +182,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
             pos = self.airspace.fixes.places[route.filed[0]].pos3d(entry_fl)
             heading = self.airspace.fixes.places[route.filed[0]].bearing_to(self.airspace.fixes.places[route.filed[1]])
 
-            aircraft, coordination_entry, coordination_exit = create_aircraft_with_coordinations(
+            aircraft, coordination_entry, coordination_exit = CoordinationsManager.aircraft_with_coordinations(
                 callsign=callsign,
                 pos=pos,
                 heading=heading,
@@ -169,7 +192,7 @@ class Regular(ScenarioManager[RegularScenarioManagerConfig]):
                 entry_fl=entry_fl,
                 exit_fl=exit_fl,
                 airspace=self.airspace,
-                on_route=False,
+                on_route=True,
                 typeof_aircraft=self.typeof_aircraft,
             )
 
@@ -245,17 +268,21 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         scenario_name: str,
         total_time: float,
         num_aircraft: int,
+        start_time: float = 0.0,
         random_seed: int | None = None,
         vertical_buffer_distance: int | float = 500,
         lateral_buffer_distance: int | float = 20,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
+        fl_limits: tuple[int, int] = (50, 400),
+        typeof_airspace_loader: type[TAirspaceLoader] = AirspaceLoader,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_event_logger: type[TEventLogger] = EventLogger,
@@ -268,12 +295,12 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         ----------
         scenario_name: str
             The scenario name
-        scenario_type: typing.Literal["random","overflier", "climber", "descender"]
-            Describes the behaviour of the second aircraft in the scenario.
         total_time: float
             The total time in seconds for the scenario to run
         num_aircraft: int
             The total number of aircraft that will be generated, evenly spaced throughout total_time.
+        start_time: float
+            Start time of scenario, in unix time (seconds). Default is 0.
         random_seed: int | None
             Optionally set the seed for the random number generator.
         vertical_buffer_distance: int or float, default is 500
@@ -284,8 +311,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
@@ -294,14 +319,20 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
-        env_manager_class: type, optional
-            if specified, use this class (maybe a subclass of BluebirdATC EventManager).
+        fl_limits: tuple[int, int], optional
+            The min, max FL at which aircraft can spawn. Default is (50, 400).
+            Note that the airspace itself may have more restrictive limits.
+        typeof_airspace_loader: type[AirspaceLoader], optional
+            If we want to use a derived class of airspace loader, specify here.
         typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
@@ -318,52 +349,37 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             A fully configured simulator instance
         """
 
-        airspace, routes, sector_name = AirspaceLoader.load(scenario_name)
+        airspace, routes, sector_name = typeof_airspace_loader.load(scenario_name)
 
-        sim = cls(
+        return cls(
             airspace=airspace,
             routes=routes,
             sector_name=sector_name,
             total_time=total_time,
             num_aircraft=num_aircraft,
+            start_time=start_time,
             random_seed=random_seed,
             vertical_buffer_distance=vertical_buffer_distance,
             lateral_buffer_distance=lateral_buffer_distance,
+            fl_limits=fl_limits,
             typeof_aircraft=typeof_aircraft,
             typeof_event_handler=typeof_event_handler,
             typeof_event_logger=typeof_event_logger,
             typeof_environment_manager=typeof_environment_manager,
         ).to_simulator(
             log_filename=log_filename,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
             predictor=predictor,
             category="Regular",
             scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
-            simulated_sectors=simulated_sectors,
             typeof_simulator=typeof_simulator,
         )
-        # if needed, fast-forward to the first aircraft entry time, ensuring that it is
-        # a multiple of the evolve time-step
-        first_entry_time = sim.manager.event_handler.radar_df.index.min().replace(tzinfo=timezone.utc).timestamp()
-
-        time_step = 6.0
-
-        # if the first time is a multiple of the time step, evolve one extra step.
-        # note that 0 % anything == 0 (except 0!), so this accounts for the case where the first entry time is 0
-        if first_entry_time % time_step == 0:
-            evolve_time = first_entry_time + time_step
-
-        # otherwise, evolve to the smallest multiple of time_step that is higher than the entry time
-        else:
-            evolve_time = ((first_entry_time // time_step) + 1) * time_step
-
-        sim.manager.evolve(evolve_time)
-
-        return sim
 
     def to_simulator(
         self,
@@ -371,45 +387,47 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
         category: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
         typeof_simulator: type[TSimulator] = Simulator,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
     ) -> Simulator:
         """
         Create a Simulator instance for Regular scenarios.
 
         Parameters
         ----------
-        scenario_name : str | None, optional
-            Name of the scenario. Default is None.
         category : str | None, optional
             Category of the simulation. Default is None.
+        scenario_name : str | None, optional
+                    Name of the scenario. Default is None.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], optional
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios. Defaults to "ALL".
         typeof_simulator: type[TSimulator]
             If we want to create a derived class of Simulator, specify here
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
 
         Returns
         -------
@@ -429,14 +447,15 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             scenario_manager=self,
             env_manager=env_manager,
             projection_centre=self.projection_centre,
-            scenario_name=scenario_name,
             category=category,
+            scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
-            predictor=predictor,
-            simulated_sectors=simulated_sectors,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )

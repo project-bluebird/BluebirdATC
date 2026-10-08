@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from bluebird_dt.airspace_generator.airspace_generator import AirspaceGenerator
@@ -9,7 +10,8 @@ from bluebird_dt.utility.airspace_data import create_sector, load_fixes
 from bluebird_dt.utility.paths import SPRINGFIELD_DIR
 
 
-class SpringfieldAirspace(AirspaceGenerator):
+@dataclass(init=True)
+class SpringfieldAirspaceGenerator(AirspaceGenerator):
     """
     Springfield airspace generator.
     """
@@ -19,27 +21,16 @@ class SpringfieldAirspace(AirspaceGenerator):
     airways_path: str = os.path.join(SPRINGFIELD_DIR, "airways.json")
     routes_path: str = os.path.join(SPRINGFIELD_DIR, "routes_and_exits.json")
 
-    def __init__(
-        self,
-    ):
-        """
-        Construct a new instance.
-
-        Parameters
-        ----------
-
-        """
-
     def generate_airspace(self) -> tuple[Airspace, list[Route]]:
         """
-        Generate an Airspace.
+        Generate an Airspace and Routes.
 
         Returns
         ----------
         tuple[Airspace, list[Route]]
             A tuple containing the new airspace object and its corresponding routes.
         """
-        # Generate airspace and set up geo_helper
+        # Generate airspace and routes.
         airspace = self._airspace_init()
         routes = self._routes_init()
 
@@ -60,9 +51,9 @@ class SpringfieldAirspace(AirspaceGenerator):
         """
 
         sector_paths = [
-            os.path.join(SpringfieldAirspace.sector_path, f)
-            for f in os.listdir(SpringfieldAirspace.sector_path)
-            if os.path.isfile(os.path.join(SpringfieldAirspace.sector_path, f))
+            os.path.join(SpringfieldAirspaceGenerator.sector_path, f)
+            for f in os.listdir(SpringfieldAirspaceGenerator.sector_path)
+            if os.path.isfile(os.path.join(SpringfieldAirspaceGenerator.sector_path, f))
         ]
 
         sectors: dict[str, Sector] = {}
@@ -100,7 +91,7 @@ class SpringfieldAirspace(AirspaceGenerator):
         Fixes
             An object which stores all the loaded fixes.
         """
-        return load_fixes(fixes_path=SpringfieldAirspace.fixes_path)
+        return load_fixes(fixes_path=SpringfieldAirspaceGenerator.fixes_path)
 
     @staticmethod
     def _airways_init(fixes: Fixes) -> dict[str, Airway]:
@@ -114,7 +105,7 @@ class SpringfieldAirspace(AirspaceGenerator):
             and the value the corresponding Airway object.
         """
 
-        with open(SpringfieldAirspace.airways_path) as f:
+        with open(SpringfieldAirspaceGenerator.airways_path) as f:
             airway_data = json.load(f)
 
         airways: dict[str, Airway] = {}
@@ -133,12 +124,12 @@ class SpringfieldAirspace(AirspaceGenerator):
         -------
         airspace: Airspace, the Springfield airspace, with some sectors bandboxed.
         """
-        fixes = SpringfieldAirspace._fixes_init()
+        fixes = SpringfieldAirspaceGenerator._fixes_init()
 
         return Airspace(
-            sectors=SpringfieldAirspace._sectors_init(),
+            sectors=SpringfieldAirspaceGenerator._sectors_init(),
             fixes=fixes,
-            airways=SpringfieldAirspace._airways_init(fixes),
+            airways=SpringfieldAirspaceGenerator._airways_init(fixes),
         )
 
     @staticmethod
@@ -152,7 +143,7 @@ class SpringfieldAirspace(AirspaceGenerator):
         list[Route]
             A list of possible routes within the Springfield airspace.
         """
-        with open(SpringfieldAirspace.routes_path) as f:
+        with open(SpringfieldAirspaceGenerator.routes_path) as f:
             routes_data = json.load(f)
 
         return [Route(r["route"]) for r in routes_data["mats_routes"]]

@@ -25,6 +25,7 @@ To instantiate an environment in the suite, for example, the X sector environmen
 ```python
 import gymnasium as gym
 import bluebird_gymnasium
+
 env = gym.make("SectorXEnv-v0")
 ```
 

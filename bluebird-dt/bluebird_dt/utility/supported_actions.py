@@ -5,6 +5,8 @@ SUPPORTED_ACTIONS = {
         "change_flight_level_by",
         "descend_when_ready,level_by_fix",
         "descend_now,level_by_fix",
+        "expect_level_by_fix,climb",
+        "expect_level_by_fix,descend",
     ],
     "vertical_speed": ["change_vertical_speed_to"],
     "lateral": [

@@ -4,7 +4,7 @@ import json
 
 import geojson
 from pydantic import BaseModel
-from typing_extensions import override
+from typing_extensions import Generator, override
 
 from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.mixin import Comparison
@@ -129,18 +129,18 @@ class Fixes(BaseModel, Comparison):
         >>> Fixes.from_json(
         >>>     '''
         >>>     {
-        >>>     "CAMBG": "52.2069N 0.1713E",
-        >>>     "EXTER": "50.7350N 3.4153W",
-        >>>     "HTHRW": "51.4700N 0.4543W",
-        >>>     "STHPN": "50.9515N 1.3577W"
+        >>>     "CAMBG": [52.2069, 0.1713],
+        >>>     "EXTER": [50.7350, -3.4153],
+        >>>     "HTHRW": [51.4700, -0.4543],
+        >>>     "STHPN": [50.9515, -1.3577]
         >>>     }
         >>>     '''
         >>> )
         """
 
-        places = {}
+        places: dict[str, Pos2D] = {}
         for name, coord in json.loads(s).items():
-            places[name] = Pos2D.from_str(coord)
+            places[name] = Pos2D.from_list(coord)
 
         return Fixes(places)
 
@@ -165,7 +165,10 @@ class Fixes(BaseModel, Comparison):
 
         for feature in features["features"]:
             if isinstance(feature["geometry"], geojson.Point):
-                waypoint_name: str = feature["properties"]["name"]
+                if "name" in feature["properties"]:
+                    waypoint_name: str = feature["properties"]["name"]
+                else:
+                    waypoint_name = feature["properties"]["fix"]
                 places[waypoint_name] = Pos2D.from_geojson(feature["geometry"])
 
         return Fixes(places)
@@ -189,7 +192,7 @@ class Fixes(BaseModel, Comparison):
         with open(filename) as fd:
             return Fixes.from_json(fd.read())
 
-    def data(self) -> dict[str, str]:
+    def data(self) -> dict[str, list[float]]:
         """
         Create a dictionary with key/value pairs representing the Fixes places data.
 
@@ -198,10 +201,10 @@ class Fixes(BaseModel, Comparison):
         dict
         """
 
-        data: dict[str, str] = {}
+        data: dict[str, list[float]] = {}
 
         for name, coord in self.places.items():
-            data[name] = f"{coord}"
+            data[name] = [coord.lat, coord.lon]
 
         return data
 
@@ -236,3 +239,6 @@ class Fixes(BaseModel, Comparison):
 
     def get(self, key: str) -> Pos2D | None:
         return self.places.get(key)
+
+    def designators(self) -> Generator[str, None, None]:
+        return (a for a in self.places)

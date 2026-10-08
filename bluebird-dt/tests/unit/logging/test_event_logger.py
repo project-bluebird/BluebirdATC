@@ -18,7 +18,7 @@ from bluebird_dt.predictor import RouteFollowPredictor, SimplePredictor, LinearP
 from bluebird_dt.scenario_manager import TwoAircraft
 from bluebird_dt.simulator import Simulator
 
-from bluebird_dt.utility.config_models import SaveConfig
+from bluebird_dt.utility.config_models import SaveConfig, SimConfig
 from bluebird_dt.utility.logging_utils import read_tar_csv_to_df, read_tar_json_to_dict, read_tar_parquet_to_df
 from bluebird_dt.utility.paths import LOG_DIR
 
@@ -76,7 +76,7 @@ def test_config_logged(
     try:
         with tarfile.open(tar_file_name, "r:gz") as tar:
             data = read_tar_json_to_dict(tar, "config")
-            config = SaveConfig.model_validate(data)
+            config = SimConfig.model_validate(data)
 
             assert config.environment_manager.predictor.predictor_type == predictor_type
             assert config.environment_manager.predictor.fix_proximity == fix_proximity
@@ -314,11 +314,54 @@ def test_sectors_log_as_df(generate_two_sector):
     logged_sectors = [key for key, _ in log_entry["sectors_configuration"]]
     assert all(sector in logged_sectors for sector in sectors)
 
-def test_trim(unique_log_name: str):
+
+
+@pytest.mark.parametrize(
+    ("time_period", "ticks_to_evolve", "ticks_to_trim"),
+    [
+        (6, 20, 9),
+        (3, 20, 10),
+        (3, 11, 10),
+        (6, 20, 12)
+    ],
+)
+def test_trim_and_clip(time_period: int, ticks_to_evolve: int, ticks_to_trim: int):
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
+
+    for _ in range(0, ticks_to_evolve):
+        sim.evolve(time_period)
+
+    sim.manager.event_logger.trim_and_clip("<=", pd.Timestamp(year=1970, month=1, day=1, hour=9, minute=0, second=0) + pd.Timedelta(seconds=ticks_to_trim * time_period))
+
+    # Sectorisation in Springfield is constant, so we need to ensure that after trimming the event is still there
+    assert len(sim.manager.event_logger.sectors_log) == 1
+    assert sim.manager.event_logger.sectors_log[0]["datetime"] == pd.Timestamp(year=1970, month=1, day=1, hour=9, minute=0, second=0)
+
+
+    log = sim.manager.event_logger
+    
+    # Aircraft will appear with time, so this depends on where we trim. The following should always be true because the radar log should get trimmed as it gets updated every tick
+    assert len(log.radar_log) <= len(sim.manager.environment.aircraft) * (ticks_to_evolve - ticks_to_trim)
+
+    # The tests don't have any aircraft disappear, so we expect at least an equal set of initialisers of aircraft internals as aircraft we have in the airspace
+    assert set(log["callsign"] for log in log.aircraft_internals_log) == set(sim.manager.environment.aircraft.keys())
+
+
+    # The tests don't have any aircraft disappear, so we expect at least an equal set of initialisers of aircraft incomms as aircraft we have in the airspace
+    assert len(log.incomm_log) == len(sim.manager.environment.aircraft)
+
+    # We inject zero clearances so expect zero of these
+    assert len(log.clearances_log) == 0
+
+    # Expect two coordinations per aircraft in the airspace
+    assert len(log.coordination_log) == 2 * len(sim.manager.environment.aircraft)
+
+
+def test_trim():
     """
     Test that trimming a simulation run removes events
     """
-    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", log_filename=unique_log_name)
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
     em = sim.manager
 
     # Prepare inputs for incomm and coordination
@@ -337,7 +380,6 @@ def test_trim(unique_log_name: str):
     em.event_handler.add_coordination_event(event_time, callsign, current_sector, to_sector, fl, fix, direction)
     em.event_handler.add_incomm_event(event_time, callsign, to_sector)
     sim.evolve(2)
-    sim.save()
     del sim
 
     assert em.environment.aircraft[callsign].current_sector == to_sector

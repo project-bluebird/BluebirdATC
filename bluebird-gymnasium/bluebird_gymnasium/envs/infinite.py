@@ -8,7 +8,7 @@ from bluebird_dt.scenario_manager.infinite import Infinite
 
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import CentralizedSampler, EnvConfig, ViewType
-from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode, _configure_airspace_metadata
+from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
 
 # constants
 from bluebird_gymnasium.utils.constants import (
@@ -60,7 +60,7 @@ class InfiniteEnv(BaseEnv):
         self.scenario_manager = None  # set in `_generate_scenario`
 
         ####### airspace metadata
-        _configure_airspace_metadata(self, self.config.scenario_config["scenario_name"])
+        self._setup_airspace(self.config.scenario_config["scenario_name"])
 
         ####### reset env
         self.reset()
@@ -81,7 +81,7 @@ class InfiniteEnv(BaseEnv):
         sim = Infinite.setup(
             scenario_name=scenario_name,
             random_seed=self._reset_seed,
-            autosave=False,
+            autosave_interval=None,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,
@@ -235,7 +235,7 @@ class CustomInfiniteEnv(BaseEnv):
         self.scenario_manager = None  # set in `_generate_scenario`
 
         ####### airspace metadata
-        _configure_airspace_metadata(self, self.config.scenario_config["scenario_name"])
+        self._setup_airspace(self.config.scenario_config["scenario_name"])
 
         ####### reset env
         self.reset()
@@ -266,7 +266,7 @@ class CustomInfiniteEnv(BaseEnv):
             spawn_distance_threshold=self.config.scenario_config["spawn_distance_threshold"],
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
-            autosave=False,
+            autosave_interval=None,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,

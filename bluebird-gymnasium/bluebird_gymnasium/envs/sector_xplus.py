@@ -3,11 +3,6 @@ from __future__ import annotations
 import datetime
 import typing
 
-# simulator package
-from bluebird_dt.airspace_generator import SectorXPlus
-from bluebird_dt.core import Airspace, Route
-from bluebird_dt.utility.geo_helper import GeoHelper
-
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import (
     SCENARIO_CLS,
@@ -15,7 +10,7 @@ from bluebird_gymnasium.envs import (
     EnvConfig,
     ViewType,
 )
-from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode, _configure_airspace_metadata
+from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
 
 # constants
 from bluebird_gymnasium.utils.constants import (
@@ -60,41 +55,13 @@ class SectorXPlusEnv(BaseEnv):
 
         self.scenario_manager = None  # set in _generate_scenario
 
-        _configure_airspace_metadata(self, "Xplus-Sector")
-
         ####### reset env
         self.reset()
-
-    def _setup_airspace(self) -> tuple[Airspace, list[Route]]:
-        ####### airspace
-        # the airspace generator expects the origin in reverse order
-        # i.e., lon, lat
-        origin = (
-            self.config.airspace_config["origin"][1],
-            self.config.airspace_config["origin"][0],
-        )
-        airspace, routes = SectorXPlus(
-            origin=origin,
-            fl_limits=self.config.airspace_config["fl_limits"],
-            rotation_deg=self.config.airspace_config["rotation_deg"],
-            half_width_nmi=self.config.airspace_config["half_width_nmi"],
-            L1=self.config.airspace_config["L1"],
-            L2=self.config.airspace_config["L2"],
-            L3=self.config.airspace_config["L3"],
-            L4=self.config.airspace_config["L4"],
-            W=self.config.airspace_config["W"],
-            D=self.config.airspace_config["D"],
-            F=self.config.airspace_config["F"],
-            southern_leg_rotation_deg=self.config.airspace_config["southern_leg_rotation_deg"],
-            max_turn_angle_deg=self.config.airspace_config["max_turn_angle_deg"],
-        ).generate_airspace()
-        airspace.geo_helper = GeoHelper(self.config.airspace_config["origin"])
-        return airspace, routes
 
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
         category = "Custom"
-        scenario = "XPlus-Sector"
+        scenario = "Xplus-Sector"
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
@@ -102,7 +69,7 @@ class SectorXPlusEnv(BaseEnv):
         log_filename = f"{category}_{scenario}_{timestamp}{suffix}"
 
         ####### setup the sim env manager
-        airspace, routes = self._setup_airspace()
+        airspace, routes = self._setup_airspace(scenario)
         _scenario_cls = SCENARIO_CLS[self.config.scenario_config["cls"]]
         self.scenario_manager = _scenario_cls(
             airspace=airspace,

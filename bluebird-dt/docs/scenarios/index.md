@@ -25,20 +25,16 @@ or, for more control over the scenario
 ```python
 from bluebird_dt.scenario_manager import TwoAircraft
 from bluebird_dt.airspace_generator import SectorX
+
 airspace, routes = SectorX(
-                        width=20, 
-                        height=60, 
-                        fl_limits=(200, 300),
-                        alpha=52.5,
-                    ).generate_airspace()
+    width=20,
+    height=60,
+    fl_limits=(200, 300),
+    alpha=52.5,
+).generate_airspace()
 
 
-sim = TwoAircraft(
-            airspace=airspace,
-            routes=routes,
-            total_time=1200,
-            scenario_type="climber"
-        ).to_simulator()
+sim = TwoAircraft(airspace=airspace, routes=routes, total_time=1200, scenario_type="climber").to_simulator()
 ```
 
 See the [source code reference](../source.md#bluebird_dt.scenario_manager.TwoAircraft) for documentation on all the parameters which could be passed in.
@@ -59,22 +55,23 @@ or, for more control over the scenario
 ```python
 from bluebird_dt.scenario_manager import Infinite
 from bluebird_dt.airspace_generator import SectorX
+
 airspace, routes = SectorX(
-                        width=20, 
-                        height=60, 
-                        fl_limits=(200, 300),
-                        alpha=52.5,
-                    ).generate_airspace()
+    width=20,
+    height=60,
+    fl_limits=(200, 300),
+    alpha=52.5,
+).generate_airspace()
 
 
 sim = Infinite(
-            airspace=airspace,
-            routes=routes,
-            initial_spawn_rate = 0.005,
-            max_spawn_rate = 0.2,
-            spawn_rate_increment = 0.005,
-            spawn_rate_increase_interval = 60
-        ).to_simulator()
+    airspace=airspace,
+    routes=routes,
+    initial_spawn_rate=0.005,
+    max_spawn_rate=0.2,
+    spawn_rate_increment=0.005,
+    spawn_rate_increase_interval=60,
+).to_simulator()
 ```
 
 See the [source code reference](../source.md#bluebird_dt.scenario_manager.Infinite) for documentation on all the parameters which could be passed in.
@@ -91,7 +88,6 @@ import random
 
 scenario_name = random.choice(SpringfieldScenarioManager.list_scenarios())
 sim = Simulator.from_category("Springfield", scenario_name)
-
 ```
 
 ### Regular
@@ -103,20 +99,21 @@ It can easily be initialised using
 ```python
 from bluebird_dt.scenario_manager import Regular
 from bluebird_dt.airspace_generator import SectorX
+
 airspace, routes = SectorX(
-                        width=20, 
-                        height=60, 
-                        fl_limits=(200, 300),
-                        alpha=52.5,
-                    ).generate_airspace()
+    width=20,
+    height=60,
+    fl_limits=(200, 300),
+    alpha=52.5,
+).generate_airspace()
 
 
 sim = Regular(
-            airspace=airspace,
-            routes=routes,
-            total_time=1200,
-            num_aircraft=20,
-        )
+    airspace=airspace,
+    routes=routes,
+    total_time=1200,
+    num_aircraft=20,
+)
 ```
 
 See the [source code reference](../source.md#bluebird_dt.scenario_manager.Regular) for documentation on all the parameters which could be passed in.

@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
 
 def validate_action_list_route_direct(
     action_name: str, data_list: list[Number], route_direct_max_fixes: int
-) -> tuple[bool, None | str]:
+) -> tuple[bool, str | None]:
     """Validate the input values in a route direct action list.
 
     A validation specific to only route direct actions.
@@ -53,7 +53,7 @@ def validate_action_list_route_direct(
     return True, None
 
 
-def validate_action_list(action_name: str, data_list: list[Number]) -> tuple[bool, None | str]:
+def validate_action_list(action_name: str, data_list: list[Number]) -> tuple[bool, str | None]:
     """Validate the input values in an action list.
 
     A general validation for different action types.
@@ -383,7 +383,7 @@ class ActionParser:
     def _action_formatter_decentralized(
         self,
         action: dict[str, int],
-        sampled_aircraft: None | list[str] = None,  # noqa: ARG002
+        sampled_aircraft: list[str] | None = None,  # noqa: ARG002
     ) -> dict[str, int]:
         """Helper method for action formatting.
 
@@ -828,8 +828,10 @@ class ActionParser:
             selected_fix_idx = route.index(selected_fix)
 
             assert selected_fix_idx >= next_fix_idx, (
-                f"route_direct_to: {action_st.value} should be a future fix"
-                f" and not a previous fix for aircraft {action_st.callsign}",
+                (
+                    f"route_direct_to: {action_st.value} should be a future fix"
+                    f" and not a previous fix for aircraft {action_st.callsign}"
+                ),
             )
 
             # if selected fix is next fix, then the result below is set to 1
