@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import string
 import typing
 
@@ -114,7 +114,7 @@ class SpringfieldEnv(BaseEnv):
         # set up simulation log name
         category = string.capwords(SPRINGFIELD_SECTOR_NAME)
         scenario = self.config.scenario_config["scenario"]
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"

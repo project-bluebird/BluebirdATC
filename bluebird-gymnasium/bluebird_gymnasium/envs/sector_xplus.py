@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import typing
 
 # simulator package
@@ -124,7 +124,7 @@ class SectorXPlusEnv(BaseEnv):
         # set up simulation log name
         category = "Artificial"
         scenario = "XPlus-Sector-Custom-Scenario"
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
