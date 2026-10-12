@@ -18,7 +18,8 @@ dependencies = [
 ]
 
 [project.urls]
-Documentation = "http://docs.projectbluebird.ai"
+Homepage = "https://www.projectbluebird.ai/"
+Documentation = "https://docs.projectbluebird.ai/"
 Repository = "https://github.com/project-bluebird/BluebirdATC"
 
 [dependency-groups]
