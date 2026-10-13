@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import typing
 
 from bluebird_dt.predictor import LinearPredictor
@@ -112,7 +112,7 @@ class InfiniteEnv(BaseEnv):
         # set up simulation log name
         category = "Game"
         scenario_name = self.config.scenario_config["scenario_name"]
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
@@ -297,7 +297,7 @@ class CustomInfiniteEnv(BaseEnv):
         # set up simulation log name
         category = "Game"
         scenario_name = self.config.scenario_config["scenario_name"]
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
