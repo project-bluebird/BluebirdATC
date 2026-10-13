@@ -60,8 +60,8 @@ class SectorYEnv(BaseEnv):
 
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
-        category = "Artificial"
-        scenario = "Y-Sector-Custom-Scenario"
+        category = "Custom"
+        scenario = "Y-Sector"
         timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
