@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import typing
 
 # simulator gymnasium wrapper
@@ -61,9 +61,9 @@ class SectorXEnv(BaseEnv):
 
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
-        category = "Custom"
-        scenario = "X-Sector"
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        category = "Artificial"
+        scenario = "X-Sector-Custom-Scenario"
+        timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
