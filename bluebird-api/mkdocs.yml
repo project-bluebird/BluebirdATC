@@ -1,4 +1,6 @@
 site_name: bluebird-api
+# Where these pages live in the repository, for the "edit this page" links.
+edit_uri: edit/main/bluebird-api/docs/
 
 nav:
   - Getting started with bluebird-api: getting-started.md

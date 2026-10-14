@@ -1,4 +1,4 @@
-# BluebirdATC <img src="images/BBATC_logo.png" alt="BluebirdATC logo" align="right" height="160" />
+# BluebirdATC <img src="https://raw.githubusercontent.com/project-bluebird/BluebirdATC/main/images/BBATC_logo.png" alt="BluebirdATC logo" align="right" height="160" />
 
 BluebirdATC is an open-source digital twin of en route airspace, developed by [Project Bluebird](https://www.projectbluebird.ai), a collaboration between the Alan Turing Institute, the University of Exeter and NATS. It provides a safe, reproducible sandbox to simulate realistic air traffic scenarios, develop autonomous ATC agents, and benchmark their performance.
 
@@ -14,12 +14,6 @@ This repository contains the following packages, each with their own README for 
 | [![PyPI version](https://img.shields.io/pypi/v/bluebird-api.svg?logo=pypi&logoColor=white&label=bluebird-api)](https://pypi.org/project/bluebird-api/) | A REST API server for the digital twin. [Docs](bluebird-api/README.md) |
 | [![PyPI version](https://img.shields.io/pypi/v/bluebird-gymnasium.svg?logo=pypi&logoColor=white&label=bluebird-gymnasium)](https://pypi.org/project/bluebird-gymnasium/) | Gymnasium environments — train RL agents, single & multi-agent. [Docs](bluebird-gymnasium/README.md) |
 | `bluebird-hmi` | An optional web-based visualisation package. [Docs](bluebird-hmi/README.md) |
-
-## AI(r) Traffic Controller Challenge
-
-Project Bluebird are hosting an AI agent development competition, the *AI(r) Traffic Controller Challenge*.
-
-To get started with the competition specific setup see the docs [here](https://docs.projectbluebird.ai/examples/competition/Competition-Intro/).
 
 ## Quick start
 

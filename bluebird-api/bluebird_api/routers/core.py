@@ -13,10 +13,6 @@ from bluebird_api.runner import RunnerDep, RunnerStoreDep
 core_router = APIRouter()
 
 
-# explicitly store background tasks
-background_tasks = set()
-
-
 @core_router.get("/", tags=["Control"])
 async def index() -> str:
     """

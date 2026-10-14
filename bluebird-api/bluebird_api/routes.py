@@ -3,11 +3,8 @@ The routes module builds the router for the provided endpoint and adds any endpo
 BluebirdATC, including loading which is implementation dependent.
 """
 
-import asyncio
-
 from fastapi import APIRouter
 
-from bluebird_api.routers.core import background_tasks
 from bluebird_api.runner import RunnerStoreDep
 
 from .routers import (
@@ -28,11 +25,6 @@ async def load(category: str, scenario_name: str, runner_store: RunnerStoreDep) 
 
     runner_store.initialise_from_category(category, scenario_name)
 
-    # start the task
-    task = asyncio.create_task(runner_store.current_runner.run_main())
-
-    # add the task to the background tasks set and have it auto-remove its reference from the set when done
-    background_tasks.add(task)
-    task.add_done_callback(background_tasks.remove)
+    runner_store.start()
 
     return True

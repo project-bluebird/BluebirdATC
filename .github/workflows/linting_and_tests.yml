@@ -5,7 +5,9 @@ on:
   pull_request:
     branches:
       - "main"
-      - "dev"
+
+permissions:
+  contents: read
 
 jobs:
   ubuntu-tests:
@@ -19,21 +21,14 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
       - name: Install uv and set python version
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Set up cache
-        uses: actions/cache@v4
-        id: cache
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/uv.lock') }}-${{ hashFiles('**/pyproject.toml') }}
 
       - name: Display Python version
         run: uv run python -c "import sys; print(sys.version)"
@@ -45,13 +40,12 @@ jobs:
         run: uv run ruff format bluebird-api bluebird-dt bluebird-gymnasium docs --check --diff
 
       - name: Check testing
-        run: uv run pytest -n auto --cov=. --cov-report=xml
+        run: uv run pytest -n auto
 
-      - name: Upload coverage report
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/upload-code-coverage@v1
-        with:
-          file: coverage.xml
-          language: Python
-          label: code-coverage/pytest
-          fail-on-error: false
+      - name: Run notebooks
+        if: github.base_ref == 'main'
+        working-directory: bluebird-dt
+        run: uv run pytest --nbmake examples/
+        
+
+
