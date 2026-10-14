@@ -480,15 +480,26 @@ class SpringfieldScenarioManager(
         for row in df_events.itertuples():
             assert isinstance(row.callsign, str)
             event_datetime = datetime.fromisoformat(row.datetime)
+            callsign = row.callsign
 
             # process foreground events (incomm)
             if row.event_type == "incomm":
-                callsign = row.callsign
+
 
                 # there are a few cases where the aircraft is already in the sector at the start of the scenario even
                 # though there is an incomm event. in this case, just continue on and warn
                 sector_name = row.sector
                 event_handler.add_incomm_event(event_datetime, callsign, sector_name=sector_name)
+
+            # process squawk changes
+            elif row.event_type == "squawk":
+                squawk = row.ssr_code
+                event_handler.add_aircraft_attribute_update_event(
+                    event_datetime,
+                    callsign,
+                    attribute_name="squawk",
+                    value=squawk,
+                )
 
             # flag other event types
             else:
