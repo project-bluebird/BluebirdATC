@@ -502,12 +502,20 @@ class SpringfieldScenarioManager(
                     value=squawk,
                 )
 
+            # teleport event
+            elif row.event_type == "teleport":
+                for attribute_name, value in (("lat", row.lat_value), ("lon", row.lon_value), ("fl", row.fl_value)):
+                    if pd.notna(value):
+                        event_handler.add_aircraft_attribute_update_event(
+                            event_datetime, callsign, attribute_name=attribute_name, value=value
+                        )
+
             # flag other event types
             else:
                 logger.warning(
                     f"WARNING: Skipping unhandled event type {row.event_type}",
                     f"for {self.scenario_name} - {row.callsign}",
-                )
+    )
 
         logger.debug(event_handler.incomm_df)
 
