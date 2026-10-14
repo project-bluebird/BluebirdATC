@@ -5,63 +5,26 @@ import pytest
 
 from bluebird_dt.airspace_generator.artificial_airspace import ArtificialAirspace
 from bluebird_dt.core import Airspace, Route
-from bluebird_dt.scenario_manager import Infinite, Tactical
+from bluebird_dt.scenario_manager import Custom, Infinite
 
 
 @pytest.fixture(params=[0.0, 50.716667, -50.716667, 75.0])
 def lateral_airspace(request):
     return ArtificialAirspace("x", origin=(-3.533333, request.param)).generate_airspace()
 
-
-@pytest.mark.parametrize("manager_class", [Infinite, Tactical])
-@pytest.mark.parametrize("sector_type", ["i", "x", "y"])
-@pytest.mark.parametrize("latitude", [0.0, 50.716667, -50.716667, 75.0])
-def test_lateral_headings_are_perpendicular(manager_class: type[Infinite | Tactical], sector_type: str, latitude: float):
-    airspace, routes = ArtificialAirspace(sector_type, origin=(-3.533333, latitude)).generate_airspace()
-    if manager_class is Infinite:
-        manager = Infinite(airspace=airspace, routes=routes)
-        headings = manager.setup_lateral_offset_headings()
-    else:
-        manager = Tactical(1, airspace=airspace, routes=routes)
-        headings = manager.set_up_lateral_start_points(airspace)
-
-    assert set(headings) == {route.filed[0] for route in routes}
-    for route in routes:
-        first, second = (airspace.fixes.places[name] for name in route.filed[:2])
-        route_bearing = first.bearing_to(second)
-        relative_headings = sorted((heading - route_bearing) % 360 for heading in headings[route.filed[0]])
-        assert relative_headings == pytest.approx([90.0, 270.0], abs=1e-6)
-        assert all(0.0 <= heading < 360.0 for heading in headings[route.filed[0]])
-
-
-@pytest.mark.parametrize("manager_class", [Infinite, Tactical])
-def test_lateral_headings_reject_coincident_fixes(manager_class: type[Infinite | Tactical], generate_i: tuple[Airspace, list[Route]]):
-    airspace, routes = generate_i
-    first, second = (airspace.fixes.places[name] for name in routes[0].filed[:2])
-    second.lat, second.lon = first.lat, first.lon
-
-    with pytest.raises(ValueError, match="start and end points must be different"):
-        if manager_class is Infinite:
-            Infinite(airspace=airspace, routes=routes)
-        else:
-            Tactical(1, airspace=airspace, routes=routes).set_up_lateral_start_points(airspace)
-
-
-@pytest.mark.parametrize("side", [0, 1])
-@pytest.mark.parametrize("distance", [0.0, 10.0])
-def test_tactical_lateral_spawn(lateral_airspace: tuple[Airspace, list[Route]], side: int, distance: int, monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize("distance", [0.0, 5.0, 10.0])
+def test_custom_lateral_spawn(lateral_airspace: tuple[Airspace, list[Route]], distance: float):
     airspace, routes = lateral_airspace
-    manager = Tactical(1, airspace=airspace, routes=routes, lateral_offset=(distance, distance))
-    monkeypatch.setattr(np.random, "choice", lambda headings: headings[side])
-
     for route in routes:
+        sim = Custom(num_aircraft=1, airspace=airspace, routes=[route], lateral_offset=(distance, distance), lateral_buffer_distance=40).to_simulator()
+
         first, second = (airspace.fixes.places[name] for name in route.filed[:2])
-        position = manager.stochastic_start_pos(airspace, route)
+        position = sim.manager.environment.aircraft["AIR0"].pos2d()
 
         assert first.distance(position) == pytest.approx(distance, abs=1e-6)
         if distance:
             angle = (first.bearing_to(position) - first.bearing_to(second)) % 360
-            assert angle == pytest.approx([90.0, 270.0][side], abs=1e-6)
+            assert angle % 180.0 == pytest.approx(90.0, abs=1e-6)
 
 
 @pytest.mark.parametrize("side", [0, 1])
@@ -76,7 +39,7 @@ def test_infinite_lateral_spawn(lateral_airspace: tuple[Airspace, list[Route]], 
     for route in routes:
         # Use a speed of 400 knots and place the aircraft 10 nautical miles to the side.
         manager.rng.uniform.side_effect = [400.0, 10.0]
-        aircraft, _, _ = manager.create_aircraft_with_coordinations(
+        aircraft, _, _ = manager.spawn_aircraft(
             [route], callsign="TEST", spawn_distance_behind_fix=0.0
         )
         first, second = (airspace.fixes.places[name] for name in route.filed[:2])

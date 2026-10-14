@@ -4,7 +4,7 @@ Default scenarios are available via the Simulator class constructor:
 ```python
 from bluebird_dt.simulator import Simulator
 
-sim = Simulator.from_category("Artificial", "I-Sector Two Aircraft")
+sim = Simulator.from_category("Two Aircraft", "I-Sector")
 ```
 
 but more control is available by using a scenario manager as a simulator constructor.
@@ -17,7 +17,7 @@ It can easily be initialised using
 ```python
 from bluebird_dt.simulator import Simulator
 
-sim = Simulator.from_category("Artificial", "I-Sector Two Aircraft")
+sim = Simulator.from_category("Two Aircraft", "I-Sector")
 ```
 
 or, for more control over the scenario
