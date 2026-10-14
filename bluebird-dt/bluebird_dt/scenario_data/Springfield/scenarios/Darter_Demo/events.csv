@@ -1,6 +1,6 @@
 datetime,callsign,event_type,event_subtype,fl_value,hdg_value,spd_value,ssr_code,ssr_state,fix,hdg_fix_value,hold_fix,rnn_fix,sector
 1970-01-01T09:01:00.000,AFR4067,squawk,squawk,,,,7700,,,,,,SPRINGFIELD
-1970-01-01T09:02:00.000,AFR4067,squawk,squawk,,,,7700,,,,,,SPRINGFIELD
+1970-01-01T09:02:00.000,AFR4067,squawk,squawk,,,,1000,,,,,,SPRINGFIELD
 1970-01-01T09:04:09.000,BAW9227,incomm,incomm,,,,,,,,,,SPRINGFIELD
 1970-01-01T09:06:26.000,VIR6686,incomm,incomm,,,,,,,,,,SPRINGFIELD
 1970-01-01T09:08:46.000,TOM1183,incomm,incomm,,,,,,,,,,SPRINGFIELD

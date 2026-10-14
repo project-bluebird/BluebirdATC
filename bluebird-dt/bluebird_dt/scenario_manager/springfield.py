@@ -493,7 +493,8 @@ class SpringfieldScenarioManager(
 
             # process squawk changes
             elif row.event_type == "squawk":
-                squawk = row.ssr_code
+                squawk = str(int(row.ssr_code))
+                print(squawk)
                 event_handler.add_aircraft_attribute_update_event(
                     event_datetime,
                     callsign,
