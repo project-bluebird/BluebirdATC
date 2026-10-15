@@ -492,23 +492,29 @@ class SpringfieldScenarioManager(
                 event_handler.add_incomm_event(event_datetime, callsign, sector_name=sector_name)
 
             # process squawk changes
-            elif row.event_type == "squawk":
-                squawk = str(int(row.ssr_code))
-                print(squawk)
-                event_handler.add_aircraft_attribute_update_event(
-                    event_datetime,
-                    callsign,
-                    attribute_name="squawk",
-                    value=squawk,
-                )
+            elif row.event_type == "aircraft":
 
-            # teleport event
-            elif row.event_type == "teleport":
-                for attribute_name, value in (("lat", row.lat_value), ("lon", row.lon_value), ("fl", row.fl_value)):
-                    if pd.notna(value):
-                        event_handler.add_aircraft_attribute_update_event(
-                            event_datetime, callsign, attribute_name=attribute_name, value=value
+                if row.event_subtype == "squawk":
+                    squawk = str(int(row.ssr_code))
+                    event_handler.add_aircraft_attribute_update_event(
+                        event_datetime,
+                        callsign,
+                        attribute_name="squawk",
+                        value=squawk,
+                    )
+
+                elif row.event_subtype == "position":
+                    for attribute_name, value in (("lat", row.lat_value), ("lon", row.lon_value), ("fl", row.fl_value)):
+                        if pd.notna(value):
+                            event_handler.add_aircraft_attribute_update_event(
+                                event_datetime, callsign, attribute_name=attribute_name, value=value
                         )
+
+                else:
+                    logger.warning(
+                        f"WARNING: Skipping unhandled aircraft event subtype {row.event_subtype}",
+                        f"for {self.scenario_name} - {row.callsign}",
+                    )
 
             # flag other event types
             else:
