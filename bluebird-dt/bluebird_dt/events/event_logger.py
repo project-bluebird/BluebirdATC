@@ -12,7 +12,7 @@ import pandas as pd
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Self, override
 
-from bluebird_dt.core import Action, Aircraft, Environment
+from bluebird_dt.core import Action, Aircraft, Environment, Pilot
 from bluebird_dt.events import EventHandler
 from bluebird_dt.events.event_dtypes import EventDtypes
 from bluebird_dt.utility.logging_utils import (
@@ -374,8 +374,9 @@ class EventLogger:
             log.update(
                 {
                     "pilot_type": environment.aircraft[log["callsign"]].pilot.__class__.__name__,
+                    "pilot_delay": environment.aircraft[log["callsign"]].pilot.delay,
                     "pilot_action_queue": [
-                        json.dumps(queue_item)
+                        Pilot.queue_item_to_json(queue_item)
                         for queue_item in environment.aircraft[log["callsign"]].pilot.action_queue
                     ],
                 }

@@ -91,6 +91,7 @@ class EventDtypes:
         "percentile_rank_dict": "object",
         "pilot_type": "string",
         "pilot_action_queue": "object",
+        "pilot_delay": "float64",
         "predictor_params": "object",
         "wake_vortex": "string",
         "random_seed": "Int64",

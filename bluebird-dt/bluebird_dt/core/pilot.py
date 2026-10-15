@@ -32,7 +32,7 @@ class Pilot:
     Class to pilot individual aircraft
     """
 
-    def __init__(self, callsign: str):
+    def __init__(self, callsign: str, delay: float = 0):
         """
         Construct a new instance.
 
@@ -40,11 +40,14 @@ class Pilot:
         ----------
         callsign: str
             The callsign of the Aircraft the Pilot is controlling.
+        delay: float
+            The default delay (in seconds) to be added to the process time of actions received by the Pilot.
 
         """
 
         self.action_queue: list[QueueItem] = []
         self.callsign = callsign
+        self.delay = delay
 
     def receive_actions(self, new_actions: list[Action], environment: Environment) -> list[Action]:
         """
@@ -70,10 +73,11 @@ class Pilot:
 
         valid_actions, ignored_actions = self.check_actions(new_actions, environment)
 
+
         for action in valid_actions:
             queue_item: QueueItem = {
                 "receipt_time": environment.time,
-                "process_time": environment.time,
+                "process_time": environment.time + self.delay,
                 "action": action,
             }
 
@@ -392,6 +396,27 @@ class Pilot:
         aircraft.cleared_instructions.vertical_speed_action = action
         aircraft.selected_instructions.vertical_speed_action = action
 
+    @staticmethod
+    def queue_item_to_json(item: QueueItem) -> str:
+        """
+        Serialise a queue item to a JSON string (the Action is stored using its own data dictionary).
+        """
+
+        return json.dumps({**item, "action": item["action"].data()})
+
+    @staticmethod
+    def queue_item_from_json(s: str) -> QueueItem:
+        """
+        Reconstruct a queue item from a JSON string created by `queue_item_to_json`.
+        """
+
+        data = json.loads(s)
+        return {
+            "receipt_time": data["receipt_time"],
+            "process_time": data["process_time"],
+            "action": Action.from_json(json.dumps(data["action"])),
+        }
+
     @classmethod
     def from_json(cls, s: str) -> Pilot:
         """
@@ -421,7 +446,8 @@ class Pilot:
         data = json.loads(s)
         callsign = data["callsign"]
         pilot_class = cls
-        return pilot_class(callsign)
+        pilot_delay = data.get("pilot_delay", 0)
+        return pilot_class(callsign, delay=pilot_delay)
 
     def data(self) -> dict[str, str]:
         """
@@ -434,7 +460,7 @@ class Pilot:
 
         """
 
-        return {"pilot_type": self.__class__.__name__, "callsign": self.callsign}
+        return {"pilot_type": self.__class__.__name__, "pilot_delay": self.delay, "callsign": self.callsign}
 
     def to_json(self) -> str:
         """

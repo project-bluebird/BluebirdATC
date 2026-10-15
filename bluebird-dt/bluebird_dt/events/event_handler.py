@@ -20,6 +20,7 @@ from bluebird_dt.core import (
     Environment,
     FlightPlan,
     Instructions,
+    Pilot,
     Route,
     WindField,
 )
@@ -495,7 +496,8 @@ class EventHandler(typing.Generic[TAircraft]):
             previous_sector=aircraft.previous_sector,
             percentile_rank_dict=aircraft.percentile_rank_dict,
             pilot_type=aircraft.pilot.__class__.__name__,
-            pilot_action_queue=[json.dumps(queue_item) for queue_item in aircraft.pilot.action_queue],
+            pilot_delay=aircraft.pilot.delay,
+            pilot_action_queue=[Pilot.queue_item_to_json(queue_item) for queue_item in aircraft.pilot.action_queue],
             predictor_params=aircraft.predictor_params,
             wake_vortex=aircraft.wake_vortex,
             random_seed=aircraft.random_seed,
@@ -929,6 +931,7 @@ class EventHandler(typing.Generic[TAircraft]):
         previous_sector: str | None = None,
         percentile_rank_dict: dict | None = None,
         pilot_type: str | None = None,
+        pilot_delay: int | None = None,
         pilot_action_queue: list[str] | None = None,
         predictor_params: dict[str, float] | None = None,
         wake_vortex: str | None = None,
@@ -987,6 +990,8 @@ class EventHandler(typing.Generic[TAircraft]):
             Dictionary of cumulative distribution percentile rank. Used for speed randomisation.
         pilot_type: str, optional
             Pilot type
+        pilot_delay: int, optional
+            Pilot delay in seconds
         pilot_action_queue: list[str], optional
             Action queue of pilot
         predictor_params: dict[str, float], optional
@@ -1060,6 +1065,7 @@ class EventHandler(typing.Generic[TAircraft]):
             "previous_sector": previous_sector,
             "percentile_rank_dict": percentile_rank_dict,
             "pilot_type": pilot_type,
+            "pilot_delay": pilot_delay,
             "pilot_action_queue": pilot_action_queue,
             "predictor_params": predictor_params,
             "wake_vortex": wake_vortex,
@@ -2280,11 +2286,12 @@ def update_aircraft_internals(
         aircraft._previous_sector = row.previous_sector
         aircraft.predictor_params = row.predictor_params
         aircraft.percentile_rank_dict = row.percentile_rank_dict
+        aircraft.pilot.delay = row.pilot_delay
 
         # TODO: need to handle pilot type in a better way
         assert aircraft.pilot.__class__.__name__ == row.pilot_type
 
-        aircraft.pilot.action_queue = [json.dumps(queue_item) for queue_item in row.pilot_action_queue]
+        aircraft.pilot.action_queue = [Pilot.queue_item_from_json(item) for item in row.pilot_action_queue]
 
         aircraft.wake_vortex = row.wake_vortex
         aircraft.random_seed = row.random_seed

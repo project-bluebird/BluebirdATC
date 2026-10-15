@@ -466,8 +466,9 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
                         stacklevel=2,
                     )
 
-                # allow pilots to act on clearances
-                aircraft.pilot.process_actions(self.environment)
+        # allow every pilot to act on clearances that are due, including ones queued in earlier steps
+        for aircraft in self.environment.aircraft.values():
+            aircraft.pilot.process_actions(self.environment)
 
     def evolve(self, step_time: float) -> Environment[TAircraft, TWindField, TForecastWindField]:
         """

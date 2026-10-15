@@ -13,7 +13,7 @@ import typing_extensions
 from pydantic import BaseModel
 from typing_extensions import override
 
-from bluebird_dt.core import Aircraft, Airspace, Environment, Pos2D, WindField
+from bluebird_dt.core import Aircraft, Airspace, Environment, Pilot, Pos2D, WindField
 from bluebird_dt.core.airway import Airway
 from bluebird_dt.core.fixes import Fixes
 from bluebird_dt.core.flight_plan import FlightPlan
@@ -657,6 +657,7 @@ class SpringfieldScenarioManager(
             aircraft_type=row.aircraft_type,
             ufid=row.callsign,
             squawk=squawk,
+            pilot=Pilot(row.callsign, row.pilot_delay),
             wake_vortex=row.wake_vortex_category,
             selected_fl=row.cleared_fl,
             random_seed=int(seed) if seed is not None and not pd.isna(seed) else None,
