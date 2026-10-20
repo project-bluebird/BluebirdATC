@@ -51,6 +51,7 @@ class SpringfieldScenarioManager(
     lateral_buffer_distance: float | int
     airport_fix_distance_threshold: float
     initialise_with_event_handler: bool
+    aircraft_on_route: bool
     outcomm_handler: OutcommHandler | None
     typeof_environment_manager: type[EnvironmentManager[TAircraft, TWindField, TForecastWindField]]
     typeof_aircraft: type[TAircraft]
@@ -67,6 +68,7 @@ class SpringfieldScenarioManager(
         lateral_buffer_distance: float | int = 20,
         airport_fix_distance_threshold: float = 5.0,
         initialise_with_event_handler: bool = True,
+        aircraft_on_route: bool = False,
         typeof_environment_manager: type[
             EnvironmentManager[TAircraft, TWindField, TForecastWindField]
         ] = EnvironmentManager,
@@ -91,6 +93,8 @@ class SpringfieldScenarioManager(
             Distance from airport (4-letter) fix at which we can say aircraft has landed.
         initialise_with_event_handler: bool, default is True
             Initialise the environment with the EventHandler
+        aircraft_on_route: bool, optional
+            If True, aircraft will be route following.  Default is False.
         typeof_aircraft: type[Aircraft], optional
             If we want to use a derived class for the aircraft class, specify here.
         typeof_event_logger: type[EventLogger], optional
@@ -103,6 +107,7 @@ class SpringfieldScenarioManager(
         self.lateral_buffer_distance = lateral_buffer_distance
         self.airport_fix_distance_threshold = airport_fix_distance_threshold
         self.initialise_with_event_handler = initialise_with_event_handler
+        self.aircraft_on_route = aircraft_on_route
         self.typeof_environment_manager = typeof_environment_manager
         self.typeof_aircraft = typeof_aircraft
         self.typeof_event_logger = typeof_event_logger
@@ -312,13 +317,6 @@ class SpringfieldScenarioManager(
         if self.outcomm_handler is not None:
             self.outcomm_handler.update(env_manager)
 
-        # any aircraft that have been incommed (current_sector is not "background")
-        # should have on_route flag set to False.
-        # (Note that we want this to remain False even after they outcomm.)
-        for a in environment.aircraft.values():
-            if a.current_sector != "background":
-                a.on_route = False
-
         # remove aircraft from the scenario if they "land",
         # i.e. the last fix on their route is an airport, and they get close to that fix.
         aircraft_to_remove = self._check_aircraft_landing(environment, check_exit_fl=False)
@@ -376,8 +374,6 @@ class SpringfieldScenarioManager(
 
             # process foreground events (incomm)
             if row.event_type == "incomm":
-
-
                 # there are a few cases where the aircraft is already in the sector at the start of the scenario even
                 # though there is an incomm event. in this case, just continue on and warn
                 sector_name = row.sector
@@ -390,7 +386,7 @@ class SpringfieldScenarioManager(
                     event_datetime,
                     callsign,
                     attribute_name="squawk",
-                    value=squawk,
+                    value=str(int(squawk)),
                 )
 
             # flag other event types
@@ -541,14 +537,15 @@ class SpringfieldScenarioManager(
 
         # if the aircraft is on route, then set it as such and calculate and set the next fix index
         if on_route:
+            print(f"IS {aircraft.callsign} supposed to be on route? {on_route}")
             # otherwise, the next fix is the offset fix
             next_fix_idx = route_fixes.index(row.offset_fix) if row.offset_fix in route_fixes else 0
 
-            aircraft.on_route = True
+            aircraft.selected_instructions.on_route = True
             aircraft.next_fix_index = next_fix_idx
 
         else:
-            aircraft.on_route = False  # this is mapped to aircraft.selected_instructions.on_route
+            aircraft.selected_instructions.on_route = False  # this is mapped to aircraft.selected_instructions.on_route
             # by default, the cleared instruction has on route set to true, so we need to turn this off as well.
             aircraft.cleared_instructions.on_route = False
 
