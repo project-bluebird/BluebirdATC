@@ -420,13 +420,6 @@ class SpringfieldScenarioManager(
         if self.outcomm_handler is not None:
             self.outcomm_handler.update(env_manager)
 
-        # any aircraft that have been incommed (current_sector is not "background")
-        # should have on_route flag set to False.
-        # (Note that we want this to remain False even after they outcomm.)
-        for a in environment.aircraft.values():
-            if a.current_sector != "background":
-                a.on_route = False
-
         # remove aircraft from the scenario if they "land",
         # i.e. the last fix on their route is an airport, and they get close to that fix.
         aircraft_to_remove = self._check_aircraft_landing(environment, check_exit_fl=False)
