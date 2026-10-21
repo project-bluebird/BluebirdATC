@@ -363,10 +363,27 @@ def make_random_coordination(callsign=None, the_datetime=None) -> Coordination:
     )
 
 def make_random_pilot(callsign: str | None = None) -> Pilot:
-    """Return a random pilot with either a specified or random callsign"""
+    """Return a random pilot with either a specified or random callsign, one pending and one processed action"""
     if callsign is None:
         callsign = make_random_callsign()
-    return Pilot(callsign=callsign)
+    pilot = Pilot(callsign=callsign, delay=random.uniform(0, 60))
+    received = make_random_time()
+    pilot.action_queue = [
+        {
+            "receipt_time": received,
+            "process_time": received + pilot.delay,
+            "action": Action(callsign, "change_flight_level_to", make_random_fl()),
+        }
+    ]
+    pilot.processed_items = [
+        {
+            "receipt_time": received - 120,
+            "process_time": received - 120 + pilot.delay,
+            "processed_time": received - 120 + pilot.delay,
+            "action": Action(callsign, "change_cas_to", make_random_cas()),
+        }
+    ]
+    return pilot
 
 
 def make_random_aircraft(callsign: str | None = None) -> Aircraft:

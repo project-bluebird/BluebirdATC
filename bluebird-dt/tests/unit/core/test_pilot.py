@@ -334,3 +334,26 @@ def test_pilot_from_incomplete_json():
     aircraft = Aircraft.from_json(json_string)
 
     assert aircraft.pilot.callsign == "AIR0"
+
+
+def test_pilot_data_round_trips_queue_and_processed_items(generate_simple_environment):
+    """
+    Test that a Pilot's pending queue and processed history survive data()/from_json(), including processed_time.
+    """
+    environment = generate_simple_environment
+    pilot = environment.aircraft["AIR0"].pilot
+    pilot.delay = 6
+    environment.time = 0
+    pilot.receive_actions([Action("AIR0", "change_flight_level_to", 200)], environment)
+    environment.time = 6
+    pilot.process_actions(environment)
+    pilot.receive_actions([Action("AIR0", "change_cas_to", 250)], environment)
+
+    restored = Pilot.from_json(pilot.to_json())
+
+    assert restored.delay == 6
+    assert [item["action"].kind for item in restored.action_queue] == ["change_cas_to"]
+    assert restored.action_queue[0]["receipt_time"] == 6
+    assert [item["action"].kind for item in restored.processed_items] == ["change_flight_level_to"]
+    assert restored.processed_items[0]["receipt_time"] == 0
+    assert restored.processed_items[0]["processed_time"] == 6

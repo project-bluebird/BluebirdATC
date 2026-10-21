@@ -27,6 +27,15 @@ class QueueItem(TypedDict):
     action: Action
 
 
+class ProcessedQueueItem(QueueItem):
+    """
+    A QueueItem that has been processed by the Pilot, with the environment time at which that happened. The actual
+    delay experienced by an action is ``processed_time - receipt_time``.
+    """
+
+    processed_time: float
+
+
 class Pilot:
     """
     Class to pilot individual aircraft
@@ -46,6 +55,7 @@ class Pilot:
         """
 
         self.action_queue: list[QueueItem] = []
+        self.processed_items: list[ProcessedQueueItem] = []
         self.callsign = callsign
         self.delay = delay
 
@@ -167,6 +177,7 @@ class Pilot:
                         raise ValueError(f"Aircraft {self.callsign}: Action kind not recognised: {action.kind}")
 
                     processed_items.append(item)
+                    self.processed_items.append({**item, "processed_time": current_time})
 
             if len(processed_items) > 0:
                 self.action_queue = [item for item in self.action_queue if item not in processed_items]
@@ -397,12 +408,37 @@ class Pilot:
         aircraft.selected_instructions.vertical_speed_action = action
 
     @staticmethod
+    def queue_item_data(item: QueueItem) -> dict[str, typing.Any]:
+        """
+        Create a dictionary representing a queue item (the Action is stored using its own data dictionary). Keys are
+        always in the same order, so the JSON of a queue item is the same however the item was built.
+        """
+
+        data: dict[str, typing.Any] = {"receipt_time": item["receipt_time"], "process_time": item["process_time"]}
+        if "processed_time" in item:
+            data["processed_time"] = item["processed_time"]
+        data["action"] = item["action"].data()
+        return data
+
+    @staticmethod
+    def queue_item_from_data(data: dict[str, typing.Any]) -> QueueItem:
+        """
+        Reconstruct a queue item from a dictionary created by `queue_item_data`. A `processed_time` is kept if present.
+        """
+
+        item: QueueItem = {"receipt_time": data["receipt_time"], "process_time": data["process_time"]}  # type: ignore[typeddict-item]
+        if "processed_time" in data:
+            item["processed_time"] = data["processed_time"]  # type: ignore[typeddict-unknown-key]
+        item["action"] = Action.from_json(json.dumps(data["action"]))
+        return item
+
+    @staticmethod
     def queue_item_to_json(item: QueueItem) -> str:
         """
         Serialise a queue item to a JSON string (the Action is stored using its own data dictionary).
         """
 
-        return json.dumps({**item, "action": item["action"].data()})
+        return json.dumps(Pilot.queue_item_data(item))
 
     @staticmethod
     def queue_item_from_json(s: str) -> QueueItem:
@@ -410,12 +446,7 @@ class Pilot:
         Reconstruct a queue item from a JSON string created by `queue_item_to_json`.
         """
 
-        data = json.loads(s)
-        return {
-            "receipt_time": data["receipt_time"],
-            "process_time": data["process_time"],
-            "action": Action.from_json(json.dumps(data["action"])),
-        }
+        return Pilot.queue_item_from_data(json.loads(s))
 
     @classmethod
     def from_json(cls, s: str) -> Pilot:
@@ -447,9 +478,12 @@ class Pilot:
         callsign = data["callsign"]
         pilot_class = cls
         pilot_delay = data.get("pilot_delay", 0)
-        return pilot_class(callsign, delay=pilot_delay)
+        pilot = pilot_class(callsign, delay=pilot_delay)
+        pilot.action_queue = [cls.queue_item_from_data(item) for item in data.get("action_queue", [])]
+        pilot.processed_items = [cls.queue_item_from_data(item) for item in data.get("processed_items", [])]
+        return pilot
 
-    def data(self) -> dict[str, str]:
+    def data(self) -> dict[str, typing.Any]:
         """
         Create a dictionary containing the Pilot data. Currently there is not much here.
 
@@ -460,7 +494,13 @@ class Pilot:
 
         """
 
-        return {"pilot_type": self.__class__.__name__, "pilot_delay": self.delay, "callsign": self.callsign}
+        return {
+            "pilot_type": self.__class__.__name__,
+            "pilot_delay": self.delay,
+            "callsign": self.callsign,
+            "action_queue": [self.queue_item_data(item) for item in self.action_queue],
+            "processed_items": [self.queue_item_data(item) for item in self.processed_items],
+        }
 
     def to_json(self) -> str:
         """
