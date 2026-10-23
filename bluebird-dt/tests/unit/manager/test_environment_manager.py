@@ -438,6 +438,24 @@ def test_rewind_restores_queued_actions(generate_i: tuple[Airspace, list[Route]]
     assert restored.pilot.action_queue == []
 
 
+def test_rewind_leaves_earlier_logs_unchanged(generate_i: tuple[Airspace, list[Route]]) -> None:
+    """
+    Check that flying on after a rewind doesn't change the logs the aircraft were restored from
+    """
+    airspace, routes = generate_i
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
+    em.initialise_env_with_event_handler()
+    em.evolve(6)
+    logged = copy.deepcopy(em.event_logger.aircraft_internals_log)
+
+    em.rewind_to_time(em.environment.datetime)
+    # the pilot writes this clearance into the aircraft's predictor_params
+    em.receive_actions([Action(next(iter(em.environment.aircraft)), "using_speed_limit", False)])
+    em.evolve(6)
+
+    assert em.event_logger.aircraft_internals_log[: len(logged)] == logged
+
+
 def _make_basic_em(airspace, *, predictor_dt=1.0, fix_thresh=2.0, penumbra_lat=5.0, penumbra_fl=10):
     """
     Helper to create a minimal EnvironmentManager with an empty EventHandler.

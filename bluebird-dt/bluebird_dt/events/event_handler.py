@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import operator
 import typing
 from dataclasses import dataclass
@@ -2272,13 +2273,14 @@ def update_aircraft_internals(
     for row in df.itertuples():
         aircraft = environment.aircraft[row.callsign]  # index is callsign
         aircraft.rate_of_turn = row.rate_of_turn
-        aircraft.operation_params = row.operation_params
+        # the dict columns are copied, so that flying the aircraft doesn't change the rows it was restored from
+        aircraft.operation_params = copy.deepcopy(row.operation_params)
         aircraft.controllable = row.controllable
         aircraft.simulated = row.simulated
         aircraft.current_sector = row.current_sector
         aircraft._previous_sector = row.previous_sector
-        aircraft.predictor_params = row.predictor_params
-        aircraft.percentile_rank_dict = row.percentile_rank_dict
+        aircraft.predictor_params = copy.deepcopy(row.predictor_params)
+        aircraft.percentile_rank_dict = copy.deepcopy(row.percentile_rank_dict)
 
         # TODO: need to handle pilot type in a better way
         assert aircraft.pilot.__class__.__name__ == row.pilot_type
