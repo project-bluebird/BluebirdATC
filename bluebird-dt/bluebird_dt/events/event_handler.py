@@ -1333,9 +1333,14 @@ class EventHandler(typing.Generic[TAircraft]):
                 ignore_simmed=self.ignore.ac_attribute_if_simmed,
             )
 
-        # update the route status of any aircraft which are not being simmed.
-        # will be overwritten by aircraft internal logs if available.
-        environment = update_route_status(environment, ignore_simmed=True)
+        # update the route status of any aircraft which are not being simmed. next_fix_index is left to the
+        # aircraft internal logs for aircraft that have rows in them from this step on.
+        logged_callsigns: set[str] = set()
+        if not all_aircraft_are_simmed:
+            logged_callsigns = set(
+                self.aircraft_internals_df.callsign[self.aircraft_internals_df.index > episode_start].unique()
+            )
+        environment = update_route_status(environment, ignore_simmed=True, logged_callsigns=logged_callsigns)
 
         # if previous internal aircraft state is available in logs, then this has the
         # final say on the state of non-simulated aircraft
@@ -1455,7 +1460,9 @@ class EventHandler(typing.Generic[TAircraft]):
 
 
 def update_route_status(
-    environment: Environment[TAircraft, TWindField, TForecastWindField], ignore_simmed: bool
+    environment: Environment[TAircraft, TWindField, TForecastWindField],
+    ignore_simmed: bool,
+    logged_callsigns: set[str] | None = None,
 ) -> Environment[TAircraft, TWindField, TForecastWindField]:
     """
     Update the route status of the aircraft.
@@ -1466,12 +1473,17 @@ def update_route_status(
         Environment containing aircraft to be updated
     ignore_simmed: bool
         If True, do not update the next_fix_index and on_route for simmed aircraft
+    logged_callsigns: set[str], optional
+        If ignore_simmed is True, also do not update the next_fix_index and on_route for these aircraft, which take
+        them from the aircraft internal logs
 
     Returns
     ----------
     Environment
         Environment with aircraft route status updated
     """
+    logged_callsigns = set() if logged_callsigns is None else logged_callsigns
+
     for aircraft in environment.aircraft.values():
         if aircraft.flight_plan is None:
             logger.warning(
@@ -1480,9 +1492,9 @@ def update_route_status(
             )
             continue
 
-        # next_fix_index is updated by the predictor, and we only update it here when jumping to a time
-        # which is specified by setting the ignore_simmed flag
-        set_next_fix_index = not ignore_simmed or not aircraft.simulated
+        # next_fix_index is updated by the predictor for simmed aircraft and by the aircraft internal logs for logged
+        # aircraft, and we only update it here for those when jumping to a time, which is specified by ignore_simmed
+        set_next_fix_index = not ignore_simmed or not (aircraft.simulated or aircraft.callsign in logged_callsigns)
 
         aircraft.update_route_status(environment.airspace, set_next_fix_index=set_next_fix_index)
 

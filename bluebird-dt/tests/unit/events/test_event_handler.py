@@ -11,7 +11,10 @@ from bluebird_dt.events.event_handler import (
 )
 from bluebird_dt.events.event_logger import EventLogger
 from bluebird_dt.events.event_dtypes import EventDtypes
-from bluebird_dt.core import Aircraft, Coordination, Environment, WindField
+from bluebird_dt.airspace_generator import SectorX
+from bluebird_dt.core import Aircraft, Coordination, Environment, FlightPlan, Route, WindField
+from bluebird_dt.manager import EnvironmentManager
+from bluebird_dt.predictor import SimplePredictor
 from conftest import (
     pick_random_next_sector, build_default_test_df, is_deeply_equal, setup_test_sim, get_to_and_from_sectors, 
     build_test_df_for_multiple_ac, build_coordination_test_df
@@ -863,6 +866,40 @@ def test_forward(flight_plan):
     test_forward_within_time_range_with_internals()
     test_forward_to_episode_end()
     test_forward_after_episode_end()
+
+def test_forward_keeps_logged_next_fix_index_between_internals_rows():
+    """
+    Test that a replayed aircraft keeps the next_fix_index of its last aircraft internals row until the next row,
+    rather than one recomputed from its position, which moves on to the following fix within 5 nmi of a fix.
+    """
+    airspace, _ = SectorX(60, 120, (60, 400), 70).generate_airspace()
+    fixes = airspace.fixes.places
+
+    def make_env_manager(event_handler: EventHandler) -> EnvironmentManager:
+        predictor = SimplePredictor(dt=1.0, fix_proximity_threshold=2.0, fixes=airspace.fixes)
+        return EnvironmentManager(airspace=airspace, event_handler=event_handler, predictor=predictor)
+
+    # live run of one aircraft through the 40 degree turn at ABYSS, which starts inside 5 nmi of it
+    live = make_env_manager(EventHandler())
+    route = FlightPlan(Route(["WITCH", "ABYSS", "HAUNT", "LIMBO"]))
+    aircraft = Aircraft(fixes["WITCH"].lat, fixes["WITCH"].lon, 100, 70.0, route, "AIR0")
+    aircraft.speed_tas = 290
+    aircraft.cleared_instructions.cas = aircraft.selected_instructions.cas = 250
+    live.environment.aircraft["AIR0"] = aircraft
+    live.event_logger.log_environment(live.environment)
+    for _ in range(150):
+        live.evolve(6)
+
+    # replay the log with the aircraft not simulated
+    event_handler = live.event_logger.to_event_handler()
+    event_handler.aircraft_internals_df["simulated"] = False
+    internals = event_handler.aircraft_internals_df
+    replay = make_env_manager(event_handler)
+    replay.initialise_env_with_event_handler()
+    for _ in range(149):
+        replay.evolve(6)
+        last_row = internals[internals.index <= replay.environment.datetime].iloc[-1]
+        assert replay.environment.aircraft["AIR0"].next_fix_index == last_row.next_fix_index
 
 def test_add():
     """
