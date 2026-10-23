@@ -1,3 +1,4 @@
+import ast
 import copy
 from datetime import datetime, timezone
 import logging
@@ -5,16 +6,18 @@ import io
 import tarfile
 import warnings
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from bluebird_dt.core import Action, Aircraft, Airspace, FlightPlan, Route
+from bluebird_dt.core import Action, Aircraft, Airspace, FlightPlan, Pilot, Route
 from bluebird_dt.events import EventHandler
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import RouteFollowPredictor, SimplePredictor
 from bluebird_dt.scenario_manager import Custom
 from bluebird_dt.core import Coordination
 from bluebird_dt.utility import constants
+from bluebird_dt.utility.logging_utils import read_tar_parquet_to_df
 
 def test_bandboxing(generate_two_sector: tuple[Airspace, list[Route]]) -> None:
     """
@@ -815,6 +818,35 @@ def test_save_logs(generate_i):
     with tarfile.open(fileobj=buf, mode="r:*") as tf:
         members = tf.getmembers()
         assert len(members) > 0
+
+
+def test_save_logs_internals_read_back_with_literal_eval(generate_i):
+    """
+    Test that the dict and queue columns of the saved aircraft internals, with NumPy values and a queued action,
+    read back with ast.literal_eval.
+    """
+    airspace, routes = generate_i
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
+    em.initialise_env_with_event_handler()
+    aircraft = next(iter(em.environment.aircraft.values()))
+    aircraft.predictor_params = {
+        "turn_radius": np.float64(4.45),
+        "count": np.int64(3),
+        "descending_to_level_by_point": np.bool_(True),
+        "levelby_location": (np.float64(54.1), np.float64(-1.2)),
+    }
+    aircraft.pilot.receive_actions([Action(aircraft.callsign, "change_flight_level_to", 200)], em.environment)
+    em.event_logger.log_environment(em.environment)
+
+    buf = em.write_logs_to_buffer(sim_config=em.config(), save_csv=False)
+    buf.seek(0)
+    with tarfile.open(fileobj=buf, mode="r:*") as tf:
+        saved = read_tar_parquet_to_df(tf, "ac_internals").iloc[-1]
+
+    assert ast.literal_eval(saved["predictor_params"]) == aircraft.predictor_params
+    pilot = Pilot(aircraft.callsign)
+    pilot.set_action_queue_from_json(ast.literal_eval(saved["pilot_action_queue"]))
+    assert pilot.action_queue == aircraft.pilot.action_queue
 
 
 def test_initialise_with_event_handler(generate_i):
