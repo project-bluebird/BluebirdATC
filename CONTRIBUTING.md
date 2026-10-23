@@ -169,6 +169,21 @@ We recognise that the use of AI tools for writing code is becoming more and more
  ## Style Guide
 
  The python code itself should follow [PEP8][link_pep8] convention whenever possible.
+ We use [ruff][ruff] to lint and format the Python code, and CI checks both on every pull request.
+ To run the same checks locally, use these commands from the repository root:
+
+ ```bash
+ uv run ruff check bluebird-api bluebird-dt bluebird-gymnasium docs
+ uv run ruff format bluebird-api bluebird-dt bluebird-gymnasium docs
+ ```
+
+ The second command reformats the files in place; CI runs it with `--check`, which only reports the files that would change.
+
+ You can also install the [pre-commit][pre-commit] hooks so that ruff runs on your changes every time you commit:
+
+ ```bash
+ uv run pre-commit install
+ ```
 
  ---
 
@@ -186,5 +201,7 @@ We recognise that the use of AI tools for writing code is becoming more and more
  [github-review]: https://help.github.com/articles/about-pull-request-reviews
  [github-syncfork]: https://help.github.com/articles/syncing-a-fork
  [link_pep8]: https://www.python.org/dev/peps/pep-0008/
+ [pre-commit]: https://pre-commit.com/
+ [ruff]: https://docs.astral.sh/ruff/
  [uv-install]: https://docs.astral.sh/uv/getting-started/installation/
  [uv-workspaces]: https://docs.astral.sh/uv/concepts/projects/workspaces/
