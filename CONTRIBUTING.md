@@ -22,6 +22,7 @@
    - [2. Fork the BluebirdATC repository to your profile](#2-fork-the-bluebird-atc-repository-to-your-profile)
    - [3. Make the changes you've discussed](#3-make-the-changes-youve-discussed)
    - [4. Submit a pull request](#4-submit-a-pull-request)
+ - [Setting up a development environment](#setting-up-a-development-environment)
  - [Running the tests](#running-the-tests)
  - [Style guide](#style-guide)
 
@@ -67,6 +68,7 @@
  [This blog](https://chris.beams.io/posts/git-commit/) explains how to write a good Git commit message and why it matters.
  It is also perfectly fine to have a lot of commits - including ones that break code.
  A good rule of thumb is to push up to GitHub when you _do_ have passing tests then the continuous integration (CI) has a good chance of passing everything.
+ See [Running the tests](#running-the-tests) for how to run the tests locally.
 
  If you feel tempted to "branch out" then please make a [new branch][github-branches] and a [new issue][bluebird-atc-issues] to go with it. [This blog](https://nvie.com/posts/a-successful-git-branching-model/) details the different Git branching models.
 
@@ -113,30 +115,56 @@ We recognise that the use of AI tools for writing code is becoming more and more
  - If you have used AI tools to help write code in a pull request, we ask that you (the human) have a good understanding of what has been changed and why.
  - Please let us know in the pull request text if you have made use of AI tools, and roughly to what extent - this will help us to get a picture of where the code is coming from.
 
+ ## Setting up a development environment
+
+ The Python packages in this repository are managed with uv.
+ `bluebird-dt`, `bluebird-api`, `bluebird-gymnasium` and the documentation form a single [uv workspace][uv-workspaces], so they share one virtual environment and one lockfile (`uv.lock`).
+
+ Once you have [installed uv][uv-install], run this from the repository root:
+
+ ```bash
+ uv sync
+ ```
+
+ This creates a virtual environment in `.venv` and installs all of the packages in editable mode, together with the tools used for development and testing, such as `pytest` and `ruff`.
+ To run a command inside the environment, prefix it with `uv run`, for example `uv run python`.
+ `uv run` also brings the environment up to date first if the dependencies have changed.
+
  ## Running the tests
 
- The project uses `pytest` and relies on `uv` to manage the virtual environment.
- Assuming you have installed the dev dependencies (via `uv sync`), you can run the whole
- test suite from the repository root with:
+ The project uses `pytest` for testing.
+ Once you have set up your [development environment](#setting-up-a-development-environment), you can run the whole test suite from the repository root with:
 
  ```bash
  uv run pytest -n auto
  ```
 
  The `-n auto` flag runs the tests in parallel across your CPU cores (via `pytest-xdist`).
- This is the same command that continuous integration (CI) runs, so anything that passes
- locally is expected to pass in CI too.
 
- To run just one package's tests, pass its test directory explicitly. For example, to run
- only the `bluebird-dt` tests:
+ To run just one package's tests, pass its test directory explicitly.
+ For example, to run only the `bluebird-dt` tests:
 
  ```bash
  uv run pytest bluebird-dt/tests
  ```
 
- The same works for any of the other test suites, e.g. `bluebird-api/tests`,
- `bluebird-gymnasium/tests` and `docs/tests`. See the `testpaths` setting in the root
- `pyproject.toml` for the full list.
+ The same works for any of the other test suites, e.g. `bluebird-api/tests`, `bluebird-gymnasium/tests` and `docs/tests`.
+ See the `testpaths` setting in the root `pyproject.toml` for the full list.
+
+ Run these commands from the repository root.
+ The documentation tests in `docs/tests` look for the Markdown files relative to the current directory, so if you run them from anywhere else pytest skips them.
+
+ The example notebooks in `bluebird-dt/examples` are also tested, by running them with `nbmake`.
+ To run them yourself:
+
+ ```bash
+ cd bluebird-dt
+ uv run pytest --nbmake examples/
+ ```
+
+ CI runs the whole test suite and the notebooks with these same commands, in [`.github/workflows/linting_and_tests.yml`](.github/workflows/linting_and_tests.yml).
+ That workflow also checks linting and formatting with `ruff` and uses Python 3.10, so passing the tests locally does not guarantee that CI will pass.
+ If you change how the tests are run, update both the workflow and this section.
 
  ## Style Guide
 
@@ -158,3 +186,5 @@ We recognise that the use of AI tools for writing code is becoming more and more
  [github-review]: https://help.github.com/articles/about-pull-request-reviews
  [github-syncfork]: https://help.github.com/articles/syncing-a-fork
  [link_pep8]: https://www.python.org/dev/peps/pep-0008/
+ [uv-install]: https://docs.astral.sh/uv/getting-started/installation/
+ [uv-workspaces]: https://docs.astral.sh/uv/concepts/projects/workspaces/
