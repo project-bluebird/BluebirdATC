@@ -392,6 +392,34 @@ class Pilot:
         aircraft.cleared_instructions.vertical_speed_action = action
         aircraft.selected_instructions.vertical_speed_action = action
 
+    def action_queue_to_json(self) -> list[str]:
+        """
+        Serialise the action queue to a list of JSON strings, one per queue item, with each Action as a dictionary.
+
+        Returns
+        ----------
+        queue_json: list[str]
+            A JSON string for each item in the action queue
+        """
+
+        return [json.dumps({**item, "action": item["action"].data()}) for item in self.action_queue]
+
+    def set_action_queue_from_json(self, items: list[str]):
+        """
+        Set the action queue from a list of JSON strings written by action_queue_to_json.
+
+        Parameters
+        ----------
+        items: list[str]
+            A JSON string for each item in the action queue
+        """
+
+        queue_items = [json.loads(s) for s in items]
+        for item in queue_items:
+            item["action"] = Action.from_json(json.dumps(item["action"]))
+
+        self.action_queue = queue_items
+
     @classmethod
     def from_json(cls, s: str) -> Pilot:
         """

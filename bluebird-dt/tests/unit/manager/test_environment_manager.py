@@ -409,6 +409,35 @@ def test_rewind_to_time(generate_i: tuple[Airspace, list[Route]]) -> None:
     # assert logs are identical
     assert em.event_logger == orig_event_logger
 
+
+def test_rewind_restores_queued_actions(generate_i: tuple[Airspace, list[Route]]) -> None:
+    """
+    Check that an action waiting in a pilot's queue is logged, restored by a rewind and then processed
+    """
+    airspace, routes = generate_i
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
+    em.initialise_env_with_event_handler()
+    callsign = next(iter(em.environment.aircraft))
+
+    # queue an action without processing it, as a pilot that delays actions would
+    queued = Action(callsign, "change_flight_level_to", 200)
+    em.environment.aircraft[callsign].pilot.receive_actions([queued], em.environment)
+    queue = copy.deepcopy(em.environment.aircraft[callsign].pilot.action_queue)
+    em.evolve(6)
+
+    em.rewind_to_time(em.environment.datetime)
+    restored = em.environment.aircraft[callsign]
+    assert restored.pilot.action_queue == queue
+
+    # the restored action is processed along with the next clearance
+    clearance = Action(callsign, "change_cas_to", 280)
+    em.receive_actions([clearance])
+    em.evolve(6)
+    assert restored.cleared_instructions.vertical_action == queued
+    assert restored.cleared_instructions.speed_action == clearance
+    assert restored.pilot.action_queue == []
+
+
 def _make_basic_em(airspace, *, predictor_dt=1.0, fix_thresh=2.0, penumbra_lat=5.0, penumbra_fl=10):
     """
     Helper to create a minimal EnvironmentManager with an empty EventHandler.

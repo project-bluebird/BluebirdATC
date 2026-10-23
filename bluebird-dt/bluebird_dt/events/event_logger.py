@@ -374,10 +374,7 @@ class EventLogger:
             log.update(
                 {
                     "pilot_type": environment.aircraft[log["callsign"]].pilot.__class__.__name__,
-                    "pilot_action_queue": [
-                        json.dumps(queue_item)
-                        for queue_item in environment.aircraft[log["callsign"]].pilot.action_queue
-                    ],
+                    "pilot_action_queue": environment.aircraft[log["callsign"]].pilot.action_queue_to_json(),
                 }
             )
             for log in current_ac_internals
