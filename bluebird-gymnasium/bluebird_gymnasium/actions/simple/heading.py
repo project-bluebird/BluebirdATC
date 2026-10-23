@@ -3,16 +3,17 @@ from __future__ import annotations
 import typing
 
 from bluebird_dt.core import Action
+
 from bluebird_gymnasium.actions import (
     DEFAULT_INTERVAL_HEADING,
     DEFAULT_RELATIVE_HEADING,
 )
 
 if typing.TYPE_CHECKING:
-    from bluebird_dt.core import Aircraft
-    from bluebird_dt.core import Airspace
+    from bluebird_dt.core import Aircraft, Airspace
+
     from bluebird_gymnasium.envs.base import BaseEnv
-    from bluebird_gymnasium.utils.types import Number
+    from bluebird_gymnasium.utils.types import ACStateTracker, Number
 
 DEGREES_MIN = 0
 DEGREES_MAX = 360
@@ -66,7 +67,7 @@ def get_forward_segment_angle(
         - if the `segment_idx` is greater than the number of available forward
           segment and `clip` is False, then `None` is returned.
 
-        Note, this scenario could ocurr if an aircraft is approaching its last
+        Note, this scenario could occur if an aircraft is approaching its last
         fix in the route, and an action action to fly parallel to segment after
         the current segment (i.e., segment_idx set to 2) is issued, this clip
         ensures that the current segment is used instead, as there is no next
@@ -82,8 +83,7 @@ def get_forward_segment_angle(
 
     if segment_idx < 1:
         raise ValueError(
-            "`segment_idx should be set to value greater or equal to 1. "
-            "See the docstring for more information."
+            "`segment_idx should be set to value greater or equal to 1. See the docstring for more information."
         )
 
     if use_filed_route:
@@ -145,10 +145,8 @@ def heading_left(
 
     if value <= 0:
         raise ValueError("`value` should be a positive integer")
-    elif value % DEFAULT_INTERVAL_HEADING != 0:
-        raise ValueError(
-            f"`value` should be in intervals of {DEFAULT_INTERVAL_HEADING}"
-        )
+    if value % DEFAULT_INTERVAL_HEADING != 0:
+        raise ValueError(f"`value` should be in intervals of {DEFAULT_INTERVAL_HEADING}")
 
     aircraft = gym_env.get_simulator_env().aircraft[callsign]
     if aircraft.selected_instructions.heading is not None:
@@ -186,10 +184,8 @@ def heading_right(
 
     if value <= 0:
         raise ValueError("`value` should be a positive integer")
-    elif value % DEFAULT_INTERVAL_HEADING != 0:
-        raise ValueError(
-            f"`value` should be in intervals of {DEFAULT_INTERVAL_HEADING}"
-        )
+    if value % DEFAULT_INTERVAL_HEADING != 0:
+        raise ValueError(f"`value` should be in intervals of {DEFAULT_INTERVAL_HEADING}")
 
     aircraft = gym_env.get_simulator_env().aircraft[callsign]
     if aircraft.selected_instructions.heading is not None:
@@ -252,10 +248,7 @@ def heading_route_parallel(
     possible_options = list(range(1, forward_fixes_info.num_fixes + 1))
 
     if value not in possible_options:
-        raise ValueError(
-            f"`value` {value} should be set to one of the following values"
-            f"{possible_options}."
-        )
+        raise ValueError(f"`value` {value} should be set to one of the following values{possible_options}.")
 
     simulator_env = gym_env.get_simulator_env()
     value = get_forward_segment_angle(
@@ -272,8 +265,8 @@ def heading_route_parallel(
 
 def heading_maintain_current(
     callsign: str,
-    gym_env: BaseEnv,
-    value: Number | None = None,
+    gym_env: BaseEnv,  # noqa: ARG001
+    value: Number | None = None,  # noqa: ARG001
     agent: str = "Agent",
 ) -> Action:
     """Generate a simulator action to maintain an aircraft's current heading.

@@ -1,26 +1,30 @@
 from __future__ import annotations
 
-import numpy as np
 import typing
 
-# shapely: a dependency of the simulation package.
-from shapely.geometry import Point
+import numpy as np
 
 # simulation package
 from bluebird_dt.core.pos2d import Pos2D
+from bluebird_dt.core.pos3d import Pos3D
 from bluebird_dt.core.pos4d import Pos4D
 from bluebird_dt.core.sector import Sector
 from bluebird_dt.utility import convert
 from bluebird_dt.utility.geometry import (
     find_all_boundary_intersections,
+)
+from bluebird_dt.utility.geometry import (
     line_intersection as _intersection,
 )
+
+# shapely: a dependency of the simulation package.
+from shapely.geometry import Point
 
 try:
     from bluebird_dt.utility.constants import (
         R_E_WGS84 as EARTH_RADIUS_IN_METERS,
     )
-except:
+except ImportError:
     from bluebird_dt.utility.constants import R_E as EARTH_RADIUS_IN_METERS
 
 from bluebird_gymnasium.utils.constants import (
@@ -37,9 +41,10 @@ from bluebird_gymnasium.utils.types import (
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.aircraft import Aircraft
-    from bluebird_dt.core.airpsace import Airspace
+    from bluebird_dt.core.airspace import Airspace
     from bluebird_dt.core.area import Area
-    from bluebird_gymnasium.utils.types import Line
+
+    from bluebird_gymnasium.utils.types import Line, Number
 
 
 def left_right_check(reference: float, target: float) -> int:
@@ -120,12 +125,10 @@ def segment_in_sector_intersect(
     start_pos = segment[0]
     end_pos = segment[1]
 
-    if sector_obj.contains_laterally(
-        start_pos, epsilon=epsilon
-    ) and sector_obj.contains_laterally(end_pos, epsilon=epsilon):
-        intersections = find_all_boundary_intersections(
-            start_pos.location, end_pos.location, sector_obj
-        )
+    if sector_obj.contains_laterally(start_pos, epsilon=epsilon) and sector_obj.contains_laterally(
+        end_pos, epsilon=epsilon
+    ):
+        intersections = find_all_boundary_intersections(start_pos.location, end_pos.location, sector_obj)
 
         if len(intersections) == 0:
             status = True
@@ -135,9 +138,7 @@ def segment_in_sector_intersect(
             _location = c + u * (d - c)
             intersection_position = Pos2D.from_array(_location)
 
-            if start_pos.distance(intersection_position) < epsilon:
-                status = True
-            elif end_pos.distance(intersection_position) < epsilon:
+            if start_pos.distance(intersection_position) < epsilon or end_pos.distance(intersection_position) < epsilon:
                 status = True
             else:
                 status = False
@@ -204,7 +205,7 @@ def segment_in_sector_interp(
     )
 
     in_sector = True
-    for lat, lon in zip(cps_lat, cps_lon):
+    for lat, lon in zip(cps_lat, cps_lon, strict=True):
         pos = Pos2D(lat=lat, lon=lon)
         if not sector_obj.contains_laterally(pos, epsilon=epsilon):
             in_sector = False
@@ -222,7 +223,7 @@ def get_route_segments_in_sector(
 ) -> list[NamedLine]:
     """Get route segments/lines for segments within a sector
 
-    Returns route segements for the given route, consisting of tuples marking
+    Returns route segments for the given route, consisting of tuples marking
     the start and end in Pos2D.
 
     Note that for a segment where one fix is within the sector and the other
@@ -273,10 +274,8 @@ def get_route_segments_in_sector(
     if isinstance(stop_at, str):
         try:
             stop_idx = route.index(stop_at)
-        except ValueError:
-            raise ValueError(
-                f"stop fix {stop_at} is not in the route: {route}."
-            )
+        except ValueError as err:
+            raise ValueError(f"stop fix {stop_at} is not in the route: {route}.") from err
 
         route = route[: stop_idx + 1]
         route_positions = route_positions[: stop_idx + 1]
@@ -287,10 +286,8 @@ def get_route_segments_in_sector(
 
         try:
             stop_idx = route.index(fix_before_end_pos)
-        except ValueError:
-            raise ValueError(
-                f"stop fix {fix_before_end_pos} is not in the route: {route}."
-            )
+        except ValueError as err:
+            raise ValueError(f"stop fix {fix_before_end_pos} is not in the route: {route}.") from err
 
         route = route[: stop_idx + 1]
         route_positions = route_positions[: stop_idx + 1]
@@ -298,12 +295,8 @@ def get_route_segments_in_sector(
         # make a custom fix at this end position and add it to the
         # end of the route.
         _name = CUSTOM_FIX_AFTER_X.format(fix_before_end_pos)
-        route = route + [
-            _name,
-        ]
-        route_positions = route_positions + [
-            end_position,
-        ]
+        route = [*route, _name]
+        route_positions = [*route_positions, end_position]
     # else: it should be None; do nothing.
 
     ####### filter by start position.
@@ -313,11 +306,11 @@ def get_route_segments_in_sector(
         # the unprocessed route.
         try:
             idx = route.index(start_from)
-        except ValueError:
+        except ValueError as err:
             raise ValueError(
                 f"start fix {start_from} is either not in the route: {route} "
                 f"or appears after the fix defined `stop_at` {stop_at}."
-            )
+            ) from err
 
         route = route[idx:]
         route_positions = route_positions[idx:]
@@ -331,12 +324,12 @@ def get_route_segments_in_sector(
         # `start_from` in the unprocessed route.
         try:
             idx = route.index(fix_after_start_pos)
-        except ValueError:
+        except ValueError as err:
             raise ValueError(
                 f"start fix {fix_after_start_pos} is either not in the "
                 f"route: {route} or appears after the fix defined in "
                 f"`stop_at` {stop_at}."
-            )
+            ) from err
 
         route = route[idx:]
         route_positions = route_positions[idx:]
@@ -344,12 +337,8 @@ def get_route_segments_in_sector(
         # make a custom fix at this start position and add it to the
         # beginning of the route.
         _name = CUSTOM_FIX_BEFORE_X.format(fix_after_start_pos)
-        route = [
-            _name,
-        ] + route
-        route_positions = [
-            start_position,
-        ] + route_positions
+        route = [_name, *route]
+        route_positions = [start_position, *route_positions]
     # else: it should be None; do nothing.
 
     ####### generate the segments.
@@ -362,12 +351,8 @@ def get_route_segments_in_sector(
         next_fix_name = route[i + 1]
         next_fix_loc = route_positions[i + 1]
 
-        if sector_obj.contains_laterally(
-            fix_loc
-        ) or sector_obj.contains_laterally(next_fix_loc):
-            segments.append(
-                NamedLine((fix_loc, next_fix_loc), (fix_name, next_fix_name))
-            )
+        if sector_obj.contains_laterally(fix_loc) or sector_obj.contains_laterally(next_fix_loc):
+            segments.append(NamedLine((fix_loc, next_fix_loc), (fix_name, next_fix_name)))
 
     return segments
 
@@ -380,7 +365,7 @@ def get_route_segments(
 ) -> list[NamedLine]:
     """Get route segments/lines
 
-    Returns route segements for the given route, consisting of tuples marking
+    Returns route segments for the given route, consisting of tuples marking
     the start and end in Pos2D; Used for finding closest segments, finding
     lateral route deviations etc.
 
@@ -428,8 +413,8 @@ def get_route_segments(
     if isinstance(stop_at, str):
         try:
             stop_idx = route.index(stop_at)
-        except ValueError:
-            raise ValueError(f"stop fix {stop_at} is not in the route.")
+        except ValueError as err:
+            raise ValueError(f"stop fix {stop_at} is not in the route.") from err
 
         route = route[: stop_idx + 1]
         route_positions = route_positions[: stop_idx + 1]
@@ -440,10 +425,8 @@ def get_route_segments(
 
         try:
             stop_idx = route.index(fix_before_end_pos)
-        except ValueError:
-            raise ValueError(
-                f"stop fix {fix_before_end_pos} is not in the route."
-            )
+        except ValueError as err:
+            raise ValueError(f"stop fix {fix_before_end_pos} is not in the route.") from err
 
         route = route[: stop_idx + 1]
         route_positions = route_positions[: stop_idx + 1]
@@ -451,12 +434,8 @@ def get_route_segments(
         # make a custom fix at this end position and add it to the
         # end of the route.
         _name = CUSTOM_FIX_AFTER_X.format(fix_before_end_pos)
-        route = route + [
-            _name,
-        ]
-        route_positions = route_positions + [
-            end_position,
-        ]
+        route = [*route, _name]
+        route_positions = [*route_positions, end_position]
     # else: it should be None; do nothing.
 
     ####### filter by start position.
@@ -466,11 +445,10 @@ def get_route_segments(
         # the unprocessed route.
         try:
             idx = route.index(start_from)
-        except ValueError:
+        except ValueError as err:
             raise ValueError(
-                f"start fix {start_from} is either not in the route "
-                "or appears after the fix defined in `stop_at`."
-            )
+                f"start fix {start_from} is either not in the route or appears after the fix defined in `stop_at`."
+            ) from err
 
         route = route[idx:]
         route_positions = route_positions[idx:]
@@ -484,11 +462,11 @@ def get_route_segments(
         # `start_from` in the unprocessed route.
         try:
             idx = route.index(fix_after_start_pos)
-        except ValueError:
+        except ValueError as err:
             raise ValueError(
                 f"start fix {fix_after_start_pos} is either not in the route "
                 "or appears after the fix defined in `stop_at`."
-            )
+            ) from err
 
         route = route[idx:]
         route_positions = route_positions[idx:]
@@ -496,12 +474,8 @@ def get_route_segments(
         # make a custom fix at this start position and add it to the
         # beginning of the route.
         _name = CUSTOM_FIX_BEFORE_X.format(fix_after_start_pos)
-        route = [
-            _name,
-        ] + route
-        route_positions = [
-            start_position,
-        ] + route_positions
+        route = [_name, *route]
+        route_positions = [start_position, *route_positions]
     # else: it should be None; do nothing.
 
     ####### generate the segments.
@@ -513,9 +487,7 @@ def get_route_segments(
         next_fix_name = route[i + 1]
         next_fix_loc = route_positions[i + 1]
 
-        segments.append(
-            NamedLine((fix_loc, next_fix_loc), (fix_name, next_fix_name))
-        )
+        segments.append(NamedLine((fix_loc, next_fix_loc), (fix_name, next_fix_name)))
 
     return segments
 
@@ -548,7 +520,7 @@ def get_centreline_distance(
             before the first fix (standard) position in the route.
 
     Returns:
-        tuple containg three elements:
+        tuple containing three elements:
         - the centreline distance,
         - direction of turn (deviation) from centreline (encoded as a
           ternary value),
@@ -556,10 +528,7 @@ def get_centreline_distance(
           approximated (nearest) location on the route.
     """
 
-    if route_start_position is not None:
-        start_from = (route_start_position, route[0])
-    else:
-        start_from = None
+    start_from = (route_start_position, route[0]) if route_start_position is not None else None
 
     named_lines = get_route_segments(route, airspace, start_from=start_from)
     segments = [nline.get_line() for nline in named_lines]
@@ -568,9 +537,7 @@ def get_centreline_distance(
 
 
 # helper function.
-def _get_centreline_distance(
-    position: Pos2D, segments: list[Line]
-) -> tuple[float, int, float]:
+def _get_centreline_distance(position: Pos2D, segments: list[Line]) -> tuple[float, int, float]:
     """Compute a position's distance from the nearest point on a route.
 
     Args:
@@ -580,7 +547,7 @@ def _get_centreline_distance(
             each segment/line is defined by its start and end position.
 
     Returns:
-        tuple containg three elements:
+        tuple containing three elements:
         - the centreline distance,
         - direction of turn (deviation) from centreline (encoded as a
           ternary value),
@@ -618,16 +585,10 @@ def _get_centreline_distance(
             along_seg_dist.append(0)
 
         else:
-            dxt = (
-                np.arcsin(
-                    np.sin(p1.distance(p3) / R)
-                    * np.sin(bearing_p1_p3 - bearing_p1_p2)
-                )
-                * R
-            )
+            dxt = np.arcsin(np.sin(p1.distance(p3) / R) * np.sin(bearing_p1_p3 - bearing_p1_p2)) * R
             dist_p1_p2 = p1.distance(p2)
             dist_p1_p4 = np.arccos(np.cos(dist_p1_p3 / R) / np.cos(dxt / R)) * R
-            p4 = p1.forward(dist_p1_p4, bearing_p1_p2)
+            p4 = p1.forward(dist_p1_p4, bearing_p1_p2)  # noqa: F841
             if dist_p1_p4 > dist_p1_p2:
                 # the position ahead of (has passed) this segment
                 dxa = p2.distance(p3)
@@ -721,26 +682,16 @@ def angle_in_range(angle_deg: float, range_deg: tuple[float, float]) -> bool:
         raise ValueError(
             "`range_deg[1]` should be within [0.0, 360.0]",
         )
+
     if range_deg[0] == range_deg[1]:
         raise ValueError(
             "elements in `range_deg` cannot be the same",
         )
-
     if range_deg[0] < range_deg[1]:
-        if angle_deg >= range_deg[0] and angle_deg <= range_deg[1]:
-            return True
-        else:
-            return False
-    elif range_deg[0] > range_deg[1]:
-        if (angle_deg >= range_deg[0] and angle_deg <= 360.0) or (
-            angle_deg >= 0.0 and angle_deg <= range_deg[1]
-        ):
-            return True
-        else:
-            return False
-    else:
-        # we will never get here due to the assert check above
-        pass
+        return angle_deg >= range_deg[0] and angle_deg <= range_deg[1]
+
+    # range_deg[0] > range_deg[1]
+    return (angle_deg >= range_deg[0] and angle_deg <= 360.0) or (angle_deg >= 0.0 and angle_deg <= range_deg[1])
 
 
 def project_x_from_range_to_range(
@@ -777,9 +728,7 @@ def project_x_from_range_to_range(
         projected_x = c + (((x - a) * (d - c)) / (b - a))
 
     else:
-        raise ValueError(
-            f"Number {x} is not in the source range: {source_range}"
-        )
+        raise ValueError(f"Number {x} is not in the source range: {source_range}")
 
     return projected_x
 
@@ -787,7 +736,6 @@ def project_x_from_range_to_range(
 def at_exit_window(
     aircraft: Aircraft,
     distance_to_exit_along_track: float,
-    exit_position: Pos2D,
     exit_window: Line | NamedLine,
 ) -> bool:
     """Check whether the aircraft has arrived at its sector's exit.
@@ -796,7 +744,6 @@ def at_exit_window(
         aircraft: the aircraft for which to check if it is at the exit window.
         distance_to_exit_along_track: the aircraft distance to the sector's
             exit following the aircraft's track (route).
-        exit_position: defines the exit position within the aircraft's route.
         exit_window: defines the exit window/segment/line of the aircraft. it
             is specified as a two-element tuple of positions. the line
             specifies the maximum lateral deviation from the aircraft's
@@ -813,26 +760,18 @@ def at_exit_window(
     if distance_to_exit_along_track > DISTANCE_THRESHOLD:
         # not yet at exit position (and window region)
         return False
-    else:
-        aircraft_position = aircraft.pos2d()
-        position_1 = exit_window[0]
-        position_2 = exit_window[1]
-        full_exit_width = position_1.distance(position_2)
+    aircraft_position = aircraft.pos2d()
+    position_1 = exit_window[0]
+    position_2 = exit_window[1]
+    full_exit_width = position_1.distance(position_2)
 
-        if (
-            aircraft_position.distance(position_1) < full_exit_width
-            and aircraft_position.distance(position_2) < full_exit_width
-        ):
-            # at exit position and within window region
-            return True
-        else:
-            # at exit position but outside the window region
-            return False
+    return (
+        aircraft_position.distance(position_1) < full_exit_width
+        and aircraft_position.distance(position_2) < full_exit_width
+    )
 
 
-def nearest_360_boundary_position(
-    aircraft: Aircraft, sector: Sector
-) -> tuple[Pos2D, float, float]:
+def nearest_360_boundary_position(aircraft: Aircraft, sector: Sector) -> tuple[Pos2D, float, float]:
     """Find the point on a sector boundary nearest to an aircraft.
 
     Looking 360 degrees around an aircraft's current position, find the
@@ -858,16 +797,10 @@ def nearest_360_boundary_position(
     aircraft_position = aircraft.pos2d()
     exterior = sector_lateral_boundary.boundary.exterior
 
-    dist_euclid = exterior.project(
-        Point(aircraft_position.lon, aircraft_position.lat)
-    )
-    nearest_point = sector_lateral_boundary.boundary.exterior.interpolate(
-        dist_euclid
-    )
+    dist_euclid = exterior.project(Point(aircraft_position.lon, aircraft_position.lat))
+    nearest_point = sector_lateral_boundary.boundary.exterior.interpolate(dist_euclid)
 
-    nearest_point_latlon = np.array(
-        [nearest_point.y, nearest_point.x]
-    )  # format: (lat, lon)
+    nearest_point_latlon = np.array([nearest_point.y, nearest_point.x])  # format: (lat, lon)
     nearest_point_pos2d = Pos2D.from_array(nearest_point_latlon)
 
     _distance = aircraft_position.distance(nearest_point_pos2d)
@@ -907,7 +840,7 @@ def nearest_forward_boundary_position(
       (or within the correct exit fix window). If no intersection exist (
       None returned), it implies that the sector is longer than the 150nm
       distance chosen. Consider calling the function again with an increased
-      value pased for `on_heading_forward_distance`.
+      value passed for `on_heading_forward_distance`.
 
     Args:
         aircraft: defines the aircraft.
@@ -916,7 +849,7 @@ def nearest_forward_boundary_position(
         exit_fix_pos: defines the location of the aircraft's exit fix.
         route_distance_to_exit_fix: defines the aircraft's current track
             distance to its exit fix position. This is used when the
-            aircraft is route following and its current segement does not
+            aircraft is route following and its current segment does not
             intersect with the sector boundary. Hence, the returned distance
             from this function is set to this value.
         on_heading_forward_distance: defines the distance to project the
@@ -949,9 +882,7 @@ def nearest_forward_boundary_position(
             dist = route_distance_to_exit_fix
 
     else:
-        future_pos = ac_pos.forward(
-            dist=on_heading_forward_distance, heading=aircraft.heading
-        )
+        future_pos = ac_pos.forward(dist=on_heading_forward_distance, heading=aircraft.heading)
         trajectory = [ac_pos, future_pos]
 
         pos, dist = nearest_traj_boundary_position(trajectory, sector)
@@ -977,7 +908,7 @@ def nearest_traj_boundary_position(
         Note, if no intersection is found, then the tuple (None, None) is
         returned.
     """
-    from shapely import LineString, Point, MultiPoint
+    from shapely import LineString, MultiPoint, Point
 
     sector_lateral_boundary: Area = sector.boundary()
 
@@ -985,22 +916,16 @@ def nearest_traj_boundary_position(
     ret, _ = sector_lateral_boundary.intersection(trajectory)
 
     if isinstance(ret, Point):
-        intersections = np.concatenate(
-            [arr.tolist() for arr in ret.xy]
-        ).reshape(1, -1)
+        intersections = np.concatenate([arr.tolist() for arr in ret.xy]).reshape(1, -1)
 
     elif isinstance(ret, MultiPoint):
-        intersections = np.stack(
-            [np.concatenate([arr.tolist() for arr in p.xy]) for p in ret.geoms]
-        )
+        intersections = np.stack([np.concatenate([arr.tolist() for arr in p.xy]) for p in ret.geoms])
 
     elif isinstance(ret, LineString):
         intersections = np.stack([arr.tolist() for arr in ret.xy]).T
 
     else:
-        raise ValueError(
-            f"Intersection output of type: {type(ret)} is not supported."
-        )
+        raise ValueError(f"Intersection output of type: {type(ret)} is not supported.")
 
     if intersections.shape[0] == 0:
         # no intersections
@@ -1020,20 +945,14 @@ def nearest_traj_boundary_position(
     else:
         # more than one intersection.
         intersection_locations = [
-            Pos2D(lat=intersections[i, 1], lon=intersections[i, 0])
-            for i in range(intersections.shape[0])
+            Pos2D(lat=intersections[i, 1], lon=intersections[i, 0]) for i in range(intersections.shape[0])
         ]
 
         # get the intersection location closest to the starting location
         # of the trajectory
         source_location = trajectory[0]
 
-        distances = np.asarray(
-            [
-                source_location.distance(_location)
-                for _location in intersection_locations
-            ]
-        )
+        distances = np.asarray([source_location.distance(_location) for _location in intersection_locations])
 
         dist = distances.min().item()
         idx = distances.argmin().item()
@@ -1057,14 +976,13 @@ def get_quadrant(angle: float) -> Quadrant:
     if 0.0 <= angle <= 90.0:
         return Quadrant.Q1
 
-    elif 90.0 < angle <= 180.0:
+    if 90.0 < angle <= 180.0:
         return Quadrant.Q2
 
-    elif 180.0 < angle <= 270.0:
+    if 180.0 < angle <= 270.0:
         return Quadrant.Q3
 
-    else:
-        return Quadrant.Q4
+    return Quadrant.Q4
 
 
 def quadrant_range(angle: float) -> tuple[float, float]:
@@ -1082,13 +1000,10 @@ def quadrant_range(angle: float) -> tuple[float, float]:
     return QuadrantBound[get_quadrant(angle)]
 
 
-def passed_location(
-    aircraft: Aircraft, location: Pos2D, aircraft_cps: list[Pos4D]
-) -> bool:
+def passed_location(location: Pos2D, aircraft_cps: list[Pos4D]) -> bool:
     """Determine whether an aircraft has passed a given location/position.
 
     Args:
-        aircraft: the aircraft to check if it has passed a given location.
         location: the target location to check against.
         aircraft_cps: defines the aircraft future trajectory as list of
             points/positions.
@@ -1100,10 +1015,7 @@ def passed_location(
     d0 = aircraft_cps[0].distance(location)
     d1 = aircraft_cps[1].distance(location)
 
-    if d0 > d1:
-        return False
-    else:
-        return True
+    return d0 <= d1
 
 
 ############ fixes and position checks in a given sector.
@@ -1128,11 +1040,7 @@ def filter_positions_in_sector(
     """
 
     sector_obj = airspace.sectors[sector_name]
-    return [
-        p
-        for p in positions
-        if sector_obj.contains_laterally(p, epsilon=epsilon)
-    ]
+    return [p for p in positions if sector_obj.contains_laterally(p, epsilon=epsilon)]
 
 
 def positions_in_sector(
@@ -1156,9 +1064,7 @@ def positions_in_sector(
     """
 
     sector_obj = airspace.sectors[sector_name]
-    return [
-        sector_obj.contains_laterally(p, epsilon=epsilon) for p in positions
-    ]
+    return [sector_obj.contains_laterally(p, epsilon=epsilon) for p in positions]
 
 
 def filter_fixes_in_sector(
@@ -1219,9 +1125,7 @@ def fixes_in_sector(
     positions = [places[fix] for fix in fixes]
     sector_obj = airspace.sectors[sector_name]
 
-    return [
-        sector_obj.contains_laterally(p, epsilon=epsilon) for p in positions
-    ]
+    return [sector_obj.contains_laterally(p, epsilon=epsilon) for p in positions]
 
 
 def filter_route_fixes_in_sector_by_coordination(
@@ -1256,9 +1160,7 @@ def filter_route_fixes_in_sector_by_coordination(
 
 
 ############ line and path intersections
-def line_intersection(
-    line_1: Line | NamedLine, line_2: Line | NamedLine
-) -> tuple[LineIntersection, Pos2D | None]:
+def line_intersection(line_1: Line | NamedLine, line_2: Line | NamedLine) -> tuple[LineIntersection, Pos2D | None]:
     """Determine whether two lines/segments intersect and the location.
 
     Note that potential future intersection (if the lines are extended) is
@@ -1309,9 +1211,7 @@ def line_intersection(
     return (ret, location)
 
 
-def line_intersection_any(
-    target_line: Line | NamedLine, other_lines: list[Line | NamedLine]
-) -> bool:
+def line_intersection_any(target_line: Line | NamedLine, other_lines: list[Line | NamedLine]) -> bool:
     """Determine whether a line intersect with any line in a list of lines.
 
     Args:
@@ -1352,11 +1252,7 @@ def line_intersection_batch(
         intersection status defined in the return type of `line_intersection`
     """
 
-    results = []
-    for other_line in other_lines:
-        results.append(line_intersection(target_line, other_line))
-
-    return results
+    return [line_intersection(target_line, other_line) for other_line in other_lines]
 
 
 def path_intersection(
@@ -1367,7 +1263,7 @@ def path_intersection(
 
     A path is a collection of segments/lines.
     Note: this is a generalised version of `line_intersection_any(...)`
-    where there are mulitple target lines.
+    where there are multiple target lines.
 
     Args:
         lines_1: defines the list of lines for the first path.
@@ -1405,9 +1301,7 @@ def path_intersection(
 
 
 ############ line parallel, colinearity and overlap.
-def line_parallel(
-    line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2
-) -> bool:
+def line_parallel(line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2) -> bool:
     """Determine whether two lines/segments are parallel.
 
     Determines the parallelism by
@@ -1438,7 +1332,7 @@ def line_parallel(
     angular_diff2 = angle_diff(line_1_angle, line_2_angle_reverse)
 
     if angular_diff <= epsilon or angular_diff2 <= epsilon:
-        # step 2: check for latitudinal spearation
+        # step 2: check for latitudinal separation
         bearing = line_1[0].bearing_to(line_2[0])
 
         parallel_status = angle_diff(bearing, line_1_angle) > epsilon
@@ -1449,9 +1343,7 @@ def line_parallel(
     return parallel_status
 
 
-def line_colinear(
-    line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2
-) -> bool:
+def line_colinear(line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2) -> bool:
     """Determine whether two lines/segments are colinear.
 
     Determines the colinearity by:
@@ -1491,10 +1383,7 @@ def line_colinear(
 
         forward_reference = line_1_angle
         reverse_reference = (forward_reference + 180) % 360
-        colinear_status = (
-            abs(bearing - forward_reference) <= epsilon
-            or abs(bearing - reverse_reference) <= epsilon
-        )
+        colinear_status = abs(bearing - forward_reference) <= epsilon or abs(bearing - reverse_reference) <= epsilon
 
     else:
         colinear_status = False
@@ -1502,9 +1391,7 @@ def line_colinear(
     return colinear_status
 
 
-def line_overlap(
-    line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2
-) -> bool:
+def line_overlap(line_1: Line | NamedLine, line_2: Line | NamedLine, epsilon: float = 1e-2) -> bool:
     """Determine whether two colinear lines/segments are directly overlapping.
 
     Args:
@@ -1550,16 +1437,8 @@ def line_overlap(
     r_l1_start_l2_end = abs(angle_l1_start_l2_end - rev_ref) <= epsilon
     r_l1_end_l2_end = abs(angle_l1_end_l2_end - rev_ref) <= epsilon
 
-    no_overlap = (
-        f_l1_start_l2_start
-        and f_l1_end_l2_start
-        and f_l1_start_l2_end
-        and f_l1_end_l2_end
-    ) or (
-        r_l1_start_l2_start
-        and r_l1_end_l2_start
-        and r_l1_start_l2_end
-        and r_l1_end_l2_end
+    no_overlap = (f_l1_start_l2_start and f_l1_end_l2_start and f_l1_start_l2_end and f_l1_end_l2_end) or (
+        r_l1_start_l2_start and r_l1_end_l2_start and r_l1_start_l2_end and r_l1_end_l2_end
     )
 
     return not no_overlap

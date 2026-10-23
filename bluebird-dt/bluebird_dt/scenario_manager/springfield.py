@@ -1,23 +1,15 @@
-import json
 import os
-import re
 import typing
 from datetime import datetime, timedelta, timezone
-from os import listdir
-from os.path import isfile
-from pathlib import Path
-from typing import Generic, TypeVar
+from typing import Generic
 
 import pandas as pd
+import typing_extensions
 from pydantic import BaseModel
 from typing_extensions import override
 
-from bluebird_dt.core import Aircraft, Airspace, Environment, Pos2D, WindField
-from bluebird_dt.core.airway import Airway
-from bluebird_dt.core.fixes import Fixes
-from bluebird_dt.core.flight_plan import FlightPlan
-from bluebird_dt.core.route import Route
-from bluebird_dt.core.sector import Sector
+from bluebird_dt.airspace_generator import SpringfieldAirspaceGenerator
+from bluebird_dt.core import Aircraft, Environment, FlightPlan, Pos2D, Route, WindField
 from bluebird_dt.events import EventHandler, EventLogger
 from bluebird_dt.logger import logger
 from bluebird_dt.manager import EnvironmentManager
@@ -25,16 +17,15 @@ from bluebird_dt.predictor import LinearPredictor, Predictor
 from bluebird_dt.scenario_manager.outcomm_handler import OutcommHandler
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator.simulator import Simulator
-from bluebird_dt.utility.airspace_data import create_sector, load_fixes
 from bluebird_dt.utility.paths import SPRINGFIELD_DIR
 from bluebird_dt.utility.scenario_utils import convert_string_to_lists
 
-TAircraft = TypeVar("TAircraft", bound=Aircraft)
-TWindField = TypeVar("TWindField", bound=WindField)
-TForecastWindField = TypeVar("TForecastWindField", bound=WindField)
-TEventLogger = TypeVar("TEventLogger", bound=EventLogger)
-TEventHandler = TypeVar("TEventHandler", bound=EventHandler[Aircraft])
-TSimulator = TypeVar("TSimulator", bound=Simulator)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
+TEventLogger = typing_extensions.TypeVar("TEventLogger", bound=EventLogger, default=EventLogger)
+TEventHandler = typing_extensions.TypeVar("TEventHandler", bound=EventHandler[Aircraft], default=EventHandler[Aircraft])
+TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator, default=Simulator)
 
 
 class SpringfieldScenarioManagerConfig(BaseModel):
@@ -63,11 +54,8 @@ class SpringfieldScenarioManager(
     outcomm_handler: OutcommHandler | None
     typeof_environment_manager: type[EnvironmentManager[TAircraft, TWindField, TForecastWindField]]
     typeof_aircraft: type[TAircraft]
-    typeof_eventlogger: type[TEventLogger]
-    typeof_eventhandler: type[TEventHandler]
-    fixes_path: str = os.path.join(SPRINGFIELD_DIR, "fixes.csv")
-    sector_path: str = os.path.join(SPRINGFIELD_DIR, "sectors")
-    airways_path: str = os.path.join(SPRINGFIELD_DIR, "airways.json")
+    typeof_event_logger: type[TEventLogger]
+    typeof_event_handler: type[TEventHandler]
     scenario_directory: str = os.path.join(SPRINGFIELD_DIR, "scenarios")
     projection_centre: tuple[float, float] = (0.186029, 51.888057)
     event_handler_ignore_flags: EventHandler.IgnoreFlags
@@ -79,12 +67,12 @@ class SpringfieldScenarioManager(
         lateral_buffer_distance: float | int = 20,
         airport_fix_distance_threshold: float = 5.0,
         initialise_with_event_handler: bool = True,
-        typeof_environmentmanager: type[
+        typeof_environment_manager: type[
             EnvironmentManager[TAircraft, TWindField, TForecastWindField]
         ] = EnvironmentManager,
         typeof_aircraft: type[TAircraft] = Aircraft,
-        typeof_eventlogger: type[TEventLogger] = EventLogger,
-        typeof_eventhandler: type[TEventHandler] = EventHandler[Aircraft],
+        typeof_event_logger: type[TEventLogger] = EventLogger,
+        typeof_event_handler: type[TEventHandler] = EventHandler[Aircraft],
     ):
         """
         Construct a new instance.
@@ -93,7 +81,7 @@ class SpringfieldScenarioManager(
         ----------
         scenario_name: str
             Name of the scenario.
-        typeof_environmentmanager: type[EnvironmentManager], optional
+        typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by - UoM: FL
@@ -105,9 +93,9 @@ class SpringfieldScenarioManager(
             Initialise the environment with the EventHandler
         typeof_aircraft: type[Aircraft], optional
             If we want to use a derived class for the aircraft class, specify here.
-        typeof_eventlogger: type[EventLogger], optional
+        typeof_event_logger: type[EventLogger], optional
             If we want to use a derived class for the event logger, specify here.
-        typeof_eventhandler: type[EventHandler], optional
+        typeof_event_handler: type[EventHandler], optional
             If we want to use a derived class for the Event Handler, specify here.
         """
         self.scenario_name = scenario_name
@@ -115,11 +103,11 @@ class SpringfieldScenarioManager(
         self.lateral_buffer_distance = lateral_buffer_distance
         self.airport_fix_distance_threshold = airport_fix_distance_threshold
         self.initialise_with_event_handler = initialise_with_event_handler
-        self.typeof_environment_manager = typeof_environmentmanager
+        self.typeof_environment_manager = typeof_environment_manager
         self.typeof_aircraft = typeof_aircraft
-        self.typeof_eventlogger = typeof_eventlogger
-        self.typeof_eventhandler = typeof_eventhandler
-        self.event_handler_ignore_flags = typeof_eventhandler.IgnoreFlags(
+        self.typeof_event_logger = typeof_event_logger
+        self.typeof_event_handler = typeof_event_handler
+        self.event_handler_ignore_flags = typeof_event_handler.IgnoreFlags(
             radar_if_simmed=True,
             flight_if_simmed=False,
             clearance_if_simmed=False,
@@ -138,18 +126,19 @@ class SpringfieldScenarioManager(
         scenario_name: str,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
-        typeof_environmentmanager: type[
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
+        typeof_environment_manager: type[
             EnvironmentManager[TAircraft, TWindField, TForecastWindField]
         ] = EnvironmentManager,
         typeof_aircraft: type[TAircraft] = Aircraft,
-        typeof_eventlogger: type[TEventLogger] = EventLogger,
-        typeof_eventhandler: type[TEventHandler] = EventHandler[Aircraft],
+        typeof_event_logger: type[TEventLogger] = EventLogger,
+        typeof_event_handler: type[TEventHandler] = EventHandler[Aircraft],
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:
         """Setup Springfield scenarios based on scenario name.
@@ -162,24 +151,31 @@ class SpringfieldScenarioManager(
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
-        env_manager_class: type, optional
-            if specified, use this class (maybe a subclass of BluebirdATC EventManager).
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
+        typeof_environment_manager: type[EnvironmentManager], optional
+            If we want to use a derived class of env manager, specify here.
+        typeof_aircraft: type[Aircraft], optional
+            If we want to use a derived class for the aircraft class, specify here.
+        typeof_eventlogger: type[EventLogger], optional
+            If we want to use a derived class for the event logger, specify here.
+        typeof_eventhandler: type[EventHandler], optional
+            If we want to use a derived class for the Event Handler, specify here.
 
         Returns
         -------
@@ -192,117 +188,22 @@ class SpringfieldScenarioManager(
             vertical_buffer_distance=500,
             initialise_with_event_handler=True,
             typeof_aircraft=typeof_aircraft,
-            typeof_eventlogger=typeof_eventlogger,
-            typeof_eventhandler=typeof_eventhandler,
-            typeof_environmentmanager=typeof_environmentmanager,
+            typeof_event_logger=typeof_event_logger,
+            typeof_event_handler=typeof_event_handler,
+            typeof_environment_manager=typeof_environment_manager,
         ).to_simulator(
-            predictor=predictor,
-            log_filename=log_filename,
+            typeof_simulator=typeof_simulator,
             category="Springfield",
+            scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
-            simulated_sectors=simulated_sectors,
-            typeof_simulator=typeof_simulator,
-        )
-
-    @staticmethod
-    def _sectors_init() -> dict[str, Sector]:
-        """
-        Loads sectors for Springfield from all geojson files in
-        :attr:`~springfield.SpringfieldScenarioManager.sector_path`,
-        ignoring all hidden files (prefixed with a '.').
-
-        Returns
-        -------
-        dict[str, Sector]
-            A dictionary with the sector names as the keys and its sector object as the corresponding value.
-
-        """
-
-        sector_paths = [
-            os.path.join(SpringfieldScenarioManager.sector_path, f)
-            for f in listdir(SpringfieldScenarioManager.sector_path)
-            if isfile(os.path.join(SpringfieldScenarioManager.sector_path, f))
-        ]
-
-        sectors: dict[str, Sector] = {}
-        sector_aor: dict[str, Sector] = {}
-
-        for sector_path in sector_paths:
-            sector_name = Path(sector_path).stem
-
-            # Ignore hidden files
-            if sector_name[0] == ".":
-                continue
-
-            sector = create_sector(sector_path)
-
-            if (sector_name_regex := re.search(r"^([A-Z]+)_aor", sector_name)) is not None:
-                sector_aor[sector_name_regex.group(1)] = sector
-
-            else:
-                sectors[sector_name] = sector
-
-        for key, value in sector_aor.items():
-            if (parent_sector := sectors.get(key)) is not None:
-                parent_sector.area_of_responsibility = value.volumes
-            else:
-                raise KeyError(f"Sector with {key}_aor does not exists therefore {key} cannot be matched to it.")
-
-        return sectors
-
-    @staticmethod
-    def _fixes_init() -> Fixes:
-        """
-        Loads fixes for Springfield from :attr:~'springfield.SpringfieldScenarioManager.fixes_path'.
-
-        Returns
-        -------
-        Fixes
-            An object which stores all the loaded fixes.
-        """
-        return load_fixes(fixes_path=SpringfieldScenarioManager.fixes_path)
-
-    @staticmethod
-    def _airways_init(fixes: Fixes) -> dict[str, Airway]:
-        """
-        Loads airways for Springfield from :attr:`~springfield.SpringfieldScenarioManager.airways_path`.
-
-        Returns
-        -------
-        dict[str, Airway]
-            Returns a dictionary of airways where the key is its identifier as a string,
-            and the value the corresponding Airway object.
-        """
-
-        with open(SpringfieldScenarioManager.airways_path) as f:
-            airway_data = json.load(f)
-
-        airways: dict[str, Airway] = {}
-
-        for key, val in airway_data.items():
-            airways[key] = Airway.from_list_of_fixes(key, val["fixes"], 0, 660, fixes)
-
-        return airways
-
-    @staticmethod
-    def _airspace_init() -> Airspace:
-        """
-        Function to initialise an Airspace object for Springfield
-
-        Returns
-        -------
-        airspace: Airspace, the Springfield airspace, with some sectors bandboxed.
-        """
-        fixes = SpringfieldScenarioManager._fixes_init()
-
-        return Airspace(
-            sectors=SpringfieldScenarioManager._sectors_init(),
-            fixes=fixes,
-            airways=SpringfieldScenarioManager._airways_init(fixes),
+            log_filename=log_filename,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )
 
     @override
@@ -318,7 +219,7 @@ class SpringfieldScenarioManager(
         EventHandler
         """
 
-        event_handler = self.typeof_eventhandler(
+        event_handler = self.typeof_event_handler(
             ignore=self.event_handler_ignore_flags,
             typeof_aircraft=self.typeof_aircraft,
         )
@@ -359,13 +260,15 @@ class SpringfieldScenarioManager(
 
         # create instance of base Predictor class if no predictor passed
         if predictor is None:
-            predictor = LinearPredictor(dt=1, fix_proximity_threshold=0.5, fixes=self._fixes_init)
+            predictor = LinearPredictor(
+                dt=1, fix_proximity_threshold=0.5, fixes=SpringfieldAirspaceGenerator._fixes_init
+            )
 
         # create event handler from the events list
         event_handler = self.create_event_handler()
 
         em = self.typeof_environment_manager(
-            airspace=self._airspace_init(),
+            airspace=SpringfieldAirspaceGenerator._airspace_init(),
             event_handler=event_handler,
             predictor=predictor,
             time=0,
@@ -568,7 +471,7 @@ class SpringfieldScenarioManager(
         # TODO: apply stars to route (there are none in the data)
         # route_fixes, route_fix_types = apply_sid_or_star(route_fixes, route_fix_types, self.df_sids, STAR_TYPE)
 
-        # initial check: the route is allowed to have one fix iif it does not spawn at that fix.
+        # initial check: the route is allowed to have one fix if it does not spawn at that fix.
         if len(route_fixes) == 1 and row.offset_range == 0:
             msg = f"WARNING: Skipping aircraft event for {self.scenario_name} - {row.callsign} because it has only one"
             msg += f" fix in the route {route_fixes} and it spawns at that fix."
@@ -685,14 +588,16 @@ class SpringfieldScenarioManager(
     def to_simulator(
         self,
         category: str | None = None,
+        scenario_name: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:
         """
@@ -702,26 +607,31 @@ class SpringfieldScenarioManager(
         ----------
         category : str | None, optional
             Category of the simulation. Default is None.
+        scenario_name : str | None, optional
+            Name of the scenario. Default is None.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], optional
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios. Defaults to "ALL".
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
+        typeof_simulator: type[TSimulator], optional
+            If we want to use a derived class of simulator, specify here.
 
         Returns
         -------
@@ -741,14 +651,15 @@ class SpringfieldScenarioManager(
             scenario_manager=self,
             env_manager=env_manager,
             projection_centre=self.projection_centre,
-            scenario_name=self.scenario_name,
             category=category,
+            scenario_name=self.scenario_name if scenario_name is None else scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
-            predictor=predictor,
-            simulated_sectors=simulated_sectors,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )

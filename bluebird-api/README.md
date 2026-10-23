@@ -22,6 +22,11 @@ uvx bluebird-api@latest
 2. Navigate to [http://localhost:8000/hmi](http://localhost:8000/hmi) to open the radar visualisation.
 3. Select **Load new scenario** in the top left, choose a scenario type (eg. `Springfield`) and scenario (eg `test1`), and press **Load**.
 
+This package includes a prebuilt HMI available by navigating to [http://localhost:8000/hmi](http://localhost:8000/hmi).
+Initially, no scenario would be loaded, therefore showing the Bluebird logo on the radar.
+To load a scenario, the top left of the window select `Load new scenario`.
+A window will appear in the middle of the screen, select `Springfield`, then `example-scenario` and finally, `Load`.
+
 > **Note: Running on a remote machine/cloud?**
 Currently, the built version of the app is configured to look for the API running on `localhost`.  For deploying on remote machines, or a cloud service, it will be necessary to modify `src/api/config.ts` accordingly, and rebuild via `npm run build`.
 
@@ -46,29 +51,30 @@ while True:
     actions_to_issue = []
 
     for aircraft in environment.aircraft.values():
-
         if aircraft.callsign in callsigns_done or aircraft.current_sector != "SPRINGFIELD":
             continue
 
         exit_coordination = environment.exit_coordination("SPRINGFIELD", aircraft.callsign)
 
         if exit_coordination is not None:
-            actions_to_issue.extend([
-                {
-                    "callsign": aircraft.callsign,
-                    "kind": "change_flight_level_to",
-                    "value": exit_coordination.fl,
-                    "sector": "SPRINGFIELD",
-                    "agent": "agent"
-                },
-                {
-                    "callsign": aircraft.callsign,
-                    "kind": "route_direct_to",
-                    "value": exit_coordination.fix,
-                    "sector": "SPRINGFIELD",
-                    "agent": "agent"
-                }
-            ])
+            actions_to_issue.extend(
+                [
+                    {
+                        "callsign": aircraft.callsign,
+                        "kind": "change_flight_level_to",
+                        "value": exit_coordination.fl,
+                        "sector": "SPRINGFIELD",
+                        "agent": "agent",
+                    },
+                    {
+                        "callsign": aircraft.callsign,
+                        "kind": "route_direct_to",
+                        "value": exit_coordination.fix,
+                        "sector": "SPRINGFIELD",
+                        "agent": "agent",
+                    },
+                ]
+            )
 
         callsigns_done.append(aircraft.callsign)
 

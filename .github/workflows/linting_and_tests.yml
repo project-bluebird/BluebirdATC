@@ -1,11 +1,13 @@
 ---
 name: BluebirdATC linting and tests
 
-on: 
+on:
   pull_request:
     branches:
       - "main"
-      - "dev"
+
+permissions:
+  contents: read
 
 jobs:
   ubuntu-tests:
@@ -19,41 +21,31 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
       - name: Install uv and set python version
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Set up cache
-        uses: actions/cache@v4
-        id: cache
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/uv.lock') }}-${{ hashFiles('**/pyproject.toml') }}
 
       - name: Display Python version
         run: uv run python -c "import sys; print(sys.version)"
 
-      - name: Check linting for bluebird-dt
-        working-directory: ./bluebird-dt/bluebird_dt
-        run: |
-          for dir in ./core/ \
-                     ./utility/ ; do
-            uv run ruff check --output-format=github $dir
-          done
+      - name: Check linting
+        run: uv run ruff check bluebird-api bluebird-dt bluebird-gymnasium docs --output-format=github
 
-      - name: Check formatting for bluebird-dt
-        working-directory: ./bluebird-dt/bluebird_dt
-        run: |
-          for dir in ./core/ \
-                     ./utility/ ; do
-            uv run ruff format --check --diff $dir
-          done
+      - name: Check formatting
+        run: uv run ruff format bluebird-api bluebird-dt bluebird-gymnasium docs --check --diff
 
       - name: Check testing
-        run: |
-          uv run pytest -n auto
+        run: uv run pytest -n auto
+
+      - name: Run notebooks
+        if: github.base_ref == 'main'
+        working-directory: bluebird-dt
+        run: uv run pytest --nbmake examples/
+        
+
+

@@ -42,7 +42,7 @@ class Predictor(ABC):
         fix_proximity_threshold: float,
         fixes: Fixes | None,
         aircraft_mapping_path: str | None = None,
-        ignore_synonym_data: bool = False
+        ignore_synonym_data: bool = False,
     ):
         """
         Construct a new instance.
@@ -63,7 +63,8 @@ class Predictor(ABC):
             Fixes from the airspace that aircraft are flying in. If None, the predictor will not be able to predict
             the trajectory of on-route aircraft.
         aircraft_mapping_path: str | None
-            The path to an aircraft mapping file, either an aircraft type synonym data table or an aircraft weight mapping fallback
+            The path to an aircraft mapping file, either an aircraft type synonym data table or an aircraft weight
+            mapping fallback.
         ignore_synonym_data: bool
             Defaults to False but if True it tells this constructor to not read the aircraft_mapping_path file.
 
@@ -74,7 +75,8 @@ class Predictor(ABC):
         performance_data: dict
             A general dict object to hold aircraft performance data used in different predictors.
         synonym_data: dict
-            A map between an aircraft type and a key value used for performance data lookups (either aircraft synonym or a weight category).
+            A map between an aircraft type and a key value used for performance data lookups (either aircraft synonym
+            or a weight category).
         """
 
         if dt <= 0.0:
@@ -334,8 +336,17 @@ class Predictor(ABC):
                 aircraft.predictor_params["turn_radius"] = turn_radius
 
             if aircraft.next_fix_index == len(aircraft.flight_plan.route.current) - 1:
-                # Next fix is the last one, so just use proximity threshold to check if we've reached it
-                if distance_to_fix <= self.fix_proximity_threshold:
+                # Next fix is the last one, so use the proximity threshold to check if we've reached it. With no
+                # following fix to sequence onto, an aircraft that cannot turn tightly enough onto it would
+                # circle it forever, so also stop once it has flown past. distance_to_abeam is negative beyond
+                # the fix, and None when the fix is further off track than the turn diameter, i.e. reachable.
+                turn_radius = aircraft.predictor_params.get("turn_radius")
+                distance_to_abeam = (
+                    None if turn_radius is None else aircraft.distance_to_abeam(target_pos, radius=2 * turn_radius)
+                )
+                has_passed_fix = distance_to_abeam is not None and distance_to_abeam < 0
+
+                if distance_to_fix <= self.fix_proximity_threshold or has_passed_fix:
                     # Aircraft has reached end of route so is no longer route-following
                     aircraft.next_fix_index = None
                     aircraft.on_route = False

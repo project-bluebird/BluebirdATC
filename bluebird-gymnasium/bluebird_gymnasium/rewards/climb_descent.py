@@ -1,23 +1,25 @@
 from __future__ import annotations
 
-import numpy as np
 import typing
 
+import numpy as np
+
 from bluebird_gymnasium.envs.base import BaseEnv
+from bluebird_gymnasium.utils.constants import DIST_EXIT_LEVEL_THRESHOLD
+from bluebird_gymnasium.utils.interaction_utils import (
+    get_optimal_unblocked_flight_level,
+)
 from bluebird_gymnasium.utils.simulator_utils import (
     aircraft_entry_coordination,
     aircraft_exit_coordination,
     basic_distances,
 )
-from bluebird_gymnasium.utils.constants import DIST_EXIT_LEVEL_THRESHOLD
-from bluebird_gymnasium.utils.interaction_utils import (
-    get_optimal_unblocked_flight_level,
-)
 
 if typing.TYPE_CHECKING:
+    from bluebird_dt.core.environment import Environment as SimulatorEnv
     from bluebird_dt.core.pos2d import Pos2D
-    from bluebird_gymnasium.utis.types import ACStateTracker, InteractionInfo
-    from bluebird_dt.core.environemnt import Environment as SimulatorEnv
+
+    from bluebird_gymnasium.utils.types import ACStateTracker, Number
 
 
 # useful constants
@@ -25,7 +27,7 @@ _FL_SCALER = 10.0
 _MAX_PENALTY = 10
 
 
-def normalized_exponential(x: Number, k: int = 2, reverse=True) -> float:
+def normalized_exponential(x: Number, k: int = 2, reverse: bool = True) -> float:
     """Compute a scaled exponential value normalized between 0 and 1.
 
     if reverse=False:
@@ -46,7 +48,7 @@ def normalized_exponential(x: Number, k: int = 2, reverse=True) -> float:
         raise ValueError("k should be in range [1, 10]")
 
     denominator = 1 - np.exp(-k)
-    if reverse:
+    if reverse:  # noqa: SIM108
         # range [0, 1] -> reward [1, 0]
         output = (np.exp(-k * x) - np.exp(-k)) / denominator
     else:
@@ -63,12 +65,8 @@ def _get_relevant_data(
     airspace_sector: str,
 ) -> tuple[float, float, Pos2D]:
     if ac_tracked_state is None:
-        entry_fl = aircraft_entry_coordination(
-            callsign, simulator_env, airspace_sector
-        ).fl
-        exit_fl = aircraft_exit_coordination(
-            callsign, simulator_env, airspace_sector
-        ).fl
+        entry_fl = aircraft_entry_coordination(callsign, simulator_env, airspace_sector).fl
+        exit_fl = aircraft_exit_coordination(callsign, simulator_env, airspace_sector).fl
 
         aircraft = simulator_env.aircraft[callsign]
         exit_pos2d = simulator_env.airspace.get_exit_point(aircraft)
@@ -81,9 +79,7 @@ def _get_relevant_data(
     return entry_fl, exit_fl, exit_pos2d
 
 
-def overflier_const(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def overflier_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Constant function.
@@ -105,20 +101,16 @@ def overflier_const(
 
     # get relevant aircraft data
     ret = _get_relevant_data(ac_tracked_state, callsign, simulator_env, _sector)
-    entry_fl, exit_fl, exit_pos2d = ret
+    entry_fl, exit_fl, _ = ret
 
     if entry_fl == exit_fl:
         if ac.selected_fl == exit_fl:
             return 1.0
-        else:
-            return 0.0
-    else:
         return 0.0
+    return 0.0
 
 
-def overflier_linear(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def overflier_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Linear function.
@@ -142,7 +134,7 @@ def overflier_linear(
 
     # get relevant aircraft data
     ret = _get_relevant_data(ac_tracked_state, callsign, simulator_env, _sector)
-    entry_fl, exit_fl, exit_pos2d = ret
+    entry_fl, exit_fl, _ = ret
 
     if entry_fl == exit_fl:
         fl_diff = abs(ac.selected_fl - exit_fl) / _FL_SCALER
@@ -154,9 +146,7 @@ def overflier_linear(
     return float(reward)
 
 
-def overflier_quad(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def overflier_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Quadratic function.
@@ -180,7 +170,7 @@ def overflier_quad(
 
     # get relevant aircraft data
     ret = _get_relevant_data(ac_tracked_state, callsign, simulator_env, _sector)
-    entry_fl, exit_fl, exit_pos2d = ret
+    entry_fl, exit_fl, _ = ret
 
     if entry_fl == exit_fl:
         fl_diff = abs(ac.selected_fl - exit_fl) / _FL_SCALER
@@ -192,9 +182,7 @@ def overflier_quad(
     return float(reward)
 
 
-def overflier_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def overflier_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for overflier aircraft (i.e., same entry and exit flight levels).
 
     Note: Exponential function.
@@ -218,16 +206,13 @@ def overflier_exp(
 
     # get relevant aircraft data
     ret = _get_relevant_data(ac_tracked_state, callsign, simulator_env, _sector)
-    entry_fl, exit_fl, exit_pos2d = ret
+    entry_fl, exit_fl, _ = ret
 
     if entry_fl == exit_fl:
-        if ac.selected_fl != exit_fl:
-            # aircraft should not climb or descend when it should overfly.
-            # penalise.
-            alpha = -5.0
-
-        else:
-            alpha = np.exp(-1.0 * abs(ac.fl - exit_fl) / _FL_SCALER)
+        # aircraft should not climb or descend when it should overfly.
+        # penalise if it changes its exit flight level which should be
+        # its current flight level.
+        alpha = -5.0 if ac.selected_fl != exit_fl else np.exp(-1.0 * abs(ac.fl - exit_fl) / _FL_SCALER)
 
         reward = alpha * 1.0
 
@@ -238,9 +223,7 @@ def overflier_exp(
     return float(reward)
 
 
-def climb_target_linear(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def climb_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft ascending to the correct exit flight level.
 
     Note: Linear function
@@ -274,9 +257,7 @@ def climb_target_linear(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -286,10 +267,10 @@ def climb_target_linear(
         distance_to_exit, distance_to_level = ret
 
         if distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
 
-            if ac.selected_fl == exit_fl:
-                # soft penalty as correct exit flight level choosen
+            if ac.selected_fl == exit_fl:  # noqa: SIM108
+                # soft penalty as correct exit flight level chosen
                 reward = min(abs(ac.fl - exit_fl), _MAX_PENALTY)
             else:
                 # otherwise, issue a hard penalty
@@ -303,9 +284,7 @@ def climb_target_linear(
     return float(reward)
 
 
-def descent_target_linear(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def descent_target_linear(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Linear function
@@ -339,9 +318,7 @@ def descent_target_linear(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -351,10 +328,10 @@ def descent_target_linear(
         distance_to_exit, distance_to_level = ret
 
         if distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
 
-            if ac.selected_fl == exit_fl:
-                # soft penalty as correct exit flight level choosen
+            if ac.selected_fl == exit_fl:  # noqa: SIM108
+                # soft penalty as correct exit flight level chosen
                 reward = min(abs(ac.fl - exit_fl) / _FL_SCALER, _MAX_PENALTY)
             else:
                 # otherwise, issue a hard penalty
@@ -377,9 +354,7 @@ def descent_target_linear(
     return float(reward)
 
 
-def descent_target_linear_shaped(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def descent_target_linear_shaped(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Linear function
@@ -413,9 +388,7 @@ def descent_target_linear_shaped(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -425,10 +398,10 @@ def descent_target_linear_shaped(
         distance_to_exit, distance_to_level = ret
 
         if distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
 
-            if ac.selected_fl == exit_fl:
-                # soft penalty as correct exit flight level choosen
+            if ac.selected_fl == exit_fl:  # noqa: SIM108
+                # soft penalty as correct exit flight level chosen
                 reward = min(abs(ac.fl - exit_fl), _MAX_PENALTY)
             else:
                 # otherwise, issue a hard penalty
@@ -443,9 +416,7 @@ def descent_target_linear_shaped(
                 if ac.selected_fl == entry_fl:
                     if ac.fl == entry_fl:
                         reward = 0.0
-                    elif ac.fl > entry_fl and ac.vertical_speed < 0:
-                        reward = 0.2
-                    elif ac.fl < entry_fl and ac.vertical_speed > 0:
+                    elif (ac.fl > entry_fl and ac.vertical_speed < 0) or (ac.fl < entry_fl and ac.vertical_speed > 0):
                         reward = 0.2
                     else:
                         # assert False, "never get here"
@@ -453,19 +424,14 @@ def descent_target_linear_shaped(
                 else:
                     reward = 0.9
             else:
-                if ac.selected_fl == exit_fl:
-                    reward = 0.0
-                else:
-                    reward = 0.8
+                reward = 0.0 if ac.selected_fl == exit_fl else 0.8
 
         reward = -1.0 * reward
 
     return float(reward)
 
 
-def climb_target_quad(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def climb_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft ascending to the correct exit flight level.
 
     Note: Quadratic function
@@ -499,9 +465,7 @@ def climb_target_quad(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -511,7 +475,7 @@ def climb_target_quad(
         distance_to_exit, distance_to_level = ret
 
         if distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
             fl_diff = abs(ac.fl - exit_fl) / _FL_SCALER
 
         else:
@@ -523,9 +487,7 @@ def climb_target_quad(
     return float(reward)
 
 
-def descent_target_quad(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def descent_target_quad(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Quadratic function
@@ -559,9 +521,7 @@ def descent_target_quad(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -571,11 +531,11 @@ def descent_target_quad(
         distance_to_exit, distance_to_level = ret
 
         if distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
 
             if ac.selected_fl == exit_fl:
-                # soft penalty as correct exit flight level choosen
-                # give a small bonus for correctly chosing
+                # soft penalty as correct exit flight level chosen
+                # give a small bonus for correctly choosing
                 # the exit (target) flight level
                 small_bonus = 5.0
                 reward = (abs(ac.fl - exit_fl) / _FL_SCALER) ** 2
@@ -602,9 +562,7 @@ def descent_target_quad(
     return float(reward)
 
 
-def climb_target_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def climb_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft ascending to the correct exit flight level.
 
     Note: Exponential function
@@ -639,9 +597,7 @@ def climb_target_exp(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -696,9 +652,7 @@ def climb_target_exp(
     return float(reward)
 
 
-def descent_target_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def descent_target_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for the aircraft descending to the correct exit flight level.
 
     Note: Exponential function
@@ -733,9 +687,7 @@ def descent_target_exp(
         # get the (lateral) track distance to exit position
         # and the (lateral) travel distance to the exit flight level
         if ac_tracked_state is None:
-            ret = basic_distances(
-                ac, simulator_env.airspace, exit_pos2d, exit_fl
-            )
+            ret = basic_distances(ac, simulator_env.airspace, exit_pos2d, exit_fl)
             ret = ret[2:]
         else:
             ret = (
@@ -750,7 +702,7 @@ def descent_target_exp(
             reward = -5.0
 
         elif distance_to_exit < distance_to_level:
-            # penalize: aircraft will not make the exit flight level in time.
+            # penalise: aircraft will not make the exit flight level in time.
             reward = normalized_exponential(
                 x=abs(ac.selected_fl - exit_fl) / _scaler,
                 k=2,
@@ -795,7 +747,7 @@ def descent_target_exp(
                     gym_env.get_rollout_predictor(),
                     traffic_monitor.get_relevant_traffic(callsign),
                 )
-                if intermediate_fl > exit_fl:
+                if intermediate_fl > exit_fl:  # noqa: SIM108
                     # exit fl is not available due to conflict.
                     penalty_1 = -1.0  # small penalty
                 else:

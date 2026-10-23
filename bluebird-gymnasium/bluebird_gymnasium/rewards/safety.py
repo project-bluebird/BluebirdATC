@@ -1,5 +1,4 @@
 import numpy as np
-
 from bluebird_dt.core import Pos4D
 
 from bluebird_gymnasium.envs.base import BaseEnv
@@ -8,9 +7,7 @@ from bluebird_gymnasium.utils.simulator_utils import predict_trajectory
 from bluebird_gymnasium.utils.types import MinAircraftSeparation
 
 
-def _ensured_lateral_separation(
-    aircraft_1_cps: list[Pos4D], aircraft_2_cps: list[Pos4D]
-) -> tuple[bool, list[int]]:
+def _ensured_lateral_separation(aircraft_1_cps: list[Pos4D], aircraft_2_cps: list[Pos4D]) -> tuple[bool, list[int]]:
     """Check lateral separation assurance between aircraft trajectory pair.
 
     Checks based on the list of control points (trajectory) provided
@@ -35,14 +32,11 @@ def _ensured_lateral_separation(
     # if yes, distance will grow farther apart as time progress.
     distance_t0 = aircraft_1_cps[0].distance(aircraft_2_cps[0])
     distance_t1 = aircraft_1_cps[1].distance(aircraft_2_cps[1])
-    if (
-        distance_t1 >= distance_t0
-        and distance_t0 >= MinAircraftSeparation.LATERAL
-    ):
+    if distance_t1 >= distance_t0 and distance_t0 >= MinAircraftSeparation.LATERAL:
         cp_dist_buffer = [distance_t0, distance_t1]
         return ensured_separation, cp_dist_buffer
 
-    for ac_cp, other_ac_cp in zip(aircraft_1_cps, aircraft_2_cps):
+    for ac_cp, other_ac_cp in zip(aircraft_1_cps, aircraft_2_cps, strict=True):
         cp_dist = ac_cp.distance(other_ac_cp)
         cp_dist_buffer.append(cp_dist)
 
@@ -54,9 +48,7 @@ def _ensured_lateral_separation(
     return ensured_separation, cp_dist_buffer
 
 
-def safety_simple_avoidance_nvl(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def safety_simple_avoidance_nvl(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for avoidance of aircraft loss of separation.
 
     Note: safety violation is not logged, hence the `nvl` suffix (no violation
@@ -93,9 +85,7 @@ def safety_simple_avoidance_nvl(
     return reward
 
 
-def safety_simple_avoidance_exp(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def safety_simple_avoidance_exp(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Reward for avoidance of aircraft loss of separation.
 
     This includes a forward rollout check into the future for loss of
@@ -149,11 +139,9 @@ def safety_simple_avoidance_exp(
         buffer = {}
 
         ## get future trajectory of the other aircraft
-        ## optimize: this could be optimized with a lambda fn
+        ## optimise: this could be optimised with a lambda fn
         ## so that `if` is not checked in every loop iteration.
-        other_ac_tracked_state = gym_env.get_tracked_aircraft_data(
-            other_callsign
-        )
+        other_ac_tracked_state = gym_env.get_tracked_aircraft_data(other_callsign)
         if other_ac_tracked_state is not None:
             other_ac_cps = other_ac_tracked_state.future_trajectory
         else:
@@ -165,10 +153,7 @@ def safety_simple_avoidance_exp(
             )
 
         ## check that aircraft are vertically separated
-        vsep = (
-            abs(aircraft.fl - other_aircraft.fl)
-            >= MinAircraftSeparation.VERTICAL
-        )
+        vsep = abs(aircraft.fl - other_aircraft.fl) >= MinAircraftSeparation.VERTICAL
         buffer["ensured_vertical_sep"] = vsep
 
         ## now check for lateral separation into the future based on rollout
@@ -176,10 +161,7 @@ def safety_simple_avoidance_exp(
         buffer["future_traj_dist"] = dist_buffer
         buffer["ensured_lateral_sep"] = lsep
 
-        if vsep:
-            _rewards.append(0.0)
-
-        elif lsep:
+        if vsep or lsep:
             _rewards.append(0.0)
 
         else:
@@ -193,10 +175,7 @@ def safety_simple_avoidance_exp(
             # if current distance has already lost separation,
             # log it as a violation of technical safety.
             if curr_dist < MinAircraftSeparation.LATERAL:
-                buffer["separation_loss"] = (
-                    ac_tracked_state.sector_entry_timestep
-                    + ac_tracked_state.step_counter
-                )
+                buffer["separation_loss"] = ac_tracked_state.sector_entry_timestep + ac_tracked_state.step_counter
 
             else:
                 buffer["separation_loss"] = None

@@ -2,9 +2,7 @@ from bluebird_gymnasium.envs.base import BaseEnv
 from bluebird_gymnasium.utils.types import PositionStatus
 
 
-def position_status_const(
-    gym_env: BaseEnv, callsign: str, action: int, **kwargs
-) -> float:
+def position_status_const(gym_env: BaseEnv, callsign: str, action: int, **kwargs) -> float:  # noqa: ARG001, ANN003
     """Computes the reward for an aircraft's current position status.
 
     Args:
@@ -16,11 +14,6 @@ def position_status_const(
         a float (-1.0 to 0.0), the computed reward.
     """
 
-    reward = 0
-
-    simulator_env = gym_env.get_simulator_env()
-    aircraft = simulator_env.aircraft[callsign]
-
     # this could also be view as the tracked data for the next time step,
     # as the action from the external agent has been applied and the simulator
     # has been evolved to get the next state.
@@ -28,5 +21,4 @@ def position_status_const(
 
     if ac_tracked_data_curr.pos_status == PositionStatus.OUT_SECTOR:
         return -1.0
-    else:
-        return 0.0
+    return 0.0

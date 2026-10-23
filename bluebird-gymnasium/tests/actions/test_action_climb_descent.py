@@ -1,19 +1,26 @@
+from __future__ import annotations
+
+import typing
+
 from bluebird_gymnasium.actions import DEFAULT_RELATIVE_CLIMB_DESCENT
 from bluebird_gymnasium.actions.simple.climb_descent import (
     fl_climb,
     fl_descent,
-    fl_intermediate,
     fl_exit,
+    fl_intermediate,
 )
 from bluebird_gymnasium.utils.types import PositionStatus
 
+if typing.TYPE_CHECKING:
+    from bluebird_gymnasium.envs.base import BaseEnv
 
-def test_fl_climb(gym_env):
+
+def test_fl_climb(gym_env: BaseEnv):
     """Test `fl_climb` action function."""
 
     simulator_env = gym_env.get_simulator_env()
     tracked_aircraft = gym_env.get_tracked_aircraft_data()
-    callsign = list(tracked_aircraft.keys())[0]
+    callsign = next(iter(tracked_aircraft.keys()))
     aircraft = simulator_env.aircraft[callsign]
 
     action = fl_climb(callsign, gym_env)
@@ -26,12 +33,12 @@ def test_fl_climb(gym_env):
     assert action.value == aircraft.selected_fl + value
 
 
-def test_fl_descent(gym_env):
+def test_fl_descent(gym_env: BaseEnv):
     """Test `fl_descent` action function."""
 
     simulator_env = gym_env.get_simulator_env()
     tracked_aircraft = gym_env.get_tracked_aircraft_data()
-    callsign = list(tracked_aircraft.keys())[0]
+    callsign = next(iter(tracked_aircraft.keys()))
     aircraft = simulator_env.aircraft[callsign]
 
     action = fl_descent(callsign, gym_env)
@@ -44,7 +51,7 @@ def test_fl_descent(gym_env):
     assert action.value == aircraft.selected_fl - value
 
 
-def test_fl_intermediate(gym_env):
+def test_fl_intermediate(gym_env: BaseEnv):
     """Test `fl_intermediate` action function."""
 
     tracked_aircraft = gym_env.get_tracked_aircraft_data()
@@ -78,7 +85,7 @@ def test_fl_intermediate(gym_env):
     assert min_fl <= action_fl <= max_fl
 
 
-def test_fl_exit(gym_env):
+def test_fl_exit(gym_env: BaseEnv):
     """Test `fl_exit` action function."""
 
     tracked_aircraft = gym_env.get_tracked_aircraft_data()

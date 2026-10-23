@@ -9,6 +9,7 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.core.airspace import Airspace
     from bluebird_dt.core.pos2d import Pos2D
     from bluebird_dt.core.sector import Sector
+    from bluebird_dt.utility.geo_helper import GeoHelper
 
 
 from bluebird_dt.utility.constants import R_E_WGS84
@@ -167,10 +168,10 @@ def line_intersection(
 def find_all_boundary_intersections(
     a: np.ndarray | list[float],
     b: np.ndarray | list[float],
-    airspace_or_sector: Airspace | Sector,
+    airspace_or_sector_or_area: Airspace | Sector | Area,
 ) -> list[tuple[np.ndarray, np.ndarray, float]]:
     """
-    Find all intersections between the Airspace/Sector boundary and a line a->b.
+    Find all intersections between the Airspace/Sector/Area boundary and a line a->b.
 
     Parameters
     ----------
@@ -186,10 +187,14 @@ def find_all_boundary_intersections(
         - the line a->b intersects c->d at the location: c + u * (d - c)
         - see `line_intersection()` function for more detail
     """
+    from bluebird_dt.core.area import Area  # avoid circular import
 
     # extract the coordinates of the polygon -- note that the
     # attribute .xy consists of two rows: lons and lats
-    v_lons, v_lats = airspace_or_sector.boundary().boundary.exterior.coords.xy  # type: ignore
+    if isinstance(airspace_or_sector_or_area, Area):
+        v_lons, v_lats = airspace_or_sector_or_area.boundary.exterior.coords.xy  # type: ignore
+    else:
+        v_lons, v_lats = airspace_or_sector_or_area.boundary().boundary.exterior.coords.xy  # type: ignore
 
     intersections: list[tuple[np.ndarray, np.ndarray, float]] = []
 
@@ -310,6 +315,25 @@ def nearest_point_on_3D_rectangle(Q: np.ndarray, origin: np.ndarray, p1: np.ndar
     P += origin[np.newaxis, :]
 
     return P
+
+
+def get_perpendicular_headings(start_pos: Pos2D, end_pos: Pos2D, geo_helper: GeoHelper) -> tuple[float, float]:
+    """Return the headings for moving sideways from the start of a route.
+
+    Calculate the bearing from start_pos to end_pos using the Earth's curved surface,
+    then return the headings 90 degrees to its right and left, in that order.
+    Each heading is in degrees, from 0 up to but not including 360.
+    Raise ValueError if both positions are the same, since there is no route bearing.
+    """
+    if start_pos.lat == end_pos.lat and start_pos.lon == end_pos.lon:
+        raise ValueError("start and end points must be different")
+
+    route_bearing = geo_helper.bearing_to(
+        lat=end_pos.lat, lon=end_pos.lon, lat_origin=start_pos.lat, lon_origin=start_pos.lon
+    )
+    heading_1 = (route_bearing + 90.0) % 360.0
+    heading_2 = (heading_1 + 180.0) % 360.0
+    return heading_1, heading_2
 
 
 def get_perpendicular_line(

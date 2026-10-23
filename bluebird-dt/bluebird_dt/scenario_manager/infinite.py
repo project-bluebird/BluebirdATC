@@ -4,11 +4,13 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
+import typing_extensions
 from pydantic import BaseModel, Field
 from typing_extensions import override
 
-from bluebird_dt.airspace_generator.artificial_airspace import ArtificialAirspace
-from bluebird_dt.core import Aircraft, Airspace, Coordination, Environment, FlightPlan, Pos2D, Pos3D, Route, WindField
+from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
+from bluebird_dt.core import Aircraft, Airspace, Coordination, Environment, Pos2D, Pos3D, Route, WindField
+from bluebird_dt.core.coordination import CoordinationsManager
 from bluebird_dt.events import EventHandler, EventLogger
 from bluebird_dt.logger import logger
 from bluebird_dt.manager import EnvironmentManager
@@ -16,8 +18,7 @@ from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.outcomm_handler import OutcommHandler
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility import geometry
-from bluebird_dt.utility.artificial_airspace_defaults import AIRSPACE_SETTINGS
+from bluebird_dt.utility.scenario_manager_utils import laterally_offset_start_point
 
 
 class InfiniteScenarioManagerConfig(BaseModel):
@@ -28,13 +29,18 @@ class InfiniteScenarioManagerConfig(BaseModel):
     scenario_manager: typing.Literal["infinite"] = Field(default="infinite")
 
 
-TAircraft = typing.TypeVar("TAircraft", bound=Aircraft)
-TWindField = typing.TypeVar("TWindField", bound=WindField)
-TForecastWindField = typing.TypeVar("TForecastWindField", bound=WindField)
-TEnvironmentManager = typing.TypeVar("TEnvironmentManager", bound=EnvironmentManager[Aircraft, WindField, WindField])
-TEventHandler = typing.TypeVar("TEventHandler", bound=EventHandler[Aircraft])
-TEventLogger = typing.TypeVar("TEventLogger", bound=EventLogger)
-TSimulator = typing.TypeVar("TSimulator", bound=Simulator)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TAirspaceLoader = typing_extensions.TypeVar("TAirspaceLoader", bound=AirspaceLoader, default=AirspaceLoader)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
+TEnvironmentManager = typing_extensions.TypeVar(
+    "TEnvironmentManager",
+    bound=EnvironmentManager[Aircraft, WindField, WindField],
+    default=EnvironmentManager[Aircraft, WindField, WindField],
+)
+TEventHandler = typing_extensions.TypeVar("TEventHandler", bound=EventHandler[Aircraft], default=EventHandler[Aircraft])
+TEventLogger = typing_extensions.TypeVar("TEventLogger", bound=EventLogger, default=EventLogger)
+TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator, default=Simulator)
 
 
 class Infinite(
@@ -62,6 +68,7 @@ class Infinite(
     event_handler_ignore_flags: EventHandler.IgnoreFlags
     airspace: Airspace
     routes: list[Route]
+    sector_name: str | None
     speed_range: tuple[float, float] | None
     aircraft_on_route: bool
     start_time: int
@@ -78,6 +85,7 @@ class Infinite(
     lats_spawn_rate_increase: float
     min_spawn_delta: float
     next_callsign_number: int
+    fl_limits: tuple[int, int]
     typeof_environment_manager: type[TEnvironmentManager]
     typeof_event_handler: type[TEventHandler]
     typeof_aircraft: type[TAircraft]
@@ -87,6 +95,7 @@ class Infinite(
         self,
         airspace: Airspace,
         routes: list[Route],
+        sector_name: str | None = None,
         initial_spawn_rate: float = 0.01,
         max_spawn_rate: float = 0.1,
         spawn_rate_increment: float = 0.0,
@@ -98,16 +107,17 @@ class Infinite(
         automatic_outcomm: bool = True,
         num_starter_aircraft: int = 2,
         speed_range: tuple[float, float] | None = None,
-        aircraft_on_route: bool = False,
-        typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
-        typeof_event_handler: type[TEventHandler] = EventHandler,
-        typeof_aircraft: type[TAircraft] = Aircraft,
-        typeof_event_logger: type[TEventLogger] = EventLogger,
+        aircraft_on_route: bool = True,
         start_time: int = 0,
         max_spawn_attempts: int = 10,
         min_spawn_delta: float = 6.0,
         vertical_buffer_distance: float | int = 500,
         lateral_buffer_distance: float | int = 20,
+        fl_limits: tuple[int, int] = (50, 400),
+        typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
+        typeof_event_handler: type[TEventHandler] = EventHandler,
+        typeof_aircraft: type[TAircraft] = Aircraft,
+        typeof_event_logger: type[TEventLogger] = EventLogger,
     ):
         """
         Construct a new instance.
@@ -118,6 +128,8 @@ class Infinite(
             The airspace to be used in the environment
         routes: list[Route]
             The available Routes in the Airspace
+        sector_name: str | None
+            The Sector to be used in Coordinations. If not specified, use the first sector in the airspace
         initial_spawn_rate: float
             frequency (in 1/s) at which aircraft spawn at the start of the scenario
         max_spawn_rate: float
@@ -155,18 +167,21 @@ class Infinite(
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
             Distance to expand airspace lateral boundary by - UoM: NMI
-        typeof_environmentmanager: type[EnvironmentManager], optional
+        fl_limits: tuple[int, int]
+            min, max FL at which aircraft can be spawned.
+            Note that these values may be superseded if the airspace has more restrictive limits.
+        typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
             If we want to use a derived class for the aircraft class, specify here.
         typeof_event_logger: type[EventLogger], optional
             If we want to use a derived class for the event logger, specify here.
-        typeof_eventhandler: type[EventHandler], optional
+        typeof_event_handler: type[EventHandler], optional
             If we want to use a derived class for the Event Handler, specify here.
         """
-
         self.airspace = airspace
         self.routes = routes
+        self.sector_name = sector_name if sector_name else next(iter(airspace.sectors.keys()))
         if initial_spawn_rate < 0:
             raise ValueError("spawn rate must be greater than zero")
         self.initial_spawn_rate = initial_spawn_rate
@@ -187,6 +202,7 @@ class Infinite(
         self.start_time = start_time
         self.vertical_buffer_distance = vertical_buffer_distance
         self.lateral_buffer_distance = lateral_buffer_distance
+        self.fl_limits = fl_limits
         self.max_spawn_attempts = max_spawn_attempts
         self.typeof_environment_manager = typeof_environment_manager
         self.typeof_event_handler = typeof_event_handler
@@ -203,16 +219,13 @@ class Infinite(
         # keep a buffer of the aircraft to add, may add to env_manager in
         # the next tick after initial creation.
         self.aircraft_to_add: list[TAircraft] = []
-        # dict of headings to use when offsetting spawn positions laterally
-        # from each possible start fix
-        self.lateral_offset_headings: dict[str, tuple[float, float]] = self.setup_lateral_offset_headings()
         # list of possible fixes to spawn aircraft at
         # (first fixes in all allowed Routes)
         self.start_fixes: list[str] = sorted({route.filed[0] for route in self.routes})
         # shuffle the starting fixes.
         self.rng.shuffle(self.start_fixes)
 
-    def create_aircraft_with_coordinations(
+    def spawn_aircraft(
         self,
         possible_routes: list[Route],
         callsign: str,
@@ -230,11 +243,13 @@ class Infinite(
             spawn_distance_behind_fix: float
                 how far behind the first fix to spawn
         """
-        sector_name = sorted(self.airspace.sectors.keys())[0]
-        if len(self.airspace.sectors[sector_name].volumes) == 0:
+        if len(self.airspace.sectors[self.sector_name].volumes) == 0:
             raise ValueError("Selected airspace has no Volumes.  Please choose another airspace.")
-        volume = self.airspace.sectors[sector_name].volumes[0]
-        possible_flight_levels = np.arange(volume.min_fl, volume.max_fl + 10, 10, dtype="float")  # ensure floats
+        volume = self.airspace.sectors[self.sector_name].volumes[0]
+        # choose the more restrictive of the sectors FL bounds and this instance's bounds.
+        min_fl = max(volume.min_fl, self.fl_limits[0])
+        max_fl = min(volume.max_fl, self.fl_limits[1])
+        possible_flight_levels = np.arange(min_fl, max_fl + 10, 10, dtype="float")  # ensure floats
 
         route = self.rng.choice(np.asarray(possible_routes))
         first_fix = self.airspace.fixes.places[route.filed[0]]
@@ -254,93 +269,45 @@ class Infinite(
         gh = self.airspace.geo_helper
         # If aircraft is on route, no lateral offset from route centre line.
         if self.aircraft_on_route:
-            updated_start_pos = (first_fix.lon, first_fix.lat)
+            updated_start_pos = Pos2D(lat=first_fix.lat, lon=first_fix.lon)
             on_route = True
         else:
             # Offset by a random amount, up to half the length of the nearest sector boundary line.
             # since GeoHelper.forward takes (x,y), give it longitude then latitude
-            updated_start_pos = gh.forward(
-                first_fix.lon,
-                first_fix.lat,
-                heading=self.rng.choice(self.lateral_offset_headings[route.filed[0]]),
-                distance=self.rng.uniform(0, segment_length / 2),
+            updated_start_pos = laterally_offset_start_point(
+                airspace=self.airspace, route=route, offset_range=(0, segment_length / 2), rng=self.rng
             )
             on_route = False
 
         heading = first_fix.bearing_to(self.airspace.fixes.places[route.filed[1]])
         # Now offset the spawning point "backwards" from the starting fix
         # (where "backwards" is defined as 180 degrees from aircraft heading)
+        # (Note that GeoHelper.forward expects and returns (lon,lat)).
         updated_start_pos = gh.forward(
-            updated_start_pos[0],
-            updated_start_pos[1],
+            updated_start_pos.lon,
+            updated_start_pos.lat,
             heading=(heading + 180.0) % 360,
             distance=spawn_distance_behind_fix,
         )
         # pos3d will have latitude then longitude.
-        pos = Pos3D(updated_start_pos[1], updated_start_pos[0], entry_flight_level)
-        flight_plan = FlightPlan(route)
-        coordination_entry = Coordination(
+        pos = Pos3D(lat=updated_start_pos[1], lon=updated_start_pos[0], fl=entry_flight_level)
+        aircraft, coordination_entry, coordination_exit = CoordinationsManager.aircraft_with_coordinations(
             callsign=callsign,
-            from_sector="background",
-            to_sector=sector_name,
-            fl=entry_flight_level,
-            fix=route.filed[0],
-            direction="Horizontal",
+            pos=pos,
+            heading=heading,
+            speed=speed,
+            route=route,
+            sector_name=self.sector_name,
+            entry_fl=entry_flight_level,
+            exit_fl=exit_flight_level,
+            airspace=self.airspace,
+            on_route=on_route,
+            prev_sector="background",
+            next_sector="background",
+            typeof_aircraft=self.typeof_aircraft,
         )
-
-        coordination_exit = Coordination(
-            callsign=callsign,
-            from_sector=sector_name,
-            to_sector="background",
-            fl=exit_flight_level,
-            fix=route.filed[-1],
-            direction="Horizontal",
-        )
-
-        # generate the Aircraft instance
-        aircraft = self.typeof_aircraft(
-            pos.lat,
-            pos.lon,
-            pos.fl,
-            heading,
-            flight_plan,
-            callsign,
-            selected_fl=int(pos.fl),
-            current_sector=sector_name,
-        )
-        aircraft.speed_tas = speed
-        aircraft.selected_instructions.cas = speed
-        aircraft.on_route = on_route
 
         return aircraft, coordination_entry, coordination_exit
-
-    def setup_lateral_offset_headings(self) -> dict[str, tuple[float, float]]:
-        """
-        Create a dictionary of headings - two for each spawn point which can be used to offset the aircraft position
-        on spawning.
-
-        Returns
-        -------
-        lateral_offset_headings: {str:[float, float]} fix name: list of two headings
-            Key is starter fix, value is the two perpendicular headings to the route direction.
-        """
-        gh = self.airspace.geo_helper
-        lateral_offset_headings: dict[str, tuple[float, float]] = {}
-
-        for route in self.routes:
-            outer, inner = route.filed[:2]
-            inner_fix = self.airspace.fixes.places[inner]
-            outer_fix = self.airspace.fixes.places[outer]
-
-            # Get a perpendicular line between the inner (or boundary) fix and the outer (or spawning) fix
-            perp, _, _ = geometry.get_perpendicular_line(inner_fix, outer_fix)
-
-            # Calculate the heading from the outer (spawning) fix along this perpendicular line in one direction
-            heading_1 = gh.bearing_to(lat=perp[0], lon=perp[1], lat_origin=outer_fix.lat, lon_origin=outer_fix.lon)
-            # and the opposite direction
-            heading_2 = (heading_1 + 180.0) % 360
-            lateral_offset_headings[outer] = (heading_1, heading_2)
-        return lateral_offset_headings
 
     def add_starting_aircraft(self, event_handler: TEventHandler) -> TEventHandler:
         """
@@ -371,7 +338,7 @@ class Infinite(
             callsign = f"AIR-0{self.next_callsign_number}"
 
             # spawn these aircraft on their starting fixes, rather than behind
-            aircraft, entry_coord, exit_coord = self.create_aircraft_with_coordinations(
+            aircraft, entry_coord, exit_coord = self.spawn_aircraft(
                 possible_routes, callsign=callsign, spawn_distance_behind_fix=0
             )
             start_time = pd.to_datetime(float(i), unit="s")
@@ -397,8 +364,11 @@ class Infinite(
             EventHandler instance for the chosen scenario
         """
 
-        # create emtpy event handler
-        event_handler = self.typeof_event_handler(ignore=self.event_handler_ignore_flags)
+        # create empty event handler
+        event_handler = self.typeof_event_handler(
+            ignore=self.event_handler_ignore_flags,
+            typeof_aircraft=self.typeof_aircraft,
+        )
 
         # add starter aircraft
         event_handler = self.add_starting_aircraft(event_handler)
@@ -447,6 +417,8 @@ Creating Infinite Scenario
             penumbra_lat=self.lateral_buffer_distance,
             log_filename=log_filename,
         )
+        # set the visibility flag of fixes to True only if they are in the penumbra
+        em.set_local_fixes_visibility()
 
         em.initialise_env_with_event_handler()
 
@@ -500,7 +472,7 @@ Creating Infinite Scenario
             safe_to_spawn = False
             attempt_count = 0
             while True:
-                aircraft, entry_coord, exit_coord = self.create_aircraft_with_coordinations(
+                aircraft, entry_coord, exit_coord = self.spawn_aircraft(
                     self.routes, callsign=next_callsign, spawn_distance_behind_fix=self.spawn_distance_behind_fix
                 )
                 safe_to_spawn = check_safe_to_spawn(aircraft, env_manager.environment, self.spawn_distance_threshold)
@@ -531,40 +503,19 @@ Creating Infinite Scenario
 
         return env_manager
 
-    @staticmethod
-    def create_airspace(scenario_name: str) -> tuple[Airspace, list[Route]]:
-        """
-        Create specified airspace.
-
-        Parameters
-        ----------
-        scenario_name: str
-            This is used to identify the sector/airspace.
-
-        Returns
-        --------
-        tuple[Airspace, list[Route]]
-            tuple of the Airspace object and a list of allowed Routes
-        """
-        match scenario_name:
-            case "I-Sector":
-                airspace, routes = ArtificialAirspace("i").generate_airspace()
-            case "X-Sector":
-                airspace, routes = ArtificialAirspace("x").generate_airspace()
-            case "Xplus-Sector":
-                airspace, routes = ArtificialAirspace("xplus").generate_airspace()
-            case "Y-Sector":
-                airspace, routes = ArtificialAirspace("y").generate_airspace()
-            case "Two Sector":
-                airspace, routes = ArtificialAirspace("two").generate_airspace()
-            case _:
-                raise ValueError(f"Scenario name {scenario_name} unknown")
-        return airspace, routes
-
     @classmethod
     def setup(
         cls,
         scenario_name: str,
+        use_wind: bool = True,
+        use_forecast: bool = True,
+        predictor: Predictor | None = None,
+        attach_context_to_logger: bool = True,
+        save_log_to_file: bool = True,
+        log_filename: str | None = None,
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         random_seed: int | None = None,
         num_starter_aircraft: int = 2,
         initial_spawn_rate: float = 0.01,
@@ -574,14 +525,15 @@ Creating Infinite Scenario
         total_time_seconds: float | None = None,
         speed_range: tuple[float, float] | None = None,
         spawn_distance_threshold: float = 10.0,
-        use_wind: bool = True,
-        use_forecast: bool = True,
-        autosave: bool = True,
-        attach_context_to_logger: bool = True,
-        save_log_to_file: bool = True,
-        log_filename: str | None = None,
-        predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
+        spawn_distance_behind_fix: float = 10.0,
+        max_spawn_attempts: int = 10,
+        min_spawn_delta: float = 6.0,
+        automatic_outcomm: bool = True,
+        aircraft_on_route: bool = False,
+        vertical_buffer_distance: float | int = 500,
+        lateral_buffer_distance: float | int = 20,
+        fl_limits: tuple[int, int] = (50, 400),
+        typeof_airspace_loader: type[TAirspaceLoader] = AirspaceLoader,
         typeof_environment_manager: type[TEnvironmentManager] = EnvironmentManager,
         typeof_event_handler: type[TEventHandler] = EventHandler,
         typeof_aircraft: type[TAircraft] = Aircraft,
@@ -594,6 +546,27 @@ Creating Infinite Scenario
         ----------
         scenario_name: str
             The scenario name
+        use_wind: bool
+            Whether the wind, if available, is present in the scenario. Defaults to True.
+        use_forecast: bool
+            Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
+        attach_context_to_logger: bool
+            Adds the scenario name and scenario category as context to the active logger. This should be set to False if
+            you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
+            Defaults to True.
+        log_filename: str, optional
+            The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
         random_seed: int
             If specified, set the random seed for the generator
         num_starter_aircraft: int
@@ -608,10 +581,26 @@ Creating Infinite Scenario
             Spawn rate cannot exceed this value
         total_time_seconds: float | None
             Optionally specify the total time in seconds, after which no new aircraft.
-        speed_range: list[float]
+        speed_range: tuple[float, float]
             Optional, if not set, aircraft speeds are set between 350 and 450 knots.
         spawn_distance_threshold: float
             Minimum spawn distance from nearest aircraft with overlapping fl range.
+        spawn_distance_behind_fix: float
+            Distance behind starting fix that an aircraft will spawn
+        max_spawn_attempts: int
+            How many times to try and randomly spawn an aircraft that doesn't clash with existing aircraft
+        min_spawn_delta: float
+            Minimum allowed time (in seconds) between spawns.  Default is 6.0.
+        automatic_outcomm: bool
+            Specify if the scenario manager should automatically outcomm aircraft which leave the sector meeting exit
+            coordination. Defaults to True
+        aircraft_on_route: bool
+            If True, spawned aircraft will not be laterally displaced from their starting fix,
+            and will have "on_route" set to True.  Default is False.
+        vertical_buffer_distance: int or float, default is 500
+            Distance to expand airspace vertical boundary by, in units of FL
+        lateral_buffer_distance: int or float, default is 20
+            Distance to expand airspace lateral boundary by, in units of NMI
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
@@ -629,57 +618,67 @@ Creating Infinite Scenario
         predictor: Predictor, optional
             The Predictor to use for the simulation. If None the default predictor for the
             scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], default="ALL"
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios.
-        env_manager_class: type, optional
-            if specified, use this class (maybe a subclass of BluebirdATC EventManager).
-        typeof_environmentmanager: type[EnvironmentManager], optional
+        fl_limits: tuple[int, int], optional
+            The min, max FL at which aircraft can spawn. Default is (50, 400).
+            Note that the airspace itself may have more restrictive limits.
+        typeof_airspace_loader: type[AirspaceLoader], optional
+            If we want to use a derived class of airspace loader, specify here.
+        typeof_environment_manager: type[EnvironmentManager], optional
             If we want to use a derived class of env manager, specify here.
         typeof_aircraft: type[Aircraft], optional
             If we want to use a derived class for the aircraft class, specify here.
         typeof_event_logger: type[EventLogger], optional
             If we want to use a derived class for the event logger, specify here.
-        typeof_eventhandler: type[EventHandler], optional
+        typeof_event_handler: type[EventHandler], optional
             If we want to use a derived class for the Event Handler, specify here.
+        typeof_simulator: type[Simulator], optional
+            If we want to use a derived class for the Simulator, specify here.
+
         Returns
         -------
         Simulator
             A fully configured simulator instance
         """
 
-        airspace, routes = cls.create_airspace(scenario_name)
-
+        airspace, routes, sector_name = typeof_airspace_loader.load(scenario_name)
         sim = cls(
             airspace=airspace,
             routes=routes,
+            sector_name=sector_name,
             random_seed=random_seed,
             num_starter_aircraft=num_starter_aircraft,
             initial_spawn_rate=initial_spawn_rate,
             spawn_rate_increment=spawn_rate_increment,
-            spawn_rate_increase_interval=spawn_rate_increase_interval,
             max_spawn_rate=max_spawn_rate,
+            spawn_rate_increase_interval=spawn_rate_increase_interval,
+            spawn_distance_behind_fix=spawn_distance_behind_fix,
+            max_spawn_attempts=max_spawn_attempts,
+            min_spawn_delta=min_spawn_delta,
+            automatic_outcomm=automatic_outcomm,
+            aircraft_on_route=aircraft_on_route,
             total_time_seconds=total_time_seconds,
             speed_range=speed_range,
             spawn_distance_threshold=spawn_distance_threshold,
-            vertical_buffer_distance=AIRSPACE_SETTINGS["penumbra_fl"],
-            lateral_buffer_distance=AIRSPACE_SETTINGS["penumbra_lat"],
+            vertical_buffer_distance=vertical_buffer_distance,
+            lateral_buffer_distance=lateral_buffer_distance,
+            fl_limits=fl_limits,
             typeof_aircraft=typeof_aircraft,
             typeof_event_logger=typeof_event_logger,
             typeof_event_handler=typeof_event_handler,
             typeof_environment_manager=typeof_environment_manager,
         ).to_simulator(
-            log_filename=log_filename,
-            predictor=predictor,
-            category="Infinite",
+            typeof_simulator=typeof_simulator,
             scenario_name=scenario_name,
+            category="Infinite",
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
-            simulated_sectors=simulated_sectors,
-            typeof_simulator=typeof_simulator,
+            log_filename=log_filename,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )
 
         # if needed, fast-forward to the first aircraft entry time, ensuring that it is
@@ -707,12 +706,13 @@ Creating Infinite Scenario
         scenario_name: str | None = None,
         use_wind: bool = True,
         use_forecast: bool = True,
-        autosave: bool = True,
+        predictor: Predictor | None = None,
         attach_context_to_logger: bool = True,
         save_log_to_file: bool = True,
         log_filename: str | None = None,
-        predictor: Predictor | None = None,
-        simulated_sectors: list[str] | typing.Literal["ALL"] = "ALL",
+        save_csv: bool = True,
+        autosave_interval: timedelta | None = timedelta(minutes=5),
+        save_chunk_interval: timedelta | None = None,
         typeof_simulator: type[TSimulator] = Simulator,
     ) -> TSimulator:
         """
@@ -720,30 +720,33 @@ Creating Infinite Scenario
 
         Parameters
         ----------
-        scenario_name : str | None, optional
-            Name of the scenario. Default is None.
         category : str | None, optional
             Category of the simulation. Default is None.
+        scenario_name : str | None, optional
+                    Name of the scenario. Default is None.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
             Whether the forecasted wind, if available, is present in the scenario. Defaults to True.
-        autosave: bool
-            The scenario will autosave every 5 minutes if True. Defaults to True.
+        predictor: Predictor, optional
+            The Predictor to use for the simulation. If None the default predictor for the
+            scenario type will be used.
         attach_context_to_logger: bool
             Adds the scenario name and scenario category as context to the active logger. This should be set to False if
             you are initialising multiple simulator classes in the same logger as then the context will be meaningless.
             Defaults to True.
-        save_log_to_file: bool
-            The log will be saved to file on exit if True. Defaults to True.
         log_filename: str, optional
             The name of the log directory. If None, then {category}_{scenario_name}_{the_datetime} is used.
-        predictor: Predictor, optional
-            The Predictor to use for the simulation. If None the default predictor for the
-            scenario type will be used.
-        simulated_sectors: list[str] | typing.Literal["ALL"], optional
-            The sectors to be simulated. If "ALL", all sectors will be simulated. If a list, only the sectors names in
-            the list will be simulated. Currently only applicable for real world scenarios. Defaults to "ALL".
+        save_log_to_file: bool
+            The runtime debug log will be saved to file on exit if True. Defaults to True.
+        save_csv: bool
+            The log will be saved with csv files. Defaults to True.
+        autosave_interval: timedelta | None
+            The simtime interval for autosave. If None, autosave is disabled. Defaults to 5 minutes.
+        save_chunk_interval: timedelta | None
+            The simtime interval for chunking the log save. If None, chunking is disabled. Defaults to None.
+        typeof_simulator: type[TSimulator], optional
+            If we want to use a derived class of simulator, specify here.
 
         Returns
         -------
@@ -763,16 +766,17 @@ Creating Infinite Scenario
             scenario_manager=self,
             env_manager=env_manager,
             projection_centre=self.projection_centre,
-            scenario_name=scenario_name,
             category=category,
+            scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
-            autosave=autosave,
+            predictor=predictor,
             attach_context_to_logger=attach_context_to_logger,
             save_log_to_file=save_log_to_file,
             log_filename=log_filename,
-            predictor=predictor,
-            simulated_sectors=simulated_sectors,
+            save_csv=save_csv,
+            autosave_interval=autosave_interval,
+            save_chunk_interval=save_chunk_interval,
         )
 
 

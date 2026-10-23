@@ -1,0 +1,69 @@
+import os
+from pathlib import Path
+
+import platformdirs
+import pytest
+
+from bluebird_dt.utility.paths import LOG_DIR_ENV_VAR, get_log_dir
+
+
+def test_get_log_dir_uses_env_override(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """
+    When BLUEBIRD_LOG_DIR is set, it is used as the log directory.
+    conftest.py has set this up for use prior to the path import
+    """
+    override = str(tmp_path / "my_logs")
+    monkeypatch.setenv(LOG_DIR_ENV_VAR, override)
+
+    assert get_log_dir() == override
+
+
+def test_get_log_dir_defaults_to_user_data_dir(monkeypatch: pytest.MonkeyPatch):
+    """
+    Test that without an override, the logs resolve to the per-user OS data directory.
+    """
+    monkeypatch.delenv(LOG_DIR_ENV_VAR, raising=False)
+
+    expected = platformdirs.user_data_dir("bluebird-scenario-logs")
+    assert get_log_dir() == expected
+
+
+def test_get_log_dir_default_is_not_inside_installed_package(monkeypatch: pytest.MonkeyPatch):
+    """
+    Regression test: the default log location must not live inside the
+    installed bluebird_dt package (i.e. the virtual environment / site-packages), otherwise
+    logs are hard to find and get wiped when the environment is rebuilt.
+    """
+    monkeypatch.delenv(LOG_DIR_ENV_VAR, raising=False)
+    import bluebird_dt
+
+    package_dir = os.path.dirname(os.path.abspath(bluebird_dt.__file__))
+    assert not get_log_dir().startswith(package_dir)
+
+
+def test_empty_env_override_falls_back_to_default(monkeypatch: pytest.MonkeyPatch):
+    """Test that an empty BLUEBIRD_LOG_DIR is ignored in favour of the default location."""
+    monkeypatch.setenv(LOG_DIR_ENV_VAR, "")
+
+    expected = platformdirs.user_data_dir("bluebird-scenario-logs")
+    assert get_log_dir() == expected
+
+
+def test_get_log_dir_app_subdir_is_nested_under_base(monkeypatch: pytest.MonkeyPatch):
+    """
+    An app_subdir is placed underneath the shared base so that each application's
+    logs are co-located (same base) but distinguishable (own subdirectory).
+    """
+    monkeypatch.delenv(LOG_DIR_ENV_VAR, raising=False)
+
+    base = platformdirs.user_data_dir("bluebird-scenario-logs")
+    assert get_log_dir("starling") == os.path.join(base, "starling")
+    assert get_log_dir("bluebird_dt") == os.path.join(base, "bluebird_dt")
+
+
+def test_get_log_dir_app_subdir_respects_env_override(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """The app_subdir is nested under BLUEBIRD_LOG_DIR when the override is set."""
+    override = str(tmp_path / "shared_logs")
+    monkeypatch.setenv(LOG_DIR_ENV_VAR, override)
+
+    assert get_log_dir("starling") == os.path.join(override, "starling")

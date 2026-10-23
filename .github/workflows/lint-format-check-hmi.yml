@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: read
+
 defaults:
   run:
     working-directory: bluebird-hmi
@@ -15,13 +19,13 @@ jobs:
     outputs:
       should_run: ${{ steps.filter.outputs.should_run }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Check changed paths
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             should_run:
@@ -36,10 +40,10 @@ jobs:
       matrix:
         node-version: [24.x]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
@@ -59,10 +63,10 @@ jobs:
       matrix:
         node-version: [24.x]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
@@ -83,12 +87,12 @@ jobs:
       matrix:
         node-version: [24.x]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
@@ -135,7 +139,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          SHOULD_RUN_HMI="${{ needs.changes.outputs.should_run_hmi }}"
+          SHOULD_RUN_HMI="${{ needs.changes.outputs.should_run }}"
 
           TYPECHECK_RESULT="${{ needs.hmi-typecheck.result }}"
           PRETTIER_RESULT="${{ needs.hmi-prettier.result }}"
@@ -172,4 +176,3 @@ jobs:
           fi
 
           echo "Gate passed."
-

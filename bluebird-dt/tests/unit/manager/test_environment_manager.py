@@ -12,39 +12,9 @@ from bluebird_dt.core import Action, Aircraft, Airspace, FlightPlan, Route
 from bluebird_dt.events import EventHandler
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import RouteFollowPredictor, SimplePredictor
-from bluebird_dt.scenario_manager import Tactical
+from bluebird_dt.scenario_manager import Custom
 from bluebird_dt.core import Coordination
 from bluebird_dt.utility import constants
-
-@pytest.mark.parametrize("airspace_routes", ["generate_i", "generate_x", "generate_y"])
-@pytest.mark.parametrize("n_aircraft", [2, 4, 10])
-def test_observe(airspace_routes: str, n_aircraft: int, request: pytest.FixtureRequest) -> None:
-    """
-    Environment observation is returned with all the correct information for
-    the Airspace or Sector (independent of number of Sectors or Aircraft).
-    """
-
-    # Airspace and EventHandler, Predictor & EM
-    airspace, routes = request.getfixturevalue(airspace_routes)
-    em = Tactical(n_aircraft, airspace=airspace, routes=routes).create_env_manager()
-
-    # once evolve is called, method should return environment with all
-    # aircraft and all sectors
-    em.evolve(200)
-    environment = em.observe()
-    assert environment.time == 200
-    assert len(environment.aircraft) == n_aircraft
-    assert em.environment.airspace.sectors == environment.airspace.sectors
-
-    # can also retrieve data for a specific sector
-    # - aircraft are split between sectors if there are multiple
-    total_aircraft = 0
-    for sector_name in em.environment.airspace.sectors:
-        environment = em.observe(sector_name)
-        assert len(environment.airspace.sectors) == 1
-        total_aircraft += len(environment.aircraft)
-    assert total_aircraft == n_aircraft
-
 
 def test_bandboxing(generate_two_sector: tuple[Airspace, list[Route]]) -> None:
     """
@@ -131,7 +101,7 @@ def test_receive_and_process_actions(
 
     # Airspace and EventHandler
     airspace, routes = request.getfixturevalue(airspace_routes)
-    em = Tactical(2, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(2, airspace=airspace, routes=routes).create_env_manager()
 
     actions = [Action("AIR0", "change_heading_by", 5)]
 
@@ -170,7 +140,7 @@ def test_receive_and_process_actions(
 
     # # EM with RouteFollowPredictor --------------------------------------------------------
     predictor = RouteFollowPredictor(predictor_dt, fix_proximity_threshold, airspace.fixes)
-    em = Tactical(2, airspace=airspace, routes=routes).create_env_manager(predictor)
+    em = Custom(2, airspace=airspace, routes=routes).create_env_manager(predictor)
     em.evolve(5)
 
     # Actions can be received but warning is given due to predictor RouteFollowPredictor
@@ -189,7 +159,7 @@ def test_controllable_ignore_actions(
 
     # Airspace and EventHandler
     airspace, routes = request.getfixturevalue(airspace_routes)
-    em = Tactical(2, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(2, airspace=airspace, routes=routes).create_env_manager()
 
     # example Action to issue
     actions = [Action("AIR0", "change_heading_by", 95)]
@@ -233,7 +203,7 @@ def test_evolve_fail(predictor_dt: int, predictor_type: str, generate_x: tuple[A
     else:
         raise ValueError(f"Invalid predictor_type given: {predictor_type}")
 
-    em = Tactical(2, airspace=airspace, routes=routes).create_env_manager(predictor)
+    em = Custom(2, airspace=airspace, routes=routes).create_env_manager(predictor)
 
     step_time = 0
     with pytest.raises(ValueError, match=r"not compatible with the Predictor\.dt"):
@@ -332,7 +302,7 @@ def test_evolve(generate_i: tuple[Airspace, list[Route]]) -> None:
     airspace, routes = generate_i
 
     # SIMULATED AIRCRAFT x3
-    em = Tactical(3, airspace=airspace, routes=routes, initialise_with_event_handler=False).create_env_manager()
+    em = Custom(3, airspace=airspace, routes=routes).create_env_manager()
 
     # change start_times - set by callsign to avoid dependence on row order
     radar_df = em.event_handler.radar_df
@@ -394,7 +364,7 @@ def test_rewind_to_time(generate_i: tuple[Airspace, list[Route]]) -> None:
     airspace, routes = generate_i
 
     # SIMULATED AIRCRAFT x5
-    em = Tactical(5, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(5, airspace=airspace, routes=routes).create_env_manager()
 
     all_actions = {
         0: ("AIR0", "change_heading_to", 175),
@@ -461,7 +431,7 @@ def test_request_coord(generate_i):
     - RemoveRequest removes request
     """
     airspace, routes = generate_i
-    em = Tactical(1, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
     coord = Coordination(callsign="AIR0", from_sector="sector_i", to_sector="sector_i", fl=300, fix="Fix", direction="Up")
 
     # Offer should add to requests
@@ -576,7 +546,7 @@ def test_finished(generate_i):
     - no aircraft remain
     """
     airspace, routes = generate_i
-    em = Tactical(2, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(2, airspace=airspace, routes=routes).create_env_manager()
 
     # Check that we're not already finished
     assert em.finished() is False
@@ -644,7 +614,7 @@ def test_assign_aircraft_to_individual_sector(generate_two_sector):
     back into constituent individual sectors.
     """
     airspace, routes = generate_two_sector
-    em = Tactical(2, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(2, airspace=airspace, routes=routes).create_env_manager()
 
     em.initialise_env_with_event_handler()
     em.bandbox_sectors({"combined": ["sector_i1", "sector_i2"]})
@@ -667,7 +637,7 @@ def test_split_sector(generate_two_sector):
     - update airspace sectors to include the original individuals
     """
     airspace, routes = generate_two_sector
-    em = Tactical(2, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(2, airspace=airspace, routes=routes).create_env_manager()
 
     em.initialise_env_with_event_handler()
     em.bandbox_sectors({"combined": ["sector_i1", "sector_i2"]})
@@ -692,7 +662,7 @@ def test_get_assigned_bay(generate_two_sector):
     - None otherwise
     """
     airspace, routes = generate_two_sector
-    em = Tactical(1, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
     em.initialise_env_with_event_handler()
 
     callsign = next(iter(em.environment.aircraft))
@@ -736,7 +706,7 @@ def test_replace_all_aircraft(generate_i, monkeypatch):
     Test that replace_all_aircraft swaps env aircraft dict and calls event_handler.reset_events().
     """
     airspace, routes = generate_i
-    em = Tactical(1, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
     em.initialise_env_with_event_handler()
 
     called = {"reset": 0}
@@ -762,7 +732,7 @@ def test_replace_environment(generate_i):
     - set reload_environment True
     """
     airspace, routes = generate_i
-    em = Tactical(1, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
     em.initialise_env_with_event_handler()
 
     # Create a fresh environment with same airspace but no aircraft
@@ -786,7 +756,7 @@ def test_save_logs(generate_i):
     Test that write_logs_to_buffer returns a BytesIO containing a tar archive (by default).
     """
     airspace, routes = generate_i
-    em = Tactical(1, airspace=airspace, routes=routes).create_env_manager()
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
     em.initialise_env_with_event_handler()
     em.evolve(2.0)
 
@@ -808,7 +778,7 @@ def test_initialise_with_event_handler(generate_i):
     - log environment (radar log) at least once when log=True
     """
     airspace, routes = generate_i
-    em = Tactical(3, airspace=airspace, routes=routes, initialise_with_event_handler=False).create_env_manager()
+    em = Custom(3, airspace=airspace, routes=routes).create_env_manager()
 
     first_event_time = em.event_handler.radar_df.index.min()
     em.initialise_env_with_event_handler(jump_to_first_event=True, log=True)

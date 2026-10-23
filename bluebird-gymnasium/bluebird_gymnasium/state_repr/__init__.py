@@ -1,6 +1,7 @@
+from dataclasses import dataclass
+
 import numpy as np
 
-from dataclasses import dataclass
 from bluebird_gymnasium.utils.module_registry import ModuleRegistry
 
 
@@ -39,7 +40,6 @@ class StateReprClipper:
     CLIP_SPEED: int = 600  # nautical miles per hour (knots)
     CLIP_SPEED_DIFF: int = 180  # nautical miles per hour (knots)
     CLIP_VERTICAL_SPEED: int = 3000  # feet per minute
-    CLIP_VERTICAL_SPEED: int = 3000  # feet per minute
     CLIP_CENTRELINE_DIST_DIFF: int = 12  # nautical miles
 
 
@@ -53,12 +53,8 @@ registry_repr.register("full_raw", f"{mod_name}:FullRepresentationRaw")
 
 # extra minimal
 mod_name = f"{base_pkg}.extraminimal"
-registry_repr.register(
-    "extra_minimal", f"{mod_name}:ExtraMinimalRepresentation"
-)
-registry_repr.register(
-    "extra_minimal_raw", f"{mod_name}:ExtraMinimalRepresentationRaw"
-)
+registry_repr.register("extra_minimal", f"{mod_name}:ExtraMinimalRepresentation")
+registry_repr.register("extra_minimal_raw", f"{mod_name}:ExtraMinimalRepresentationRaw")
 
 # minimal
 mod_name = f"{base_pkg}.minimal"

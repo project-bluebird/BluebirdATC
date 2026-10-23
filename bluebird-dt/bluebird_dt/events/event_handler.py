@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
+import typing_extensions
+from pydantic import BaseModel
 from typing_extensions import Self
 
 from bluebird_dt.core import (
@@ -43,9 +45,57 @@ def pd_concat_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([df1, df2])
 
 
-TAircraft = typing.TypeVar("TAircraft", bound=Aircraft)
-TWindField = typing.TypeVar("TWindField", bound=WindField)
-TForecastWindField = typing.TypeVar("TForecastWindField", bound=WindField)
+TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
+TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
+TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
+
+
+class FlightPlanEvent(BaseModel):
+    callsign: str
+    datetime: datetime
+    route_filed: list[str]
+    start_datetime: datetime | None = None
+    end_datetime: datetime | None = None
+    squawk: str | None = None
+    origin: str | None = None
+    dest: str | None = None
+    unexpanded_route: str | None = None
+    sector_crossing_seq: str | None = None
+    actype: str | None = None
+    milcivil: str | None = None
+    requested_flight_level: float | int | None = None
+    filed_true_airspeed: float | int | None = None
+    intention_code: str | None = None
+    ufid: str | None = None
+    assigned_squawk: str | None = None
+
+
+class CoordinationEvent(BaseModel):
+    datetime: datetime
+    callsign: str
+    from_sector: str
+    to_sector: str
+    fl: float
+    fix: str
+    direction: str
+    level_by: bool | None = None
+    level_by_details: str | None = None
+    secondary_coord_conditions: str | None = None
+
+
+class IncommEvent(BaseModel):
+    datetime: datetime
+    callsign: str
+    sector_name: str
+
+
+class ClearanceEvent(BaseModel):
+    datetime: datetime
+    callsign: str
+    kind: str
+    value: str
+    agent: str | None = None
+    sector: list[str] | None = None
 
 
 class EventHandler(typing.Generic[TAircraft]):
@@ -303,7 +353,7 @@ class EventHandler(typing.Generic[TAircraft]):
         the_datetime: datetime,
         callsign: str,
         attribute_name: str,
-        value: None | float | int | str | list,
+        value: float | int | str | list | None,
     ) -> None:
         """
         Add an aircraft_attribute_update event.
@@ -540,6 +590,21 @@ class EventHandler(typing.Generic[TAircraft]):
         # ensure date ordering is preserved
         self.radar_df = self.radar_df.sort_index()
 
+    def extend_flight_plan_events(self, events: list[FlightPlanEvent]):
+
+        if len(events) == 0:
+            return
+
+        new_flights = pd.DataFrame([event.model_dump() for event in events])
+        new_flights = new_flights.set_index("datetime")
+        new_flights.index.name = "datetime"
+
+        dtypes = {key: val for key, val in EventDtypes.flight_dtypes.items() if key != "datetime"}
+        self.flight_df = pd_concat_two_dfs(self.flight_df, new_flights.astype(dtypes))
+
+        # ensure date ordering is preserved
+        self.flight_df = self.flight_df.sort_index()
+
     def add_flight_plan_event(
         self,
         the_datetime: datetime,
@@ -624,6 +689,24 @@ class EventHandler(typing.Generic[TAircraft]):
         # ensure date ordering is preserved
         self.flight_df = self.flight_df.sort_index()
 
+    def extend_clearance_events(self, clearance_events: list[ClearanceEvent]):
+        if len(clearance_events) == 0:
+            return
+
+        new_clearances = pd.DataFrame([event.model_dump() for event in clearance_events])
+        new_clearances["text_clearance"] = [None] * new_clearances.shape[0]
+        new_clearances["text_pilot_response"] = [None] * new_clearances.shape[0]
+        new_clearances["voice_clearance"] = [None] * new_clearances.shape[0]
+        new_clearances["voice_pilot_response"] = [None] * new_clearances.shape[0]
+
+        new_clearances = new_clearances.set_index("datetime")
+        new_clearances.index.name = "datetime"
+
+        dtypes = {key: val for key, val in EventDtypes.clearance_dtypes.items() if key != "datetime"}
+        self.clearances_df = pd_concat_two_dfs(self.clearances_df, new_clearances.astype(dtypes))
+
+        self.clearances_df = self.clearances_df.sort_index()
+
     def add_clearance_event(
         self,
         the_datetime: datetime,
@@ -693,6 +776,22 @@ class EventHandler(typing.Generic[TAircraft]):
         # ensure date ordering is preserved
         self.sectors_df = self.sectors_df.sort_index()
 
+    def extend_incomm_events(
+        self,
+        incomm_events: list[IncommEvent],
+    ):
+        if len(incomm_events) == 0:
+            return
+
+        new_incomm_events = pd.DataFrame([incomm_event.model_dump() for incomm_event in incomm_events])
+        new_incomm_events = new_incomm_events.set_index("datetime")
+        new_incomm_events.index.name = "datetime"
+
+        dtypes = {key: val for key, val in EventDtypes.incomm_dtypes.items() if key != "datetime"}
+        self.incomm_df = pd_concat_two_dfs(self.incomm_df, new_incomm_events.astype(dtypes))
+
+        self.incomm_df = self.incomm_df.sort_index()
+
     def add_incomm_event(
         self,
         the_datetime: datetime,
@@ -722,6 +821,20 @@ class EventHandler(typing.Generic[TAircraft]):
         self.incomm_df = pd_concat_two_dfs(self.incomm_df, new_row.to_frame().T.astype(dtypes))
         # ensure date ordering is preserved
         self.incomm_df = self.incomm_df.sort_index()
+
+    def extend_coordination_events(self, events: list[CoordinationEvent]):
+        if len(events) == 0:
+            return
+
+        new_coordinations = pd.DataFrame([event.model_dump() for event in events])
+        new_coordinations = new_coordinations.set_index("datetime")
+        new_coordinations.index.name = "datetime"
+
+        dtypes = {key: val for key, val in EventDtypes.coord_dtypes.items() if key != "datetime"}
+
+        self.coordination_df = pd_concat_two_dfs(self.coordination_df, new_coordinations.astype(dtypes))
+
+        self.coordination_df = self.coordination_df.sort_index()
 
     def add_coordination_event(
         self,
@@ -1490,6 +1603,7 @@ def update_from_radar(
             # after this it may be updated with partial information
             if None in (row.lat, row.lon, row.fl, row.heading):
                 continue
+
             aircraft = aircraft_class(
                 lat=row.lat,
                 lon=row.lon,
@@ -1503,8 +1617,7 @@ def update_from_radar(
             )
         else:  # callsign is in environment, so update aircraft
             aircraft = environment.aircraft[row.callsign]
-            aircraft.lat = row.lat
-            aircraft.lon = row.lon
+            aircraft.set_position(row.lat, row.lon)
 
             # don't update values if new values are zero (originally nan, transformed to zero)
             if row.fl is not None:
@@ -2032,11 +2145,13 @@ def update_coordination(
             secondary_coord_conditions=secondary_coord_conditions,
             the_datetime=the_datetime,
         )
+
         # don't add coordination if already present (possibly with a different timestamp)
         coord_already_present = environment.coordinations.contains_excluding_times(new_coordination)
 
         if not coord_already_present:
             environment.coordinations.add(new_coordination)
+
     return environment
 
 
@@ -2247,6 +2362,9 @@ def update_aircraft_internals(
         )
 
         if aircraft.flight_plan is not None:
-            aircraft.flight_plan.route.current = list(row.route_current)
+            if row.route_current is None:
+                aircraft.flight_plan.route.current = None
+            else:
+                aircraft.flight_plan.route.current = list(row.route_current)
 
     return environment

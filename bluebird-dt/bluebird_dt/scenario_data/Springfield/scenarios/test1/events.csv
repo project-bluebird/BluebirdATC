@@ -1,4 +1,0 @@
-datetime,callsign,event_type,event_subtype,fl_value,hdg_value,spd_value,ssr_code,ssr_state,fix,hdg_fix_value,hold_fix,rnn_fix,sector
-1970-01-01T09:01:48.000,UAL9731,incomm,incomm,,,,,,,,,,SPRINGFIELD
-1970-01-01T09:03:00.000,SAS1805,incomm,incomm,,,,,,,,,,SPRINGFIELD
-1970-01-01T09:18:34.000,SAS8743,incomm,incomm,,,,,,,,,,SPRINGFIELD

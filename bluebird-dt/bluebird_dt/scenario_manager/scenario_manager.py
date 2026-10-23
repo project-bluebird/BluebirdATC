@@ -56,3 +56,6 @@ class ScenarioManager(ABC, Generic[TConfig]):
             type of the scenario manager.
         """
         pass
+
+    def close(self):
+        pass

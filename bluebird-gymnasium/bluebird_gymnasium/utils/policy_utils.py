@@ -1,17 +1,17 @@
 from __future__ import annotations
+
 import typing
 
 from bluebird_dt.core import Action
 
 from bluebird_gymnasium.actions import ACTION_NOOP
-from bluebird_gymnasium.utils.types import PositionStatus
 from bluebird_gymnasium.utils.geo_utils import angle_diff, left_right_check
 from bluebird_gymnasium.utils.simulator_utils import aircraft_exit_coordination
-from bluebird_gymnasium.utils.types import TurnDirection, Number
+from bluebird_gymnasium.utils.types import PositionStatus, TurnDirection
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core.environment import Environment as SimulatorEnv
-    from bluebird_dt.core.coordination import Coordination
+
     from bluebird_gymnasium.envs.base import BaseEnv
 
 
@@ -24,9 +24,7 @@ def _get_relevant_data(
     """Get the exit flight level and next sector of an aircraft."""
 
     if ac_tracked_state is None:
-        exit_coord = aircraft_exit_coordination(
-            callsign, simulator_env, airspace_sector
-        )
+        exit_coord = aircraft_exit_coordination(callsign, simulator_env, airspace_sector)
         exit_fl = exit_coord.fl
         next_sector = exit_coord.to_sector
 
@@ -40,7 +38,7 @@ def _get_relevant_data(
 
 def default_outcomm_policy_simple(
     gym_env: BaseEnv,
-    external_agent_actions: dict[str, int],
+    external_agent_actions: dict[str, int],  # noqa: ARG001
     exit_distance_threshold: float = 10.0,
     angle_threshold: float = 5.0,
     single_action: bool = True,
@@ -92,7 +90,7 @@ def default_outcomm_policy_simple(
             the exit position from the fix before the position.)
             Optional. Defaults to 5.0 degrees.
         single_action: defines whether or not to return a single action if
-            there are multiple aircraft eligble for an outcomm action. if set
+            there are multiple aircraft eligible for an outcomm action. if set
             to `True`, and there multiple eligible aircraft, then priority is
             given to the aircraft that requires an immediate outcomm clearance
             (e.g., an aircraft out of sector requires an immediate clearance
@@ -109,7 +107,7 @@ def default_outcomm_policy_simple(
     """
 
     # constants
-    OUTCOMM_PRIORTY_LOW = 1
+    OUTCOMM_PRIORITY_LOW = 1
     OUTCOMM_PRIORITY_MEDIUM = 2
     OUTCOMM_PRIORITY_HIGH = 3
 
@@ -163,7 +161,7 @@ def default_outcomm_policy_simple(
                 "policy should have outcommed aircraft in this status except "
                 "it is limited by a per step single action."
             )
-            assert False, _msg
+            raise AssertionError(_msg)
 
         # another sanity check
         assert ac_tracked_data.pos_status == PositionStatus.IN_SECTOR
@@ -176,9 +174,7 @@ def default_outcomm_policy_simple(
         pf_nf_bearing = prev_fix_pos.bearing_to(next_fix_pos)
 
         # condition 1
-        cond_1_1 = (
-            ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
-        )
+        cond_1_1 = ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
         cond_1_2 = aircraft.selected_fl == exit_fl
         cond_1_3 = abs(aircraft.heading - pf_nf_bearing) < angle_threshold
 
@@ -219,38 +215,24 @@ def default_outcomm_policy_simple(
         max_fl = airspace.sectors[airspace_sector].volumes[found_idx].max_fl
 
         # condition 4
-        # checks the minmum allowable flight level
+        # checks the minimum allowable flight level
         cond_4_1 = aircraft.selected_fl < min_fl
-        cond_4_2 = (
-            abs(aircraft.fl - min_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
-        )
+        cond_4_2 = abs(aircraft.fl - min_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
 
         # condition 5
         # checks the maximum allowable flight level
         cond_5_1 = aircraft.selected_fl > max_fl
-        cond_5_2 = (
-            abs(aircraft.fl - max_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
-        )
+        cond_5_2 = abs(aircraft.fl - max_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
 
         if cond_1_1 and cond_1_2 and cond_1_3:
             # issue an outcomm clearance
             actions[callsign] = action
-            outcomm_priorities[callsign] = OUTCOMM_PRIORTY_LOW
+            outcomm_priorities[callsign] = OUTCOMM_PRIORITY_LOW
         elif cond_2_1:
             # issue an outcomm clearance
             actions[callsign] = action
             outcomm_priorities[callsign] = OUTCOMM_PRIORITY_MEDIUM
-        elif cond_3_1 and cond_3_2 and cond_3_3:
-            if not gym_env.out_sector_control:
-                # issue an outcomm clearance
-                actions[callsign] = action
-                outcomm_priorities[callsign] = OUTCOMM_PRIORITY_HIGH
-        elif cond_4_1 and cond_4_2:
-            if not gym_env.out_sector_control:
-                # issue an outcomm clearance
-                actions[callsign] = action
-                outcomm_priorities[callsign] = OUTCOMM_PRIORITY_HIGH
-        elif cond_5_1 and cond_5_2:
+        elif (cond_3_1 and cond_3_2 and cond_3_3) or (cond_4_1 and cond_4_2) or (cond_5_1 and cond_5_2):
             if not gym_env.out_sector_control:
                 # issue an outcomm clearance
                 actions[callsign] = action
@@ -342,7 +324,7 @@ def default_outcomm_policy_lenient(
             the exit position from the fix before the position.)
             Optional. Defaults to 5.0 degrees.
         single_action: defines whether or not to return a single action if
-            there are multiple aircraft eligble for an outcomm action. if set
+            there are multiple aircraft eligible for an outcomm action. if set
             to `True`, and there multiple eligible aircraft, then priority is
             given to the aircraft that requires an immediate outcomm clearance
             (e.g., an aircraft out of sector requires an immediate clearance
@@ -359,7 +341,7 @@ def default_outcomm_policy_lenient(
     """
 
     # constants
-    OUTCOMM_PRIORTY_LOW = 1
+    OUTCOMM_PRIORITY_LOW = 1
     OUTCOMM_PRIORITY_MEDIUM = 2
     OUTCOMM_PRIORITY_HIGH = 3
     OUTCOMM_PRIORITY_VERY_HIGH = 4
@@ -433,9 +415,7 @@ def default_outcomm_policy_lenient(
         pf_nf_bearing = prev_fix_pos.bearing_to(next_fix_pos)
 
         # condition 1
-        cond_1_1 = (
-            ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
-        )
+        cond_1_1 = ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
         cond_1_2 = aircraft.selected_fl == exit_fl
         cond_1_3 = abs(aircraft.heading - pf_nf_bearing) < angle_threshold
         # cond_1_4 implicitly assumed as the only valid position status at
@@ -445,10 +425,7 @@ def default_outcomm_policy_lenient(
         # final threshold to outcomm aircraft if exit flight levels haven't
         # been met before the aircraft exits through its correct exit window.
         FINAL_EXIT_DISTANCE_THRESHOLD = 3.0
-        cond_2_1 = (
-            ac_tracked_data.track_dist_to_exit_cr
-            < FINAL_EXIT_DISTANCE_THRESHOLD
-        )
+        cond_2_1 = ac_tracked_data.track_dist_to_exit_cr < FINAL_EXIT_DISTANCE_THRESHOLD
         # cond_2_4 implicitly assumed as the only valid position status at
         # this point is: IN_SECTOR
 
@@ -459,10 +436,7 @@ def default_outcomm_policy_lenient(
         # sector boundary)
         INCORRECT_SECTOR_EXIT_DISTANCE_THRESHOLD = 1.0
         cond_3_1 = ac_tracked_data.pos_status == PositionStatus.IN_SECTOR
-        cond_3_2 = (
-            ac_tracked_data.nearest_360_boundary_dist
-            < INCORRECT_SECTOR_EXIT_DISTANCE_THRESHOLD
-        )
+        cond_3_2 = ac_tracked_data.nearest_360_boundary_dist < INCORRECT_SECTOR_EXIT_DISTANCE_THRESHOLD
         angle_diff_ac_nb = angle_diff(
             aircraft.heading,
             ac_tracked_data.nearest_360_boundary_bear,
@@ -493,23 +467,19 @@ def default_outcomm_policy_lenient(
         max_fl = airspace.sectors[airspace_sector].volumes[found_idx].max_fl
 
         # condition 4
-        # checks the minmum allowable flight level
+        # checks the minimum allowable flight level
         cond_4_1 = aircraft.selected_fl < min_fl
-        cond_4_2 = (
-            abs(aircraft.fl - min_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
-        )
+        cond_4_2 = abs(aircraft.fl - min_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
 
         # condition 5
         # checks the maximum allowable flight level
         cond_5_1 = aircraft.selected_fl > max_fl
-        cond_5_2 = (
-            abs(aircraft.fl - max_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
-        )
+        cond_5_2 = abs(aircraft.fl - max_fl) < INCORRECT_SECTOR_EXIT_FL_THRESHOLD
 
         if cond_1_1 and cond_1_2 and cond_1_3:
             # issue an outcomm clearance
             actions[callsign] = action
-            outcomm_priorities[callsign] = OUTCOMM_PRIORTY_LOW
+            outcomm_priorities[callsign] = OUTCOMM_PRIORITY_LOW
 
         elif cond_2_1:
             # issue an outcomm clearance
@@ -520,9 +490,7 @@ def default_outcomm_policy_lenient(
             # check if external agent has issued a heading action to resolve
             # the issue (to avoid incorrectly exiting sector lateral boundary).
             ext_action = external_agent_actions.get(callsign, ACTION_NOOP)
-            turn_dir = left_right_check(
-                aircraft.heading, ac_tracked_data.nearest_360_boundary_bear
-            )
+            turn_dir = left_right_check(aircraft.heading, ac_tracked_data.nearest_360_boundary_bear)
 
             # get categories of heading actions
             action_parser = gym_env.get_action_parser()
@@ -530,16 +498,13 @@ def default_outcomm_policy_lenient(
             actions_incr_hd = action_parser.get_heading_right_actions()
             actions_set_hd = action_parser.get_absolute_heading_actions()
 
-            if turn_dir == TurnDirection.LEFT and ext_action in (
-                actions_incr_hd + actions_set_hd
-            ):
-                pass
-            elif turn_dir == TurnDirection.RIGHT and ext_action in (
-                actions_decr_hd + actions_set_hd
-            ):
-                pass
-            elif turn_dir == TurnDirection.NO_TURN and ext_action in (
-                actions_decr_hd + actions_incr_hd + actions_set_hd
+            if (
+                (turn_dir == TurnDirection.LEFT and ext_action in (actions_incr_hd + actions_set_hd))
+                or (turn_dir == TurnDirection.RIGHT and ext_action in (actions_decr_hd + actions_set_hd))
+                or (
+                    turn_dir == TurnDirection.NO_TURN
+                    and ext_action in (actions_decr_hd + actions_incr_hd + actions_set_hd)
+                )
             ):
                 pass
             else:
@@ -613,7 +578,7 @@ def default_outcomm_policy_lenient(
 
 def default_outcomm_policy(
     gym_env: BaseEnv,
-    external_agent_actions: dict[str, int],
+    external_agent_actions: dict[str, int],  # noqa: ARG001
     exit_distance_threshold: float = 10.0,
     angle_threshold: float = 5.0,
     single_action: bool = True,
@@ -668,7 +633,7 @@ def default_outcomm_policy(
             the exit position from the fix before the position.)
             Optional. Defaults to 5.0 degrees.
         single_action: defines whether or not to return a single action if
-            there are multiple aircraft eligble for an outcomm action. if set
+            there are multiple aircraft eligible for an outcomm action. if set
             to `True`, and there multiple eligible aircraft, then priority is
             given to the aircraft that requires an immediate outcomm clearance
             (e.g., an aircraft out of sector requires an immediate clearance
@@ -685,17 +650,15 @@ def default_outcomm_policy(
     """
 
     # constants
-    OUTCOMM_PRIORTY_LOW = 1
+    OUTCOMM_PRIORITY_LOW = 1
     OUTCOMM_PRIORITY_MEDIUM = 2
     OUTCOMM_PRIORITY_HIGH = 3
-    OUTCOMM_PRIORITY_VERY_HIGH = 4
 
     # get the simulator_env
     simulator_env = gym_env.get_simulator_env()
 
     # get the tracked data for all active aircraft
     all_tracked_aircraft = gym_env.get_tracked_aircraft_data()
-    all_tracked_aircraft_prev = gym_env.get_tracked_aircraft_data_previous()
 
     # get active airspace sector
     airspace_sector = gym_env.get_active_airspace_sector()
@@ -760,9 +723,7 @@ def default_outcomm_policy(
         pf_nf_bearing = prev_fix_pos.bearing_to(next_fix_pos)
 
         # condition 1
-        cond_1_1 = (
-            ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
-        )
+        cond_1_1 = ac_tracked_data.track_dist_to_exit_cr < exit_distance_threshold
         cond_1_2 = aircraft.selected_fl == exit_fl
         cond_1_3 = abs(aircraft.heading - pf_nf_bearing) < angle_threshold
 
@@ -770,16 +731,13 @@ def default_outcomm_policy(
         # final threshold to outcomm aircraft if exit flight level haven't
         # been met before the aircraft exits through its correct exit window.
         FINAL_EXIT_DISTANCE_THRESHOLD = 3.0
-        cond_2_1 = (
-            ac_tracked_data.track_dist_to_exit_cr
-            < FINAL_EXIT_DISTANCE_THRESHOLD
-        )
+        cond_2_1 = ac_tracked_data.track_dist_to_exit_cr < FINAL_EXIT_DISTANCE_THRESHOLD
         cond_2_2 = ac_tracked_data.pos_status == PositionStatus.IN_SECTOR
 
         if cond_1_1 and cond_1_2 and cond_1_3:
             # issue an outcomm clearance
             actions[callsign] = action
-            outcomm_priorities[callsign] = OUTCOMM_PRIORTY_LOW
+            outcomm_priorities[callsign] = OUTCOMM_PRIORITY_LOW
         elif cond_2_1 and cond_2_2:
             # issue an outcomm clearance
             actions[callsign] = action
