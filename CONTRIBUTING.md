@@ -19,7 +19,7 @@
  - [Where to start: issues](#where-to-start-issues)
  - [Making a change with a pull request](#making-a-change-with-a-pull-request)
    - [1. Comment on an existing issue or open a new issue referencing your addition](#1-comment-on-an-existing-issue-or-open-a-new-issue-referencing-your-addition)
-   - [2. Fork the BluebirdATC repository to your profile](#2-fork-the-bluebird-atc-repository-to-your-profile)
+   - [2. Fork the BluebirdATC repository to your profile](#2-fork-the-bluebirdatc-repository-to-your-profile)
    - [3. Make the changes you've discussed](#3-make-the-changes-youve-discussed)
    - [4. Submit a pull request](#4-submit-a-pull-request)
  - [Setting up a development environment](#setting-up-a-development-environment)
