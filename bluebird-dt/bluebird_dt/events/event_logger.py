@@ -26,6 +26,8 @@ if typing.TYPE_CHECKING:
 
 DEFAULT_TRIM_AND_CUT_TIMEDELTA = pd.Timedelta(hours=4)
 
+DEFAULT_TRIM_AND_CUT_TIMEDELTA = pd.Timedelta(hours=4)
+
 
 class ClearanceLog(typing.TypedDict):
     datetime: pd.Timestamp
