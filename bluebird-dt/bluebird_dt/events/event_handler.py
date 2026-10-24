@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import copy
 import operator
 import typing
 from dataclasses import dataclass
@@ -495,7 +495,7 @@ class EventHandler(typing.Generic[TAircraft]):
             previous_sector=aircraft.previous_sector,
             percentile_rank_dict=aircraft.percentile_rank_dict,
             pilot_type=aircraft.pilot.__class__.__name__,
-            pilot_action_queue=[json.dumps(queue_item) for queue_item in aircraft.pilot.action_queue],
+            pilot_action_queue=aircraft.pilot.action_queue_to_json(),
             predictor_params=aircraft.predictor_params,
             wake_vortex=aircraft.wake_vortex,
             random_seed=aircraft.random_seed,
@@ -988,7 +988,7 @@ class EventHandler(typing.Generic[TAircraft]):
         pilot_type: str, optional
             Pilot type
         pilot_action_queue: list[str], optional
-            Action queue of pilot
+            Action queue of pilot, as written by Pilot.action_queue_to_json
         predictor_params: dict[str, float], optional
             Dictionary of predictor parameters
         wake_vortex: str, optional
@@ -1333,9 +1333,14 @@ class EventHandler(typing.Generic[TAircraft]):
                 ignore_simmed=self.ignore.ac_attribute_if_simmed,
             )
 
-        # update the route status of any aircraft which are not being simmed.
-        # will be overwritten by aircraft internal logs if available.
-        environment = update_route_status(environment, ignore_simmed=True)
+        # update the route status of any aircraft which are not being simmed. next_fix_index is left to the
+        # aircraft internal logs for aircraft that have rows in them from this step on.
+        logged_callsigns: set[str] = set()
+        if not all_aircraft_are_simmed:
+            logged_callsigns = set(
+                self.aircraft_internals_df.callsign[self.aircraft_internals_df.index > episode_start].unique()
+            )
+        environment = update_route_status(environment, ignore_simmed=True, logged_callsigns=logged_callsigns)
 
         # if previous internal aircraft state is available in logs, then this has the
         # final say on the state of non-simulated aircraft
@@ -1455,7 +1460,9 @@ class EventHandler(typing.Generic[TAircraft]):
 
 
 def update_route_status(
-    environment: Environment[TAircraft, TWindField, TForecastWindField], ignore_simmed: bool
+    environment: Environment[TAircraft, TWindField, TForecastWindField],
+    ignore_simmed: bool,
+    logged_callsigns: set[str] | None = None,
 ) -> Environment[TAircraft, TWindField, TForecastWindField]:
     """
     Update the route status of the aircraft.
@@ -1466,12 +1473,17 @@ def update_route_status(
         Environment containing aircraft to be updated
     ignore_simmed: bool
         If True, do not update the next_fix_index and on_route for simmed aircraft
+    logged_callsigns: set[str], optional
+        If ignore_simmed is True, also do not update the next_fix_index and on_route for these aircraft, which take
+        them from the aircraft internal logs
 
     Returns
     ----------
     Environment
         Environment with aircraft route status updated
     """
+    logged_callsigns = set() if logged_callsigns is None else logged_callsigns
+
     for aircraft in environment.aircraft.values():
         if aircraft.flight_plan is None:
             logger.warning(
@@ -1480,9 +1492,9 @@ def update_route_status(
             )
             continue
 
-        # next_fix_index is updated by the predictor, and we only update it here when jumping to a time
-        # which is specified by setting the ignore_simmed flag
-        set_next_fix_index = not ignore_simmed or not aircraft.simulated
+        # next_fix_index is updated by the predictor for simmed aircraft and by the aircraft internal logs for logged
+        # aircraft, and we only update it here for those when jumping to a time, which is specified by ignore_simmed
+        set_next_fix_index = not ignore_simmed or not (aircraft.simulated or aircraft.callsign in logged_callsigns)
 
         aircraft.update_route_status(environment.airspace, set_next_fix_index=set_next_fix_index)
 
@@ -2273,18 +2285,19 @@ def update_aircraft_internals(
     for row in df.itertuples():
         aircraft = environment.aircraft[row.callsign]  # index is callsign
         aircraft.rate_of_turn = row.rate_of_turn
-        aircraft.operation_params = row.operation_params
+        # the dict columns are copied, so that flying the aircraft doesn't change the rows it was restored from
+        aircraft.operation_params = copy.deepcopy(row.operation_params)
         aircraft.controllable = row.controllable
         aircraft.simulated = row.simulated
         aircraft.current_sector = row.current_sector
         aircraft._previous_sector = row.previous_sector
-        aircraft.predictor_params = row.predictor_params
-        aircraft.percentile_rank_dict = row.percentile_rank_dict
+        aircraft.predictor_params = copy.deepcopy(row.predictor_params)
+        aircraft.percentile_rank_dict = copy.deepcopy(row.percentile_rank_dict)
 
         # TODO: need to handle pilot type in a better way
         assert aircraft.pilot.__class__.__name__ == row.pilot_type
 
-        aircraft.pilot.action_queue = [json.dumps(queue_item) for queue_item in row.pilot_action_queue]
+        aircraft.pilot.set_action_queue_from_json(row.pilot_action_queue)
 
         aircraft.wake_vortex = row.wake_vortex
         aircraft.random_seed = row.random_seed

@@ -8,6 +8,7 @@ import tarfile
 import typing
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Self, override
@@ -374,10 +375,7 @@ class EventLogger:
             log.update(
                 {
                     "pilot_type": environment.aircraft[log["callsign"]].pilot.__class__.__name__,
-                    "pilot_action_queue": [
-                        json.dumps(queue_item)
-                        for queue_item in environment.aircraft[log["callsign"]].pilot.action_queue
-                    ],
+                    "pilot_action_queue": environment.aircraft[log["callsign"]].pilot.action_queue_to_json(),
                 }
             )
             for log in current_ac_internals
@@ -924,11 +922,13 @@ class EventLogger:
         # only keep the last aircraft configuration for each time
         ac_internals_df = ac_internals_df.drop_duplicates(subset=["datetime", "callsign"], keep="last")
 
-        # change types to string
-        ac_internals_df["pilot_action_queue"] = ac_internals_df["pilot_action_queue"].astype(str)
-        ac_internals_df["percentile_rank_dict"] = ac_internals_df["percentile_rank_dict"].astype(str)
-        ac_internals_df["operation_params"] = ac_internals_df["operation_params"].astype(str)
-        ac_internals_df["predictor_params"] = ac_internals_df["predictor_params"].astype(str)
+        # change types to string, printing NumPy scalars as plain numbers (not np.float64(...)) so that the strings
+        # read back with ast.literal_eval, apart from NaN and inf
+        with np.printoptions(legacy="1.25"):
+            ac_internals_df["pilot_action_queue"] = ac_internals_df["pilot_action_queue"].astype(str)
+            ac_internals_df["percentile_rank_dict"] = ac_internals_df["percentile_rank_dict"].astype(str)
+            ac_internals_df["operation_params"] = ac_internals_df["operation_params"].astype(str)
+            ac_internals_df["predictor_params"] = ac_internals_df["predictor_params"].astype(str)
 
         # save csv for now to make human-readable, but parquet will be read back in
         if save_csv:
