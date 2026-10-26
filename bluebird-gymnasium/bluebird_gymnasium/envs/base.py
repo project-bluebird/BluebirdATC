@@ -1972,7 +1972,7 @@ class BaseEnv(gym.Env):
             reward = np.mean(
                 # [ac_info[cs]["total_reward"] for cs in self.ac_tracker.keys()]
                 [ac_info[cs]["total_reward"] for cs in _final_reward_callsigns]
-            )
+            ).item()
             # set 1.0 as upper bound. this is the best performance that can
             # be achieved in a single step except when aircraft transfers
             # out of sector where it receives an additional bonus reward
