@@ -1,83 +1,226 @@
-from collections import defaultdict
 from dataclasses import dataclass, field
 
-from bluebird_dt.core import Action
+import typing_extensions
+
+from bluebird_dt.core import Action, Coordination, Fixes, Route
+from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.logger import logger
 from bluebird_dt.manager import EnvironmentManager
+
+
+@dataclass(frozen=True, slots=True)
+class ExitGate:
+    """A gate perpendicular to the planned route at the coordinated exit fix."""
+
+    start_position: Pos2D
+    end_position: Pos2D
+
+    @staticmethod
+    def _orientation(
+        a: Pos2D,
+        b: Pos2D,
+        c: Pos2D,
+    ) -> float:
+        """
+        Return the orientation of the ordered points ``a``, ``b`` and ``c``.
+
+        A positive or negative result indicates which side of line ``a-b``
+        point ``c`` lies on. Zero indicates collinearity.
+        """
+        return (b.lon - a.lon) * (c.lat - a.lat) - (b.lat - a.lat) * (c.lon - a.lon)
+
+    @classmethod
+    def new(
+        cls,
+        route: Route,
+        coordination: Coordination,
+        fixes: Fixes,
+        gate_width_nm: float,
+    ) -> typing_extensions.Self | None:
+        """
+        Construct the coordinated exit gate from the planned route.
+
+        The gate is centred on the coordination fix and perpendicular to the
+        first route segment that ends at that fix.
+        """
+        coordination_fix = fixes.get(coordination.fix)
+
+        if coordination_fix is None:
+            logger.warning(
+                f"Cannot construct exit gate for aircraft "
+                f"{coordination.callsign}: coordination fix "
+                f"{coordination.fix} was not found"
+            )
+            return None
+
+        # Use the first planned-route segment ending at the coordination fix.
+        route_segment = next(
+            (segment for segment in route.segments() if segment[1] == coordination.fix),
+            None,
+        )
+
+        if route_segment is None:
+            logger.warning(
+                f"Cannot construct exit gate for aircraft "
+                f"{coordination.callsign}: coordination fix "
+                f"{coordination.fix} is not in the planned route"
+            )
+            return None
+
+        previous_fix_designator, exit_fix_designator = route_segment
+
+        previous_fix = fixes.get(previous_fix_designator)
+        exit_fix = fixes.get(exit_fix_designator)
+
+        if previous_fix is None:
+            logger.warning(
+                f"Cannot construct exit gate for aircraft "
+                f"{coordination.callsign}: route fix "
+                f"{previous_fix_designator} was not found"
+            )
+            return None
+
+        if exit_fix is None:
+            logger.warning(
+                f"Cannot construct exit gate for aircraft "
+                f"{coordination.callsign}: route fix "
+                f"{exit_fix_designator} was not found"
+            )
+            return None
+
+        route_angle = previous_fix.bearing_to(exit_fix)
+        half_width_nm = gate_width_nm / 2
+
+        return cls(
+            start_position=coordination_fix.forward(
+                half_width_nm,
+                route_angle + 90,
+            ),
+            end_position=coordination_fix.forward(
+                half_width_nm,
+                route_angle - 90,
+            ),
+        )
+
+    def is_crossed(self, previous_position: Pos2D, current_position: Pos2D) -> bool:
+        """
+        Return the orientation of the ordered points ``a``, ``b`` and ``c``.
+
+        A positive or negative result indicates which side of line ``a-b``
+        point ``c`` lies on. Zero indicates collinearity.
+        """
+
+        o1 = self._orientation(
+            self.start_position,
+            self.end_position,
+            previous_position,
+        )
+        o2 = self._orientation(
+            self.start_position,
+            self.end_position,
+            current_position,
+        )
+        o3 = self._orientation(
+            previous_position,
+            current_position,
+            self.start_position,
+        )
+        o4 = self._orientation(
+            previous_position,
+            current_position,
+            self.end_position,
+        )
+
+        return (o1 * o2 < 0) and (o3 * o4 < 0)
 
 
 @dataclass(slots=True)
 class OutcommHandler:
     """
-    A handler, designed to be used to with a ScenarioManager, which outcomms aircraft given at exit:
-    - they leave through the gate closest to their exit fix
-    - they leave at the correct exit flight levels
+    Outcomm aircraft when they cross their coordinated exit gate at the
+    coordinated flight level.
+
+    The exit gate uses the same definition as the coordination-gate metric:
+
+    - its centre is the coordinated exit fix;
+    - its orientation is perpendicular to the inbound planned-route segment;
+    - its width is ``gate_width_nm``.
+
+    Aircraft without an exit coordination are outcommed when they leave a
+    sector in which they were previously observed.
 
     Parameters
     ----------
-    aircraft_in_sector: dict[str, set[str]]
-        Used to keep track of aircraft in each sector.
+    gate_width_nm:
+        Total width of the exit gate in nautical miles.
+    aircraft_in_sector:
+        Callsigns observed inside each sector.
+    previous_positions:
+        Previous aircraft positions, used to detect gate crossings.
     """
 
-    aircraft_in_sector: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
     require_exit_fl: bool = True
+    gate_width_nm: float = 10
 
-    def update(self, env_manager: EnvironmentManager):
-        """
-        Update the internal state and outcom any required aircraft given at exit:
-        - they leave through the gate closest to their exit fix
-        - they leave at the correct exit flight levels
+    _previous_positions: dict[str, Pos2D] = field(default_factory=dict)
 
-        Parameters
-        ----------
-        env_manager: EnvironmentManager
-            The environment manager to consider for updating
+    def update(self, env_manager: EnvironmentManager) -> None:
         """
-        for aircraft in env_manager.environment.aircraft.values():
-            if (
-                # Aircraft is not incommed into a sector
-                aircraft.current_sector == "background"
-                # Aircraft callsign is None
-                or aircraft.callsign is None
-            ):
+        Update aircraft positions and outcomm aircraft that cross their
+        coordinated exit gates at the coordinated flight level.
+        """
+        environment = env_manager.environment
+
+        for aircraft in environment.aircraft.values():
+            if aircraft.current_sector == "background" or aircraft.callsign is None:
                 continue
 
-            current_sector = env_manager.environment.airspace.sectors[aircraft.current_sector]
-            if (
-                # Aircraft is physically in the sector
-                current_sector.contains_laterally(aircraft.pos2d())
-            ):
-                self.aircraft_in_sector[aircraft.current_sector].add(aircraft.callsign)
+            callsign = aircraft.callsign
+            sector_name = aircraft.current_sector
+            current_position = aircraft.pos2d()
+            previous_position = self._previous_positions.get(callsign)
 
-            # Aircraft used to be in the sector
-            elif aircraft.callsign in self.aircraft_in_sector[aircraft.current_sector]:
-                self.aircraft_in_sector[aircraft.current_sector].remove(aircraft.callsign)
+            self._previous_positions[callsign] = current_position
 
-                # If aircraft has an exit coordination
-                if (
-                    exit_coordination := env_manager.environment.exit_coordination(
-                        aircraft.current_sector, aircraft.callsign
+            coordination = environment.exit_coordination(
+                sector_name,
+                callsign,
+            )
+
+            if coordination is not None:
+                if aircraft.flight_plan is None:
+                    logger.warning(f"Cannot check the exit gate for aircraft {callsign}: it has no flight plan")
+                    continue
+
+                if previous_position is None:
+                    continue
+
+                gate = ExitGate.new(
+                    route=aircraft.flight_plan.route,
+                    coordination=coordination,
+                    fixes=environment.airspace.fixes,
+                    gate_width_nm=self.gate_width_nm,
+                )
+
+                if gate is None:
+                    continue
+
+                crossed_gate = gate.is_crossed(
+                    previous_position=previous_position,
+                    current_position=current_position,
+                )
+
+                if crossed_gate and (aircraft.fl == coordination.fl or not self.require_exit_fl):
+                    self._previous_positions.pop(callsign, None)
+
+                    env_manager.receive_actions(
+                        [
+                            Action(
+                                callsign,
+                                "outcomm",
+                                "background",
+                            )
+                        ]
                     )
-                ) is not None:
-                    exit_fix = env_manager.environment.airspace.fixes.get(exit_coordination.fix)
 
-                    logger.debug(
-                        f"Checking if aircraft {aircraft.callsign} needs to be outcommed based on the exit conditions"
-                        "against fix {exit_fix}."
-                    )
-                    if (
-                        # Aircraft is at exit flight level
-                        ((aircraft.fl == exit_coordination.fl) or (not self.require_exit_fl))
-                        # And either the aircraft exit fix failed to be identified or, if identified, it is exiting
-                        # through the same gate
-                        and (
-                            exit_fix is None
-                            or current_sector.volumes[0].area.nearest_segment_to_point(aircraft.pos2d())
-                            == current_sector.volumes[0].area.nearest_segment_to_point(exit_fix)
-                        )
-                    ):
-                        env_manager.receive_actions([Action(aircraft.callsign, "outcomm", "background")])
-
-                # Aircraft doesn't have an exit coordination
-                else:
-                    env_manager.receive_actions([Action(aircraft.callsign, "outcomm", "background")])
+                continue
