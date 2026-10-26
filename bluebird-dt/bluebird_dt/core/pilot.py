@@ -392,33 +392,36 @@ class Pilot:
         aircraft.cleared_instructions.vertical_speed_action = action
         aircraft.selected_instructions.vertical_speed_action = action
 
-    def action_queue_to_json(self) -> list[str]:
+    def action_queue_data(self) -> list[dict[str, typing.Any]]:
         """
-        Serialise the action queue to a list of JSON strings, one per queue item, with each Action as a dictionary.
+        Create a dictionary for each item in the action queue, with its Action as a dictionary.
 
         Returns
         ----------
-        queue_json: list[str]
-            A JSON string for each item in the action queue
+        queue_data: list[dict]
+            A dictionary for each item in the action queue
         """
 
-        return [json.dumps({**item, "action": item["action"].data()}) for item in self.action_queue]
+        return [{**item, "action": item["action"].data()} for item in self.action_queue]
 
-    def set_action_queue_from_json(self, items: list[str]):
+    def set_action_queue_from_data(self, items: list[dict[str, typing.Any]]):
         """
-        Set the action queue from a list of JSON strings written by action_queue_to_json.
+        Set the action queue from a list of dictionaries created by action_queue_data.
 
         Parameters
         ----------
-        items: list[str]
-            A JSON string for each item in the action queue
+        items: list[dict]
+            A dictionary for each item in the action queue
         """
 
-        queue_items = [json.loads(s) for s in items]
-        for item in queue_items:
-            item["action"] = Action.from_json(json.dumps(item["action"]))
-
-        self.action_queue = queue_items
+        self.action_queue = [
+            QueueItem(
+                receipt_time=item["receipt_time"],
+                process_time=item["process_time"],
+                action=Action.from_json(json.dumps(item["action"])),
+            )
+            for item in items
+        ]
 
     @classmethod
     def from_json(cls, s: str) -> Pilot:

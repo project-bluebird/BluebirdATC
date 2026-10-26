@@ -1,8 +1,8 @@
-import ast
 import copy
 from datetime import datetime, timezone
 import logging
 import io
+import json
 import tarfile
 import warnings
 
@@ -820,10 +820,10 @@ def test_save_logs(generate_i):
         assert len(members) > 0
 
 
-def test_save_logs_internals_read_back_with_literal_eval(generate_i):
+def test_save_logs_internals_read_back_with_json(generate_i):
     """
-    Test that the dict and queue columns of the saved aircraft internals, with NumPy values and a queued action,
-    read back with ast.literal_eval.
+    Test that the dict and queue columns of the saved aircraft internals, with NumPy values, an infinite value and a
+    queued action, read back with json.loads.
     """
     airspace, routes = generate_i
     em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
@@ -834,6 +834,7 @@ def test_save_logs_internals_read_back_with_literal_eval(generate_i):
         "count": np.int64(3),
         "descending_to_level_by_point": np.bool_(True),
         "levelby_location": (np.float64(54.1), np.float64(-1.2)),
+        "distance_to_go": np.float64(np.inf),
     }
     aircraft.pilot.receive_actions([Action(aircraft.callsign, "change_flight_level_to", 200)], em.environment)
     em.event_logger.log_environment(em.environment)
@@ -843,9 +844,16 @@ def test_save_logs_internals_read_back_with_literal_eval(generate_i):
     with tarfile.open(fileobj=buf, mode="r:*") as tf:
         saved = read_tar_parquet_to_df(tf, "ac_internals").iloc[-1]
 
-    assert ast.literal_eval(saved["predictor_params"]) == aircraft.predictor_params
+    # JSON has no tuples, so the location comes back as a list
+    assert json.loads(saved["predictor_params"]) == {
+        "turn_radius": 4.45,
+        "count": 3,
+        "descending_to_level_by_point": True,
+        "levelby_location": [54.1, -1.2],
+        "distance_to_go": float("inf"),
+    }
     pilot = Pilot(aircraft.callsign)
-    pilot.set_action_queue_from_json(ast.literal_eval(saved["pilot_action_queue"]))
+    pilot.set_action_queue_from_data(json.loads(saved["pilot_action_queue"]))
     assert pilot.action_queue == aircraft.pilot.action_queue
 
 

@@ -110,6 +110,35 @@ class SimStartStop(BaseModel):
 SimEvents = RootModel[list[SimRateUpdate | SimStartStop]]
 
 
+def _to_json_string(value: object) -> str:
+    """
+    Serialise a value to a JSON string, writing NumPy scalars and arrays as Python numbers and lists, objects with a
+    data() method (such as Action) as their data, and anything else as its repr.
+
+    Parameters
+    ----------
+    value: object
+        The value to serialise
+
+    Returns
+    ----------
+    str
+        A JSON representation of the value
+    """
+
+    def default(obj: object) -> object:
+        if isinstance(obj, np.generic):
+            return obj.item()
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        data = getattr(obj, "data", None)
+        if callable(data):
+            return data()
+        return repr(obj)
+
+    return json.dumps(value, default=default)
+
+
 class EventLogger:
     """
     Events to apply to the Environment.
@@ -375,7 +404,7 @@ class EventLogger:
             log.update(
                 {
                     "pilot_type": environment.aircraft[log["callsign"]].pilot.__class__.__name__,
-                    "pilot_action_queue": environment.aircraft[log["callsign"]].pilot.action_queue_to_json(),
+                    "pilot_action_queue": environment.aircraft[log["callsign"]].pilot.action_queue_data(),
                 }
             )
             for log in current_ac_internals
@@ -924,13 +953,11 @@ class EventLogger:
         # only keep the last aircraft configuration for each time
         ac_internals_df = ac_internals_df.drop_duplicates(subset=["datetime", "callsign"], keep="last")
 
-        # change types to string, printing NumPy scalars as plain numbers (not np.float64(...)) so that the strings
-        # read back with ast.literal_eval, apart from NaN and inf
-        with np.printoptions(legacy="1.25"):
-            ac_internals_df["pilot_action_queue"] = ac_internals_df["pilot_action_queue"].astype(str)
-            ac_internals_df["percentile_rank_dict"] = ac_internals_df["percentile_rank_dict"].astype(str)
-            ac_internals_df["operation_params"] = ac_internals_df["operation_params"].astype(str)
-            ac_internals_df["predictor_params"] = ac_internals_df["predictor_params"].astype(str)
+        # change types to JSON strings
+        ac_internals_df["pilot_action_queue"] = ac_internals_df["pilot_action_queue"].map(_to_json_string)
+        ac_internals_df["percentile_rank_dict"] = ac_internals_df["percentile_rank_dict"].map(_to_json_string)
+        ac_internals_df["operation_params"] = ac_internals_df["operation_params"].map(_to_json_string)
+        ac_internals_df["predictor_params"] = ac_internals_df["predictor_params"].map(_to_json_string)
 
         # save csv for now to make human-readable, but parquet will be read back in
         if save_csv:

@@ -494,7 +494,7 @@ class EventHandler(typing.Generic[TAircraft]):
             previous_sector=aircraft.previous_sector,
             percentile_rank_dict=aircraft.percentile_rank_dict,
             pilot_type=aircraft.pilot.__class__.__name__,
-            pilot_action_queue=aircraft.pilot.action_queue_to_json(),
+            pilot_action_queue=aircraft.pilot.action_queue_data(),
             predictor_params=aircraft.predictor_params,
             wake_vortex=aircraft.wake_vortex,
             random_seed=aircraft.random_seed,
@@ -928,7 +928,7 @@ class EventHandler(typing.Generic[TAircraft]):
         previous_sector: str | None = None,
         percentile_rank_dict: dict | None = None,
         pilot_type: str | None = None,
-        pilot_action_queue: list[str] | None = None,
+        pilot_action_queue: list[dict] | None = None,
         predictor_params: dict[str, float] | None = None,
         wake_vortex: str | None = None,
         random_seed: int | None = None,
@@ -986,8 +986,8 @@ class EventHandler(typing.Generic[TAircraft]):
             Dictionary of cumulative distribution percentile rank. Used for speed randomisation.
         pilot_type: str, optional
             Pilot type
-        pilot_action_queue: list[str], optional
-            Action queue of pilot, as written by Pilot.action_queue_to_json
+        pilot_action_queue: list[dict], optional
+            Action queue of pilot, as created by Pilot.action_queue_data
         predictor_params: dict[str, float], optional
             Dictionary of predictor parameters
         wake_vortex: str, optional
@@ -2295,7 +2295,7 @@ def update_aircraft_internals(
         # TODO: need to handle pilot type in a better way
         assert aircraft.pilot.__class__.__name__ == row.pilot_type
 
-        aircraft.pilot.set_action_queue_from_json(row.pilot_action_queue)
+        aircraft.pilot.set_action_queue_from_data(row.pilot_action_queue)
 
         aircraft.wake_vortex = row.wake_vortex
         aircraft.random_seed = row.random_seed
