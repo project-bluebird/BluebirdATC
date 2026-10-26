@@ -1467,7 +1467,7 @@ class BaseEnv(gym.Env):
         if self.render_mode == "human":
             self.render()
 
-        info["simulator_environment"] = self.simulator_env
+        info["__simulator_environment__"] = self.simulator_env
         return state, info
 
     def step(self, action: ActionType) -> tuple[ObsType, RewardType, DoneType, TruncatedType, InfoType]:
@@ -1985,9 +1985,24 @@ class BaseEnv(gym.Env):
         info["total_step_reward"] = reward
 
         # check for done/truncated flag
-        done = truncated = False
         if self.timestep >= self.maxstep:
             done = truncated = True
+
+            # global done/truncated flag.
+            # same as done and truncated above. added for
+            # compatibility with decentralized setup.
+            info["__global_done__"] = done
+            info["__global_truncated__"] = truncated
+        else:
+            done = False
+            truncated = False
+
+            # global done/truncated flag.
+            # same as done and truncated above. added for
+            # compatibility with decentralized setup.
+            info["__global_done__"] = True
+            info["__global_truncated__"] = True
+
 
         # mop up.
         # check for aircraft that the agent can no longer control.
@@ -2052,7 +2067,7 @@ class BaseEnv(gym.Env):
             # (i.e., as other aircraft use data in `self.ac_tracker`)
 
         info["aircraft_info"] = ac_info
-        info["simulator_environment"] = self.simulator_env
+        info["__simulator_environment__"] = self.simulator_env
         # also add the success metric to the info dict at a global level
         info["success_metric"] = self.ac_success_metric.copy()
 
@@ -2304,7 +2319,7 @@ class BaseEnv(gym.Env):
                 _final_reward_callsigns.append(callsign)
 
             info[callsign]["rewards"] = _rewards[callsign]
-            info[callsign]["total_reward"] = np.sum(list(_rewards[callsign].values()))
+            info[callsign]["total_reward"] = np.sum(list(_rewards[callsign].values())).item()
 
             # compute final dones for aircraft
             # if callsign in actions.keys():
@@ -2409,9 +2424,18 @@ class BaseEnv(gym.Env):
         if self.timestep >= self.maxstep:
             done = dict.fromkeys(_final_dones.keys(), True)
             truncated = dict.fromkeys(_final_dones.keys(), True)
+
+            # global done/truncated flag: independent of aircraft/agents.
+            info["__global_done__"] = True
+            info["__global_truncated__"] = True
+
         else:
             done = _final_dones
             truncated = dict.fromkeys(_final_dones.keys(), False)
+
+            # global done/truncated flag: independent of aircraft/agents.
+            info["__global_done__"] = False
+            info["__global_truncated__"] = False
 
         # mop up.
         # check for aircraft that the agent can no longer control.
@@ -2478,7 +2502,7 @@ class BaseEnv(gym.Env):
             # one step behind other aircraft archived in the current timestep
             # (i.e., as other aircraft use data in `self.ac_tracker`)
 
-        info["simulator_environment"] = self.simulator_env
+        info["__simulator_environment__"] = self.simulator_env
         return next_state, reward, done, truncated, info
 
     def _aircraft_in_sector(self, callsign: str) -> bool:
