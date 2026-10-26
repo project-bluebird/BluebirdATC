@@ -2003,7 +2003,6 @@ class BaseEnv(gym.Env):
             info["__global_done__"] = True
             info["__global_truncated__"] = True
 
-
         # mop up.
         # check for aircraft that the agent can no longer control.
         # such aircraft are removed from being actively tracked (in
