@@ -71,7 +71,7 @@ class Infinite(
     sector_name: str | None
     speed_range: tuple[float, float] | None
     aircraft_on_route: bool
-    start_time: int
+    start_time: float
     vertical_buffer_distance: float | int
     lateral_buffer_distance: float | int
     current_spawn_rate: float
@@ -81,8 +81,9 @@ class Infinite(
     num_starter_aircraft: int
     max_spawn_attempts: int
     outcomm_handler: OutcommHandler | None
+    last_update_time: float
     last_spawn_time: float
-    lats_spawn_rate_increase: float
+    last_spawn_rate_increase: float
     min_spawn_delta: float
     next_callsign_number: int
     fl_limits: tuple[int, int]
@@ -108,7 +109,7 @@ class Infinite(
         num_starter_aircraft: int = 2,
         speed_range: tuple[float, float] | None = None,
         aircraft_on_route: bool = True,
-        start_time: int = 0,
+        start_time: float = 0.0,
         max_spawn_attempts: int = 10,
         min_spawn_delta: float = 6.0,
         vertical_buffer_distance: float | int = 500,
@@ -212,6 +213,7 @@ class Infinite(
         self.rng = np.random.default_rng(random_seed)
         self.outcomm_handler = OutcommHandler() if automatic_outcomm else None
 
+        self.last_update_time = start_time
         self.last_spawn_time = 0.0
         self.last_spawn_rate_increase = 0.0
         self.min_spawn_delta = min_spawn_delta
@@ -417,8 +419,6 @@ Creating Infinite Scenario
             penumbra_lat=self.lateral_buffer_distance,
             log_filename=log_filename,
         )
-        # set the visibility flag of fixes to True only if they are in the penumbra
-        em.set_local_fixes_visibility()
 
         em.initialise_env_with_event_handler()
 
@@ -442,28 +442,33 @@ Creating Infinite Scenario
         if self.outcomm_handler is not None:
             self.outcomm_handler.update(env_manager)
 
+        # get the time delta since last tick, and update self.last_update_time
+        current_time = env_manager.environment.time
+        time_since_last_update = current_time - self.last_update_time
+        self.last_update_time = current_time
+
         # If total_time_seconds was specified, and we have gone beyond that,
         # return without spawning any aircraft.
-        if self.total_time_seconds and env_manager.environment.time - self.start_time > self.total_time_seconds:
+        if self.total_time_seconds and current_time - self.start_time > self.total_time_seconds:
             return env_manager
-
+        print(f"Current spawn rate {self.current_spawn_rate}")
         # Has enough time passed to increment the spawn rate?
         if self.spawn_rate_increment > 0 and self.current_spawn_rate < self.max_spawn_rate:
-            time_since_last_rate_increase = env_manager.environment.time - self.last_spawn_rate_increase
+            time_since_last_rate_increase = current_time - self.last_spawn_rate_increase
             if time_since_last_rate_increase >= self.spawn_rate_increase_interval:
                 self.current_spawn_rate = min(self.current_spawn_rate + self.spawn_rate_increment, self.max_spawn_rate)
-                self.last_spawn_rate_increase = env_manager.environment.time
+                self.last_spawn_rate_increase = current_time
 
         # Has enough time passed to spawn a new aircraft?
-        time_since_last_spawn = env_manager.environment.time - self.last_spawn_time
+        time_since_last_spawn = current_time - self.last_spawn_time
         if time_since_last_spawn < self.min_spawn_delta:
             return env_manager
-        # Loop through each second since last spawn, do Poisson trial on each to see if we
-        # will spawn
+        # Loop through each second since last update, do Poisson trial on each to see if we will spawn
         num_to_spawn = 0
-        for _ in range(int(time_since_last_spawn)):
+        for _ in range(int(time_since_last_update)):
             num_to_spawn += self.rng.poisson(self.current_spawn_rate)
 
+        print(f"time since last spawn is {int(time_since_last_spawn)} - will spawn {num_to_spawn}")
         for _ in range(num_to_spawn):
             spawn_time = env_manager.environment.time + 6
             next_callsign = f"AIR-{self.next_callsign_number:02d}"

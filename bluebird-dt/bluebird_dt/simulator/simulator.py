@@ -326,11 +326,12 @@ class Simulator:
                     save_chunk_interval=save_chunk_interval,
                     # Flight school specific param
                     random_seed=None,
+                    fl_limits=(200, 350),
                     num_starter_aircraft=2,
                     initial_spawn_rate=0.005,
-                    spawn_rate_increment=0.005,
-                    spawn_rate_increase_interval=30,
-                    max_spawn_rate=0.1,
+                    spawn_rate_increment=0.001,
+                    spawn_rate_increase_interval=300,
+                    max_spawn_rate=0.01,
                     total_time_seconds=3600.0,
                 )
             case _:
@@ -534,40 +535,13 @@ class Simulator:
             None, local_fixes=self.category not in ["Basic Training", "Artificial", "Replay"]
         )
 
-        # extract the fixes from all aircraft that are in the scenario
-        all_aircraft_fixes = {
-            fix for route_filed in self.manager.event_handler.flight_df.route_filed for fix in route_filed
-        }
-
-        # If we replaced environment via the API, we might not have Events, but
-        # still have aircraft - add fixes from their routes as well.
-        flight_plans = [
-            ac.flight_plan for ac in self.manager.environment.aircraft.values() if ac.flight_plan is not None
-        ]
-        fixes_from_routes = {fix for fp in flight_plans for fix in fp.route.filed}
-
-        # add and remove duplicates
-        all_aircraft_fixes = all_aircraft_fixes.union(fixes_from_routes)
-
-        # filter the airspace fixes to only those that appear in the aircraft fixes
-        # and airport fixes (4 letters)
+        # For scenario categories and sectors in BluebirdATC, keep all fixes in static_data.
         fixes: list[dict[str, typing.Any]] = []
 
         for i, (name, pos) in enumerate(airspace.fixes.places.items()):
-            # include all fixes in replay
-            if self.category in ["Basic Training", "Replay", "Springfield"] or (
-                name.isalpha()
-                and (
-                    name in all_aircraft_fixes
-                    or (
-                        # airports start with E and have 4 letters (until we have proper data filtering)
-                        len(name) == 4 and name.startswith("E")
-                    )
-                )
-            ):
-                fixes.append(
-                    {"id": i, "name": name, "lat": pos.lat, "lon": pos.lon, "visible": airspace.fixes.visibility[name]}
-                )
+            fixes.append(
+                {"id": i, "name": name, "lat": pos.lat, "lon": pos.lon, "visible": airspace.fixes.visibility[name]}
+            )
 
         sectors = {}
         for name, sector in airspace._individual_sectors.items():

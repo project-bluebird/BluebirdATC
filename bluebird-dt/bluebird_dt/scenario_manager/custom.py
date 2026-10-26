@@ -435,9 +435,6 @@ class Custom(
             log_filename=log_filename,
         )
 
-        # set the visibility flag of fixes to True only if they are in the penumbra
-        em.set_local_fixes_visibility()
-
         em.initialise_env_with_event_handler()
 
         return em

@@ -251,8 +251,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             penumbra_lat=self.lateral_buffer_distance,
             log_filename=log_filename,
         )
-        # set the visibility flag of fixes to True only if they are in the penumbra
-        em.set_local_fixes_visibility()
 
         em.initialise_env_with_event_handler()
 
