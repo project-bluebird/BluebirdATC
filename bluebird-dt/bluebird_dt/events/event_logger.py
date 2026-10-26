@@ -771,7 +771,9 @@ class EventLogger:
         """
         # transform aircraft_internals log to dataframe
         if self.aircraft_internals_log:
-            ac_internals_df = pd.DataFrame.from_records(self.aircraft_internals_log)
+            # deep copy the records, so that the DataFrame, and any aircraft restored from it, don't share dicts with
+            # the log
+            ac_internals_df = pd.DataFrame.from_records(copy.deepcopy(self.aircraft_internals_log))
         else:
             # else create empty dataframe with correct columns
             ac_internals_df = pd.DataFrame(columns=EventDtypes.aircraft_internals_dtypes)
