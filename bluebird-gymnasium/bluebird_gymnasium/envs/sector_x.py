@@ -216,7 +216,7 @@ if __name__ == "__main__":
         print(obs)
         pprint(info)
         for idx in range(50):
-            obs, reward, done, truncated, info = env.step(0)
+            obs, reward, terminated, truncated, info = env.step(0)
             print(idx, obs)
             pprint(info)
             print("-" * 50)
@@ -226,7 +226,7 @@ if __name__ == "__main__":
         pprint(info)
         for idx in range(20):
             actions = dict.fromkeys(obs.keys(), 0)
-            obs, reward, done, truncated, info = env.step(actions)
+            obs, reward, terminated, truncated, info = env.step(actions)
             print(idx, obs)
             pprint(info)
             print("-" * 50)
