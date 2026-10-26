@@ -89,10 +89,10 @@ if typing.TYPE_CHECKING:
 
     from bluebird_gymnasium.envs import (
         ActionType,
-        TerminatedType,
         InfoType,
         ObsType,
         RewardType,
+        TerminatedType,
         TruncatedType,
     )
     from bluebird_gymnasium.utils.types import Number
