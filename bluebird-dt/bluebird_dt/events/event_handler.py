@@ -1332,14 +1332,9 @@ class EventHandler(typing.Generic[TAircraft]):
                 ignore_simmed=self.ignore.ac_attribute_if_simmed,
             )
 
-        # update the route status of any aircraft which are not being simmed. next_fix_index is left to the
-        # aircraft internal logs for aircraft that have rows in them from this step on.
-        logged_callsigns: set[str] = set()
-        if not all_aircraft_are_simmed:
-            logged_callsigns = set(
-                self.aircraft_internals_df.callsign[self.aircraft_internals_df.index > episode_start].unique()
-            )
-        environment = update_route_status(environment, ignore_simmed=True, logged_callsigns=logged_callsigns)
+        # update the route status of any aircraft which are not being simmed.
+        # will be overwritten by aircraft internal logs if available.
+        environment = update_route_status(environment, ignore_simmed=True)
 
         # if previous internal aircraft state is available in logs, then this has the
         # final say on the state of non-simulated aircraft
@@ -1459,9 +1454,7 @@ class EventHandler(typing.Generic[TAircraft]):
 
 
 def update_route_status(
-    environment: Environment[TAircraft, TWindField, TForecastWindField],
-    ignore_simmed: bool,
-    logged_callsigns: set[str] | None = None,
+    environment: Environment[TAircraft, TWindField, TForecastWindField], ignore_simmed: bool
 ) -> Environment[TAircraft, TWindField, TForecastWindField]:
     """
     Update the route status of the aircraft.
@@ -1472,17 +1465,12 @@ def update_route_status(
         Environment containing aircraft to be updated
     ignore_simmed: bool
         If True, do not update the next_fix_index and on_route for simmed aircraft
-    logged_callsigns: set[str], optional
-        If ignore_simmed is True, also do not update the next_fix_index and on_route for these aircraft, which take
-        them from the aircraft internal logs
 
     Returns
     ----------
     Environment
         Environment with aircraft route status updated
     """
-    logged_callsigns = set() if logged_callsigns is None else logged_callsigns
-
     for aircraft in environment.aircraft.values():
         if aircraft.flight_plan is None:
             logger.warning(
@@ -1491,9 +1479,9 @@ def update_route_status(
             )
             continue
 
-        # next_fix_index is updated by the predictor for simmed aircraft and by the aircraft internal logs for logged
-        # aircraft, and we only update it here for those when jumping to a time, which is specified by ignore_simmed
-        set_next_fix_index = not ignore_simmed or not (aircraft.simulated or aircraft.callsign in logged_callsigns)
+        # next_fix_index is updated by the predictor, and we only update it here when jumping to a time
+        # which is specified by setting the ignore_simmed flag
+        set_next_fix_index = not ignore_simmed or not aircraft.simulated
 
         aircraft.update_route_status(environment.airspace, set_next_fix_index=set_next_fix_index)
 
@@ -2242,6 +2230,9 @@ def update_aircraft_internals(
     """
     Update Aircraft internal attributes using the aircraft_internals Events DataFrame.
 
+    Aircraft with no event in the timeframe keep the next_fix_index of their last earlier event, which
+    update_route_status would otherwise have recomputed from their position.
+
     Parameters
     ----------
     environment: Environment
@@ -2260,6 +2251,15 @@ def update_aircraft_internals(
     Environment
         Environment with aircraft updated using aircraft internal attribute events
     """
+    # each aircraft keeps the next_fix_index of its last event before the timeframe, unless one in it updates it below
+    earlier = df_aircraft_internals.loc[df_aircraft_internals.index <= episode_start, ["callsign", "next_fix_index"]]
+    earlier = earlier.groupby("callsign", sort=False, observed=True).tail(1)
+    if ignore_simmed:
+        earlier = earlier[~earlier.callsign.isin(environment.simulated_aircraft())]
+    earlier = earlier[earlier.callsign.isin(environment.aircraft)]
+    for callsign, next_fix_index in zip(earlier.callsign, earlier.next_fix_index, strict=True):
+        environment.aircraft[callsign].next_fix_index = None if pd.isna(next_fix_index) else int(next_fix_index)
+
     df = df_aircraft_internals[
         (df_aircraft_internals.index > episode_start) & (df_aircraft_internals.index <= episode_end)
     ]

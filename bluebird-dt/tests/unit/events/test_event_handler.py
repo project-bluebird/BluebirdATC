@@ -1483,6 +1483,8 @@ class TestUpdateAircraftInternals:
         # Test, before, on start boundary, during, on end boundary and after
         # Set start time one second earlier than episode start then add 1 second each time
         # On times during the interval and on final boundary should pass (we check properties have changed)
+        # Before and on the start boundary, the event is the aircraft's last earlier one, so only its next_fix_index
+        # (None here) is taken
         for i in range(0, 5):
             env, _, _, _, episode_start, episode_end = setup_test_sim()
             ac_before = { callsign: copy.deepcopy(ac) for callsign, ac in env.aircraft.items() }
@@ -1496,6 +1498,9 @@ class TestUpdateAircraftInternals:
                     for ac in env.aircraft.values()
                 )
             else:
+                if i <= LOWER_EPISODE_BOUNDARY:
+                    for ac in ac_before.values():
+                        ac.next_fix_index = None
                 assert all(is_deeply_equal(ac, ac_before[callsign]) for callsign, ac in env_after.aircraft.items())
 
 
