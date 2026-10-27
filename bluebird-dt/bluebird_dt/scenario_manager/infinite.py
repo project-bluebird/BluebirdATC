@@ -1,5 +1,7 @@
+import itertools
 import math
 import typing
+from collections.abc import Iterable
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -472,6 +474,8 @@ Creating Infinite Scenario
         for _ in range(num_to_spawn):
             spawn_time = env_manager.environment.time + 6
             next_callsign = f"AIR-{self.next_callsign_number:02d}"
+            # aircraft spawned earlier, including in this update, that aren't in the environment yet
+            waiting_aircraft = [ac for time, ac in self.aircraft_to_add if time > env_manager.environment.time]
 
             # spawn these aircraft behind their starting fixes
             safe_to_spawn = False
@@ -480,7 +484,9 @@ Creating Infinite Scenario
                 aircraft, entry_coord, exit_coord = self.spawn_aircraft(
                     self.routes, callsign=next_callsign, spawn_distance_behind_fix=self.spawn_distance_behind_fix
                 )
-                safe_to_spawn = check_safe_to_spawn(aircraft, env_manager.environment, self.spawn_distance_threshold)
+                safe_to_spawn = check_safe_to_spawn(
+                    aircraft, env_manager.environment, self.spawn_distance_threshold, waiting_aircraft
+                )
                 attempt_count += 1
                 if safe_to_spawn or attempt_count > self.max_spawn_attempts:
                     break
@@ -785,11 +791,17 @@ Creating Infinite Scenario
         )
 
 
-def check_safe_to_spawn(new_ac: TAircraft, env: Environment, spawn_distance_threshold: float = 10.0) -> bool:
+def check_safe_to_spawn(
+    new_ac: TAircraft,
+    env: Environment,
+    spawn_distance_threshold: float = 10.0,
+    waiting_aircraft: Iterable[Aircraft] = (),
+) -> bool:
     """
-    Check if it is safe to spawn a new aircraft given existing aircraft in the environment.
+    Check if it is safe to spawn a new aircraft given existing aircraft in the environment, and aircraft waiting to be
+    added to it.
 
-    Safe = no existing aircraft are within `spawn_distance_threshold` laterally with level range overlap
+    Safe = no existing or waiting aircraft are within `spawn_distance_threshold` laterally with level range overlap
 
     Parameters
     ----------
@@ -797,6 +809,8 @@ def check_safe_to_spawn(new_ac: TAircraft, env: Environment, spawn_distance_thre
         The new aircraft to be spawned.
     env: Environment
         The existing environment.
+    waiting_aircraft: Iterable[Aircraft]
+        Aircraft that have been spawned but are not in the environment yet. Defaults to none.
 
     Returns
     -------
@@ -807,8 +821,7 @@ def check_safe_to_spawn(new_ac: TAircraft, env: Environment, spawn_distance_thre
     new_ac_sfl = new_ac.selected_fl
 
     new_ac_fl_range = __get_level_range_rounded_to_nearest_10(new_ac_afl, new_ac_sfl)
-    for existing_callsign in env.aircraft:
-        existing_ac = env.aircraft[existing_callsign]
+    for existing_ac in itertools.chain(env.aircraft.values(), waiting_aircraft):
         if existing_ac.current_sector == "background":
             continue
         existing_ac_afl = existing_ac.fl

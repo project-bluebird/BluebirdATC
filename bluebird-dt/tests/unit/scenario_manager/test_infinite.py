@@ -261,6 +261,23 @@ def test_sometimes_generate_more_than_one_aircraft():
         current_num_aircraft = len(sim.manager.environment.aircraft)
     assert max_num_new_aircraft > 1
 
+
+def test_aircraft_drawn_together_do_not_overlap(generate_x):
+    """
+    Aircraft drawn in the same update should be kept apart, though the first ones aren't in the environment yet.
+    With one route and one flight level, a second aircraft would spawn on top of the first, so only one should spawn.
+    """
+    airspace, routes = generate_x
+    sm = Infinite(airspace=airspace, routes=routes[:1], fl_limits=(300, 300), random_seed=0)
+    sim = sm.to_simulator()
+    # remove the starter aircraft, which is on the route's first fix at the same level
+    sim.manager.environment.aircraft.clear()
+    # two aircraft drawn in the first trial, at 6 s
+    sm.rng = ScriptedPoisson(sm.rng, [2])
+    sim.evolve(6)
+    sim.evolve(6)
+    assert list(sim.manager.environment.aircraft) == ["AIR-01"]
+
 @pytest.mark.parametrize(
     "min_spawn_distance",
     [
