@@ -1493,6 +1493,11 @@ class BaseEnv(gym.Env):
             `numpy.ndarray`.
         """
 
+        if self.timestep >= self.maxstep:
+            raise ValueError(
+                "Trying to step in a scenario/episode that has ended. Reset the environment."
+            )
+
         self._logged_actions.clear()
 
         self._episode_actions.append(action)
