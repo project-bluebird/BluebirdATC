@@ -1494,7 +1494,7 @@ class BaseEnv(gym.Env):
         """
 
         if self.timestep >= self.maxstep:
-            raise ValueError("Trying to step in a scenario/episode that has ended. Reset the environment.")
+            raise gym.error.ResetNeeded("Trying to step in a scenario/episode that has ended. Reset the environment.")
 
         self._logged_actions.clear()
 

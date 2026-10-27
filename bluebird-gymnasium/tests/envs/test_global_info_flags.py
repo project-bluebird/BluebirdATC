@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 
+from gymnasium.error import ResetNeeded
+
 from bluebird_gymnasium.envs import ViewType
 from bluebird_gymnasium.envs.sector_x import SectorXEnv
 
@@ -59,7 +61,7 @@ def test_global_done(view_type: ViewType):
         # try to step in a scenario that has ended. this should raise a
         # value error which is caught by pytest. failure to raise the
         # error leads to a failed test.
-        with pytest.raises(ValueError):
+        with pytest.raises(ResetNeeded):
             _ = gym_env.step(action)
 
     else:  # decentralised
@@ -93,5 +95,5 @@ def test_global_done(view_type: ViewType):
         # try to step in a scenario that has ended. this should raise a
         # value error which is caught by pytest. failure to raise the
         # error leads to a failed test.
-        with pytest.raises(ValueError):
+        with pytest.raises(ResetNeeded):
             _ = gym_env.step(action)
