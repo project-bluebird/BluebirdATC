@@ -3,7 +3,6 @@ import pytest
 
 from bluebird_gymnasium.envs import ViewType
 from bluebird_gymnasium.envs.sector_x import SectorXEnv
-from bluebird_gymnasium.utils.types import ACPositionInfo, PositionStatus
 
 VIEW_TYPES = list(ViewType)
 
