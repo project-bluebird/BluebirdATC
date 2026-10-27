@@ -8,7 +8,6 @@ import tarfile
 import typing
 from datetime import datetime
 
-import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Self, override
@@ -108,35 +107,6 @@ class SimStartStop(BaseModel):
 
 
 SimEvents = RootModel[list[SimRateUpdate | SimStartStop]]
-
-
-def _to_json_string(value: object) -> str:
-    """
-    Serialise a value to a JSON string, writing NumPy scalars and arrays as Python numbers and lists, objects with a
-    data() method (such as Action) as their data, and anything else as its repr.
-
-    Parameters
-    ----------
-    value: object
-        The value to serialise
-
-    Returns
-    ----------
-    str
-        A JSON representation of the value
-    """
-
-    def default(obj: object) -> object:
-        if isinstance(obj, np.generic):
-            return obj.item()
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        data = getattr(obj, "data", None)
-        if callable(data):
-            return data()
-        return repr(obj)
-
-    return json.dumps(value, default=default)
 
 
 class EventLogger:
@@ -954,10 +924,10 @@ class EventLogger:
         ac_internals_df = ac_internals_df.drop_duplicates(subset=["datetime", "callsign"], keep="last")
 
         # change types to JSON strings
-        ac_internals_df["pilot_action_queue"] = ac_internals_df["pilot_action_queue"].map(_to_json_string)
-        ac_internals_df["percentile_rank_dict"] = ac_internals_df["percentile_rank_dict"].map(_to_json_string)
-        ac_internals_df["operation_params"] = ac_internals_df["operation_params"].map(_to_json_string)
-        ac_internals_df["predictor_params"] = ac_internals_df["predictor_params"].map(_to_json_string)
+        ac_internals_df["pilot_action_queue"] = ac_internals_df["pilot_action_queue"].map(json.dumps)
+        ac_internals_df["percentile_rank_dict"] = ac_internals_df["percentile_rank_dict"].map(json.dumps)
+        ac_internals_df["operation_params"] = ac_internals_df["operation_params"].map(json.dumps)
+        ac_internals_df["predictor_params"] = ac_internals_df["predictor_params"].map(json.dumps)
 
         # save csv for now to make human-readable, but parquet will be read back in
         if save_csv:
