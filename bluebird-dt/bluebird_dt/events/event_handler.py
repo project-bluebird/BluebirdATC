@@ -928,7 +928,7 @@ class EventHandler(typing.Generic[TAircraft]):
         previous_sector: str | None = None,
         percentile_rank_dict: dict | None = None,
         pilot_type: str | None = None,
-        pilot_action_queue: list[dict] | None = None,
+        pilot_action_queue: list[dict[str, typing.Any]] | None = None,
         predictor_params: dict[str, float] | None = None,
         wake_vortex: str | None = None,
         random_seed: int | None = None,
@@ -986,7 +986,7 @@ class EventHandler(typing.Generic[TAircraft]):
             Dictionary of cumulative distribution percentile rank. Used for speed randomisation.
         pilot_type: str, optional
             Pilot type
-        pilot_action_queue: list[dict], optional
+        pilot_action_queue: list[dict[str, Any]], optional
             Action queue of pilot, as created by Pilot.action_queue_data
         predictor_params: dict[str, float], optional
             Dictionary of predictor parameters
