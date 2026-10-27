@@ -47,6 +47,11 @@ def make_random_lat_lon() -> tuple[float, float]:
     return lat, lon
 
 
+def make_random_area_origin() -> tuple[float, float]:
+    """Return a lat lon pair clear of the poles and the 180th meridian, so small areas around it don't cross them"""
+    return round(random.uniform(-80.000, +80.000), 2), round(random.uniform(-170.000, +170.000), 2)
+
+
 def make_random_fl() -> int:
     """Return a flight level between 50 and 300"""
     return random.choice(range(50, 310, 10))
@@ -259,9 +264,9 @@ def make_random_flight_plan() -> FlightPlan:
 def make_random_area() -> Area:
     """Return an n-sided irregular polygon centred on a random location"""
     n = random.choice([5, 6, 7, 8, 9])
-    initial_headings = [round(random.uniform(10.0, 350.0), 4) for _ in range(n)]
-    headings = sorted(initial_headings)
-    origin = make_random_lat_lon()
+    # One heading in each of n equal slices keeps the gaps under 180 degrees, so the polygon can't cross itself
+    headings = [round(random.uniform(i, i + 1) * 360 / n, 4) for i in range(n)]
+    origin = make_random_area_origin()
     gh = GeoHelper(origin)
     boundary = []
     for heading in headings:
@@ -303,16 +308,14 @@ def make_random_uniform_windfield() -> WindField:
 
 def make_random_adjacent_areas() -> tuple[Area, Area]:
     """Return two irregular Areas with adjacent edges"""
-    origin = make_random_lat_lon()
+    origin = make_random_area_origin()
     gh = GeoHelper(origin)
 
     areas = []
     for min_head, max_head in [(0, 180), (180, 360)]:
         n = random.choice([2, 3, 4])
-        initial_headings = [round(random.uniform(min_head + 10, max_head - 10), 4) for _ in range(n)] + [
-            min_head,
-            max_head,
-        ]
+        # Distinct whole-degree headings keep vertices further apart than the grid Sector.boundary() snaps to
+        initial_headings = random.sample(range(min_head + 10, max_head - 10), n) + [min_head, max_head]
         headings = sorted(initial_headings)
         boundary = []
         for heading in headings:
