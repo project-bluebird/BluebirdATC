@@ -1987,21 +1987,14 @@ class BaseEnv(gym.Env):
         # check for done/truncated flag
         if self.timestep >= self.maxstep:
             done = truncated = True
-
-            # global done/truncated flag.
-            # same as done and truncated above. added for
-            # compatibility with decentralized setup.
-            info["__global_done__"] = done
-            info["__global_truncated__"] = truncated
         else:
-            done = False
-            truncated = False
+            done = truncated = False
 
-            # global done/truncated flag.
-            # same as done and truncated above. added for
-            # compatibility with decentralized setup.
-            info["__global_done__"] = True
-            info["__global_truncated__"] = True
+        # global done/truncated flag.
+        # same as done and truncated above. added for
+        # compatibility with decentralized setup.
+        info["__global_done__"] = done
+        info["__global_truncated__"] = truncated
 
         # mop up.
         # check for aircraft that the agent can no longer control.
