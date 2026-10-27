@@ -307,20 +307,18 @@ def test_evolve(generate_i: tuple[Airspace, list[Route]]) -> None:
     # SIMULATED AIRCRAFT x3
     em = Custom(3, airspace=airspace, routes=routes).create_env_manager()
 
-    # change start_times - set by callsign to avoid dependence on row order
-    radar_df = em.event_handler.radar_df
-    ac_internal_df = em.event_handler.aircraft_internals_df
+    # change start_times - set by callsign to avoid dependence on row order. Custom starts an aircraft later if it
+    # shares an earlier one's start fix and entry FL, which can put AIR2's row before AIR1's. Writing the new times
+    # into the index would leave pandas treating it as sorted, so build new indexes and sort by them.
     new_start_times = {
         "AIR0": datetime(1970, 1, 1, 0, 0, 0),
         "AIR1": datetime(1970, 1, 1, 0, 0, 6),
         "AIR2": datetime(1970, 1, 1, 0, 0, 12),
     }
-    radar_idx = radar_df.index.to_numpy()
-    for i, callsign in enumerate(radar_df["callsign"]):
-        radar_idx[i] = new_start_times[callsign]
-    ac_internal_idx = ac_internal_df.index.to_numpy()
-    for i, callsign in enumerate(ac_internal_df["callsign"]):
-        ac_internal_idx[i] = new_start_times[callsign]
+    for df_name in ["radar_df", "aircraft_internals_df"]:
+        df = getattr(em.event_handler, df_name)
+        new_index = pd.DatetimeIndex(df["callsign"].map(new_start_times).to_numpy(), name=df.index.name)
+        setattr(em.event_handler, df_name, df.set_axis(new_index).sort_index())
 
     em.initialise_env_with_event_handler()
 
