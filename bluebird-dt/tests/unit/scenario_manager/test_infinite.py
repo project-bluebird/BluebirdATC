@@ -117,6 +117,17 @@ def test_spawn_frequency_ramp_up(generate_x, initial_spawn_rate, spawn_rate_incr
         )
         assert np.allclose(sim.scenario_manager.current_spawn_rate, expected_spawn_rate, atol=0.001)
 
+
+def test_ramp_without_interval():
+    """
+    setup with a spawn_rate_increment but no spawn_rate_increase_interval should use an interval of 0,
+    as the constructor does, and raise the spawn rate at every update.
+    """
+    sim = Infinite.setup("X-Sector", initial_spawn_rate=0.01, spawn_rate_increment=0.01, random_seed=0)
+    sim.evolve(6)
+    assert sim.scenario_manager.current_spawn_rate == pytest.approx(0.02)
+
+
 def test_higher_spawn_rate_gives_more_aircraft(generate_x):
     """
     Aircraft spawning is stochastic, so hard to predict the actual amount,

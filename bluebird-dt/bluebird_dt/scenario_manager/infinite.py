@@ -531,7 +531,7 @@ Creating Infinite Scenario
         num_starter_aircraft: int = 2,
         initial_spawn_rate: float = 0.01,
         spawn_rate_increment: float = 0,
-        spawn_rate_increase_interval: float | None = None,
+        spawn_rate_increase_interval: float = 0.0,
         max_spawn_rate: float = 0.1,
         total_time_seconds: float | None = None,
         speed_range: tuple[float, float] | None = None,
@@ -586,8 +586,8 @@ Creating Infinite Scenario
             Average frequency (in Hz) of spawning new aircraft
         spawn_rate_increment: float
             Spawn rate will change by this number at set intervals
-        spawn_rate_increase_interval: int
-            If specified, time in seconds between spawn rate increases
+        spawn_rate_increase_interval: float
+            Time in seconds between spawn rate increases. Defaults to 0.0, which raises the rate at every update.
         max_spawn_rate: float
             Spawn rate cannot exceed this value
         total_time_seconds: float | None
