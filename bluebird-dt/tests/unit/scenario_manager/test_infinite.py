@@ -11,6 +11,25 @@ from bluebird_dt.scenario_manager.infinite import Infinite, check_safe_to_spawn
 from bluebird_dt.simulator import Simulator
 
 
+class ScriptedPoisson:
+    """
+    Wraps a random Generator so that `poisson` returns scripted counts, then 0, and records the rate it is called
+    with. Everything else is passed to the wrapped Generator.
+    """
+
+    def __init__(self, rng, counts=()):
+        self._rng = rng
+        self.counts = list(counts)
+        self.rates = []
+
+    def poisson(self, lam):
+        self.rates.append(lam)
+        return self.counts.pop(0) if self.counts else 0
+
+    def __getattr__(self, name):
+        return getattr(self._rng, name)
+
+
 def test_init_exceptions(generate_i):
     """
     Test various misuses of the constructor
@@ -122,6 +141,28 @@ def test_higher_spawn_rate_gives_more_aircraft(generate_x):
         sim1.evolve(6)
         sim2.evolve(6)
     assert len(sim2.manager.environment.aircraft) > len(sim1.manager.environment.aircraft)
+
+
+def test_spawn_trials_cover_each_second_once(generate_x):
+    """
+    Spawning does a Poisson trial for each second. Each second should get one trial, whether or not
+    an aircraft spawns, and after a spawn there should be no trials until min_spawn_delta has passed.
+    """
+    airspace, routes = generate_x
+    sm = Infinite(airspace=airspace, routes=routes, initial_spawn_rate=0.05, max_spawn_rate=0.05, random_seed=0)
+    sim = sm.to_simulator()
+    # one aircraft drawn in the first trial at 12 s
+    sm.rng = ScriptedPoisson(sm.rng, [0] * 6 + [1])
+    num_trials = []
+    for _ in range(6):
+        trials_before = len(sm.rng.rates)
+        sim.evolve(6)
+        num_trials.append(len(sm.rng.rates) - trials_before)
+    # two starter aircraft, and the one drawn at 12 s
+    assert sm.next_callsign_number == 3
+    # no trials at 0 s, or at 18 s when the aircraft spawns, and the trials at 24 s cover 12 s to 24 s
+    assert num_trials == [0, 6, 6, 0, 12, 6]
+
 
 def test_dont_set_random_seed(generate_x):
     """

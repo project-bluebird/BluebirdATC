@@ -82,6 +82,7 @@ class Infinite(
     max_spawn_attempts: int
     outcomm_handler: OutcommHandler | None
     last_spawn_time: float
+    last_draw_time: float
     lats_spawn_rate_increase: float
     min_spawn_delta: float
     next_callsign_number: int
@@ -213,6 +214,8 @@ class Infinite(
         self.outcomm_handler = OutcommHandler() if automatic_outcomm else None
 
         self.last_spawn_time = 0.0
+        # time up to which the Poisson trials for spawning have been done
+        self.last_draw_time = 0.0
         self.last_spawn_rate_increase = 0.0
         self.min_spawn_delta = min_spawn_delta
         self.next_callsign_number = 0
@@ -458,10 +461,12 @@ Creating Infinite Scenario
         time_since_last_spawn = env_manager.environment.time - self.last_spawn_time
         if time_since_last_spawn < self.min_spawn_delta:
             return env_manager
-        # Loop through each second since last spawn, do Poisson trial on each to see if we
-        # will spawn
+        # Do a Poisson trial for each second since the last trials, to see how many aircraft to spawn.
+        # Seconds within min_spawn_delta of the last spawn are drawn at the next update that can spawn.
+        num_seconds = int(env_manager.environment.time - self.last_draw_time)
+        self.last_draw_time += num_seconds
         num_to_spawn = 0
-        for _ in range(int(time_since_last_spawn)):
+        for _ in range(num_seconds):
             num_to_spawn += self.rng.poisson(self.current_spawn_rate)
 
         for _ in range(num_to_spawn):
