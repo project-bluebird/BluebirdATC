@@ -313,21 +313,15 @@ def test_different_aircraft_type():
 
 def test_dont_set_random_seed(generate_i):
     """
-    If we don't set the random seed, we should get different results every run.
+    If we don't set the random seed, each scenario should draw from a generator with its own random state. Runs draw
+    their scenarios from a few options, so comparing the results of two runs would fail when they happen to match.
     """
     airspace, routes = generate_i
 
-    sim1 = TwoAircraft(total_time=1000, airspace=airspace, routes=routes).to_simulator()
-    # another instance, all settings the same, no random seed set
-    sim2 = TwoAircraft(total_time=1000, airspace=airspace, routes=routes).to_simulator()
-    
-    for _ in range(5):
-        sim1.evolve(6)
-        sim2.evolve(6)
-    for k, v in sim1.manager.environment.aircraft.items():
-        if not k in sim2.manager.environment.aircraft:
-            continue
-        assert sim2.manager.environment.aircraft[k].data() != v.data()
+    # two instances, all settings the same, no random seed set
+    scenario1 = TwoAircraft(total_time=1000, airspace=airspace, routes=routes)
+    scenario2 = TwoAircraft(total_time=1000, airspace=airspace, routes=routes)
+    assert scenario1.rng.bit_generator.state != scenario2.rng.bit_generator.state
 
 def test_set_random_seed(generate_i):
     """
