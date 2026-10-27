@@ -164,6 +164,31 @@ def test_spawn_trials_cover_each_second_once(generate_x):
     assert num_trials == [0, 6, 6, 0, 12, 6]
 
 
+def test_start_time(generate_x):
+    """
+    A scenario with a start_time should start then,
+    and time its spawn rate increases and total_time_seconds from it.
+    """
+    airspace, routes = generate_x
+    sm = Infinite(
+        airspace=airspace,
+        routes=routes,
+        start_time=3600,
+        total_time_seconds=60,
+        initial_spawn_rate=0.01,
+        spawn_rate_increment=0.01,
+        spawn_rate_increase_interval=30,
+        random_seed=0,
+    )
+    sim = sm.to_simulator()
+    assert sim.manager.environment.time == 3600
+    sm.rng = ScriptedPoisson(sm.rng)
+    for _ in range(20):
+        sim.evolve(6)
+    # a trial for each second from 3600 s to 3660 s, with the spawn rate raised at 3630 s and 3660 s
+    assert sm.rng.rates == pytest.approx([0.01] * 24 + [0.02] * 30 + [0.03] * 6)
+
+
 def test_dont_set_random_seed(generate_x):
     """
     If we don't set the random seed, we should get different results every run.

@@ -215,10 +215,10 @@ class Infinite(
         self.rng = np.random.default_rng(random_seed)
         self.outcomm_handler = OutcommHandler() if automatic_outcomm else None
 
-        self.last_spawn_time = 0.0
+        self.last_spawn_time = float(start_time)
         # time up to which the Poisson trials for spawning have been done
-        self.last_draw_time = 0.0
-        self.last_spawn_rate_increase = 0.0
+        self.last_draw_time = float(start_time)
+        self.last_spawn_rate_increase = float(start_time)
         self.min_spawn_delta = min_spawn_delta
         self.next_callsign_number = 0
         # keep a buffer of the aircraft to add, may add to env_manager in
@@ -346,7 +346,7 @@ class Infinite(
             aircraft, entry_coord, exit_coord = self.spawn_aircraft(
                 possible_routes, callsign=callsign, spawn_distance_behind_fix=0
             )
-            start_time = pd.to_datetime(float(i), unit="s")
+            start_time = pd.to_datetime(float(self.start_time + i), unit="s")
             aircraft.simulated = True
             # ensure coordinations are in the environment before the aircraft
             event_handler.add_coordination(start_time - timedelta(seconds=1), entry_coord)
