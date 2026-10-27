@@ -771,6 +771,33 @@ def at_exit_window(
     )
 
 
+def crossed_exit_window(
+    previous_position: Pos2D | None,
+    current_position: Pos2D,
+    exit_window: Line | NamedLine,
+) -> bool:
+    """Check whether an aircraft crossed its exit window during a time step.
+
+    The exit window is a line on the sector boundary, centred on the point
+    where the aircraft's route leaves the sector. An aircraft exits the sector
+    correctly if its path over the step (from its previous position to its
+    current position) crosses that line. This is a lateral check only.
+
+    Args:
+        previous_position: the aircraft position at the previous time step.
+            `None` if there is no previous position (e.g., just spawned).
+        current_position: the aircraft position at the current time step.
+        exit_window: the start and end positions of the exit window line.
+
+    Returns:
+        bool. `True` if the path crosses the exit window, `False` otherwise.
+    """
+    if previous_position is None:
+        return False
+    ret, _ = line_intersection((previous_position, current_position), exit_window)
+    return ret == LineIntersection.EXIST
+
+
 def nearest_360_boundary_position(aircraft: Aircraft, sector: Sector) -> tuple[Pos2D, float, float]:
     """Find the point on a sector boundary nearest to an aircraft.
 

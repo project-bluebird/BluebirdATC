@@ -169,6 +169,7 @@ class ACStateTracker:
     heading: float | None = None
     selected_heading: float | None = None
     position: Pos2D | None = None
+    previous_position: Pos2D | None = None  # position at the previous time step
     speed_tas: float | None = None
     speed_ground: float | None = None
     selected_speed_cas: float | None = None

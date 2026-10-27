@@ -50,7 +50,7 @@ from bluebird_gymnasium.utils.constants import (
     STEPS_SINCE_ACTION_MAX,
 )
 from bluebird_gymnasium.utils.geo_utils import (
-    at_exit_window,
+    crossed_exit_window,
     get_centreline_distance,
     nearest_360_boundary_position,
     nearest_forward_boundary_position,
@@ -1244,6 +1244,9 @@ class BaseEnv(gym.Env):
         self.ac_tracker[callsign].selected_flight_level = get_aircraft_selected_flight_level(aircraft)
         self.ac_tracker[callsign].heading = aircraft.heading
         self.ac_tracker[callsign].selected_heading = get_aircraft_selected_heading(aircraft)
+        # keep last step's position (None on the first update): used to detect
+        # the aircraft crossing its sector exit window during this step.
+        self.ac_tracker[callsign].previous_position = self.ac_tracker[callsign].position
         self.ac_tracker[callsign].position = aircraft.pos2d()
         self.ac_tracker[callsign].speed_tas = aircraft.speed_tas
         self.ac_tracker[callsign].speed_ground = aircraft.ground_speed
@@ -1280,9 +1283,7 @@ class BaseEnv(gym.Env):
             aircraft,
             self.simulator_env.airspace.sectors[self.active_airspace_sector],
             self.simulator_env.airspace.fixes.places[self.ac_tracker[callsign].next_fix_cr],
-            self.simulator_env.airspace.fixes.places[
-                self.ac_tracker[callsign].exit_coords[self.active_airspace_sector].fix
-            ],
+            self.ac_tracker[callsign].sector_exit_pos,
             self.ac_tracker[callsign].track_dist_to_exit_cr,
         )
         self.ac_tracker[callsign].nearest_forward_boundary_pos = ret[0]
@@ -2613,7 +2614,33 @@ class BaseEnv(gym.Env):
                 distance_away_from_incorrect_exit = 0.0
                 incorrect_exit_position = prev_incorrect_exit_position
 
+            elif prev_position_status == PositionStatus.IN_SECTOR and crossed_exit_window(
+                self.ac_tracker[callsign].previous_position,
+                ac.pos2d(),
+                self.ac_tracker[callsign].sector_exit_window,
+            ):
+                # the aircraft left the sector through its exit window during
+                # this step: a correct (lateral) sector exit.
+                # position status
+                position_status = PositionStatus.EXIT_REACHED
+
+                # incomm status
+                assert prev_incomm_status is True
+                incomm_status = prev_incomm_status
+                distance_to_sector_entry = 0.0
+
+                # outcomm status
+                outcomm_status = True if callsign in self._current_time_step_outcomm_buffer else prev_outcomm_status
+                exit_pos = self.ac_tracker[callsign].sector_exit_pos
+                distance_away_from_sector_exit = ac.distance(exit_pos)
+
+                # out of sector status (only active when the position status
+                # is set to OUT_SECTOR)
+                distance_away_from_incorrect_exit = 0.0
+                incorrect_exit_position = prev_incorrect_exit_position
+
             elif prev_position_status == PositionStatus.IN_SECTOR:
+                # the aircraft left the sector, but not through its exit window.
                 # position status
                 position_status = PositionStatus.OUT_SECTOR
 
@@ -2703,12 +2730,9 @@ class BaseEnv(gym.Env):
                 raise ValueError("Invalid condition reached.")
 
         else:  # `in_sector` is True
-            exit_reached = at_exit_window(
-                ac,
-                self.ac_tracker[callsign].track_dist_to_exit_cr,  # filed route?
-                self.ac_tracker[callsign].sector_exit_window,
-            )
-
+            # note, a correct sector exit (EXIT_REACHED) is decided when the
+            # aircraft leaves the sector through its exit window (see the
+            # `in_sector is False` branch above), not while it is in the sector.
             if prev_position_status == PositionStatus.BEFORE_ENTRY:
                 # aircraft has just incommed, now that it's inside the sector.
                 # position status
@@ -2724,28 +2748,6 @@ class BaseEnv(gym.Env):
                 # so, there shouldn't be an outcomm clearance for it.
                 assert callsign not in self._current_time_step_outcomm_buffer
                 outcomm_status = False
-                distance_away_from_sector_exit = 0.0
-
-                # out of sector status (only active when the position status
-                # is set to OUT_SECTOR)
-                distance_away_from_incorrect_exit = 0.0
-                try:
-                    assert prev_incorrect_exit_position is None
-                    incorrect_exit_position = prev_incorrect_exit_position
-                except AssertionError:
-                    incorrect_exit_position = None
-
-            elif exit_reached is True and prev_incomm_status is True:
-                # position status
-                position_status = PositionStatus.EXIT_REACHED
-
-                # incomm status
-                assert prev_incomm_status is True
-                incomm_status = prev_incomm_status
-                distance_to_sector_entry = 0.0
-
-                # outcomm status
-                outcomm_status = True if callsign in self._current_time_step_outcomm_buffer else prev_outcomm_status
                 distance_away_from_sector_exit = 0.0
 
                 # out of sector status (only active when the position status

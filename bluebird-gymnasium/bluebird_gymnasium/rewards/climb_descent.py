@@ -64,17 +64,23 @@ def _get_relevant_data(
     simulator_env: SimulatorEnv,
     airspace_sector: str,
 ) -> tuple[float, float, Pos2D]:
+    # note, the exit position is the sector exit point (where the route
+    # crosses the sector boundary), so distances to exit are measured to the
+    # boundary.
     if ac_tracked_state is None:
         entry_fl = aircraft_entry_coordination(callsign, simulator_env, airspace_sector).fl
-        exit_fl = aircraft_exit_coordination(callsign, simulator_env, airspace_sector).fl
+        exit_coord = aircraft_exit_coordination(callsign, simulator_env, airspace_sector)
+        exit_fl = exit_coord.fl
 
         aircraft = simulator_env.aircraft[callsign]
-        exit_pos2d = simulator_env.airspace.get_exit_point(aircraft)
+        try:
+            exit_pos2d = simulator_env.airspace.get_exit_point(aircraft, airspace_sector)
+        except ValueError:
+            exit_pos2d = simulator_env.airspace.fixes.places[exit_coord.fix]
     else:
         entry_fl = ac_tracked_state.entry_coords[airspace_sector].fl
         exit_fl = ac_tracked_state.exit_coords[airspace_sector].fl
-        exit_fix_name = ac_tracked_state.exit_coords[airspace_sector].fix
-        exit_pos2d = simulator_env.airspace.fixes.places[exit_fix_name]
+        exit_pos2d = ac_tracked_state.sector_exit_pos
 
     return entry_fl, exit_fl, exit_pos2d
 
