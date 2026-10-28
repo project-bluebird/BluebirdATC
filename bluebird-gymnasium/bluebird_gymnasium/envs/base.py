@@ -1493,6 +1493,9 @@ class BaseEnv(gym.Env):
             `numpy.ndarray`.
         """
 
+        if self.timestep >= self.maxstep:
+            raise gym.error.ResetNeeded("Trying to step in a scenario/episode that has ended. Reset the environment.")
+
         self._logged_actions.clear()
 
         self._episode_actions.append(action)
@@ -1987,21 +1990,14 @@ class BaseEnv(gym.Env):
         # check for terminated/truncated flag
         if self.timestep >= self.maxstep:
             terminated = truncated = True
-
-            # global terminated/truncated flag.
-            # same as terminated and truncated above. added for
-            # compatibility with decentralized setup.
-            info["__global_terminated__"] = terminated
-            info["__global_truncated__"] = truncated
         else:
-            terminated = False
-            truncated = False
+            terminated = truncated = False
 
-            # global terminated/truncated flag.
-            # same as terminated and truncated above. added for
-            # compatibility with decentralized setup.
-            info["__global_terminated__"] = True
-            info["__global_truncated__"] = True
+        # global terminated/truncated flag.
+        # same as terminated and truncated above. added for
+        # compatibility with decentralized setup.
+        info["__global_terminated__"] = terminated
+        info["__global_truncated__"] = truncated
 
         # mop up.
         # check for aircraft that the agent can no longer control.
