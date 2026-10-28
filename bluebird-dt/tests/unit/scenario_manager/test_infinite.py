@@ -364,7 +364,7 @@ def test_outcomm_handler(
 
                 aircraft_issued.append(callsign)
 
-    outcomm_clearance_callsigns = {clearance["callsign"] for clearance in simulator.manager.event_logger.clearances_log if clearance["kind"]}
+    outcomm_clearance_callsigns = {clearance["callsign"] for clearance in simulator.manager.event_logger.clearances_log if clearance["kind"] == "outcomm"}
     
     callsigns_without_outcomm_clearance = callsigns - outcomm_clearance_callsigns
 
