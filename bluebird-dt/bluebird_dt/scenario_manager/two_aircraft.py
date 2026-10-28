@@ -254,7 +254,7 @@ class TwoAircraft(
         route_fwd = self.rng.choice(self.routes)
         route_rev = Route(route_fwd.filed[::-1])
         routes = [route_fwd, route_rev]
-        allowed_FLs = self.airspace.sectors[self.sector_name].allowed_flight_levels(self.fl_limits).tolist()
+        allowed_FLs = self.airspace.sectors[self.sector_name].all_ifr_flight_levels(self.fl_limits).tolist()
 
         # randomly generate entry/exit coordinations for first aircraft
         coordinations_fwd = self.get_overflier_coordination_FLs(allowed_FLs, aircraft_scenario)

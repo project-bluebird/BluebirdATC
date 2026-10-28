@@ -319,25 +319,32 @@ class Sector(Comparison):
         # return the cached bounds' values
         return self._bounds
 
-    def allowed_flight_levels(self, fl_limits: tuple[int, int]) -> np.ndarray:
+    def all_ifr_flight_levels(self, fl_limits: tuple[int, int]) -> np.ndarray:
         """
-        Returns the flight levels at which aircraft can enter or exit the Sector: the multiples of 10 within both
-        fl_limits and the Sector's range over all its Volumes.
+        Return the IFR flight levels available within the Sector.
+
+        The available levels are multiples of 10 that lie within both ``fl_limits``
+        and the overall flight-level range covered by the Sector's Volumes.
+
+        This represents the flight levels generally available within the Sector. It
+        does not account for the specific Volumes a flight may cross or any
+        flight-level restrictions imposed by the airway being used.
 
         Parameters
         ----------
         fl_limits: tuple[int, int]
-            The minimum and maximum flight levels at which aircraft can enter or exit.
+            The minimum and maximum IFR flight levels to consider.
 
         Returns
-        ----------
+        -------
         np.ndarray
-            The allowed flight levels as floats, in ascending order.
+            The available IFR flight levels, in ascending order.
 
         Raises
         ------
         ValueError
-            If no multiple of 10 lies within both fl_limits and the Sector's range.
+            If no multiple of 10 lies within both ``fl_limits`` and the Sector's
+            overall flight-level range.
         """
 
         # get_bounds returns the lower and upper [lon, lat, fl] bounds over all the Volumes.

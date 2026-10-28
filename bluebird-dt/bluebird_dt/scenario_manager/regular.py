@@ -154,7 +154,7 @@ class Regular(
             typeof_aircraft=self.typeof_aircraft,
         )
 
-        allowed_FLs = self.airspace.sectors[self.sector_name].allowed_flight_levels(self.fl_limits)
+        allowed_FLs = self.airspace.sectors[self.sector_name].all_ifr_flight_levels(self.fl_limits)
 
         # Create start times for all Aircraft ensuring that the Aircraft starts
         # are quasi-regularly spaced between start of scenario and self.total_time.

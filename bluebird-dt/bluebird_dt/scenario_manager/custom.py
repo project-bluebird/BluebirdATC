@@ -204,7 +204,7 @@ class Custom(
         climbers, descenders, overfliers = self.rng.multinomial(self.num_aircraft, self.balance)
         journey_type = ["climb"] * climbers + ["descend"] * descenders + ["overfly"] * overfliers
         self.rng.shuffle(journey_type)
-        allowed_FLs = self.airspace.sectors[self.sector_name].allowed_flight_levels(self.fl_limits)
+        allowed_FLs = self.airspace.sectors[self.sector_name].all_ifr_flight_levels(self.fl_limits)
 
         # keep track of start fixes and entry coordinations to avoid clashes
         entries: dict[str, dict[int, list[int]]] = defaultdict(lambda: defaultdict(list))

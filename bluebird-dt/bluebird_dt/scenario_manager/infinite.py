@@ -246,7 +246,7 @@ class Infinite(
         if len(self.airspace.sectors[self.sector_name].volumes) == 0:
             raise ValueError("Selected airspace has no Volumes.  Please choose another airspace.")
         volume = self.airspace.sectors[self.sector_name].volumes[0]
-        possible_flight_levels = self.airspace.sectors[self.sector_name].allowed_flight_levels(self.fl_limits)
+        possible_flight_levels = self.airspace.sectors[self.sector_name].all_ifr_flight_levels(self.fl_limits)
 
         route = self.rng.choice(np.asarray(possible_routes))
         first_fix = self.airspace.fixes.places[route.filed[0]]
