@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import typing_extensions
 from shapely.geometry import LineString
 
-from bluebird_dt.core import Action, Aircraft, Coordination, Fixes, FlightPlan, Sector
+from bluebird_dt.core import Action, Aircraft, Coordination, Fixes, Sector
 from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.logger import logger
 from bluebird_dt.manager import EnvironmentManager
@@ -41,44 +41,6 @@ class ExitGate:
             start_position=self.end_position,
             end_position=self.start_position,
         )
-
-    def orient_exit_gate(
-        self,
-        flight_plan: FlightPlan,
-        coordination: Coordination,
-        fixes: Fixes,
-    ) -> typing_extensions.Self:
-        """Orient an exit gate according to the aircraft's planned route."""
-        legs = next(
-            (segment for segment in flight_plan.route.segments() if segment[1] == coordination.fix),
-            None,
-        )
-
-        if legs is None:
-            return self
-
-        approach_fix = fixes.get(legs[0])
-
-        if approach_fix is None:
-            return self
-
-        return self.oriented_for_approach(approach_fix)
-
-    def oriented_for_approach(
-        self,
-        approach_position: Pos2D,
-    ) -> typing_extensions.Self:
-        """Return the gate oriented for an aircraft approaching from a position."""
-        approach_side = (self.end_position.lon - self.start_position.lon) * (
-            approach_position.lat - self.start_position.lat
-        ) - (self.end_position.lat - self.start_position.lat) * (approach_position.lon - self.start_position.lon)
-
-        if approach_side == 0.0:
-            raise ValueError(
-                "Cannot orient the exit gate because the route approach position is collinear with the gate"
-            )
-
-        return self if approach_side > 0.0 else self.flip()
 
     def is_crossed(
         self,
@@ -189,13 +151,6 @@ class OutcommHandler:
             start_position=Pos2D(lon=gate_segment[0][0], lat=gate_segment[0][1]),
             end_position=Pos2D(lon=gate_segment[1][0], lat=gate_segment[1][1]),
         )
-
-        if aircraft.flight_plan is not None:
-            gate = gate.orient_exit_gate(
-                flight_plan=aircraft.flight_plan,
-                coordination=coordination,
-                fixes=fixes,
-            )
 
         return gate.is_crossed(
             previous_position=previous_position,

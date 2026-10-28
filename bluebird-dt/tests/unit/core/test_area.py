@@ -193,3 +193,30 @@ def test_nearest_segment_to_point(point, expected_segments):
     # Treating lat/lons as xy coords the above area is a unit square on the equator.
     # Segment endpoints are compared as sets because direction is not significant here.
     assert set(segment) in expected_segments
+
+def test_nearest_segment_has_polygon_interior_on_left() -> None:
+    area = Area(
+        boundary=[
+            Pos2D(0.0, 0.0),
+            Pos2D(0.0, 1.0),
+            Pos2D(1.0, 1.0),
+            Pos2D(1.0, 0.0),
+        ]
+        
+    )
+
+    segment = area.nearest_segment_to_point(Pos2D(lat=0.5, lon=1.1))
+
+    assert segment is not None
+
+    start, end = segment
+
+    # Cross product of the segment direction with a vector towards a point
+    # inside the polygon. Positive means that point lies to the left.
+    interior = (0.5, 0.5)
+    cross_product = (
+        (end[0] - start[0]) * (interior[1] - start[1])
+        - (end[1] - start[1]) * (interior[0] - start[0])
+    )
+
+    assert cross_product > 0

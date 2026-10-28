@@ -1,7 +1,6 @@
 import pytest
 
 from bluebird_dt.airspace_generator import SectorI
-from bluebird_dt.airspace_generator.artificial_airspace import ArtificialAirspace
 from bluebird_dt.scenario_manager.outcomm_handler import ExitGate, OutcommHandler
 from bluebird_dt.core import Aircraft, Coordination, FlightPlan, Pos2D, Route
 
@@ -103,44 +102,6 @@ def test_flip_reverses_gate(gate: ExitGate) -> None:
 def test_flip_twice_returns_original_gate(gate: ExitGate) -> None:
     assert gate.flip().flip() == gate
 
-
-def test_oriented_for_approach_keeps_gate_when_approaching_from_west(
-    gate: ExitGate,
-) -> None:
-    oriented = gate.oriented_for_approach(
-        Pos2D(lon=-0.1, lat=0.0),
-    )
-
-    assert oriented == gate
-
-
-def test_oriented_for_approach_flips_gate_when_approaching_from_east(
-    gate: ExitGate,
-) -> None:
-    oriented = gate.oriented_for_approach(
-        Pos2D(lon=0.1, lat=0.0),
-    )
-
-    assert oriented == gate.flip()
-
-
-@pytest.mark.parametrize(
-    "approach_position",
-    [
-        Pos2D(lon=0.0, lat=0.0),
-        Pos2D(lon=0.0, lat=-0.2),
-        Pos2D(lon=0.0, lat=0.2),
-    ],
-)
-def test_oriented_for_approach_raises_when_collinear(
-    gate: ExitGate,
-    approach_position: Pos2D,
-) -> None:
-    with pytest.raises(
-        ValueError,
-        match="route approach position is collinear with the gate",
-    ):
-        gate.oriented_for_approach(approach_position)
 
 @pytest.mark.parametrize(
     "previous_position,current_position,outcomms",
