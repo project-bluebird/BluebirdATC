@@ -15,6 +15,7 @@ from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
+from bluebird_dt.utility.scenario_manager_utils import allowed_flight_levels
 
 
 class RegularScenarioManagerConfig(BaseModel):
@@ -90,8 +91,8 @@ class Regular(
         num_aircraft: float
             Number of Aircraft to generate.
         airspace: Airspace
-            The Airspace the Aircraft are flying through. The generator expects it to have a single Sector
-            composed of a single Volume. This is true for the I,X,Y Airspaces.
+            The Airspace the Aircraft are flying through. Entry and exit flight levels are the multiples of 10
+            within both fl_limits and the range of the Sector named by sector_name, over all its Volumes.
         routes: list[Route]
             The available Routes in the Airspace (choose one at random for each Aircraft Route).
         sector_name: str | None,
@@ -154,11 +155,7 @@ class Regular(
             typeof_aircraft=self.typeof_aircraft,
         )
 
-        volume = self.airspace.sectors[self.sector_name].volumes[0]
-        # take the more restrictive of the airspace FL limits and this instance's.
-        min_fl = max(volume.min_fl, self.fl_limits[0])
-        max_fl = min(volume.max_fl, self.fl_limits[1])
-        allowed_FLs = np.arange(min_fl, max_fl + 10, 10, dtype="float")
+        allowed_FLs = allowed_flight_levels(self.airspace, self.sector_name, self.fl_limits)
 
         # Create start times for all Aircraft ensuring that the Aircraft starts
         # are quasi-regularly spaced between start of scenario and self.total_time.

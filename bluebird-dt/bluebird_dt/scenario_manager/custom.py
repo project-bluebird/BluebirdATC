@@ -17,7 +17,7 @@ from bluebird_dt.manager.environment_manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.scenario_manager_utils import laterally_offset_start_point
+from bluebird_dt.utility.scenario_manager_utils import allowed_flight_levels, laterally_offset_start_point
 
 
 class CustomScenarioManagerConfig(BaseModel):
@@ -107,8 +107,8 @@ class Custom(
         num_aircraft: float
             Number of Aircraft to generate.
         airspace: Airspace
-            The Airspace the Aircraft are flying through. The generator expects it to have a single Sector
-            composed of a single Volume. This is true for the I,X,Y Airspaces.
+            The Airspace the Aircraft are flying through. Entry and exit flight levels are the multiples of 10
+            within both fl_limits and the range of the Sector named by sector_name, over all its Volumes.
         routes: list[Route]
             The available Routes in the Airspace (choose one at random for each Aircraft Route).
         sector_name: str | None
@@ -204,12 +204,7 @@ class Custom(
         climbers, descenders, overfliers = self.rng.multinomial(self.num_aircraft, self.balance)
         journey_type = ["climb"] * climbers + ["descend"] * descenders + ["overfly"] * overfliers
         self.rng.shuffle(journey_type)
-        # sector.get_bounds returns two arrays of [lat, lon, fl] - we want the last element of each.
-        sector_min_fl, sector_max_fl = [b[2] for b in self.airspace.sectors[self.sector_name].get_bounds()]
-        # take the more restrictive of the sector bounds and the requested fl bounds.
-        min_fl = max(sector_min_fl, self.fl_limits[0])
-        max_fl = min(sector_max_fl, self.fl_limits[1])
-        allowed_FLs = np.arange(min_fl, max_fl + 10, 10, dtype="float")
+        allowed_FLs = allowed_flight_levels(self.airspace, self.sector_name, self.fl_limits)
 
         # keep track of start fixes and entry coordinations to avoid clashes
         entries: dict[str, dict[int, list[int]]] = defaultdict(lambda: defaultdict(list))

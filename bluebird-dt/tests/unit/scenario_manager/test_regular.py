@@ -205,3 +205,16 @@ def test_springfield_fl_limits(fl_limits):
         for ac in em.environment.aircraft.values():
             assert ac.fl >= fl_limits[0]
             assert ac.fl <= fl_limits[1]
+
+
+def test_levels_from_whole_sector(generate_i_two_volumes):
+    """
+    Entry and exit levels should be multiples of 10 within fl_limits, across the whole Sector,
+    including below its first Volume.
+    """
+    airspace, routes = generate_i_two_volumes
+    sm = Regular(total_time=10, num_aircraft=50, airspace=airspace, routes=routes, random_seed=0)
+    levels = set(sm.create_event_handler().coordination_df.fl)
+    assert levels <= set(range(50, 410, 10))
+    # the first Volume starts at FL215
+    assert min(levels) < 215 < max(levels)

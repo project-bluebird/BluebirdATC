@@ -309,6 +309,22 @@ def test_springfield_fl_limits(fl_limits):
             assert ac.fl <= fl_limits[1]
 
 
+def test_levels_from_whole_sector(generate_i_two_volumes):
+    """
+    Entry and exit levels should be multiples of 10 within fl_limits, across the whole Sector,
+    including below its first Volume.
+    """
+    airspace, routes = generate_i_two_volumes
+    sm = Infinite(airspace=airspace, routes=routes, random_seed=0)
+    levels = set()
+    for i in range(50):
+        _, entry_coord, exit_coord = sm.spawn_aircraft(routes, callsign=f"AIR{i}", spawn_distance_behind_fix=0)
+        levels |= {entry_coord.fl, exit_coord.fl}
+    assert levels <= set(range(50, 410, 10))
+    # the first Volume starts at FL215
+    assert min(levels) < 215 < max(levels)
+
+
 @pytest.mark.parametrize(
         "scenario_name", 
         ("I-Sector","Y-Sector", "X-Sector", "Xplus-Sector", "Springfield")

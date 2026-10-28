@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from bluebird_dt.airspace_generator import SectorI, SectorX, SectorY, Thunderdome
-from bluebird_dt.core import Airspace, Environment, Fixes, Pos2D, Route
+from bluebird_dt.core import Airspace, Environment, Fixes, Pos2D, Route, Sector, Volume
 
 @pytest.fixture
 def generate_i():
@@ -37,6 +37,19 @@ def generate_i_bent_route():
     airspace.fixes.places["AIR"] = Pos2D(*airspace.fixes.places["AIR"].location - np.array([0, -0.1]))
 
     return airspace, routes
+
+
+@pytest.fixture
+def generate_i_two_volumes():
+    """
+    I Sector made of two Volumes over the same area, FL215-FL660 then FL45-FL215.
+    As in the TYNE sector, the first Volume starts at FL215 and the Sector at FL45.
+    """
+    airspace, routes = SectorI(60, 120, (60, 400)).generate_airspace()
+    area = airspace.sectors["sector_i"].volumes[0].area
+    sector = Sector([Volume(area, 215, 660), Volume(area, 45, 215)])
+
+    return Airspace(sectors={"sector_i": sector}, fixes=airspace.fixes), routes
 
 
 @pytest.fixture
