@@ -223,7 +223,7 @@ class Infinite(
         self.next_callsign_number = 0
         # keep a buffer of the aircraft to add, may add to env_manager in
         # the next tick after initial creation.
-        self.aircraft_to_add: list[TAircraft] = []
+        self.waiting_aircraft: list[TAircraft] = []
         # list of possible fixes to spawn aircraft at
         # (first fixes in all allowed Routes)
         self.start_fixes: list[str] = sorted({route.filed[0] for route in self.routes})
@@ -475,7 +475,7 @@ Creating Infinite Scenario
             spawn_time = env_manager.environment.time + 6
             next_callsign = f"AIR-{self.next_callsign_number:02d}"
             # aircraft spawned earlier, including in this update, that aren't in the environment yet
-            waiting_aircraft = [ac for time, ac in self.aircraft_to_add if time > env_manager.environment.time]
+            waiting_aircraft = [ac for time, ac in self.waiting_aircraft if time > env_manager.environment.time]
 
             # spawn these aircraft behind their starting fixes
             safe_to_spawn = False
@@ -493,7 +493,7 @@ Creating Infinite Scenario
             # if we couldn't find a safe way in max_spawn_attempts tries, just continue.
             if not safe_to_spawn:
                 continue
-            self.aircraft_to_add.append((spawn_time, aircraft))
+            self.waiting_aircraft.append((spawn_time, aircraft))
             self.next_callsign_number += 1
             self.last_spawn_time = spawn_time
 
@@ -506,9 +506,9 @@ Creating Infinite Scenario
             env_manager.event_handler.add_coordination(spawn_time - timedelta(seconds=1), exit_coord)
             env_manager.event_handler.add_aircraft(spawn_time, aircraft)
 
-        for ac in self.aircraft_to_add:
+        for ac in self.waiting_aircraft:
             if env_manager.environment.time >= ac[0]:
-                self.aircraft_to_add.remove(ac)
+                self.waiting_aircraft.remove(ac)
 
         return env_manager
 
