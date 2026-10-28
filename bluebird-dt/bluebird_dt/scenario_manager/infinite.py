@@ -1,5 +1,7 @@
+import itertools
 import math
 import typing
+from collections.abc import Iterable
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -82,6 +84,7 @@ class Infinite(
     max_spawn_attempts: int
     outcomm_handler: OutcommHandler | None
     last_spawn_time: float
+    last_draw_time: float
     lats_spawn_rate_increase: float
     min_spawn_delta: float
     next_callsign_number: int
@@ -96,10 +99,10 @@ class Infinite(
         airspace: Airspace,
         routes: list[Route],
         sector_name: str | None = None,
-        initial_spawn_rate: float = 0.01,
+        initial_spawn_rate: float = 0.03,
         max_spawn_rate: float = 0.1,
         spawn_rate_increment: float = 0.0,
-        spawn_rate_increase_interval: float = 0.0,
+        spawn_rate_increase_interval: float = 300.0,
         spawn_distance_threshold: float = 10,
         spawn_distance_behind_fix: float = 10.0,
         total_time_seconds: float | None = None,
@@ -138,6 +141,7 @@ class Infinite(
             if we choose to "ramp up" the spawn rate, this determines the step size
         spawn_rate_increase_interval: float
             if we "ramp up", this determines time in seconds between increasing the spawn rate by spawn_rate_increment.
+            Default is 300.0.
         spawn_distance_threshold: float
             Minimum distance in nautical miles for spawning an aircraft behind an existing one
         spawn_distance_behind_fix: float
@@ -212,8 +216,9 @@ class Infinite(
         self.rng = np.random.default_rng(random_seed)
         self.outcomm_handler = OutcommHandler() if automatic_outcomm else None
 
-        self.last_spawn_time = 0.0
-        self.last_spawn_rate_increase = 0.0
+        self.last_spawn_time = float(start_time)
+        self.last_draw_time = float(start_time)
+        self.last_spawn_rate_increase = float(start_time)
         self.min_spawn_delta = min_spawn_delta
         self.next_callsign_number = 0
         # keep a buffer of the aircraft to add, may add to env_manager in
@@ -338,7 +343,7 @@ class Infinite(
             aircraft, entry_coord, exit_coord = self.spawn_aircraft(
                 possible_routes, callsign=callsign, spawn_distance_behind_fix=0
             )
-            start_time = pd.to_datetime(float(i), unit="s")
+            start_time = pd.to_datetime(float(self.start_time + i), unit="s")
             aircraft.simulated = True
             # ensure coordinations are in the environment before the aircraft
             event_handler.add_coordination(start_time - timedelta(seconds=1), entry_coord)
@@ -455,15 +460,19 @@ Creating Infinite Scenario
         time_since_last_spawn = env_manager.environment.time - self.last_spawn_time
         if time_since_last_spawn < self.min_spawn_delta:
             return env_manager
-        # Loop through each second since last spawn, do Poisson trial on each to see if we
-        # will spawn
+        # Do a Poisson trial for each second since the last trials, to see how many aircraft to spawn.
+        # Seconds within min_spawn_delta of the last spawn are drawn at the next update that can spawn.
+        num_seconds = int(env_manager.environment.time - self.last_draw_time)
+        self.last_draw_time += num_seconds
         num_to_spawn = 0
-        for _ in range(int(time_since_last_spawn)):
+        for _ in range(num_seconds):
             num_to_spawn += self.rng.poisson(self.current_spawn_rate)
 
         for _ in range(num_to_spawn):
             spawn_time = env_manager.environment.time + 6
             next_callsign = f"AIR-{self.next_callsign_number:02d}"
+            # aircraft spawned earlier, including in this update, that aren't in the environment yet
+            waiting_aircraft = [ac for time, ac in self.aircraft_to_add if time > env_manager.environment.time]
 
             # spawn these aircraft behind their starting fixes
             safe_to_spawn = False
@@ -472,7 +481,9 @@ Creating Infinite Scenario
                 aircraft, entry_coord, exit_coord = self.spawn_aircraft(
                     self.routes, callsign=next_callsign, spawn_distance_behind_fix=self.spawn_distance_behind_fix
                 )
-                safe_to_spawn = check_safe_to_spawn(aircraft, env_manager.environment, self.spawn_distance_threshold)
+                safe_to_spawn = check_safe_to_spawn(
+                    aircraft, env_manager.environment, self.spawn_distance_threshold, waiting_aircraft
+                )
                 attempt_count += 1
                 if safe_to_spawn or attempt_count > self.max_spawn_attempts:
                     break
@@ -515,9 +526,9 @@ Creating Infinite Scenario
         save_chunk_interval: timedelta | None = None,
         random_seed: int | None = None,
         num_starter_aircraft: int = 2,
-        initial_spawn_rate: float = 0.01,
+        initial_spawn_rate: float = 0.03,
         spawn_rate_increment: float = 0,
-        spawn_rate_increase_interval: float | None = None,
+        spawn_rate_increase_interval: float = 300.0,
         max_spawn_rate: float = 0.1,
         total_time_seconds: float | None = None,
         speed_range: tuple[float, float] | None = None,
@@ -572,8 +583,8 @@ Creating Infinite Scenario
             Average frequency (in Hz) of spawning new aircraft
         spawn_rate_increment: float
             Spawn rate will change by this number at set intervals
-        spawn_rate_increase_interval: int
-            If specified, time in seconds between spawn rate increases
+        spawn_rate_increase_interval: float
+            Time in seconds between spawn rate increases. Defaults to 300.0.
         max_spawn_rate: float
             Spawn rate cannot exceed this value
         total_time_seconds: float | None
@@ -777,11 +788,17 @@ Creating Infinite Scenario
         )
 
 
-def check_safe_to_spawn(new_ac: TAircraft, env: Environment, spawn_distance_threshold: float = 10.0) -> bool:
+def check_safe_to_spawn(
+    new_ac: TAircraft,
+    env: Environment,
+    spawn_distance_threshold: float = 10.0,
+    waiting_aircraft: Iterable[Aircraft] = (),
+) -> bool:
     """
-    Check if it is safe to spawn a new aircraft given existing aircraft in the environment.
+    Check if it is safe to spawn a new aircraft given existing aircraft in the environment, and aircraft waiting to be
+    added to it.
 
-    Safe = no existing aircraft are within `spawn_distance_threshold` laterally with level range overlap
+    Safe = no existing or waiting aircraft are within `spawn_distance_threshold` laterally with level range overlap
 
     Parameters
     ----------
@@ -789,6 +806,8 @@ def check_safe_to_spawn(new_ac: TAircraft, env: Environment, spawn_distance_thre
         The new aircraft to be spawned.
     env: Environment
         The existing environment.
+    waiting_aircraft: Iterable[Aircraft]
+        Aircraft that have been spawned but are not in the environment yet. Defaults to none.
 
     Returns
     -------
@@ -799,8 +818,7 @@ def check_safe_to_spawn(new_ac: TAircraft, env: Environment, spawn_distance_thre
     new_ac_sfl = new_ac.selected_fl
 
     new_ac_fl_range = __get_level_range_rounded_to_nearest_10(new_ac_afl, new_ac_sfl)
-    for existing_callsign in env.aircraft:
-        existing_ac = env.aircraft[existing_callsign]
+    for existing_ac in itertools.chain(env.aircraft.values(), waiting_aircraft):
         if existing_ac.current_sector == "background":
             continue
         existing_ac_afl = existing_ac.fl

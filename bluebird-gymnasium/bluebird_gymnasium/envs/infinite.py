@@ -356,7 +356,7 @@ class CustomInfiniteEnv(BaseEnv):
             },
             "scenario_config": {
                 "scenario_name": ScenarioName.sector_xplus.value,
-                "initial_spawn_rate": 0.01,
+                "initial_spawn_rate": 0.03,
                 "max_spawn_rate": 0.1,
                 "spawn_rate_increment": 0.0,
                 "spawn_rate_increase_interval": 0.0,
