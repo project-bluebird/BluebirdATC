@@ -62,3 +62,30 @@ def test_flipping_gate_reverses_crossing_direction(gate: ExitGate) -> None:
 
     assert gate.is_crossed(previous, current)
     assert not gate.flip().is_crossed(previous, current)
+
+def test_crosses_very_near_start_of_gate(gate: ExitGate) -> None:
+    assert gate.is_crossed(
+        previous_position=Pos2D(lon=-0.001, lat=-0.1 + 1e-6),
+        current_position=Pos2D(lon=0.001, lat=-0.1 + 1e-6),
+    )
+
+
+def test_crosses_very_near_end_of_gate(gate: ExitGate) -> None:
+    assert gate.is_crossed(
+        previous_position=Pos2D(lon=-0.001, lat=0.1 - 1e-6),
+        current_position=Pos2D(lon=0.001, lat=0.1 - 1e-6),
+    )
+
+
+def test_does_not_cross_just_past_start_of_gate(gate: ExitGate) -> None:
+    assert not gate.is_crossed(
+        previous_position=Pos2D(lon=-0.001, lat=-0.1 - 1e-6),
+        current_position=Pos2D(lon=0.001, lat=-0.1 - 1e-6),
+    )
+
+
+def test_does_not_cross_just_past_end_of_gate(gate: ExitGate) -> None:
+    assert not gate.is_crossed(
+        previous_position=Pos2D(lon=-0.001, lat=0.1 + 1e-6),
+        current_position=Pos2D(lon=0.001, lat=0.1 + 1e-6),
+    )
