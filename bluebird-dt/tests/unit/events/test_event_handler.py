@@ -1483,8 +1483,6 @@ class TestUpdateAircraftInternals:
         # Test, before, on start boundary, during, on end boundary and after
         # Set start time one second earlier than episode start then add 1 second each time
         # On times during the interval and on final boundary should pass (we check properties have changed)
-        # Before and on the start boundary, the event is the aircraft's last earlier one, so only its next_fix_index
-        # (None here) is taken
         for i in range(0, 5):
             env, _, _, _, episode_start, episode_end = setup_test_sim()
             ac_before = { callsign: copy.deepcopy(ac) for callsign, ac in env.aircraft.items() }
@@ -1498,10 +1496,23 @@ class TestUpdateAircraftInternals:
                     for ac in env.aircraft.values()
                 )
             else:
-                if i <= LOWER_EPISODE_BOUNDARY:
-                    for ac in ac_before.values():
-                        ac.next_fix_index = None
                 assert all(is_deeply_equal(ac, ac_before[callsign]) for callsign, ac in env_after.aircraft.items())
+
+    def test_next_fix_index_without_later_events(self):
+        # an aircraft whose last event is before the timeframe takes that event's next_fix_index only if it has a later
+        # event; with none, as once a simulation passes the time it was rewound from, it keeps the one it has
+        for later_event in [False, True]:
+            env, _, _, _, episode_start, episode_end = setup_test_sim()
+            schema = EventDtypes.aircraft_internals_dtypes
+            earlier_time = episode_start - timedelta(minutes=20)
+            df = build_test_df_for_multiple_ac(schema, env, [("next_fix_index", 1)], earlier_time)
+            if later_event:
+                later_time = episode_end + timedelta(seconds=1)
+                df = pd.concat([df, build_test_df_for_multiple_ac(schema, env, [("next_fix_index", 2)], later_time)])
+            for ac in env.aircraft.values():
+                ac.next_fix_index = 4
+            env_after = update_aircraft_internals(env, df, episode_start, episode_end, self.ignore_simmed)
+            assert all(ac.next_fix_index == (1 if later_event else 4) for ac in env_after.aircraft.values())
 
 
 def test_add_incomm_event():
