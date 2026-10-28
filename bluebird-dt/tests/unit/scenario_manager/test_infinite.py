@@ -335,19 +335,20 @@ def test_outcomm_handler(
     scenario_name: str, runtime_seconds: int, step_seconds: int, wont_make: list[str]
 ):
     airspace, routes, _ = AirspaceLoader.load(scenario_name)
+    sector_name = list(airspace.sectors.keys())[0]
     simulator = Infinite(airspace, routes, random_seed=1, initial_spawn_rate=0.5, aircraft_on_route=True , max_spawn_rate=1, total_time_seconds=60).to_simulator(autosave_interval=None)
     aircraft_issued: list[str] = []
 
     num_sim_steps = runtime_seconds // step_seconds
     callsigns: set[str] = set()
-
+    
     for _ in range(num_sim_steps):
         _ = simulator.evolve(step_seconds)
 
         for callsign, _ in simulator.manager.environment.aircraft.items():
             if callsign not in aircraft_issued:
                 exit_coordination = simulator.manager.environment.exit_coordination(
-                                                "sector_xplus", callsign
+                                                sector_name, callsign
                                             )
 
                 if exit_coordination is not None:

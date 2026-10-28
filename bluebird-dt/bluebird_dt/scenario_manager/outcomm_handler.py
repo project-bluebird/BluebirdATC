@@ -8,7 +8,6 @@ from bluebird_dt.core import Action, Coordination, Fixes, FlightPlan
 from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.logger import logger
 from bluebird_dt.manager import EnvironmentManager
-from bluebird_dt.utility.geo_helper import GeoHelper
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,15 +16,17 @@ class ExitGate:
 
     start_position: Pos2D
     end_position: Pos2D
-    midpoint: Pos2D
-    projection: GeoHelper
 
     @classmethod
-    def new(cls, start_position: Pos2D, end_position: Pos2D) -> typing_extensions.Self:
-        midpoint = start_position.bisect(end_position)
-        projection = GeoHelper(origin=(midpoint.lat, midpoint.lon))
-
-        return cls(start_position=start_position, end_position=end_position, midpoint=midpoint, projection=projection)
+    def new(
+        cls,
+        start_position: Pos2D,
+        end_position: Pos2D,
+    ) -> typing_extensions.Self:
+        return cls(
+            start_position=start_position,
+            end_position=end_position,
+        )
 
     def flip(self) -> typing_extensions.Self:
         """
@@ -39,8 +40,6 @@ class ExitGate:
         return type(self)(
             start_position=self.end_position,
             end_position=self.start_position,
-            midpoint=self.midpoint,
-            projection=self.projection,
         )
 
     def orient_exit_gate(
@@ -65,55 +64,14 @@ class ExitGate:
 
         return self.oriented_for_approach(approach_fix)
 
-    def oriented_for_approach(self, approach_position: Pos2D) -> typing_extensions.Self:
-        """Return the gate oriented for an aircraft approaching *from* a position.
-
-        The gate is projected onto a local Cartesian plane centred on its
-        geodesic midpoint. The sign of the two-dimensional cross product
-
-        ``(end - start) x (approach - start)``
-
-        identifies which side of the directed gate contains the approach
-        position.
-
-        ``is_crossed()`` defines a valid exit as movement from the positive,
-        or left, side of the directed gate to the negative, or right, side.
-        The gate is therefore flipped when the approach position lies on the
-        negative side.
-
-        Parameters
-        ----------
-        approach_position:
-            A position on the aircraft's planned route before the gate,
-            normally the fix preceding the coordinated exit fix.
-
-        Returns
-        -------
-        Self
-            This gate when already correctly oriented, otherwise a new gate
-            with its endpoints reversed.
-
-        Raises
-        ------
-        ValueError
-            If the approach position is collinear with the gate, leaving the
-            required gate direction ambiguous.
-        """
-
-        start = self.projection.projection(
-            self.start_position.lon,
-            self.start_position.lat,
-        )
-        end = self.projection.projection(
-            self.end_position.lon,
-            self.end_position.lat,
-        )
-        approach = self.projection.projection(
-            approach_position.lon,
-            approach_position.lat,
-        )
-
-        approach_side = (end[0] - start[0]) * (approach[1] - start[1]) - (end[1] - start[1]) * (approach[0] - start[0])
+    def oriented_for_approach(
+        self,
+        approach_position: Pos2D,
+    ) -> typing_extensions.Self:
+        """Return the gate oriented for an aircraft approaching from a position."""
+        approach_side = (self.end_position.lon - self.start_position.lon) * (
+            approach_position.lat - self.start_position.lat
+        ) - (self.end_position.lat - self.start_position.lat) * (approach_position.lon - self.start_position.lon)
 
         if approach_side == 0.0:
             raise ValueError(
@@ -127,63 +85,16 @@ class ExitGate:
         previous_position: Pos2D,
         current_position: Pos2D,
     ) -> bool:
-        """A unidirectional sector-boundary gate associated with an exit fix.
-
-        The gate is represented by the directed line segment from
-        ``start_position`` to ``end_position``. An aircraft crosses the gate when
-        the line segment formed by its previous and current positions intersects
-        the gate.
-
-        Because latitude and longitude are angular coordinates on an ellipsoid,
-        the intersection is not calculated directly in geographic coordinates.
-        Instead, a stereographic projection centred on the geodesic midpoint of
-        the gate transforms the gate and aircraft positions into a local
-        two-dimensional Cartesian coordinate system. The intersection can then
-        be evaluated using planar geometry.
-
-        The direction of the gate is defined by the ordering of its endpoints.
-        After establishing that the aircraft movement intersects the gate, the
-        side of the directed gate on which the previous position lies is
-        determined using the two-dimensional cross product::
-
-            (end - start) x (previous - start)
-
-        or, in Cartesian coordinates::
-
-            (end.x - start.x) * (previous.y - start.y)
-            - (end.y - start.y) * (previous.x - start.x)
-
-        The sign of this value describes the orientation of the previous position
-        relative to the directed gate:
-
-        * positive: the previous position lies to the left of the gate;
-        * negative: the previous position lies to the right of the gate;
-        * zero: the previous position lies on the gate.
-
-        A valid exit crossing is defined as an intersection in which the aircraft
-        approaches from the left side of the directed gate. Since an intersection
-        has already been established, this corresponds to movement from the left
-        side to the right side.
-
-        Reversing ``start_position`` and ``end_position`` therefore reverses the
-        permitted crossing direction.
         """
-        start = self.projection.projection(
-            self.start_position.lon,
-            self.start_position.lat,
-        )
-        end = self.projection.projection(
-            self.end_position.lon,
-            self.end_position.lat,
-        )
-        previous = self.projection.projection(
-            previous_position.lon,
-            previous_position.lat,
-        )
-        current = self.projection.projection(
-            current_position.lon,
-            current_position.lat,
-        )
+        Return whether the aircraft crosses the gate in the exit direction.
+
+        This will intentionally treat lats and longs as a cartesian coordinate system,
+        to align with the implementation of Sector.contains_laterally
+        """
+        start = (self.start_position.lon, self.start_position.lat)
+        end = (self.end_position.lon, self.end_position.lat)
+        previous = (previous_position.lon, previous_position.lat)
+        current = (current_position.lon, current_position.lat)
 
         gate = LineString([start, end])
         movement = LineString([previous, current])
