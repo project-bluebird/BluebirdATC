@@ -18,7 +18,7 @@ from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.outcomm_handler import OutcommHandler
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.scenario_manager_utils import allowed_flight_levels, laterally_offset_start_point
+from bluebird_dt.utility.scenario_manager_utils import laterally_offset_start_point
 
 
 class InfiniteScenarioManagerConfig(BaseModel):
@@ -246,7 +246,7 @@ class Infinite(
         if len(self.airspace.sectors[self.sector_name].volumes) == 0:
             raise ValueError("Selected airspace has no Volumes.  Please choose another airspace.")
         volume = self.airspace.sectors[self.sector_name].volumes[0]
-        possible_flight_levels = allowed_flight_levels(self.airspace, self.sector_name, self.fl_limits)
+        possible_flight_levels = self.airspace.sectors[self.sector_name].allowed_flight_levels(self.fl_limits)
 
         route = self.rng.choice(np.asarray(possible_routes))
         first_fix = self.airspace.fixes.places[route.filed[0]]

@@ -15,7 +15,6 @@ from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.scenario_manager_utils import allowed_flight_levels
 
 
 class RegularScenarioManagerConfig(BaseModel):
@@ -155,7 +154,7 @@ class Regular(
             typeof_aircraft=self.typeof_aircraft,
         )
 
-        allowed_FLs = allowed_flight_levels(self.airspace, self.sector_name, self.fl_limits)
+        allowed_FLs = self.airspace.sectors[self.sector_name].allowed_flight_levels(self.fl_limits)
 
         # Create start times for all Aircraft ensuring that the Aircraft starts
         # are quasi-regularly spaced between start of scenario and self.total_time.

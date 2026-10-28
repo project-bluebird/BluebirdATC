@@ -2,11 +2,9 @@ import numpy as np
 import pytest
 import random
 
-from bluebird_dt.airspace_generator import SectorI
 from bluebird_dt.core import Aircraft, Airspace, Coordination, Pos3D, Route
 from bluebird_dt.utility import geometry
 from bluebird_dt.utility.scenario_manager_utils import (
-    allowed_flight_levels,
     laterally_offset_start_point,
 )
 
@@ -40,28 +38,3 @@ def test_lateral_headings_reject_coincident_fixes(generate_i: tuple[Airspace, li
     second.lat, second.lon = first.lat, first.lon
     with pytest.raises(ValueError, match="start and end points must be different"):
         _, _ = geometry.get_perpendicular_headings(first, second, airspace.geo_helper)
-
-
-@pytest.mark.parametrize(
-    "sector_limits, fl_limits, expected",
-    [
-        ((215, 660), (50, 400), range(220, 410, 10)),
-        ((45, 395), (50, 400), range(50, 400, 10)),
-        ((60, 400), (55, 395), range(60, 400, 10)),
-    ],
-)
-def test_allowed_flight_levels(sector_limits, fl_limits, expected):
-    """
-    The levels should be the multiples of 10 within both the sector's range and fl_limits.
-    """
-    airspace, _ = SectorI(60, 120, sector_limits).generate_airspace()
-    assert list(allowed_flight_levels(airspace, "sector_i", fl_limits)) == list(expected)
-
-
-def test_no_allowed_flight_levels(generate_i):
-    """
-    fl_limits outside the sector's range should raise an error naming the sector and the limits.
-    """
-    airspace, _ = generate_i
-    with pytest.raises(ValueError, match=r"sector_i.*\(410, 500\)"):
-        allowed_flight_levels(airspace, "sector_i", (410, 500))

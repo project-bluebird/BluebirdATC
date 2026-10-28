@@ -15,7 +15,6 @@ from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.scenario_manager_utils import allowed_flight_levels
 
 
 class TwoAircraftScenarioManagerConfig(BaseModel):
@@ -255,7 +254,7 @@ class TwoAircraft(
         route_fwd = self.rng.choice(self.routes)
         route_rev = Route(route_fwd.filed[::-1])
         routes = [route_fwd, route_rev]
-        allowed_FLs = allowed_flight_levels(self.airspace, self.sector_name, self.fl_limits).tolist()
+        allowed_FLs = self.airspace.sectors[self.sector_name].allowed_flight_levels(self.fl_limits).tolist()
 
         # randomly generate entry/exit coordinations for first aircraft
         coordinations_fwd = self.get_overflier_coordination_FLs(allowed_FLs, aircraft_scenario)

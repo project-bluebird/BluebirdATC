@@ -17,7 +17,7 @@ from bluebird_dt.manager.environment_manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.scenario_manager_utils import allowed_flight_levels, laterally_offset_start_point
+from bluebird_dt.utility.scenario_manager_utils import laterally_offset_start_point
 
 
 class CustomScenarioManagerConfig(BaseModel):
@@ -204,7 +204,7 @@ class Custom(
         climbers, descenders, overfliers = self.rng.multinomial(self.num_aircraft, self.balance)
         journey_type = ["climb"] * climbers + ["descend"] * descenders + ["overfly"] * overfliers
         self.rng.shuffle(journey_type)
-        allowed_FLs = allowed_flight_levels(self.airspace, self.sector_name, self.fl_limits)
+        allowed_FLs = self.airspace.sectors[self.sector_name].allowed_flight_levels(self.fl_limits)
 
         # keep track of start fixes and entry coordinations to avoid clashes
         entries: dict[str, dict[int, list[int]]] = defaultdict(lambda: defaultdict(list))

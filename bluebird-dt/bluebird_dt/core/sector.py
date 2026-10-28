@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import typing
 from itertools import pairwise
 
@@ -317,6 +318,40 @@ class Sector(Comparison):
 
         # return the cached bounds' values
         return self._bounds
+
+    def allowed_flight_levels(self, fl_limits: tuple[int, int]) -> np.ndarray:
+        """
+        Returns the flight levels at which aircraft can enter or exit the Sector: the multiples of 10 within both
+        fl_limits and the Sector's range over all its Volumes.
+
+        Parameters
+        ----------
+        fl_limits: tuple[int, int]
+            The minimum and maximum flight levels at which aircraft can enter or exit.
+
+        Returns
+        ----------
+        np.ndarray
+            The allowed flight levels as floats, in ascending order.
+
+        Raises
+        ------
+        ValueError
+            If no multiple of 10 lies within both fl_limits and the Sector's range.
+        """
+
+        # get_bounds returns the lower and upper [lon, lat, fl] bounds over all the Volumes.
+        sector_min_fl, sector_max_fl = [b[2] for b in self.get_bounds()]
+        # Clip the Sector's range to fl_limits, then round the lower bound up and the upper bound down to the nearest
+        # multiple of 10 so that both stay inside the clipped range, e.g. FL215-FL395 becomes FL220-FL390.
+        min_fl = 10 * math.ceil(max(sector_min_fl, fl_limits[0]) / 10)
+        max_fl = 10 * math.floor(min(sector_max_fl, fl_limits[1]) / 10)
+        if min_fl > max_fl:
+            raise ValueError(
+                f"No flight levels: the Sector's range FL{sector_min_fl:g}-FL{sector_max_fl:g} and fl_limits "
+                f"{fl_limits} have no multiple of 10 in common."
+            )
+        return np.arange(min_fl, max_fl + 10, 10, dtype="float")
 
     def boundary(self, precision: float = 0.00062) -> Area:
         """

@@ -42,6 +42,34 @@ def test_get_bounds(random_sector):
         assert b.shape == (3,)
 
 
+@pytest.mark.parametrize(
+    "volume_limits, fl_limits, expected",
+    [
+        ([(215, 660)], (50, 400), range(220, 410, 10)),
+        ([(45, 395)], (50, 400), range(50, 400, 10)),
+        ([(60, 400)], (55, 395), range(60, 400, 10)),
+        # the first Volume starts at FL215, but the Sector at FL45
+        ([(215, 660), (45, 215)], (50, 400), range(50, 410, 10)),
+    ],
+)
+def test_allowed_flight_levels(random_area, volume_limits, fl_limits, expected):
+    """
+    The levels should be the multiples of 10 within both fl_limits and the range of all the Sector's Volumes.
+    """
+    area = random_area()
+    sector = Sector([Volume(area, min_fl, max_fl) for min_fl, max_fl in volume_limits])
+    assert list(sector.allowed_flight_levels(fl_limits)) == list(expected)
+
+
+def test_no_allowed_flight_levels(random_area):
+    """
+    fl_limits outside the Sector's range should raise an error giving the range and the limits.
+    """
+    sector = Sector([Volume(random_area(), 60, 400)])
+    with pytest.raises(ValueError, match=r"FL60-FL400.*\(410, 500\)"):
+        sector.allowed_flight_levels((410, 500))
+
+
 def test_centre(random_sector):
     sector = random_sector()
     centre = sector.centre
