@@ -506,7 +506,6 @@ Creating Infinite Scenario
             env_manager.event_handler.add_coordination(spawn_time - timedelta(seconds=1), exit_coord)
             env_manager.event_handler.add_aircraft(spawn_time, aircraft)
 
-        # If the time has come to add aircraft to env manager, do it now.
         for ac in self.aircraft_to_add:
             if env_manager.environment.time >= ac[0]:
                 self.aircraft_to_add.remove(ac)
