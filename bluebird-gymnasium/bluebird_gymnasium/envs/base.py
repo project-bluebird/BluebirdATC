@@ -2484,11 +2484,11 @@ class BaseEnv(gym.Env):
 
         # final steps: deal with the simulator bug/feature where
         # aircraft are deleted from the airspace (sometimes before
-        # it they are transferred.
+        # they are transferred.
         for callsign in callsigns_deleted:
             reward[callsign] = 0.0
             terminated[callsign] = True
-            truncated[callsign] = True
+            truncated[callsign] = False
             info[callsign] = None
             # to consider:
             # should such aircraft be included in `self.ac_archived`?
