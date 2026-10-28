@@ -102,7 +102,7 @@ class Infinite(
         initial_spawn_rate: float = 0.01,
         max_spawn_rate: float = 0.1,
         spawn_rate_increment: float = 0.0,
-        spawn_rate_increase_interval: float = 0.0,
+        spawn_rate_increase_interval: float = 300.0,
         spawn_distance_threshold: float = 10,
         spawn_distance_behind_fix: float = 10.0,
         total_time_seconds: float | None = None,
@@ -141,6 +141,7 @@ class Infinite(
             if we choose to "ramp up" the spawn rate, this determines the step size
         spawn_rate_increase_interval: float
             if we "ramp up", this determines time in seconds between increasing the spawn rate by spawn_rate_increment.
+            Default is 300.0.
         spawn_distance_threshold: float
             Minimum distance in nautical miles for spawning an aircraft behind an existing one
         spawn_distance_behind_fix: float
@@ -531,7 +532,7 @@ Creating Infinite Scenario
         num_starter_aircraft: int = 2,
         initial_spawn_rate: float = 0.01,
         spawn_rate_increment: float = 0,
-        spawn_rate_increase_interval: float = 0.0,
+        spawn_rate_increase_interval: float = 300.0,
         max_spawn_rate: float = 0.1,
         total_time_seconds: float | None = None,
         speed_range: tuple[float, float] | None = None,
@@ -587,7 +588,7 @@ Creating Infinite Scenario
         spawn_rate_increment: float
             Spawn rate will change by this number at set intervals
         spawn_rate_increase_interval: float
-            Time in seconds between spawn rate increases. Defaults to 0.0, which raises the rate at every update.
+            Time in seconds between spawn rate increases. Defaults to 300.0.
         max_spawn_rate: float
             Spawn rate cannot exceed this value
         total_time_seconds: float | None

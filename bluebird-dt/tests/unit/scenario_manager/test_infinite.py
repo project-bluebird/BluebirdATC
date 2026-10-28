@@ -120,12 +120,20 @@ def test_spawn_frequency_ramp_up(generate_x, initial_spawn_rate, spawn_rate_incr
 
 def test_ramp_without_interval():
     """
-    setup with a spawn_rate_increment but no spawn_rate_increase_interval should use an interval of 0,
-    as the constructor does, and raise the spawn rate at every update.
+    setup with a spawn_rate_increment but no spawn_rate_increase_interval
+    should raise the spawn rate every 300 s, the default interval.
     """
-    sim = Infinite.setup("X-Sector", initial_spawn_rate=0.01, spawn_rate_increment=0.01, random_seed=0)
+    sim = Infinite.setup(
+        "X-Sector", initial_spawn_rate=0.01, spawn_rate_increment=0.01, random_seed=0, autosave_interval=None
+    )
+    sm = sim.scenario_manager
+    sm.rng = ScriptedPoisson(sm.rng)
+    # setup leaves the environment at 6 s, so the 50th update is at 300 s
+    for _ in range(49):
+        sim.evolve(6)
+    assert sm.current_spawn_rate == 0.01
     sim.evolve(6)
-    assert sim.scenario_manager.current_spawn_rate == pytest.approx(0.02)
+    assert sm.current_spawn_rate == pytest.approx(0.02)
 
 
 def test_draws_use_current_spawn_rate(generate_x):
