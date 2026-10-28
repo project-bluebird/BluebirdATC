@@ -13,3 +13,7 @@ testpaths = [
   "bluebird-gymnasium/tests",
   "docs/tests",
 ]
+
+[tool.uv]
+exclude-newer = "P7D"
+required-version = ">=0.11.8"
