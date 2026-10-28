@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
+from bluebird_dt.core import Action
 from bluebird_dt.core.aircraft import Aircraft
 from bluebird_dt.core.airspace import Airspace
 from bluebird_dt.core.route import Route
@@ -319,3 +320,52 @@ def test_sim_from_category(scenario_name):
     """
     s = Simulator.from_category("Infinite", scenario_name)
     assert isinstance(s, Simulator)
+
+
+@pytest.mark.parametrize(
+    "scenario_name,runtime_seconds,step_seconds,wont_make",
+    [
+        ("I-Sector", 60 * 50, 6, []),
+        ("Y-Sector", 60 * 50, 6, []),
+        ("X-Sector", 60 * 50, 6, []),
+        ("Xplus-Sector", 60 * 50, 6, []),
+    ],
+)
+def test_outcomm_handler(
+    scenario_name: str, runtime_seconds: int, step_seconds: int, wont_make: list[str]
+):
+    airspace, routes, _ = AirspaceLoader.load(scenario_name)
+    simulator = Infinite(airspace, routes, random_seed=1, initial_spawn_rate=0.5, aircraft_on_route=True , max_spawn_rate=1, total_time_seconds=60).to_simulator(autosave_interval=None)
+    aircraft_issued: list[str] = []
+
+    num_sim_steps = runtime_seconds // step_seconds
+    callsigns: set[str] = set()
+
+    for _ in range(num_sim_steps):
+        _ = simulator.evolve(step_seconds)
+
+        for callsign, _ in simulator.manager.environment.aircraft.items():
+            if callsign not in aircraft_issued:
+                exit_coordination = simulator.manager.environment.exit_coordination(
+                                                "sector_xplus", callsign
+                                            )
+
+                if exit_coordination is not None:
+                    simulator.manager.receive_actions(
+                        [
+                            Action(
+                                callsign,
+                                "change_flight_level_to",
+                                exit_coordination.fl,
+                            ),
+                        ]
+                    )
+                    callsigns.add(callsign)
+
+                aircraft_issued.append(callsign)
+
+    outcomm_clearance_callsigns = {clearance["callsign"] for clearance in simulator.manager.event_logger.clearances_log if clearance["kind"]}
+    
+    callsigns_without_outcomm_clearance = callsigns - outcomm_clearance_callsigns
+
+    assert callsigns_without_outcomm_clearance == set()
