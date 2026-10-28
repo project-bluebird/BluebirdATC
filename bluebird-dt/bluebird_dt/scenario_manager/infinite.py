@@ -217,7 +217,6 @@ class Infinite(
         self.outcomm_handler = OutcommHandler() if automatic_outcomm else None
 
         self.last_spawn_time = float(start_time)
-        # time up to which the Poisson trials for spawning have been done
         self.last_draw_time = float(start_time)
         self.last_spawn_rate_increase = float(start_time)
         self.min_spawn_delta = min_spawn_delta
