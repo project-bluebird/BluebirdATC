@@ -1494,6 +1494,9 @@ class BaseEnv(gym.Env):
             `numpy.ndarray`.
         """
 
+        if self.timestep >= self.maxstep:
+            raise gym.error.ResetNeeded("Trying to step in a scenario/episode that has ended. Reset the environment.")
+
         self._logged_actions.clear()
 
         self._episode_actions.append(action)
@@ -1988,21 +1991,14 @@ class BaseEnv(gym.Env):
         # check for terminated/truncated flag
         if self.timestep >= self.maxstep:
             terminated = truncated = True
-
-            # global terminated/truncated flag.
-            # same as terminated and truncated above. added for
-            # compatibility with decentralized setup.
-            info["__global_terminated__"] = terminated
-            info["__global_truncated__"] = truncated
         else:
-            terminated = False
-            truncated = False
+            terminated = truncated = False
 
-            # global terminated/truncated flag.
-            # same as terminated and truncated above. added for
-            # compatibility with decentralized setup.
-            info["__global_terminated__"] = True
-            info["__global_truncated__"] = True
+        # global terminated/truncated flag.
+        # same as terminated and truncated above. added for
+        # compatibility with decentralized setup.
+        info["__global_terminated__"] = terminated
+        info["__global_truncated__"] = truncated
 
         # mop up.
         # check for aircraft that the agent can no longer control.
@@ -2489,11 +2485,11 @@ class BaseEnv(gym.Env):
 
         # final steps: deal with the simulator bug/feature where
         # aircraft are deleted from the airspace (sometimes before
-        # it they are transferred.
+        # they are transferred.
         for callsign in callsigns_deleted:
             reward[callsign] = 0.0
             terminated[callsign] = True
-            truncated[callsign] = True
+            truncated[callsign] = False
             info[callsign] = None
             # to consider:
             # should such aircraft be included in `self.ac_archived`?
