@@ -216,9 +216,6 @@ class Infinite(
         self.last_spawn_rate_increase = 0.0
         self.min_spawn_delta = min_spawn_delta
         self.next_callsign_number = 0
-        # keep a buffer of the aircraft to add, may add to env_manager in
-        # the next tick after initial creation.
-        self.aircraft_to_add: list[TAircraft] = []
         # list of possible fixes to spawn aircraft at
         # (first fixes in all allowed Routes)
         self.start_fixes: list[str] = sorted({route.filed[0] for route in self.routes})
@@ -482,7 +479,6 @@ Creating Infinite Scenario
             # if we couldn't find a safe way in max_spawn_attempts tries, just continue.
             if not safe_to_spawn:
                 continue
-            self.aircraft_to_add.append((spawn_time, aircraft))
             self.next_callsign_number += 1
             self.last_spawn_time = spawn_time
 
@@ -494,12 +490,6 @@ Creating Infinite Scenario
             env_manager.event_handler.add_coordination(spawn_time - timedelta(seconds=1), entry_coord)
             env_manager.event_handler.add_coordination(spawn_time - timedelta(seconds=1), exit_coord)
             env_manager.event_handler.add_aircraft(spawn_time, aircraft)
-
-        # If the time has come to add aircraft to env manager, do it now.
-        for ac in self.aircraft_to_add:
-            if env_manager.environment.time >= ac[0]:
-                env_manager.environment.aircraft[ac[1].callsign] = ac[1]
-                self.aircraft_to_add.remove(ac)
 
         return env_manager
 
