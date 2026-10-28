@@ -509,7 +509,6 @@ Creating Infinite Scenario
         # If the time has come to add aircraft to env manager, do it now.
         for ac in self.aircraft_to_add:
             if env_manager.environment.time >= ac[0]:
-                env_manager.environment.aircraft[ac[1].callsign] = ac[1]
                 self.aircraft_to_add.remove(ac)
 
         return env_manager
