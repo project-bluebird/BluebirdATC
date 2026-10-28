@@ -14,8 +14,8 @@ def _get_env_instance(view_type: ViewType = ViewType.CENTRALIZED) -> SectorXEnv:
     return SectorXEnv(config=config)
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
-def test_global_done(view_type: ViewType):
-    """Test the global done and truncated flags.
+def test_global_terminated_truncated(view_type: ViewType):
+    """Test the global terminated and truncated flags.
 
     Args:
         view_type: set to either CENTRALIZED (single agent)
@@ -28,34 +28,34 @@ def test_global_done(view_type: ViewType):
 
     if view_type == ViewType.CENTRALIZED:
         action = 0  # NOOP action.
-        obs, reward, done, truncated, info = gym_env.step(action)
+        obs, reward, terminated, truncated, info = gym_env.step(action)
         timestep_after = gym_env.timestep
 
         assert isinstance(obs, np.ndarray)
         assert isinstance(reward, float)
-        assert isinstance(done, bool)
+        assert isinstance(terminated, bool)
         assert isinstance(truncated, bool)
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after
         assert obs.shape == gym_env.observation_space.shape
-        assert "__global_done__" in info
+        assert "__global_terminated__" in info
         assert "__global_truncated__" in info
-        assert done == info["__global_done__"]
+        assert terminated == info["__global_terminated__"]
         assert truncated == info["__global_truncated__"]
 
         if gym_env.timestep < gym_env.maxstep:
-            assert done is False
+            assert terminated is False
             assert truncated is False
-            assert info["__global_done__"] is False
+            assert info["__global_terminated__"] is False
             assert info["__global_truncated__"] is False
 
             num_remaining_steps = gym_env.maxstep - gym_env.timestep
             for _ in range(num_remaining_steps):
-                obs, reward, done, truncated, info = gym_env.step(action)
+                obs, reward, terminated, truncated, info = gym_env.step(action)
             
-        assert done is True
+        assert terminated is True
         assert truncated is True
-        assert info["__global_done__"] is True
+        assert info["__global_terminated__"] is True
         assert info["__global_truncated__"] is True
 
         # try to step in a scenario that has ended. this should raise a
@@ -66,30 +66,30 @@ def test_global_done(view_type: ViewType):
 
     else:  # decentralised
         action = {}  # no action on any aircraft
-        obs, reward, done, truncated, info = gym_env.step(action)
+        obs, reward, terminated, truncated, info = gym_env.step(action)
         timestep_after = gym_env.timestep
 
         assert isinstance(obs, dict)
         assert isinstance(reward, dict)
-        assert isinstance(done, dict)
+        assert isinstance(terminated, dict)
         assert isinstance(truncated, dict)
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after
         if len(obs) > 0:
             callsign = next(iter(obs.keys()))
             assert obs[callsign].shape == gym_env.observation_space.shape
-        assert "__global_done__" in info
+        assert "__global_terminated__" in info
         assert "__global_truncated__" in info
 
         if gym_env.timestep < gym_env.maxstep:
-            assert info["__global_done__"] is False
+            assert info["__global_terminated__"] is False
             assert info["__global_truncated__"] is False
 
             num_remaining_steps = gym_env.maxstep - gym_env.timestep
             for i in range(num_remaining_steps):
-                obs, reward, done, truncated, info = gym_env.step(action)
+                obs, reward, terminated, truncated, info = gym_env.step(action)
             
-        assert info["__global_done__"] is True
+        assert info["__global_terminated__"] is True
         assert info["__global_truncated__"] is True
 
         # try to step in a scenario that has ended. this should raise a

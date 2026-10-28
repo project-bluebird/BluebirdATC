@@ -2,9 +2,9 @@
 
 Each environment in `bluebird_gymnasium` can support single agent (centralised) or multi-agent (decentralised) views.
 
-In a single agent view, an environment expects a single external agent interacting with it. The `step` method expects a scalar integer for the `action` argument. The `step` and `reset` methods produce a single quantity per step for the observed state, reward, done flag, truncated flag, and a Python dictionary of auxiliary information.
+In a single agent view, an environment expects a single external agent interacting with it. The `step` method expects a scalar integer for the `action` argument. The `step` and `reset` methods produce a single quantity per step for the observed state, reward, terminated flag, truncated flag, and a Python dictionary of auxiliary information.
 
-In a decentralised multi-agent environment, multiple agents interact with it. The environment expects a Python dictionary of actions from the agents, where each key is an agent id and each value is an action. The `step` and `reset` methods return a dictionary of observed state, rewards, done flags, truncated flags, and auxiliary information. Each dictionary contains a key-value pair for an agent, with the key being the agent id.
+In a decentralised multi-agent environment, multiple agents interact with it. The environment expects a Python dictionary of actions from the agents, where each key is an agent id and each value is an action. The `step` and `reset` methods return a dictionary of observed state, rewards, terminated flags, truncated flags, and auxiliary information. Each dictionary contains a key-value pair for an agent, with the key being the agent id.
 
 
 

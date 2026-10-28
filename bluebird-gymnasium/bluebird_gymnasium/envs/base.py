@@ -89,10 +89,10 @@ if typing.TYPE_CHECKING:
 
     from bluebird_gymnasium.envs import (
         ActionType,
-        DoneType,
         InfoType,
         ObsType,
         RewardType,
+        TerminatedType,
         TruncatedType,
     )
     from bluebird_gymnasium.utils.types import Number
@@ -1470,7 +1470,7 @@ class BaseEnv(gym.Env):
         info["__simulator_environment__"] = self.simulator_env
         return state, info
 
-    def step(self, action: ActionType) -> tuple[ObsType, RewardType, DoneType, TruncatedType, InfoType]:
+    def step(self, action: ActionType) -> tuple[ObsType, RewardType, TerminatedType, TruncatedType, InfoType]:
         """Move simulation forward one step.
 
         Move the simulation forward one step, performing actions and compute
@@ -1480,11 +1480,11 @@ class BaseEnv(gym.Env):
             action: action(s) for the aircraft.
 
         Returns:
-            A tuple containing next state, reward, done, truncated, info
+            A tuple containing next state, reward, terminated, truncated, info
 
             Note: if the value of the "type" key in `state_repr` config is
             "centralized", then next state is `numpy.ndarray`, reward is a
-            float, done is a bool, truncated is a bool and info is a dict.
+            float, terminated is a bool, truncated is a bool and info is a dict.
 
             Otherwise, if "decentralized", then each item in the returned
             tuple is a dict, with key-value pairs as an aircraft callsign and
@@ -1569,7 +1569,7 @@ class BaseEnv(gym.Env):
             self.render()
 
         # save the simulation logs to disk if the episode has ended
-        # (i.e., done or truncated set to `True`) and "save_simulation"
+        # (i.e., terminated or truncated set to `True`) and "save_simulation"
         # flag in `self.config.simulation_log_config` is set to `True`.
         if (ret_values[2] or ret_values[3]) and self.config.simulation_log_config["save_simulation"]:
             self.save_simulation_logs()
@@ -1701,7 +1701,7 @@ class BaseEnv(gym.Env):
             five-element tuple:
             - next state
             - reward
-            - done
+            - terminated
             - truncated
             - info
         """
@@ -1987,16 +1987,16 @@ class BaseEnv(gym.Env):
             reward = 0.0  # TODO: consider removing or keeping
         info["total_step_reward"] = reward
 
-        # check for done/truncated flag
+        # check for terminated/truncated flag
         if self.timestep >= self.maxstep:
-            done = truncated = True
+            terminated = truncated = True
         else:
-            done = truncated = False
+            terminated = truncated = False
 
-        # global done/truncated flag.
-        # same as done and truncated above. added for
+        # global terminated/truncated flag.
+        # same as terminated and truncated above. added for
         # compatibility with decentralized setup.
-        info["__global_done__"] = done
+        info["__global_terminated__"] = terminated
         info["__global_truncated__"] = truncated
 
         # mop up.
@@ -2066,7 +2066,7 @@ class BaseEnv(gym.Env):
         # also add the success metric to the info dict at a global level
         info["success_metric"] = self.ac_success_metric.copy()
 
-        return next_state, reward, done, truncated, info
+        return next_state, reward, terminated, truncated, info
 
     def _state_formatter_decentralized(
         self, _state: dict[str, NDArray[numpy.float32]]
@@ -2118,7 +2118,7 @@ class BaseEnv(gym.Env):
                 a dict format with callsign as key and action as value.
 
         Returns:
-            A tuple, with elements next state, reward, done, truncated, and
+            A tuple, with elements next state, reward, terminated, truncated, and
             info. Unlike `_step_centralized`, each element is a `dict`, with
             the key defined as the callsign for the aircraft/agent and value
             as the corresponding data for the aircraft/agent. For example,
@@ -2237,8 +2237,8 @@ class BaseEnv(gym.Env):
         # callsigns that will be included in the reward dict returned by env
         _final_reward_callsigns = []
         info = {}
-        # callsigns that will be included in the done dict returned by env
-        _final_dones = {}
+        # callsigns that will be included in the terminated dict returned by env
+        _final_terminateds = {}
 
         for callsign in self.ac_tracker:
             info[callsign] = {}
@@ -2316,7 +2316,7 @@ class BaseEnv(gym.Env):
             info[callsign]["rewards"] = _rewards[callsign]
             info[callsign]["total_reward"] = np.sum(list(_rewards[callsign].values())).item()
 
-            # compute final dones for aircraft
+            # compute final terminateds for aircraft
             # if callsign in actions.keys():
             if callsign in _final_reward_callsigns:
                 c_outcomm = self.ac_tracker[callsign].outcomm_status
@@ -2326,9 +2326,9 @@ class BaseEnv(gym.Env):
                     or c_outcomm is True
                     or (c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is False)
                 ):
-                    _final_dones[callsign] = True
+                    _final_terminateds[callsign] = True
                 else:
-                    _final_dones[callsign] = False
+                    _final_terminateds[callsign] = False
 
             # log action in info
             # if this is a new aircraft or an outcommed aircraft, there is
@@ -2415,21 +2415,21 @@ class BaseEnv(gym.Env):
             for callsign in _final_reward_callsigns
         }
 
-        # check for done/truncated flag
+        # check for terminated/truncated flag
         if self.timestep >= self.maxstep:
-            done = dict.fromkeys(_final_dones.keys(), True)
-            truncated = dict.fromkeys(_final_dones.keys(), True)
+            terminated = dict.fromkeys(_final_terminateds.keys(), True)
+            truncated = dict.fromkeys(_final_terminateds.keys(), True)
 
-            # global done/truncated flag: independent of aircraft/agents.
-            info["__global_done__"] = True
+            # global terminated/truncated flag: independent of aircraft/agents.
+            info["__global_terminated__"] = True
             info["__global_truncated__"] = True
 
         else:
-            done = _final_dones
-            truncated = dict.fromkeys(_final_dones.keys(), False)
+            terminated = _final_terminateds
+            truncated = dict.fromkeys(_final_terminateds.keys(), False)
 
-            # global done/truncated flag: independent of aircraft/agents.
-            info["__global_done__"] = False
+            # global terminated/truncated flag: independent of aircraft/agents.
+            info["__global_terminated__"] = False
             info["__global_truncated__"] = False
 
         # mop up.
@@ -2484,11 +2484,11 @@ class BaseEnv(gym.Env):
 
         # final steps: deal with the simulator bug/feature where
         # aircraft are deleted from the airspace (sometimes before
-        # it they are transferred.
+        # they are transferred.
         for callsign in callsigns_deleted:
             reward[callsign] = 0.0
-            done[callsign] = True
-            truncated[callsign] = True
+            terminated[callsign] = True
+            truncated[callsign] = False
             info[callsign] = None
             # to consider:
             # should such aircraft be included in `self.ac_archived`?
@@ -2498,7 +2498,7 @@ class BaseEnv(gym.Env):
             # (i.e., as other aircraft use data in `self.ac_tracker`)
 
         info["__simulator_environment__"] = self.simulator_env
-        return next_state, reward, done, truncated, info
+        return next_state, reward, terminated, truncated, info
 
     def _aircraft_in_sector(self, callsign: str) -> bool:
         """Check whether an aircraft is currently in the defined sector."""

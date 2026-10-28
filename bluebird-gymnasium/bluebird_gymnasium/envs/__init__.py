@@ -40,7 +40,7 @@ Config: TypeAlias = (
 
 ObsType: TypeAlias = NDArray[numpy.float32] | dict[str, NDArray[numpy.float32]]
 RewardType: TypeAlias = float | dict[str, float]
-DoneType: TypeAlias = bool | dict[str, bool]
+TerminatedType: TypeAlias = bool | dict[str, bool]
 TruncatedType: TypeAlias = bool | dict[str, bool]
 InfoType: TypeAlias = dict[str, typing.Any] | dict[str, dict[str, typing.Any]]
 ActionType: TypeAlias = int | dict[str, int]
