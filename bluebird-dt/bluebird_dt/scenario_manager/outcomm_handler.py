@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import typing_extensions
 from shapely.geometry import LineString
 
-from bluebird_dt.core import Action, Coordination, Fixes, FlightPlan
+from bluebird_dt.core import Action, Aircraft, Coordination, Fixes, FlightPlan, Sector
 from bluebird_dt.core.pos2d import Pos2D
 from bluebird_dt.logger import logger
 from bluebird_dt.manager import EnvironmentManager
@@ -121,10 +121,86 @@ class OutcommHandler:
         Whether the aircraft must be at the coordinated exit flight level.
     """
 
-    previously_aircraft_in_sector: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
     require_exit_fl: bool = True
 
+    _previously_aircraft_in_sector: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
     _previous_positions: dict[str, Pos2D] = field(default_factory=dict)
+
+    def _should_outcom_aircraft(
+        self,
+        aircraft: Aircraft,
+        previous_position: Pos2D,
+        current_sector: Sector,
+        current_sector_name: str,
+        coordination: Coordination | None,
+        fixes: Fixes,
+    ) -> bool:
+
+        callsign = aircraft.callsign
+        current_position = aircraft.pos2d()
+
+        if aircraft.current_sector == "background" or callsign is None:
+            return False
+
+        if current_sector.contains_laterally(current_position):
+            self._previously_aircraft_in_sector[current_sector_name].add(callsign)
+            return False
+
+        if coordination is not None:
+            return self._should_outcomm_aircraft_based_on_coordination(
+                aircraft, previous_position, current_sector, coordination, fixes
+            )
+
+        return callsign in self._previously_aircraft_in_sector[current_sector_name]
+
+    def _should_outcomm_aircraft_based_on_coordination(
+        self,
+        aircraft: Aircraft,
+        previous_position: Pos2D,
+        current_sector: Sector,
+        coordination: Coordination,
+        fixes: Fixes,
+    ) -> bool:
+
+        callsign = aircraft.callsign
+        current_position = aircraft.pos2d()
+        exit_fix = fixes.get(coordination.fix)
+
+        if exit_fix is None:
+            logger.warning(
+                f"Cannot check the exit gate for aircraft {callsign}: coordination fix {coordination.fix} was not found"
+            )
+            return False
+
+        if self.require_exit_fl and aircraft.fl != coordination.fl:
+            return False
+
+        gate_segment = current_sector.volumes[0].area.nearest_segment_to_point(exit_fix)
+
+        if gate_segment is None:
+            logger.warning(
+                f"Cannot check the exit gate for aircraft because there was no gate segment"
+                f"{callsign}: coordination fix "
+                f"{coordination.fix} was not found"
+            )
+            return False
+
+        gate = ExitGate.new(
+            start_position=Pos2D(lon=gate_segment[0][0], lat=gate_segment[0][1]),
+            end_position=Pos2D(lon=gate_segment[1][0], lat=gate_segment[1][1]),
+        )
+
+        if aircraft.flight_plan is not None:
+            gate = gate.orient_exit_gate(
+                flight_plan=aircraft.flight_plan,
+                coordination=coordination,
+                fixes=fixes,
+            )
+
+        return gate.is_crossed(
+            previous_position=previous_position,
+            current_position=current_position,
+        )
 
     def update(self, env_manager: EnvironmentManager) -> None:
         """
@@ -137,77 +213,29 @@ class OutcommHandler:
             if aircraft.current_sector == "background" or aircraft.callsign is None:
                 continue
 
-            callsign = aircraft.callsign
-            current_position = aircraft.pos2d()
             current_sector_name = aircraft.current_sector
+            current_sector = environment.airspace.sectors.get(current_sector_name)
 
-            previous_position = self._previous_positions.get(callsign)
-            self._previous_positions[callsign] = current_position
+            previous_position = self._previous_positions.get(aircraft.callsign)
+            self._previous_positions[aircraft.callsign] = aircraft.pos2d()
 
-            current_sector = environment.airspace.sectors[current_sector_name]
-
-            if current_sector.contains_laterally(current_position):
-                self.previously_aircraft_in_sector[current_sector_name].add(callsign)
+            if current_sector is None or previous_position is None:
                 continue
 
             coordination = environment.exit_coordination(
                 current_sector_name,
-                callsign,
+                aircraft.callsign,
             )
 
-            if coordination is None:
-                if callsign in self.previously_aircraft_in_sector[current_sector_name]:
-                    self._outcomm(env_manager, current_sector_name, callsign)
-
-                continue
-
-            exit_fix = environment.airspace.fixes.get(coordination.fix)
-
-            if exit_fix is None:
-                logger.warning(
-                    f"Cannot check the exit gate for aircraft "
-                    f"{callsign}: coordination fix "
-                    f"{coordination.fix} was not found"
-                )
-                continue
-
-            if previous_position is None:
-                continue
-
-            at_exit_fl = aircraft.fl == coordination.fl or not self.require_exit_fl
-
-            if not at_exit_fl:
-                continue
-
-            gate_segment = current_sector.volumes[0].area.nearest_segment_to_point(exit_fix)
-
-            if gate_segment is None:
-                logger.warning(
-                    f"Cannot check the exit gate for aircraft because there was no gate segment"
-                    f"{callsign}: coordination fix "
-                    f"{coordination.fix} was not found"
-                )
-                continue
-
-            gate = ExitGate.new(
-                start_position=Pos2D(lon=gate_segment[0][0], lat=gate_segment[0][1]),
-                end_position=Pos2D(lon=gate_segment[1][0], lat=gate_segment[1][1]),
-            )
-
-            if aircraft.flight_plan is not None:
-                gate = gate.orient_exit_gate(
-                    flight_plan=aircraft.flight_plan,
-                    coordination=coordination,
-                    fixes=environment.airspace.fixes,
-                )
-
-            crossed_gate = gate.is_crossed(
-                previous_position=previous_position,
-                current_position=current_position,
-            )
-
-            if crossed_gate and at_exit_fl:
-                self._outcomm(env_manager=env_manager, sector_name=current_sector_name, callsign=callsign)
+            if self._should_outcom_aircraft(
+                aircraft,
+                previous_position,
+                current_sector,
+                current_sector_name,
+                coordination,
+                env_manager.environment.airspace.fixes,
+            ):
+                self._outcomm(env_manager, current_sector_name, aircraft.callsign)
 
     def _outcomm(
         self,
@@ -235,7 +263,7 @@ class OutcommHandler:
         sector_name: str,
         callsign: str,
     ) -> None:
-        if sector_name in self.previously_aircraft_in_sector:
-            self.previously_aircraft_in_sector[sector_name].discard(callsign)
+        if sector_name in self._previously_aircraft_in_sector:
+            self._previously_aircraft_in_sector[sector_name].discard(callsign)
 
         self._previous_positions.pop(callsign, None)
