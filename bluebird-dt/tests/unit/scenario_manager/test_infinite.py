@@ -12,6 +12,25 @@ from bluebird_dt.scenario_manager.infinite import Infinite, check_safe_to_spawn
 from bluebird_dt.simulator import Simulator
 
 
+class ScriptedPoisson:
+    """
+    Wraps a random Generator so that `poisson` returns scripted counts, then 0, and records the rate it is called
+    with. Everything else is passed to the wrapped Generator.
+    """
+
+    def __init__(self, rng, counts=()):
+        self._rng = rng
+        self.counts = list(counts)
+        self.rates = []
+
+    def poisson(self, lam):
+        self.rates.append(lam)
+        return self.counts.pop(0) if self.counts else 0
+
+    def __getattr__(self, name):
+        return getattr(self._rng, name)
+
+
 def test_init_exceptions(generate_i):
     """
     Test various misuses of the constructor
@@ -99,30 +118,93 @@ def test_spawn_frequency_ramp_up(generate_x, initial_spawn_rate, spawn_rate_incr
         )
         assert np.allclose(sim.scenario_manager.current_spawn_rate, expected_spawn_rate, atol=0.001)
 
-def test_higher_spawn_rate_gives_more_aircraft(generate_x):
-    """
-    Aircraft spawning is stochastic, so hard to predict the actual amount,
-    but if we have a much higher spawn rate we should have more aircraft in the
-    environment after a number of steps.
-    """
 
+def test_ramp_without_interval():
+    """
+    setup with a spawn_rate_increment but no spawn_rate_increase_interval
+    should raise the spawn rate every 300 s, the default interval.
+    """
+    sim = Infinite.setup(
+        "X-Sector", initial_spawn_rate=0.01, spawn_rate_increment=0.01, random_seed=0, autosave_interval=None
+    )
+    sm = sim.scenario_manager
+    sm.rng = ScriptedPoisson(sm.rng)
+    # setup leaves the environment at 6 s, so the 50th update is at 300 s
+    for _ in range(49):
+        sim.evolve(6)
+    assert sm.current_spawn_rate == 0.01
+    sim.evolve(6)
+    assert sm.current_spawn_rate == pytest.approx(0.02)
+
+
+def test_draws_use_current_spawn_rate(generate_x):
+    """
+    Each second's Poisson trial for spawning should use the current spawn rate,
+    so a higher rate gives more aircraft on average.
+    """
     airspace, routes = generate_x
-    sim1 = Infinite(
-        airspace=airspace, 
-        routes=routes, 
-        initial_spawn_rate=0.05, 
-    ).to_simulator() 
+    sm = Infinite(
+        airspace=airspace,
+        routes=routes,
+        initial_spawn_rate=0.05,
+        spawn_rate_increment=0.15,
+        spawn_rate_increase_interval=12,
+        max_spawn_rate=0.2,
+        random_seed=0,
+    )
+    sim = sm.to_simulator()
+    sm.rng = ScriptedPoisson(sm.rng)
+    for _ in range(4):
+        sim.evolve(6)
+    # the trials at 6 s use the initial rate, and those at 12 s and 18 s the rate raised at 12 s
+    assert sm.rng.rates == pytest.approx([0.05] * 6 + [0.2] * 12)
+
+
+def test_spawn_trials_cover_each_second_once(generate_x):
+    """
+    Spawning does a Poisson trial for each second. Each second should get one trial, whether or not
+    an aircraft spawns, and after a spawn there should be no trials until min_spawn_delta has passed.
+    """
     airspace, routes = generate_x
-    sim2 = Infinite(
-        airspace=airspace, 
-        routes=routes, 
-        initial_spawn_rate=0.2,
-        max_spawn_rate=0.3,
-    ).to_simulator()
+    sm = Infinite(airspace=airspace, routes=routes, initial_spawn_rate=0.05, max_spawn_rate=0.05, random_seed=0)
+    sim = sm.to_simulator()
+    # one aircraft drawn in the first trial at 12 s
+    sm.rng = ScriptedPoisson(sm.rng, [0] * 6 + [1])
+    num_trials = []
+    for _ in range(6):
+        trials_before = len(sm.rng.rates)
+        sim.evolve(6)
+        num_trials.append(len(sm.rng.rates) - trials_before)
+    # two starter aircraft, and the one drawn at 12 s
+    assert sm.next_callsign_number == 3
+    # no trials at 0 s, or at 18 s when the aircraft spawns, and the trials at 24 s cover 12 s to 24 s
+    assert num_trials == [0, 6, 6, 0, 12, 6]
+
+
+def test_start_time(generate_x):
+    """
+    A scenario with a start_time should start then,
+    and time its spawn rate increases and total_time_seconds from it.
+    """
+    airspace, routes = generate_x
+    sm = Infinite(
+        airspace=airspace,
+        routes=routes,
+        start_time=3600,
+        total_time_seconds=60,
+        initial_spawn_rate=0.01,
+        spawn_rate_increment=0.01,
+        spawn_rate_increase_interval=30,
+        random_seed=0,
+    )
+    sim = sm.to_simulator()
+    assert sim.manager.environment.time == 3600
+    sm.rng = ScriptedPoisson(sm.rng)
     for _ in range(20):
-        sim1.evolve(6)
-        sim2.evolve(6)
-    assert len(sim2.manager.environment.aircraft) > len(sim1.manager.environment.aircraft)
+        sim.evolve(6)
+    # a trial for each second from 3600 s to 3660 s, with the spawn rate raised at 3630 s and 3660 s
+    assert sm.rng.rates == pytest.approx([0.01] * 24 + [0.02] * 30 + [0.03] * 6)
+
 
 def test_dont_set_random_seed(generate_x):
     """
@@ -199,27 +281,36 @@ def test_set_speed_range(speed_range):
                 assert speed_range[0] < ac.speed_tas < speed_range[1]
 
 
-def test_sometimes_generate_more_than_one_aircraft():
+def test_aircraft_drawn_together_spawn_in_the_same_tick(generate_x):
     """
-    Test that with a higher spawn rate, we sometimes generate >1 aircraft per tick.
+    Several aircraft drawn in one update should all spawn in the next tick.
     """
-    sim = Infinite.setup(
-        "X-Sector",
-        initial_spawn_rate=0.25,
-        max_spawn_rate=0.5,
-    )
-    # move forward a couple of ticks, so as not to consider starter aircraft
-    for _ in range(3):
-        sim.evolve(6)
-    # now count the number of new aircraft per tick
-    max_num_new_aircraft = 0
-    current_num_aircraft = len(sim.manager.environment.aircraft)
-    for _ in range(10):
-        sim.evolve(6)
-        num_new_aircraft = len(sim.manager.environment.aircraft) - current_num_aircraft
-        max_num_new_aircraft = max(max_num_new_aircraft, num_new_aircraft)
-        current_num_aircraft = len(sim.manager.environment.aircraft)
-    assert max_num_new_aircraft > 1
+    airspace, routes = generate_x
+    sm = Infinite(airspace=airspace, routes=routes, random_seed=0)
+    sim = sm.to_simulator()
+    # three aircraft drawn in the first trial, at 6 s
+    sm.rng = ScriptedPoisson(sm.rng, [3])
+    sim.evolve(6)
+    aircraft_before = set(sim.manager.environment.aircraft)
+    sim.evolve(6)
+    assert len(set(sim.manager.environment.aircraft) - aircraft_before) == 3
+
+
+def test_aircraft_drawn_together_do_not_overlap(generate_x):
+    """
+    Aircraft drawn in the same update should be kept apart, though the first ones aren't in the environment yet.
+    With one route and one flight level, a second aircraft would spawn on top of the first, so only one should spawn.
+    """
+    airspace, routes = generate_x
+    sm = Infinite(airspace=airspace, routes=routes[:1], fl_limits=(300, 300), random_seed=0)
+    sim = sm.to_simulator()
+    # remove the starter aircraft, which is on the route's first fix at the same level
+    sim.manager.environment.aircraft.clear()
+    # two aircraft drawn in the first trial, at 6 s
+    sm.rng = ScriptedPoisson(sm.rng, [2])
+    sim.evolve(6)
+    sim.evolve(6)
+    assert list(sim.manager.environment.aircraft) == ["AIR-01"]
 
 @pytest.mark.parametrize(
     "min_spawn_distance",
