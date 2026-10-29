@@ -9,6 +9,7 @@ import typing
 from datetime import datetime
 
 import pandas as pd
+import typing_extensions
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Self, override
 
@@ -25,6 +26,8 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.simulator.simconfig import SimConfig
 
 DEFAULT_TRIM_AND_CUT_TIMEDELTA = pd.Timedelta(hours=4)
+
+TScenarioConfig = typing_extensions.TypeVar("TScenarioConfig", bound=BaseModel)
 
 
 class ClearanceLog(typing.TypedDict):
@@ -954,7 +957,7 @@ class EventLogger:
 
             save_df_to_parquet_tar(self.fixes_df, tar, "fixes")
 
-    def _save_config(self, tar: tarfile.TarFile, sim_config: SimConfig[BaseModel]):
+    def _save_config(self, tar: tarfile.TarFile, sim_config: SimConfig[TScenarioConfig]):
         """
         Save the configuration as a json.
 
@@ -1013,7 +1016,7 @@ class EventLogger:
         json_str = json.dumps(self.individual_sectors_log, indent=4)
         save_json_to_tar(json_str, tar, "individual_sectors")
 
-    def write_logs_to_buffer(self, sim_config: SimConfig[BaseModel], save_csv: bool | None = True) -> io.BytesIO:
+    def write_logs_to_buffer(self, sim_config: SimConfig[TScenarioConfig], save_csv: bool | None = True) -> io.BytesIO:
         """
         Save all the logs to a tar buffer in memory.
 
