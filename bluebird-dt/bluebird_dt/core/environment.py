@@ -4,6 +4,7 @@ import copy
 import itertools
 import json
 import typing
+from datetime import datetime, timedelta, timezone
 from typing import Generic
 
 import pandas as pd
@@ -53,6 +54,7 @@ class Environment(
     wind_field: TWindField | None
     forecast_wind_field: TForecastWindField | None
     coordinations: CoordinationsManager
+    start_realtime: datetime
     start_time: float
     time: float
 
@@ -101,6 +103,7 @@ class Environment(
 
         # does not get updated so we can track elapsed time
         self.start_time = time
+        self.start_realtime = datetime.now(tz=timezone.utc)
 
         # used for advancing time in sim
         self.time = time
@@ -131,6 +134,8 @@ class Environment(
         # for caching the datetime update
         self._datetime = pd.to_datetime(self.time, unit="s")
         self._time_used_for_datetime = self.time
+        self._realtime = self.start_realtime + timedelta(seconds=self.time - self.start_time)
+        self._time_used_for_realtime = self.time
 
     def reset(self):
         """
@@ -171,6 +176,7 @@ class Environment(
 
         time = data["time"]
         start_time = data["start_time"]
+        start_realtime = datetime.fromisoformat(data["start_realtime"]) if data.get("start_realtime") else None
 
         # Allow possibility that airspace was omitted from the environment
         airspace = Airspace.from_json(json.dumps(data["airspace"])) if "airspace" in data else None
@@ -202,6 +208,7 @@ class Environment(
             coordinations=coordinations,
         )
         env.start_time = start_time
+        env.start_realtime = start_realtime
 
         return env
 
@@ -249,6 +256,16 @@ class Environment(
 
         return self._datetime
 
+    @property
+    def realtime(self) -> datetime:
+        """The environment realtime obtained by offsetting the start realtime with elapsed simtime."""
+        # cache the datetime conversion
+        if self._time_used_for_realtime != self.time:
+            self._realtime = self.start_realtime + timedelta(seconds=self.time - self.start_time)
+            self._time_used_for_realtime = self.time
+
+        return self._realtime
+
     def data(self) -> dict[str, typing.Any]:
         """
         Get the data as a serialisable dictionary.
@@ -260,6 +277,7 @@ class Environment(
 
         return {
             "start_time": self.start_time,
+            "start_realtime": self.start_realtime.isoformat(),
             "time": self.time,
             "time_str": convert.timestamp_to_string(self.time),
             "airspace": self.airspace.data(),

@@ -116,7 +116,6 @@ class Simulator:
         if not isinstance(env_manager, EnvironmentManager):
             raise TypeError(f"env_manager must be of type EnvironmentManager, got {type(env_manager).__name__}")
 
-        initialization_datetime = datetime.now(tz=timezone.utc)
         self.scenario_manager = scenario_manager
 
         self.category = category
@@ -126,6 +125,8 @@ class Simulator:
         self.use_wind = use_wind
         self.use_forecast = use_forecast
         self.predictor = predictor
+
+        initialization_datetime = env_manager.environment.start_realtime
 
         if attach_context_to_logger:
             if category is None or scenario_name is None:
