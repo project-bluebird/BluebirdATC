@@ -972,7 +972,7 @@ class Simulator:
         self.saver.save_config.save_simtime = current_simtime
         self.saver.save_config.save_realtime = current_realtime
         save_data = SaveData(
-            self.manager.write_logs_to_buffer(self.config().as_base(), self.saver.save_config.save_csv).getvalue(),
+            self.manager.write_logs_to_buffer(self.config(), self.saver.save_config.save_csv).getvalue(),
             self.manager.event_logger.log_name,
             self.saver.save_config.model_copy(deep=True),
             end_save,

@@ -141,9 +141,7 @@ def test_sim_config_serialization() -> None:
         "seed": 42,
     }
 
-    # Verify serialization after converting to the base type.
-    base_config = config.as_base()
-    assert json.loads(base_config.model_dump_json()) == data
+    assert json.loads(config.model_dump_json()) == data
 
     # Verify deserialization preserves the original configuration.
     restored = SimConfig[TestScenarioConfig].model_validate_json(serialized)
