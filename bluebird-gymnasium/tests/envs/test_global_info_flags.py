@@ -53,10 +53,16 @@ def test_global_terminated_truncated(view_type: ViewType):
             for _ in range(num_remaining_steps):
                 obs, reward, terminated, truncated, info = gym_env.step(action)
             
-        assert terminated is True
-        assert truncated is True
-        assert info["__global_terminated__"] is True
-        assert info["__global_truncated__"] is True
+        if terminated:
+            assert truncated is False
+            assert info["__global_terminated__"] is True
+            assert info["__global_truncated__"] is False
+
+        else:
+            assert terminated is False
+            assert truncated is True
+            assert info["__global_terminated__"] is False
+            assert info["__global_truncated__"] is True
 
         # try to step in a scenario that has ended. this should raise a
         # value error which is caught by pytest. failure to raise the
@@ -89,8 +95,7 @@ def test_global_terminated_truncated(view_type: ViewType):
             for i in range(num_remaining_steps):
                 obs, reward, terminated, truncated, info = gym_env.step(action)
             
-        assert info["__global_terminated__"] is True
-        assert info["__global_truncated__"] is True
+        assert info["__global_terminated__"] is not info["__global_truncated__"]
 
         # try to step in a scenario that has ended. this should raise a
         # value error which is caught by pytest. failure to raise the

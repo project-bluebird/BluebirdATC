@@ -214,6 +214,8 @@ class BaseEnv(gym.Env):
         self.scenario_duration = self.config.scenario_duration
         self.scenario_sec_per_step = self.config.scenario_sec_per_step
         self.maxstep = self.scenario_duration // self.scenario_sec_per_step
+        self.timestep = 0
+        self._needs_reset = True
 
         # diagnostics
         if self.config.diagnostics_level is None:
@@ -264,7 +266,6 @@ class BaseEnv(gym.Env):
         self._out_sector_control = self.config.airspace_config.get("out_sector_control", False)
 
         # other attributes
-        self.timestep = 0
         self.traffic_monitor = TrafficMonitor()
 
         ## stores the name of the (active) sector in the airspace
@@ -1359,6 +1360,7 @@ class BaseEnv(gym.Env):
         super().reset(seed=seed, options=options)
 
         self.timestep = 0
+        self._needs_reset = False
 
         self.ac_success_metric.clear()
         self.ac_archived.clear()
@@ -1470,6 +1472,38 @@ class BaseEnv(gym.Env):
         info["__simulator_environment__"] = self.simulator_env
         return state, info
 
+    def end_criteria(self) -> tuple[bool, bool]:
+        """Determine the end criteria: terminated or truncated
+
+        Returns:
+            a tuple containing the statuses of terminated and truncated.
+
+        Note: both terminated and truncated are set to `False` when the
+        configured maximum number of timesteps in the scenario has not been
+        reached. Otherwise, truncated is set to true if there are still
+        "active" aircraft in the scenario at the end timestep or terminated
+        is set to true if there are no active aircraft.
+        """
+
+        terminated = truncated = False
+        if self.timestep >= self.maxstep:
+            self._needs_reset = True
+
+            if self.out_sector_control:
+                active_set = [PositionStatus.BEFORE_ENTRY, PositionStatus.IN_SECTOR, PositionStatus.OUT_SECTOR]
+            else:
+                active_set = [PositionStatus.BEFORE_ENTRY, PositionStatus.IN_SECTOR]
+            active_aircraft = [
+                callsign for callsign, ac_info in self.ac_tracker.items() if ac_info.pos_status in active_set
+            ]
+
+            if len(active_aircraft) > 0:
+                truncated = True
+            else:
+                terminated = True
+
+        return terminated, truncated
+
     def step(self, action: ActionType) -> tuple[ObsType, RewardType, TerminatedType, TruncatedType, InfoType]:
         """Move simulation forward one step.
 
@@ -1493,7 +1527,7 @@ class BaseEnv(gym.Env):
             `numpy.ndarray`.
         """
 
-        if self.timestep >= self.maxstep:
+        if self._needs_reset:
             raise gym.error.ResetNeeded("Trying to step in a scenario/episode that has ended. Reset the environment.")
 
         self._logged_actions.clear()
@@ -1988,10 +2022,7 @@ class BaseEnv(gym.Env):
         info["total_step_reward"] = reward
 
         # check for terminated/truncated flag
-        if self.timestep >= self.maxstep:
-            terminated = truncated = True
-        else:
-            terminated = truncated = False
+        terminated, truncated = self.end_criteria()
 
         # global terminated/truncated flag.
         # same as terminated and truncated above. added for
@@ -2416,21 +2447,18 @@ class BaseEnv(gym.Env):
         }
 
         # check for terminated/truncated flag
-        if self.timestep >= self.maxstep:
-            terminated = dict.fromkeys(_final_terminateds.keys(), True)
-            truncated = dict.fromkeys(_final_terminateds.keys(), True)
+        global_terminated, global_truncated = self.end_criteria()
 
-            # global terminated/truncated flag: independent of aircraft/agents.
-            info["__global_terminated__"] = True
-            info["__global_truncated__"] = True
+        # global terminated/truncated flag: independent of aircraft/agents.
+        info["__global_terminated__"] = global_terminated
+        info["__global_truncated__"] = global_truncated
 
+        terminated = _final_terminateds
+        if global_terminated or global_truncated:
+            # if aircraft is terminated (True), then truncated should be False
+            truncated = {callsign: not aircraft_terminated for callsign, aircraft_terminated in terminated.items()}
         else:
-            terminated = _final_terminateds
             truncated = dict.fromkeys(_final_terminateds.keys(), False)
-
-            # global terminated/truncated flag: independent of aircraft/agents.
-            info["__global_terminated__"] = False
-            info["__global_truncated__"] = False
 
         # mop up.
         # check for aircraft that the agent can no longer control.
