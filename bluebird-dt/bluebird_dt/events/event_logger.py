@@ -9,6 +9,7 @@ import typing
 from datetime import datetime
 
 import pandas as pd
+import typing_extensions
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Self, override
 
@@ -25,6 +26,8 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.simulator.simconfig import SimConfig
 
 DEFAULT_TRIM_AND_CUT_TIMEDELTA = pd.Timedelta(hours=4)
+
+TScenarioConfig = typing_extensions.TypeVar("TScenarioConfig", bound=BaseModel)
 
 
 class ClearanceLog(typing.TypedDict):
@@ -374,10 +377,7 @@ class EventLogger:
             log.update(
                 {
                     "pilot_type": environment.aircraft[log["callsign"]].pilot.__class__.__name__,
-                    "pilot_action_queue": [
-                        json.dumps(queue_item)
-                        for queue_item in environment.aircraft[log["callsign"]].pilot.action_queue
-                    ],
+                    "pilot_action_queue": environment.aircraft[log["callsign"]].pilot.action_queue_data(),
                 }
             )
             for log in current_ac_internals
@@ -773,7 +773,9 @@ class EventLogger:
         """
         # transform aircraft_internals log to dataframe
         if self.aircraft_internals_log:
-            ac_internals_df = pd.DataFrame.from_records(self.aircraft_internals_log)
+            # deep copy the records, so that the DataFrame, and any aircraft restored from it, don't share dicts with
+            # the log
+            ac_internals_df = pd.DataFrame.from_records(copy.deepcopy(self.aircraft_internals_log))
         else:
             # else create empty dataframe with correct columns
             ac_internals_df = pd.DataFrame(columns=EventDtypes.aircraft_internals_dtypes)
@@ -924,11 +926,11 @@ class EventLogger:
         # only keep the last aircraft configuration for each time
         ac_internals_df = ac_internals_df.drop_duplicates(subset=["datetime", "callsign"], keep="last")
 
-        # change types to string
-        ac_internals_df["pilot_action_queue"] = ac_internals_df["pilot_action_queue"].astype(str)
-        ac_internals_df["percentile_rank_dict"] = ac_internals_df["percentile_rank_dict"].astype(str)
-        ac_internals_df["operation_params"] = ac_internals_df["operation_params"].astype(str)
-        ac_internals_df["predictor_params"] = ac_internals_df["predictor_params"].astype(str)
+        # change types to JSON strings
+        ac_internals_df["pilot_action_queue"] = ac_internals_df["pilot_action_queue"].map(json.dumps)
+        ac_internals_df["percentile_rank_dict"] = ac_internals_df["percentile_rank_dict"].map(json.dumps)
+        ac_internals_df["operation_params"] = ac_internals_df["operation_params"].map(json.dumps)
+        ac_internals_df["predictor_params"] = ac_internals_df["predictor_params"].map(json.dumps)
 
         # save csv for now to make human-readable, but parquet will be read back in
         if save_csv:
@@ -955,7 +957,7 @@ class EventLogger:
 
             save_df_to_parquet_tar(self.fixes_df, tar, "fixes")
 
-    def _save_config(self, tar: tarfile.TarFile, sim_config: SimConfig[BaseModel]):
+    def _save_config(self, tar: tarfile.TarFile, sim_config: SimConfig[TScenarioConfig]):
         """
         Save the configuration as a json.
 
@@ -1014,7 +1016,7 @@ class EventLogger:
         json_str = json.dumps(self.individual_sectors_log, indent=4)
         save_json_to_tar(json_str, tar, "individual_sectors")
 
-    def write_logs_to_buffer(self, sim_config: SimConfig[BaseModel], save_csv: bool | None = True) -> io.BytesIO:
+    def write_logs_to_buffer(self, sim_config: SimConfig[TScenarioConfig], save_csv: bool | None = True) -> io.BytesIO:
         """
         Save all the logs to a tar buffer in memory.
 

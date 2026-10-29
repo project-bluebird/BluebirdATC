@@ -8,7 +8,7 @@ description = "A simulation and AI development framework for air traffic control
 license = "AGPL-3.0-or-later"
 name = "bluebird-dt"
 readme = "README.md"
-version = "0.3.0"
+version = "0.4.0"
 requires-python = ">=3.10,<3.15"
 dependencies = [
     "aiofiles>=25.1.0",
@@ -31,7 +31,7 @@ dependencies = [
 dev = [
   "nbmake>=1.5.5",
   "pre-commit>=4.6.2",
-  "ruff>=0.17.0,<0.18",
+  "ruff>=0.17.1,<0.18",
   "pytest>=9.0.3,<10",
   "pytest-xdist>=3.8.0,<4.0.0",
   "pandas-stubs>=2.3.2.250926",

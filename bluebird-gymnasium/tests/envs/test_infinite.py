@@ -104,12 +104,12 @@ def test_step(view_type: ViewType, env_cls: EnvCls):
 
     if view_type == ViewType.CENTRALIZED:
         action = 0  # NOOP action.
-        obs, reward, done, truncated, info = gym_env.step(action)
+        obs, reward, terminated, truncated, info = gym_env.step(action)
         timestep_after = gym_env.timestep
 
         assert isinstance(obs, np.ndarray)
         assert isinstance(reward, float)
-        assert isinstance(done, bool)
+        assert isinstance(terminated, bool)
         assert isinstance(truncated, bool)
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after
@@ -117,12 +117,12 @@ def test_step(view_type: ViewType, env_cls: EnvCls):
 
     else:  # decentralised
         action = {}  # no action on any aircraft
-        obs, reward, done, truncated, info = gym_env.step(action)
+        obs, reward, terminated, truncated, info = gym_env.step(action)
         timestep_after = gym_env.timestep
 
         assert isinstance(obs, dict)
         assert isinstance(reward, dict)
-        assert isinstance(done, dict)
+        assert isinstance(terminated, dict)
         assert isinstance(truncated, dict)
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after

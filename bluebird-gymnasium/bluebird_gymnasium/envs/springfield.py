@@ -23,10 +23,10 @@ if typing.TYPE_CHECKING:
 
     from bluebird_gymnasium.envs import (
         ActionType,
-        DoneType,
         InfoType,
         ObsType,
         RewardType,
+        TerminatedType,
         TruncatedType,
     )
 
@@ -131,21 +131,21 @@ class SpringfieldEnv(BaseEnv):
             predictor=None,  # use the default in the scenario
         )
 
-    def step(self, action: ActionType) -> tuple[ObsType, RewardType, DoneType, TruncatedType, InfoType]:
-        obs, reward, done, truncated, info = super().step(action)
+    def step(self, action: ActionType) -> tuple[ObsType, RewardType, TerminatedType, TruncatedType, InfoType]:
+        obs, reward, terminated, truncated, info = super().step(action)
 
         # Springfield can start before any aircraft is controllable; keep an
-        # empty decentralised done dict from ending loops that call all(...).
+        # empty decentralised terminated dict from ending loops that call all(...).
         if (
             self.config.view_config["type"] == ViewType.DECENTRALIZED
-            and isinstance(done, dict)
-            and not done
+            and isinstance(terminated, dict)
+            and not terminated
             and self.timestep < self.maxstep
         ):
-            done = {"__all__": False}
+            terminated = {"__all__": False}
             truncated = {"__all__": False}
 
-        return obs, reward, done, truncated, info
+        return obs, reward, terminated, truncated, info
 
     @classmethod
     def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
@@ -296,7 +296,7 @@ if __name__ == "__main__":
         print(obs)
         pprint(info)
         for idx in range(50):
-            obs, reward, done, truncated, info = env.step(0)
+            obs, reward, terminated, truncated, info = env.step(0)
             print(idx, obs)
             pprint(info)
             print("-" * 50)
@@ -306,7 +306,7 @@ if __name__ == "__main__":
         pprint(info)
         for idx in range(50):
             actions = dict.fromkeys(obs.keys(), 0)
-            obs, reward, done, truncated, info = env.step(actions)
+            obs, reward, terminated, truncated, info = env.step(actions)
             print(idx, obs)
             pprint(info)
             print("-" * 50)

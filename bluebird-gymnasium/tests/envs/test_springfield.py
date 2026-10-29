@@ -64,12 +64,12 @@ def test_step(view_type: ViewType):
 
     if view_type == ViewType.CENTRALIZED:
         action = 0  # NOOP action.
-        obs, reward, done, truncated, info = gym_env.step(action)
+        obs, reward, terminated, truncated, info = gym_env.step(action)
         timestep_after = gym_env.timestep
 
         assert isinstance(obs, np.ndarray)
         assert isinstance(reward, float)
-        assert isinstance(done, bool)
+        assert isinstance(terminated, bool)
         assert isinstance(truncated, bool)
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after
@@ -77,12 +77,12 @@ def test_step(view_type: ViewType):
 
     else:  # decentralised
         action = {}  # no action on any aircraft
-        obs, reward, done, truncated, info = gym_env.step(action)
+        obs, reward, terminated, truncated, info = gym_env.step(action)
         timestep_after = gym_env.timestep
 
         assert isinstance(obs, dict)
         assert isinstance(reward, dict)
-        assert isinstance(done, dict)
+        assert isinstance(terminated, dict)
         assert isinstance(truncated, dict)
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after
@@ -99,20 +99,20 @@ def test_decentralized_step_does_not_stop_before_controllable_aircraft():
 
     assert obs == {}
 
-    obs, _, done, truncated, _ = gym_env.step({})
+    obs, _, terminated, truncated, _ = gym_env.step({})
 
-    assert done == {"__all__": False}
+    assert terminated == {"__all__": False}
     assert truncated == {"__all__": False}
-    assert not all(done.values())
+    assert not all(terminated.values())
 
     for _ in range(25):
         if len(obs) > 0:
             break
-        obs, _, done, truncated, _ = gym_env.step({})
+        obs, _, terminated, truncated, _ = gym_env.step({})
 
     assert len(obs) > 0
-    assert "__all__" not in done
-    assert not all(done.values())
+    assert "__all__" not in terminated
+    assert not all(terminated.values())
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
