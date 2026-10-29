@@ -2230,10 +2230,6 @@ def update_aircraft_internals(
     """
     Update Aircraft internal attributes using the aircraft_internals Events DataFrame.
 
-    Aircraft with a later event but none in the timeframe keep the next_fix_index of their last earlier event, which
-    update_route_status would otherwise have recomputed from their position. Aircraft with no event after the start of
-    the timeframe keep the recomputed one: after a rewind, for example, the events end at the time it was rewound from.
-
     Parameters
     ----------
     environment: Environment
@@ -2252,18 +2248,6 @@ def update_aircraft_internals(
     Environment
         Environment with aircraft updated using aircraft internal attribute events
     """
-    # each aircraft with an event after the start of the timeframe keeps the next_fix_index of its last event before
-    # it, unless one in the timeframe updates it below. Aircraft whose events have ended keep the recomputed one.
-    later = df_aircraft_internals.index > episode_start
-    has_later = df_aircraft_internals.callsign.isin(df_aircraft_internals.callsign[later].unique())
-    earlier = df_aircraft_internals.loc[~later & has_later, ["callsign", "next_fix_index"]]
-    earlier = earlier.groupby("callsign", sort=False, observed=True).tail(1)
-    if ignore_simmed:
-        earlier = earlier[~earlier.callsign.isin(environment.simulated_aircraft())]
-    earlier = earlier[earlier.callsign.isin(environment.aircraft)]
-    for callsign, next_fix_index in zip(earlier.callsign, earlier.next_fix_index, strict=True):
-        environment.aircraft[callsign].next_fix_index = None if pd.isna(next_fix_index) else int(next_fix_index)
-
     df = df_aircraft_internals[
         (df_aircraft_internals.index > episode_start) & (df_aircraft_internals.index <= episode_end)
     ]
