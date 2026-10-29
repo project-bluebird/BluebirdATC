@@ -3,9 +3,9 @@ version: 2
 multi-ecosystem-groups:
   ruff:
     schedule:
-      interval: weekly
+      interval: "weekly"
     labels:
-    - "C-dependencies"
+      - "C-dependencies"
 
 updates:
   - package-ecosystem: "github-actions"
@@ -13,6 +13,23 @@ updates:
     schedule:
       interval: "weekly"
 
+  - package-ecosystem: "npm"
+    directory: "/bluebird-hmi"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "C-dependencies"
+    cooldown:
+      default-days: 7
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Normal uv dependencies across the entire uv workspace.
   - package-ecosystem: "uv"
     directory: "/"
     versioning-strategy: "increase-if-necessary"
@@ -31,25 +48,14 @@ updates:
         update-types:
           - "minor"
           - "patch"
+
+  # Ruff, grouped with ruff-pre-commit.
+  - package-ecosystem: "uv"
+    directory: "/"
+    versioning-strategy: "increase-if-necessary"
     patterns:
       - "ruff"
     multi-ecosystem-group: "ruff"
-
-  - package-ecosystem: "npm"
-    directory: "/bluebird-hmi"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "C-dependencies"
-    cooldown:
-      default-days: 7
-    groups:
-      all-dependencies:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
 
   - package-ecosystem: "pre-commit"
     directory: "/"
@@ -62,3 +68,4 @@ updates:
     patterns:
       - "astral-sh/ruff-pre-commit"
     multi-ecosystem-group: "ruff"
+
