@@ -769,7 +769,7 @@ Creating Infinite Scenario
             scenario_manager=self,
             env_manager=env_manager,
             projection_centre=self.projection_centre,
-            category=category,
+            category=category if category is not None else "Infinite",
             scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
