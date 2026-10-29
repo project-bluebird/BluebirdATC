@@ -194,18 +194,67 @@ def test_nearest_segment_to_point(point, expected_segments):
     # Segment endpoints are compared as sets because direction is not significant here.
     assert set(segment) in expected_segments
 
-def test_nearest_segment_has_polygon_interior_on_left() -> None:
-    area = Area(
-        boundary=[
-            Pos2D(0.0, 0.0),
-            Pos2D(0.0, 1.0),
-            Pos2D(1.0, 1.0),
-            Pos2D(1.0, 0.0),
-        ]
-        
-    )
+@pytest.mark.parametrize(
+    ("boundary", "point", "interior"),
+    [
+        # Clockwise
+        (
+            [
+                Pos2D(0.0, 0.0),
+                Pos2D(0.0, 1.0),
+                Pos2D(1.0, 1.0),
+                Pos2D(1.0, 0.0),
+            ],
+            Pos2D(0.5, 1.1),
+            (0.5, 0.5),
+        ),
+        # Counterclockwise
+        (
+            [
+                Pos2D(0.0, 0.0),
+                Pos2D(1.0, 0.0),
+                Pos2D(1.0, 1.0),
+                Pos2D(0.0, 1.0),
+            ],
+            Pos2D(0.5, 1.1),
+            (0.5, 0.5),
+        ),
+        # Clockwise triangle
+        (
+            [
+                Pos2D(0.0, 0.0),
+                Pos2D(1.0, 2.0),
+                Pos2D(2.0, 0.0),
+            ],
+            Pos2D(1.0, 2.1),
+            (0.5, 0.5),
+        ),
+        # Counterclockwise triangle
+        (
+            [
+                Pos2D(0.0, 0.0),
+                Pos2D(2.0, 0.0),
+                Pos2D(1.0, 2.0),
+            ],
+            Pos2D(1.0, 2.1),
+            (0.5, 0.5),
+        ),
+    ],
+    ids=[
+        "square-clockwise",
+        "square-counterclockwise",
+        "triangle-clockwise",
+        "triangle-counterclockwise",
+    ],
+)
+def test_nearest_segment_has_polygon_interior_on_left(
+    boundary: list[Pos2D],
+    point: Pos2D,
+    interior: tuple[float, float],
+) -> None:
+    area = Area(boundary=boundary)
 
-    segment = area.nearest_segment_to_point(Pos2D(lat=0.5, lon=1.1))
+    segment = area.nearest_segment_to_point(point)
 
     assert segment is not None
 
@@ -213,7 +262,6 @@ def test_nearest_segment_has_polygon_interior_on_left() -> None:
 
     # Cross product of the segment direction with a vector towards a point
     # inside the polygon. Positive means that point lies to the left.
-    interior = (0.5, 0.5)
     cross_product = (
         (end[0] - start[0]) * (interior[1] - start[1])
         - (end[1] - start[1]) * (interior[0] - start[0])
