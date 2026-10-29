@@ -164,7 +164,8 @@ class Infinite(
         start_time: int
             Start time of scenario, in unix time (seconds)
         max_spawn_attempts: int
-            How many times to try and randomly spawn an aircraft that doesn't clash with existing aircraft
+            How many times to try and randomly spawn an aircraft that starts inside the penumbra and doesn't clash with
+            existing aircraft
         min_spawn_delta: float
             Minimum allowed time (in seconds) between spawns.  Default is 6.0.
         vertical_buffer_distance: int or float, default is 500
@@ -310,24 +311,27 @@ class Infinite(
 
         return aircraft, coordination_entry, coordination_exit
 
-    def add_starting_aircraft(self, event_handler: TEventHandler) -> TEventHandler:
+    def add_starting_aircraft(self, env_manager: TEnvironmentManager) -> TEnvironmentManager:
         """
-        Generate the aircraft that will be there at the start of the scenario and add them to Eventhandler
+        Generate the aircraft that will be there at the start of the scenario and add them to the EventHandler of the
+        environment manager, inside its penumbra
 
         Parameters
         ----------
-        event_handler: TEventHandler
-            newly created EventHandler instance
+        env_manager: TEnvironmentManager
+            newly created environment manager
 
         Returns
         -------
-        TEventHandler
-            containing num_starter_aircraft aircraft and coordinations
+        TEnvironmentManager
+            with num_starter_aircraft aircraft and coordinations in its EventHandler
         """
 
         # start off with a couple of aircraft from different fixes,
         # spawning in the first couple of seconds.
         current_aircraft = []
+        # the environment manager removes aircraft outside the airspace penumbra
+        min_lat, max_lat, min_lon, max_lon = env_manager.square_penumbra_limits()
 
         for i in range(self.num_starter_aircraft):
             # only allow one starter aircraft per start_fix
@@ -338,26 +342,38 @@ class Infinite(
             possible_routes = [route for route in self.routes if route.filed[0] == start_point]
             callsign = f"AIR-0{self.next_callsign_number}"
 
-            # spawn these aircraft on their starting fixes, rather than behind
-            aircraft, entry_coord, exit_coord = self.spawn_aircraft(
-                possible_routes, callsign=callsign, spawn_distance_behind_fix=0
-            )
+            # spawn these aircraft on their starting fixes, rather than behind, inside the penumbra
+            in_penumbra = False
+            attempt_count = 0
+            while True:
+                aircraft, entry_coord, exit_coord = self.spawn_aircraft(
+                    possible_routes, callsign=callsign, spawn_distance_behind_fix=0
+                )
+                in_penumbra = min_lat < aircraft.lat <= max_lat and min_lon < aircraft.lon <= max_lon
+                attempt_count += 1
+                if in_penumbra or attempt_count > self.max_spawn_attempts:
+                    break
+            # if we couldn't find a start point inside the penumbra in max_spawn_attempts tries, just continue.
+            if not in_penumbra:
+                continue
             start_time = pd.to_datetime(float(self.start_time + i), unit="s")
             aircraft.simulated = True
             # ensure coordinations are in the environment before the aircraft
-            event_handler.add_coordination(start_time - timedelta(seconds=1), entry_coord)
-            event_handler.add_coordination(start_time - timedelta(seconds=1), exit_coord)
+            env_manager.event_handler.add_coordination(start_time - timedelta(seconds=1), entry_coord)
+            env_manager.event_handler.add_coordination(start_time - timedelta(seconds=1), exit_coord)
             # add this aircraft to the EventHandler
-            event_handler.add_aircraft(start_time, aircraft)
+            env_manager.event_handler.add_aircraft(start_time, aircraft)
             # and to the list of current aircraft, to check for FL clashes
             current_aircraft.append((start_time, aircraft))
             self.next_callsign_number += 1
-        return event_handler
+        logger.debug(f"Added {len(env_manager.event_handler.coordination_df)} aircraft and coordinations.")
+        return env_manager
 
     @override
     def create_event_handler(self) -> TEventHandler:
         """
-        Generate Aircraft at random locations at regular intervals for the given Airspace.
+        Create the EventHandler for the scenario. It is empty: create_env_manager adds the starter aircraft to it once
+        the environment manager exists, and update adds the rest.
 
         Returns
         ----------
@@ -365,16 +381,10 @@ class Infinite(
             EventHandler instance for the chosen scenario
         """
 
-        # create empty event handler
-        event_handler = self.typeof_event_handler(
+        return self.typeof_event_handler(
             ignore=self.event_handler_ignore_flags,
             typeof_aircraft=self.typeof_aircraft,
         )
-
-        # add starter aircraft
-        event_handler = self.add_starting_aircraft(event_handler)
-        logger.debug(f"Added {len(event_handler.coordination_df)} aircraft and coordinations.")
-        return event_handler
 
     def create_env_manager(
         self, log_filename: str | None = None, predictor: Predictor | None = None
@@ -406,7 +416,7 @@ Creating Infinite Scenario
         if predictor is None:
             predictor = SimplePredictor(1.0, 2.0)
 
-        # create event handler from the events list
+        # create the empty event handler
         event_handler = self.create_event_handler()
 
         em = self.typeof_environment_manager(
@@ -418,6 +428,8 @@ Creating Infinite Scenario
             penumbra_lat=self.lateral_buffer_distance,
             log_filename=log_filename,
         )
+        # add the starter aircraft now that the environment manager exists, so that they start inside its penumbra
+        em = self.add_starting_aircraft(em)
         # set the visibility flag of fixes to True only if they are in the penumbra
         em.set_local_fixes_visibility()
 
@@ -472,15 +484,18 @@ Creating Infinite Scenario
             next_callsign = f"AIR-{self.next_callsign_number:02d}"
             # aircraft spawned earlier, including in this update, that aren't in the environment yet
             waiting_aircraft = [ac for time, ac in self.waiting_aircraft if time > env_manager.environment.time]
+            # the environment manager removes aircraft outside the airspace penumbra
+            min_lat, max_lat, min_lon, max_lon = env_manager.square_penumbra_limits()
 
-            # spawn these aircraft behind their starting fixes
+            # spawn these aircraft behind their starting fixes, inside the penumbra
             safe_to_spawn = False
             attempt_count = 0
             while True:
                 aircraft, entry_coord, exit_coord = self.spawn_aircraft(
                     self.routes, callsign=next_callsign, spawn_distance_behind_fix=self.spawn_distance_behind_fix
                 )
-                safe_to_spawn = check_safe_to_spawn(
+                in_penumbra = min_lat < aircraft.lat <= max_lat and min_lon < aircraft.lon <= max_lon
+                safe_to_spawn = in_penumbra and check_safe_to_spawn(
                     aircraft, env_manager.environment, self.spawn_distance_threshold, waiting_aircraft
                 )
                 attempt_count += 1
@@ -591,7 +606,8 @@ Creating Infinite Scenario
         spawn_distance_behind_fix: float
             Distance behind starting fix that an aircraft will spawn
         max_spawn_attempts: int
-            How many times to try and randomly spawn an aircraft that doesn't clash with existing aircraft
+            How many times to try and randomly spawn an aircraft that starts inside the penumbra and doesn't clash with
+            existing aircraft
         min_spawn_delta: float
             Minimum allowed time (in seconds) between spawns.  Default is 6.0.
         automatic_outcomm: bool

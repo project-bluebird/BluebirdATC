@@ -312,6 +312,31 @@ def test_aircraft_drawn_together_do_not_overlap(generate_x):
     sim.evolve(6)
     assert list(sim.manager.environment.aircraft) == ["AIR-01"]
 
+
+def test_aircraft_drawn_off_route_spawn_inside_the_penumbra():
+    """
+    setup offsets aircraft sideways from their routes. They should still start inside the airspace penumbra,
+    so that the step that adds them doesn't remove them. With this seed, AIR-03 and AIR-04 each draw a start point
+    outside it.
+    """
+    sim = Infinite.setup("X-Sector", random_seed=3, autosave_interval=None)
+    sm = sim.scenario_manager
+    # three aircraft drawn in the update at 6 s, due at 12 s
+    sm.rng = ScriptedPoisson(sm.rng, [3])
+    sim.evolve(6)
+    assert {"AIR-02", "AIR-03", "AIR-04"} <= set(sim.manager.environment.aircraft)
+
+
+def test_starter_aircraft_spawn_inside_the_penumbra():
+    """
+    setup offsets the starter aircraft sideways from their routes as well, and they should also start inside the
+    airspace penumbra. On Two Sector the offsets reach 30 nmi, and with this seed AIR-00 draws a start point outside it.
+    """
+    sim = Infinite.setup("Two Sector", random_seed=0, autosave_interval=None)
+    # the starter aircraft are added at 0 s and 1 s, and setup leaves the environment at 6 s
+    assert {"AIR-00", "AIR-01"} <= set(sim.manager.environment.aircraft)
+
+
 @pytest.mark.parametrize(
     "min_spawn_distance",
     [
