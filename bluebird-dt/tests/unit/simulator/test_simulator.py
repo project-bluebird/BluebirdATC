@@ -1,18 +1,20 @@
 import gc
+import json
 import os
 import uuid
 import weakref
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from bluebird_dt.core import Coordination
 from bluebird_dt.logger import logger
+from bluebird_dt.manager.environment_manager import EnvironmentConfig, PredictorConfig
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.simulator.simconfig import SimConfig
+from bluebird_dt.simulator.simconfig import SaveConfig, SimConfig, SimulatorConfig
 from bluebird_dt.utility.paths import LOG_DIR
 
 
@@ -95,6 +97,57 @@ def test_sim_config(category: str, scenario_name:str, scenario_config_type: type
     sim = Simulator.from_category(category=category, scenario_name=scenario_name, autosave_interval=None)
     assert isinstance(sim.config(), SimConfig)
     assert isinstance(sim.config().scenario, scenario_config_type)
+
+def test_sim_config_serialization() -> None:
+    """SimConfig must preserve scenario data through serialization."""
+
+    class TestScenarioConfig(BaseModel):
+        scenario_manager: str
+        seed: int
+
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+    config = SimConfig[TestScenarioConfig](
+        scenario_name="test",
+        scenario_category=None,
+        simulator=SimulatorConfig(projection_centre=(51.0, -1.0)),
+        environment_manager=EnvironmentConfig(
+            penumbra_latitude=50.0,
+            penumbra_flight_level=300.0,
+            predictor=PredictorConfig(
+                predictor_type="test",
+                fix_proximity=5.0,
+            ),
+        ),
+        scenario=TestScenarioConfig(
+            scenario_manager="custom",
+            seed=42,
+        ),
+        save_config=SaveConfig(
+            save_csv=False,
+            autosave_interval=None,
+            save_chunk_interval=None,
+            load_simtime=now,
+            load_realtime=now,
+        ),
+    )
+
+    # Verify JSON serialization.
+    serialized = config.model_dump_json()
+    data = json.loads(serialized)
+
+    assert data["scenario"] == {
+        "scenario_manager": "custom",
+        "seed": 42,
+    }
+
+    # Verify serialization after converting to the base type.
+    base_config = config.as_base()
+    assert json.loads(base_config.model_dump_json()) == data
+
+    # Verify deserialization preserves the original configuration.
+    restored = SimConfig[TestScenarioConfig].model_validate_json(serialized)
+    assert restored == config
 
 @pytest.mark.parametrize(
     "the_datetime, expected_number_of_new_coordinations",

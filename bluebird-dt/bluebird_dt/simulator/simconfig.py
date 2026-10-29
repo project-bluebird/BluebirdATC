@@ -62,3 +62,13 @@ class SimConfig(BaseModel, Generic[TScenarios]):
     environment_manager: EnvironmentConfig
     scenario: TScenarios | None
     save_config: SaveConfig
+
+    def as_base(self) -> "SimConfig[BaseModel]":
+        return SimConfig[BaseModel](
+            scenario_name=self.scenario_name,
+            scenario_category=self.scenario_category,
+            simulator=self.simulator,
+            environment_manager=self.environment_manager,
+            scenario=self.scenario,
+            save_config=self.save_config,
+        )

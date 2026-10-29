@@ -32,6 +32,7 @@ from bluebird_dt.utility.clearance import add_phraseology
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.predictor import Predictor
+    from bluebird_dt.simulator.simconfig import SimConfig
 
 from bluebird_dt.utility import constants
 
@@ -855,7 +856,7 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
         # tell the API that frontend needs to reload environment
         self.reload_environment = True
 
-    def write_logs_to_buffer(self, sim_config: BaseModel, save_csv: bool | None = True) -> io.BytesIO:
+    def write_logs_to_buffer(self, sim_config: SimConfig[BaseModel], save_csv: bool | None = True) -> io.BytesIO:
         """
         Save the logs to a tar buffer in memory
 
