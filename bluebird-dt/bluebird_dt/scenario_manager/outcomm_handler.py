@@ -77,8 +77,6 @@ class OutcommHandler:
 
     Parameters
     ----------
-    aircraft_in_sector:
-        Used to keep track of aircraft observed inside each sector.
     require_exit_fl:
         Whether the aircraft must be at the coordinated exit flight level.
     """
@@ -88,7 +86,7 @@ class OutcommHandler:
     _previously_aircraft_in_sector: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
     _previous_positions: dict[str, Pos2D] = field(default_factory=dict)
 
-    def _should_outcom_aircraft(
+    def _should_outcomm_aircraft(
         self,
         aircraft: Aircraft,
         previous_position: Pos2D,
@@ -182,7 +180,7 @@ class OutcommHandler:
                 aircraft.callsign,
             )
 
-            if self._should_outcom_aircraft(
+            if self._should_outcomm_aircraft(
                 aircraft,
                 previous_position,
                 current_sector,

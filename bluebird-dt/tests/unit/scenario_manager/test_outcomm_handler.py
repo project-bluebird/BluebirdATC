@@ -8,7 +8,7 @@ from bluebird_dt.core import Aircraft, Coordination, FlightPlan, Pos2D, Route
 @pytest.fixture
 def gate() -> ExitGate:
     """Create a north-south gate around longitude 0."""
-    return ExitGate.new(
+    return ExitGate(
         start_position=Pos2D(lon=0.0, lat=-0.1),
         end_position=Pos2D(lon=0.0, lat=0.1),
     )
@@ -194,5 +194,5 @@ def test_outcomm_handler_near_edge(
     outcomm_handler._previous_positions = {"AIR01": previous_position}
     outcomm_handler._previously_aircraft_in_sector = {"sector_i": {"AIR01"}}
 
-    assert (not outcomms) ^ outcomm_handler._should_outcom_aircraft(aircraft, previous_position, sector, "sector_i", coordination, airspace.fixes)
+    assert (not outcomms) ^ outcomm_handler._should_outcomm_aircraft(aircraft, previous_position, sector, "sector_i", coordination, airspace.fixes)
 
