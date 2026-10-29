@@ -313,13 +313,19 @@ def test_aircraft_drawn_together_do_not_overlap(generate_x):
     assert list(sim.manager.environment.aircraft) == ["AIR-01"]
 
 
-def test_aircraft_drawn_off_route_spawn_inside_the_penumbra():
+@pytest.mark.parametrize("aircraft_on_route", [False, True])
+def test_aircraft_spawned_far_behind_their_fixes_are_kept(aircraft_on_route):
     """
-    setup offsets aircraft sideways from their routes. They should still start inside the airspace penumbra,
-    so that the step that adds them doesn't remove them. With this seed, AIR-03 and AIR-04 each draw a start point
-    outside it.
+    Aircraft spawned further behind their fixes than the default penumbra reaches should be in the environment once they
+    spawn, as the penumbra should grow to fit them.
     """
-    sim = Infinite.setup("X-Sector", random_seed=3, autosave_interval=None)
+    sim = Infinite.setup(
+        "X-Sector",
+        spawn_distance_behind_fix=50,
+        aircraft_on_route=aircraft_on_route,
+        random_seed=0,
+        autosave_interval=None,
+    )
     sm = sim.scenario_manager
     # three aircraft drawn in the update at 6 s, due at 12 s
     sm.rng = ScriptedPoisson(sm.rng, [3])
@@ -327,14 +333,20 @@ def test_aircraft_drawn_off_route_spawn_inside_the_penumbra():
     assert {"AIR-02", "AIR-03", "AIR-04"} <= set(sim.manager.environment.aircraft)
 
 
-def test_starter_aircraft_spawn_inside_the_penumbra():
+@pytest.mark.parametrize("scenario_name", AirspaceLoader.list_airspaces())
+def test_penumbra_contains_every_start_point(scenario_name):
     """
-    setup offsets the starter aircraft sideways from their routes as well, and they should also start inside the
-    airspace penumbra. On Two Sector the offsets reach 30 nmi, and with this seed AIR-00 draws a start point outside it.
+    On every airspace, the penumbra should contain every start point spawn_aircraft gives aircraft offset sideways from
+    their routes, both on their first fixes, as for the starter aircraft, and behind them.
     """
-    sim = Infinite.setup("Two Sector", random_seed=0, autosave_interval=None)
-    # the starter aircraft are added at 0 s and 1 s, and setup leaves the environment at 6 s
-    assert {"AIR-00", "AIR-01"} <= set(sim.manager.environment.aircraft)
+    airspace, routes, sector_name = AirspaceLoader.load(scenario_name)
+    sm = Infinite(airspace=airspace, routes=routes, sector_name=sector_name, aircraft_on_route=False, random_seed=0)
+    em = sm.create_env_manager()
+    min_lat, max_lat, min_lon, max_lon = em.square_penumbra_limits()
+    for spawn_distance_behind_fix in (0, sm.spawn_distance_behind_fix):
+        for _ in range(200):
+            aircraft, _, _ = sm.spawn_aircraft(routes, callsign="TEST", spawn_distance_behind_fix=spawn_distance_behind_fix)
+            assert min_lat < aircraft.lat <= max_lat and min_lon < aircraft.lon <= max_lon
 
 
 @pytest.mark.parametrize(
