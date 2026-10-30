@@ -1,6 +1,6 @@
 import typing
 from dataclasses import dataclass
-from enum import Enum, EnumMeta, IntEnum
+from enum import EnumMeta, IntEnum
 
 from bluebird_dt.core.coordination import Coordination
 from bluebird_dt.core.pos2d import Pos2D
@@ -20,16 +20,6 @@ class MetaEnum(EnumMeta):
         except ValueError:
             return False
         return True
-
-
-class StrEnum(str, Enum):
-    # support for python < 3.11
-    @staticmethod
-    def _generate_next_value_(name: str, start: int, count: int, last_values: list) -> str:  # noqa: ARG004
-        return name.lower()
-
-    def __str__(self) -> str:
-        return self.value
 
 
 class PositionStatus(IntEnum, metaclass=MetaEnum):

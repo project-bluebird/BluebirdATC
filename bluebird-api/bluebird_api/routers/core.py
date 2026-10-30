@@ -1,5 +1,5 @@
 import typing
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pandas as pd
 from bluebird_dt.core import WindField
@@ -168,7 +168,7 @@ async def actions(runner: RunnerDep, action_input: list[ActionInput]) -> bool:
         action_time = (
             datetime.fromtimestamp(
                 runner.sim.manager.environment.time,
-                tz=timezone.utc,
+                tz=UTC,
             ).isoformat(timespec="microseconds")[:-6]
         ).replace("T", " ")
 

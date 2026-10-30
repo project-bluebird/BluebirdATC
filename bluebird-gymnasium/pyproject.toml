@@ -5,7 +5,7 @@ license = "AGPL-3.0-or-later"
 description = "An gymnasium environment for air traffic control."
 authors = [{name="Project Bluebird"}]
 readme = "README.md"
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.11,<3.16"
 
 dependencies = [
     "gymnasium>=0.29.1",
@@ -35,7 +35,7 @@ bluebird-dt = { workspace = true }
 [tool.ruff]
 extend-exclude = ["*.ipynb", "tests/*"]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 ignore = [
