@@ -6,6 +6,8 @@ In a single agent view, an environment expects a single external agent interacti
 
 In a decentralised multi-agent environment, multiple agents interact with it. The environment expects a Python dictionary of actions from the agents, where each key is an agent id and each value is an action. The `step` and `reset` methods return a dictionary of observed state, rewards, terminated flags, truncated flags, and auxiliary information. Each dictionary contains a key-value pair for an agent, with the key being the agent id.
 
+Either `terminated` or `truncated` is set to `True` when a terminating condition (the maximum number of steps reached) is reached in the gymnasium environments. At the terminating condition, when there are no more aircraft to be initialized or spawned in the scenario, `terminated` is set to `True`. Otherwise, `truncated` is set to `True`.
+
 
 
 ## State Representation

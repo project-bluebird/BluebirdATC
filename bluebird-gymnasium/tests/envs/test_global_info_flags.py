@@ -65,7 +65,7 @@ def test_global_terminated_truncated(view_type: ViewType):
             assert info["__global_truncated__"] is True
 
         # try to step in a scenario that has ended. this should raise a
-        # value error which is caught by pytest. failure to raise the
+        # ResetNeeded error which is caught by pytest. failure to raise the
         # error leads to a failed test.
         with pytest.raises(ResetNeeded):
             _ = gym_env.step(action)
