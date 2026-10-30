@@ -90,6 +90,26 @@ class InfiniteEnv(BaseEnv):
 
         return sim
 
+    def end_criteria(self) -> tuple[bool, bool]:
+        """Determine the end criteria: terminated or truncated
+
+        Returns:
+            a tuple containing the statuses of terminated and truncated.
+
+        In this environment, truncated is always set to true (while
+        terminated False) when the maximum number of timesteps have been
+        reached.
+        """
+
+        terminated = truncated = False
+        if self.timestep >= self.maxstep:
+            self._needs_reset = True
+
+            terminated = False
+            truncated = True
+
+        return terminated, truncated
+
     @classmethod
     def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
@@ -274,6 +294,26 @@ class CustomInfiniteEnv(BaseEnv):
         self.scenario_manager = sim.scenario_manager
 
         return sim
+
+    def end_criteria(self) -> tuple[bool, bool]:
+        """Determine the end criteria: terminated or truncated
+
+        Returns:
+            a tuple containing the statuses of terminated and truncated.
+
+        In this environment, truncated is always set to true (while
+        terminated False) when the maximum number of timesteps have been
+        reached.
+        """
+
+        terminated = truncated = False
+        if self.timestep >= self.maxstep:
+            self._needs_reset = True
+
+            terminated = False
+            truncated = True
+
+        return terminated, truncated
 
     @classmethod
     def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
