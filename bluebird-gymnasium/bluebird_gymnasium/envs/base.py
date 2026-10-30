@@ -1483,16 +1483,17 @@ class BaseEnv(gym.Env):
         reached. Otherwise, truncated is set to true if there are still
         "active" aircraft in the scenario at the end timestep or terminated
         is set to true if there are no active aircraft.
+
+        An aircraft is active if it is tracked and not terminated (see
+        `_is_aircraft_terminated`). Note, an outcommed aircraft that is
+        still inside the sector keeps its `IN_SECTOR` position status until
+        it reaches its exit window or leaves the sector, but it is not active.
         """
 
         terminated = truncated = False
         if self.timestep >= self.maxstep:
-            if self.out_sector_control:
-                active_set = [PositionStatus.BEFORE_ENTRY, PositionStatus.IN_SECTOR, PositionStatus.OUT_SECTOR]
-            else:
-                active_set = [PositionStatus.BEFORE_ENTRY, PositionStatus.IN_SECTOR]
             active_aircraft = [
-                callsign for callsign, ac_info in self.ac_tracker.items() if ac_info.pos_status in active_set
+                callsign for callsign, ac_info in self.ac_tracker.items() if not self._is_aircraft_terminated(ac_info)
             ]
 
             if len(active_aircraft) > 0:
@@ -1501,6 +1502,27 @@ class BaseEnv(gym.Env):
                 terminated = True
 
         return terminated, truncated
+
+    def _is_aircraft_terminated(self, ac_info: ACStateTracker) -> bool:
+        """Check whether a tracked aircraft is terminated.
+
+        An aircraft is terminated if it has reached its exit, has been
+        outcommed, or is out of the sector when out of sector control is not
+        enabled. This rule is shared by the per-aircraft terminated flags and
+        the global end criteria.
+
+        Args:
+            ac_info: the tracked information of the aircraft.
+
+        Returns:
+            True if the aircraft is terminated, otherwise False.
+        """
+
+        return (
+            ac_info.pos_status == PositionStatus.EXIT_REACHED
+            or ac_info.outcomm_status is True
+            or (ac_info.pos_status == PositionStatus.OUT_SECTOR and self._out_sector_control is False)
+        )
 
     def step(self, action: ActionType) -> tuple[ObsType, RewardType, TerminatedType, TruncatedType, InfoType]:
         """Move simulation forward one step.
@@ -2067,7 +2089,7 @@ class BaseEnv(gym.Env):
             c_outcomm = self.ac_tracker[callsign].outcomm_status
             c_pos = self.ac_tracker[callsign].pos_status
             if c_outcomm is True or c_pos == PositionStatus.EXIT_REACHED or c_pos == PositionStatus.OUT_SECTOR:
-                # do not stopped an out of sector from being tracked (even
+                # do not stop an out of sector from being tracked (even
                 # after distance threshold is reached) if the out of sector
                 # control flag is set.
                 if c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
@@ -2352,16 +2374,7 @@ class BaseEnv(gym.Env):
             # compute final terminateds for aircraft
             # if callsign in actions.keys():
             if callsign in _final_reward_callsigns:
-                c_outcomm = self.ac_tracker[callsign].outcomm_status
-                c_pos = self.ac_tracker[callsign].pos_status
-                if (
-                    c_pos == PositionStatus.EXIT_REACHED
-                    or c_outcomm is True
-                    or (c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is False)
-                ):
-                    _final_terminateds[callsign] = True
-                else:
-                    _final_terminateds[callsign] = False
+                _final_terminateds[callsign] = self._is_aircraft_terminated(self.ac_tracker[callsign])
 
             # log action in info
             # if this is a new aircraft or an outcommed aircraft, there is
@@ -2497,7 +2510,7 @@ class BaseEnv(gym.Env):
             c_outcomm = self.ac_tracker[callsign].outcomm_status
             c_pos = self.ac_tracker[callsign].pos_status
             if c_outcomm is True or c_pos == PositionStatus.EXIT_REACHED or c_pos == PositionStatus.OUT_SECTOR:
-                # do not stopped an out of sector from being tracked (even
+                # do not stop an out of sector from being tracked (even
                 # after distance threshold is reached) if the out of sector
                 # control flag is set.
                 if c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:

@@ -130,6 +130,12 @@ def test_end_criteria_before_maxstep(view_type: ViewType):
         {},
         {"AC1": ACStateTracker(pos_status=PositionStatus.EXIT_REACHED, outcomm_status=False)},
         {"AC1": ACStateTracker(pos_status=PositionStatus.OUT_SECTOR, outcomm_status=False)},
+        # outcommed aircraft still inside the sector are no longer active
+        {"AC1": ACStateTracker(pos_status=PositionStatus.IN_SECTOR, outcomm_status=True)},
+        {
+            "AC1": ACStateTracker(pos_status=PositionStatus.IN_SECTOR, outcomm_status=True),
+            "AC2": ACStateTracker(pos_status=PositionStatus.EXIT_REACHED, outcomm_status=True),
+        },
     ],
 )
 def test_end_criteria_terminated(view_type: ViewType, tracker: dict):
@@ -177,6 +183,12 @@ def test_end_criteria_out_sector_control(view_type: ViewType):
     assert gym_env.end_criteria() == (False, True)
 
     gym_env.out_sector_control = False
+    assert gym_env.end_criteria() == (True, False)
+
+    # an outcommed out of sector aircraft is not active, even with out of
+    # sector control enabled
+    gym_env.out_sector_control = True
+    gym_env.ac_tracker["AC1"].outcomm_status = True
     assert gym_env.end_criteria() == (True, False)
 
 
