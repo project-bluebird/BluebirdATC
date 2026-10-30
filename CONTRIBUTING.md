@@ -182,8 +182,14 @@ We recognise that the use of AI tools for writing code is becoming more and more
  You can also install the [pre-commit][pre-commit] hooks so that ruff runs on your changes every time you commit:
 
  ```bash
- uv run pre-commit install
+ pre-commit install
  ```
+
+To install pre-commit globally you can use:
+
+```bash
+uv tool install pre-commit
+```
 
  ---
 
