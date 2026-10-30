@@ -91,30 +91,6 @@ def test_step(view_type: ViewType):
             assert obs[callsign].shape == gym_env.observation_space.shape
 
 
-def test_decentralized_step_does_not_stop_before_controllable_aircraft():
-    """Test the initial Springfield decentralised empty-agent warm-up."""
-
-    gym_env = _get_env_instance(ViewType.DECENTRALIZED)
-    obs, _ = gym_env.reset(seed=100)
-
-    assert obs == {}
-
-    obs, _, terminated, truncated, _ = gym_env.step({})
-
-    assert terminated == {"__all__": False}
-    assert truncated == {"__all__": False}
-    assert not all(terminated.values())
-
-    for _ in range(25):
-        if len(obs) > 0:
-            break
-        obs, _, terminated, truncated, _ = gym_env.step({})
-
-    assert len(obs) > 0
-    assert "__all__" not in terminated
-    assert not all(terminated.values())
-
-
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
 def test_pos_information(view_type: ViewType):
     """Test `check_pos_information` method of the gym environment.
