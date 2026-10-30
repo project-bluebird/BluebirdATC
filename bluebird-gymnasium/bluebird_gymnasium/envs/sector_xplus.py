@@ -93,8 +93,8 @@ class SectorXPlusEnv(BaseEnv):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralised (single agent) or
-                decentralised (multi-agent).
+            view_type: the type of agent view, centralized (single agent) or
+                decentralized (multi-agent).
                 Defaults to "centralized".
 
         Returns:
