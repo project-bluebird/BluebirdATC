@@ -3,13 +3,13 @@ from __future__ import annotations
 import operator
 import typing
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Self
 
 import numpy as np
 import pandas as pd
 import typing_extensions
 from pydantic import BaseModel
-from typing_extensions import Self
 
 from bluebird_dt.core import (
     Action,
@@ -1126,7 +1126,7 @@ class EventHandler(typing.Generic[TAircraft]):
         environment.reset()
 
         # set environment time to new_time
-        environment.time = new_time.replace(tzinfo=timezone.utc).timestamp()
+        environment.time = new_time.replace(tzinfo=UTC).timestamp()
 
         # update from radar
         # only use last 6 seconds

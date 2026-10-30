@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 import typing
-from datetime import timezone
+from datetime import UTC
 from typing import Generic, NamedTuple
 
 import numpy as np
@@ -585,9 +585,7 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
 
         # if there are any remaining events or any aircraft left in the airspace,
         # then we aren't finished.
-        no_events_left = (
-            self.environment.time > self.event_handler.radar_df.index.max().replace(tzinfo=timezone.utc).timestamp()
-        )
+        no_events_left = self.environment.time > self.event_handler.radar_df.index.max().replace(tzinfo=UTC).timestamp()
         no_aircraft_left = len(self.environment.aircraft) == 0
 
         return no_events_left and no_aircraft_left

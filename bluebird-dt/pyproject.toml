@@ -9,7 +9,7 @@ license = "AGPL-3.0-or-later"
 name = "bluebird-dt"
 readme = "README.md"
 version = "0.4.0"
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.11,<3.16"
 dependencies = [
     "aiofiles>=25.1.0",
     "geojson>=3.2.0,<4",
@@ -54,7 +54,7 @@ packages = ["bluebird_dt"]
 [tool.ruff]
 extend-exclude = ["*.ipynb", "tests/*"]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 ignore = [

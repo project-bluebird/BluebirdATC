@@ -9,7 +9,7 @@ name = "bluebird-api"
 license = "AGPL-3.0-or-later"
 readme = "README.md"
 version = "0.4.0"
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.11,<3.16"
 dependencies = [
   "bluebird-dt==0.4.0",
   "fastapi>=0.141.1,<0.142",
@@ -40,7 +40,7 @@ bluebird-api = "bluebird_api.serve:main"
 [tool.ruff]
 extend-exclude = ["*.ipynb", "tests/*"]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 ignore = [
