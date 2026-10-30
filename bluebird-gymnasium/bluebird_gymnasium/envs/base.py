@@ -2372,7 +2372,6 @@ class BaseEnv(gym.Env):
             info[callsign]["total_reward"] = np.sum(list(_rewards[callsign].values())).item()
 
             # compute final terminateds for aircraft
-            # if callsign in actions.keys():
             if callsign in _final_reward_callsigns:
                 _final_terminateds[callsign] = self._is_aircraft_terminated(self.ac_tracker[callsign])
 
