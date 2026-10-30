@@ -171,8 +171,8 @@ class Infinite(
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
-            Distance to expand airspace lateral boundary by - UoM: NMI. Widened to fit the aircraft's start points if
-            they are further out.
+            Minimum distance to expand airspace lateral boundary by - UoM: NMI. Widened to fit the aircraft's start
+            points if they are further out.
         fl_limits: tuple[int, int]
             min, max FL at which aircraft can be spawned.
             Note that these values may be superseded if the airspace has more restrictive limits.
@@ -332,7 +332,7 @@ class Infinite(
         list[Pos2D]
         """
         gh = self.airspace.geo_helper
-        start_points = []
+        start_points: list[Pos2D] = []
         for route in self.routes:
             first_fix = self.airspace.fixes.places[route.filed[0]]
             second_fix = self.airspace.fixes.places[route.filed[1]]
@@ -646,8 +646,8 @@ Creating Infinite Scenario
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by, in units of FL
         lateral_buffer_distance: int or float, default is 20
-            Distance to expand airspace lateral boundary by, in units of NMI. Widened to fit the aircraft's start points
-            if they are further out.
+            Minimum distance to expand airspace lateral boundary by, in units of NMI. Widened to fit the aircraft's
+            start points if they are further out.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import io
-import math
 import typing
-from collections.abc import Iterable
+from collections.abc import Sequence
 from datetime import timezone
 from typing import Generic, NamedTuple
 
@@ -341,24 +340,25 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
 
         return min_lat, max_lat, min_lon, max_lon
 
-    def expand_penumbra_to_include(self, positions: Iterable[Pos2D], margin_nmi: float = 0.0) -> None:
+    def expand_penumbra_to_include(self, positions: Sequence[Pos2D], margin_nmi: float = 0.0) -> None:
         """
         Widen the square penumbra around the airspace, if needed, so that it contains all the positions, for scenarios
         that start aircraft further out than penumbra_lat reaches.
 
         Parameters
         ----------
-        positions: Iterable[Pos2D]
+        positions: Sequence[Pos2D]
             The positions the penumbra has to contain.
         margin_nmi: float, default = 0.0
             How far inside the penumbra the positions have to be, in NMI like penumbra_lat.
         """
+        if not positions:
+            return
         min_lat, max_lat, min_lon, max_lon = self.square_penumbra_limits()
-        # how far the positions go beyond the penumbra, in degrees
-        beyond = max(
-            (max(min_lat - p.lat, p.lat - max_lat, min_lon - p.lon, p.lon - max_lon) for p in positions),
-            default=-math.inf,
-        )
+        lats = [p.lat for p in positions]
+        lons = [p.lon for p in positions]
+        # how far the box around the positions goes beyond the penumbra, in degrees
+        beyond = max(min_lat - min(lats), max(lats) - max_lat, min_lon - min(lons), max(lons) - max_lon)
         needed = beyond * constants.NM_PER_DEGREE + margin_nmi
         if needed > 0:
             self.penumbra_lat += needed
