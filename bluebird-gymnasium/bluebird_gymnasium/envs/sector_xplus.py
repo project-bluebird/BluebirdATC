@@ -55,9 +55,6 @@ class SectorXPlusEnv(BaseEnv):
 
         self.scenario_manager = None  # set in _generate_scenario
 
-        ####### reset env
-        self.reset()
-
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
         category = "Custom"
@@ -93,8 +90,8 @@ class SectorXPlusEnv(BaseEnv):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralised (single agent) or
-                decentralised (multi-agent).
+            view_type: the type of agent view, centralized (single agent) or
+                decentralized (multi-agent).
                 Defaults to "centralized".
 
         Returns:
