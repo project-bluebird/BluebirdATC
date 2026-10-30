@@ -55,9 +55,6 @@ class SectorYEnv(BaseEnv):
 
         self.scenario_manager = None  # created in _generate_scenario
 
-        ####### reset env
-        self.reset()
-
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
         category = "Custom"

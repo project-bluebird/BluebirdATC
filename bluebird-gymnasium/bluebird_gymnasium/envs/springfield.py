@@ -98,9 +98,6 @@ class SpringfieldEnv(BaseEnv):
         else:
             raise ValueError("Could not initialise sector")
 
-        ####### reset env
-        self.reset()
-
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
         category = string.capwords(SPRINGFIELD_SECTOR_NAME)

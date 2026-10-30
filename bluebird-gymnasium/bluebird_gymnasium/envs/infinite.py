@@ -62,9 +62,6 @@ class InfiniteEnv(BaseEnv):
         ####### airspace metadata
         self._setup_airspace(self.config.scenario_config["scenario_name"])
 
-        ####### reset env
-        self.reset()
-
     def _generate_scenario(self) -> Simulator:
         """Generate a scenario in the simulator."""
 
@@ -254,9 +251,6 @@ class CustomInfiniteEnv(BaseEnv):
 
         ####### airspace metadata
         self._setup_airspace(self.config.scenario_config["scenario_name"])
-
-        ####### reset env
-        self.reset()
 
     def _generate_scenario(self) -> Simulator:
         """Generate a scenario in the simulator."""
