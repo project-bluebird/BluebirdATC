@@ -1487,8 +1487,6 @@ class BaseEnv(gym.Env):
 
         terminated = truncated = False
         if self.timestep >= self.maxstep:
-            self._needs_reset = True
-
             if self.out_sector_control:
                 active_set = [PositionStatus.BEFORE_ENTRY, PositionStatus.IN_SECTOR, PositionStatus.OUT_SECTOR]
             else:
@@ -1607,6 +1605,11 @@ class BaseEnv(gym.Env):
         # flag in `self.config.simulation_log_config` is set to `True`.
         if (ret_values[2] or ret_values[3]) and self.config.simulation_log_config["save_simulation"]:
             self.save_simulation_logs()
+
+        # check the global terminated/truncated flags in `info` dict if the
+        # environment needs to be reset.
+        if ret_values[-1]["__global_terminated__"] or ret_values[-1]["__global_truncated__"]:
+            self._needs_reset = True
 
         return ret_values
 
@@ -2025,8 +2028,7 @@ class BaseEnv(gym.Env):
         terminated, truncated = self.end_criteria()
 
         # global terminated/truncated flag.
-        # same as terminated and truncated above. added for
-        # compatibility with decentralized setup.
+        # same as terminated and truncated above in centralized setup.
         info["__global_terminated__"] = terminated
         info["__global_truncated__"] = truncated
 

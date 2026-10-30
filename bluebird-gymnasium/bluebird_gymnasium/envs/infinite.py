@@ -103,8 +103,6 @@ class InfiniteEnv(BaseEnv):
 
         terminated = truncated = False
         if self.timestep >= self.maxstep:
-            self._needs_reset = True
-
             terminated = False
             truncated = True
 
@@ -308,8 +306,6 @@ class CustomInfiniteEnv(BaseEnv):
 
         terminated = truncated = False
         if self.timestep >= self.maxstep:
-            self._needs_reset = True
-
             terminated = False
             truncated = True
 
