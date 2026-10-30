@@ -1910,9 +1910,8 @@ class BaseEnv(gym.Env):
             _rewards[callsign] = self.compute_reward(callsign, actions_rf_in[callsign])
 
             if callsign in self.ac_tracker_prev_step:
-                # previous step (p_) outcomm and position status
-                p_outcomm = self.ac_tracker_prev_step[callsign].outcomm_status
-                p_pos = self.ac_tracker_prev_step[callsign].pos_status
+                # previous step (p_) tracked information
+                p_info = self.ac_tracker_prev_step[callsign]
             else:
                 # aircraft was just added, after the simulator was
                 # updated/evolved in this current call to `step(...)`.
@@ -1924,11 +1923,10 @@ class BaseEnv(gym.Env):
                 # respectively when the dynamic data was initialised for the
                 # new aircraft in an earlier portion of this mdethod.
 
-                # assumed previous step (p_) outcomm and position status
-                p_outcomm = self.ac_tracker[callsign].outcomm_status
-                p_pos = self.ac_tracker[callsign].pos_status
+                # assumed previous step (p_) tracked information
+                p_info = self.ac_tracker[callsign]
 
-            if p_pos == PositionStatus.BEFORE_ENTRY:
+            if p_info.pos_status == PositionStatus.BEFORE_ENTRY:
                 # aircraft is yet to incomm. therefore, mask all rewards
                 # as zeros (regardless of compute rewards). this is because
                 # the aircraft is not yet in the controlled sector.
@@ -1940,7 +1938,7 @@ class BaseEnv(gym.Env):
                     _rewards[callsign][key] = 0.0
                 _final_reward_callsigns.append(callsign)
 
-            elif p_pos in [PositionStatus.OUT_SECTOR, PositionStatus.EXIT_REACHED] or p_outcomm is True:
+            elif self._is_aircraft_terminated(p_info):
                 # aircraft that has outcommed, or incorrect navigated out of
                 # sector or reached the sector exit it's still tracked for
                 # a number of timestep (i.e., in `.ac_tracker`) even though
@@ -1950,19 +1948,19 @@ class BaseEnv(gym.Env):
                 # external agent can no longer issue actions to them.
                 #
                 # note, if `self._out_sector_control` is `True`, then aircraft
-                # with position status OUT_SECTOR is included in
-                # the final reward computation as the aircraft can still be
-                # controlled by the external agent.
-                if p_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
-                    _final_reward_callsigns.append(callsign)
-                else:
-                    for key in _rewards[callsign]:
-                        _rewards[callsign][key] = 0.0
-                    # do not include the aircraft in `_final_reward_callsigns`
+                # with position status OUT_SECTOR that hasn't outcommed is not
+                # terminated (see `_is_aircraft_terminated`). so, it is
+                # included in the final reward computation (else branch
+                # below) as the aircraft can still be controlled by the
+                # external agent.
+                for key in _rewards[callsign]:
+                    _rewards[callsign][key] = 0.0
+                # do not include the aircraft in `_final_reward_callsigns`
 
             else:
-                # aircraft that hasn't outcommed and position status
-                # set to in sector PositionStatus.IN_SECTOR
+                # aircraft that hasn't outcommed and position status set to
+                # in sector `IN_SECTOR` (or out of sector `OUT_SECTOR`, if
+                # `self._out_sector_control` is `True`)
                 _final_reward_callsigns.append(callsign)
 
             ac_info[callsign]["rewards"] = _rewards[callsign]
@@ -2310,9 +2308,8 @@ class BaseEnv(gym.Env):
             _rewards[callsign] = self.compute_reward(callsign, act)
 
             if callsign in self.ac_tracker_prev_step:
-                # previous step (p_) outcomm and position status
-                p_outcomm = self.ac_tracker_prev_step[callsign].outcomm_status
-                p_pos = self.ac_tracker_prev_step[callsign].pos_status
+                # previous step (p_) tracked information
+                p_info = self.ac_tracker_prev_step[callsign]
             else:
                 # aircraft was just added, after the simulator was
                 # updated/evolved in this current call to `step(...)`.
@@ -2324,11 +2321,10 @@ class BaseEnv(gym.Env):
                 # respectively when the dynamic data was initialised for the
                 # new aircraft in an earlier portion of this mdethod.
 
-                # assumed previous step (p_) outcomm and position status
-                p_outcomm = self.ac_tracker[callsign].outcomm_status
-                p_pos = self.ac_tracker[callsign].pos_status
+                # assumed previous step (p_) tracked information
+                p_info = self.ac_tracker[callsign]
 
-            if p_pos == PositionStatus.BEFORE_ENTRY:
+            if p_info.pos_status == PositionStatus.BEFORE_ENTRY:
                 # aircraft is yet to incomm. therefore, mask all rewards
                 # as zeros (regardless of compute rewards). this is because
                 # the aircraft is not yet in the controlled sector.
@@ -2340,7 +2336,7 @@ class BaseEnv(gym.Env):
                     _rewards[callsign][key] = 0.0
                 _final_reward_callsigns.append(callsign)
 
-            elif p_pos in [PositionStatus.OUT_SECTOR, PositionStatus.EXIT_REACHED] or p_outcomm is True:
+            elif self._is_aircraft_terminated(p_info):
                 # aircraft that has outcommed, or incorrect navigated out of
                 # sector or reached the sector exit it's still tracked for
                 # a number of timestep (i.e., in `.ac_tracker`) even though
@@ -2350,19 +2346,19 @@ class BaseEnv(gym.Env):
                 # external agent can no longer issue actions to them.
                 #
                 # note, if `self._out_sector_control` is `True`, then aircraft
-                # with position status OUT_SECTOR is included in the final
-                # reward computation as the aircraft can still be controlled
-                # by the external agent.
-                if p_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
-                    _final_reward_callsigns.append(callsign)
-                else:
-                    for key in _rewards[callsign]:
-                        _rewards[callsign][key] = 0.0
-                    # do not include the aircraft in `_final_reward_callsigns`
+                # with position status OUT_SECTOR that hasn't outcommed is not
+                # terminated (see `_is_aircraft_terminated`). so, it is
+                # included in the final reward computation (else branch
+                # below) as the aircraft can still be controlled by the
+                # external agent.
+                for key in _rewards[callsign]:
+                    _rewards[callsign][key] = 0.0
+                # do not include the aircraft in `_final_reward_callsigns`
 
             else:
-                # aircraft that hasn't outcommed and position status
-                # set to in sector `IN_SECTOR`
+                # aircraft that hasn't outcommed and position status set to
+                # in sector `IN_SECTOR` (or out of sector `OUT_SECTOR`, if
+                # `self._out_sector_control` is `True`)
                 _final_reward_callsigns.append(callsign)
 
             info[callsign]["rewards"] = _rewards[callsign]
