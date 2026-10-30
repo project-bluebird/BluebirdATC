@@ -2081,24 +2081,21 @@ class BaseEnv(gym.Env):
         #       within real-world ATC formulation.
         #       NOTE 2: if `self._out_sector_control` is `True`, do NOT apply
         #       threshold to check when to remove the aircraft from being
-        #       actively tracked. Rather, keep aircraft in the active tracker.
+        #       actively tracked. Rather, keep aircraft in the active tracker,
+        #       unless it has outcommed (it can no longer be controlled).
 
         callsigns_to_move = []
-        for callsign in self.ac_tracker:
-            # next/current (c_) outcomm and position status
-            c_outcomm = self.ac_tracker[callsign].outcomm_status
-            c_pos = self.ac_tracker[callsign].pos_status
-            if c_outcomm is True or c_pos == PositionStatus.EXIT_REACHED or c_pos == PositionStatus.OUT_SECTOR:
-                # do not stop an out of sector from being tracked (even
-                # after distance threshold is reached) if the out of sector
-                # control flag is set.
-                if c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
-                    continue
+        for callsign, ac_info in self.ac_tracker.items():
+            # only aircraft that can no longer be controlled are candidates
+            # to be removed from active tracking (see
+            # `_is_aircraft_terminated`).
+            if not self._is_aircraft_terminated(ac_info):
+                continue
 
-                _d1 = self.ac_tracker[callsign].dist_away_from_sector_exit
-                _d2 = self.ac_tracker[callsign].dist_away_from_incorrect_sector_exit
-                if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
-                    callsigns_to_move.append(callsign)
+            _d1 = ac_info.dist_away_from_sector_exit
+            _d2 = ac_info.dist_away_from_incorrect_sector_exit
+            if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
+                callsigns_to_move.append(callsign)
 
         for callsign in callsigns_to_move:
             self.ac_archived[callsign] = self.ac_tracker[callsign]
@@ -2501,24 +2498,21 @@ class BaseEnv(gym.Env):
         #       within real-world ATC formulation.
         #       NOTE 2: if `self._out_sector_control` is `True`, do NOT apply
         #       threshold to check when to remove the aircraft from being
-        #       actively tracked. Rather, keep aircraft in the active tracker.
+        #       actively tracked. Rather, keep aircraft in the active tracker,
+        #       unless it has outcommed (it can no longer be controlled).
 
         callsigns_to_move = []
-        for callsign in self.ac_tracker:
-            # next/current (c_) outcomm and position status
-            c_outcomm = self.ac_tracker[callsign].outcomm_status
-            c_pos = self.ac_tracker[callsign].pos_status
-            if c_outcomm is True or c_pos == PositionStatus.EXIT_REACHED or c_pos == PositionStatus.OUT_SECTOR:
-                # do not stop an out of sector from being tracked (even
-                # after distance threshold is reached) if the out of sector
-                # control flag is set.
-                if c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
-                    continue
+        for callsign, ac_info in self.ac_tracker.items():
+            # only aircraft that can no longer be controlled are candidates
+            # to be removed from active tracking (see
+            # `_is_aircraft_terminated`).
+            if not self._is_aircraft_terminated(ac_info):
+                continue
 
-                _d1 = self.ac_tracker[callsign].dist_away_from_sector_exit
-                _d2 = self.ac_tracker[callsign].dist_away_from_incorrect_sector_exit
-                if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
-                    callsigns_to_move.append(callsign)
+            _d1 = ac_info.dist_away_from_sector_exit
+            _d2 = ac_info.dist_away_from_incorrect_sector_exit
+            if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
+                callsigns_to_move.append(callsign)
 
         for callsign in callsigns_to_move:
             self.ac_archived[callsign] = self.ac_tracker[callsign]
