@@ -176,6 +176,9 @@ def test_end_criteria_out_sector_control(view_type: ViewType):
 
     gym_env = _get_env_instance(view_type)
     gym_env.reset()
+    # out of sector control cannot be enabled alongside the default outcomm
+    # policy.
+    gym_env.use_default_outcomm_policy = False
     tracker = {"AC1": ACStateTracker(pos_status=PositionStatus.OUT_SECTOR, outcomm_status=False)}
     _set_end_of_episode(gym_env, tracker)
 
@@ -206,3 +209,18 @@ def test_end_criteria_infinite_env(view_type: ViewType):
     gym_env.timestep = gym_env.maxstep
     gym_env.ac_tracker = {}
     assert gym_env.end_criteria() == (False, True)
+
+
+@pytest.mark.parametrize("view_type", VIEW_TYPES)
+def test_out_sector_control_rejects_default_outcomm_policy(view_type: ViewType):
+    """Out of sector control cannot be enabled while the default outcomm policy is in use."""
+
+    gym_env = _get_env_instance(view_type)
+    gym_env.use_default_outcomm_policy = True
+
+    with pytest.raises(ValueError, match="use_default_outcomm_policy"):
+        gym_env.out_sector_control = True
+
+    # disabling out of sector control is always allowed
+    gym_env.out_sector_control = False
+    assert gym_env.out_sector_control is False

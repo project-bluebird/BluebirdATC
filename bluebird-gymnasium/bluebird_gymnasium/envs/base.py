@@ -239,12 +239,15 @@ class BaseEnv(gym.Env):
         else:
             self.exit_window_width = exit_window_width
 
-        # use default outcomm policy: it is only valid for use when "outcomm"
+        # use default outcomm policy: it is only valid for use when "simple_outcomm"
         # in action config is set to False.
-        if self.config.action_config.get("outcomm", False) is True and self.config.use_default_outcomm_policy is True:
+        if (
+            self.config.action_config.get("simple_outcomm", False) is True
+            and self.config.use_default_outcomm_policy is True
+        ):
             _msg = (
                 "`config.use_default_outcomm_policy` can only be set to True when "
-                "`config.action_config['outcomm']` is set to False"
+                "`config.action_config['simple_outcomm']` is set to False"
             )
             raise ValueError(_msg)
         self.use_default_outcomm_policy = config.use_default_outcomm_policy
@@ -717,9 +720,22 @@ class BaseEnv(gym.Env):
 
     @out_sector_control.setter
     def out_sector_control(self, value: bool) -> None:
-        """Set the flag which determine out of sector control."""
+        """Set the flag which determine out of sector control.
+
+        Raises:
+            ValueError: if out of sector control is enabled while the default
+                outcomm policy is in use (same check as in `__init__`).
+        """
 
         assert isinstance(value, bool)
+        if value is True and self.use_default_outcomm_policy is True:
+            _msg = (
+                "cannot set `out_sector_control` to `True` when "
+                "`use_default_outcomm_policy` is set to `True`. "
+                "set `use_default_outcomm_policy` to `False` to allow out of "
+                "sector control in the airspace."
+            )
+            raise ValueError(_msg)
         self._out_sector_control = value
 
         # update position status filter for states
