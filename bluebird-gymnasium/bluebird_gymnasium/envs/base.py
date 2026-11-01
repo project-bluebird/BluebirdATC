@@ -1501,9 +1501,11 @@ class BaseEnv(gym.Env):
         is set to true if there are no active aircraft.
 
         An aircraft is active if it is tracked and not terminated (see
-        `_is_aircraft_terminated`). Note, an outcommed aircraft that is
-        still inside the sector keeps its `IN_SECTOR` position status until
-        it reaches its exit window or leaves the sector, but it is not active.
+        `_is_aircraft_terminated`), or if it is scheduled to enter the sector
+        but yet to appear in the simulator. Note, an outcommed aircraft that
+        is still inside the sector keeps its `IN_SECTOR` position status
+        until it reaches its exit window or leaves the sector, but it is not
+        active.
         """
 
         terminated = truncated = False
@@ -1512,7 +1514,14 @@ class BaseEnv(gym.Env):
                 callsign for callsign, ac_info in self.ac_tracker.items() if not self._is_aircraft_terminated(ac_info)
             ]
 
-            if len(active_aircraft) > 0:
+            # aircraft scheduled in the scenario, but yet to appear in the
+            # simulator (e.g., when `scenario_duration` is shorter than the
+            # scenario) are also active. background traffic (i.e., aircraft
+            # that will not enter the sector) is ignored.
+            if len(active_aircraft) > 0 or self.manager.events_remaining(
+                include_background=False,
+                sector_name=self.active_airspace_sector,
+            ):
                 truncated = True
             else:
                 terminated = True

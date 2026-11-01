@@ -105,11 +105,21 @@ def test_global_terminated_truncated(view_type: ViewType):
             _ = gym_env.step(action)
 
 
-def _set_end_of_episode(gym_env: SectorXEnv, tracker: dict[str, ACStateTracker]) -> None:
-    """Put the environment at its end timestep with the given tracked aircraft."""
+def _set_end_of_episode(
+    gym_env: SectorXEnv,
+    monkeypatch: pytest.MonkeyPatch,
+    tracker: dict[str, ACStateTracker],
+    events_remaining: bool = False,
+) -> None:
+    """Put the environment at its end timestep with the given tracked aircraft.
+
+    Whether there are aircraft yet to appear in the scenario is set via
+    `events_remaining`, independent of the scenario's schedule.
+    """
 
     gym_env.timestep = gym_env.maxstep
     gym_env.ac_tracker = tracker
+    monkeypatch.setattr(gym_env.manager, "events_remaining", lambda **_: events_remaining)
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
@@ -138,12 +148,12 @@ def test_end_criteria_before_maxstep(view_type: ViewType):
         },
     ],
 )
-def test_end_criteria_terminated(view_type: ViewType, tracker: dict):
+def test_end_criteria_terminated(view_type: ViewType, tracker: dict, monkeypatch: pytest.MonkeyPatch):
     """terminated is set when no aircraft is active at the end timestep."""
 
     gym_env = _get_env_instance(view_type)
     gym_env.reset()
-    _set_end_of_episode(gym_env, tracker)
+    _set_end_of_episode(gym_env, monkeypatch, tracker)
 
     assert gym_env.end_criteria() == (True, False)
 
@@ -160,18 +170,18 @@ def test_end_criteria_terminated(view_type: ViewType, tracker: dict):
         },
     ],
 )
-def test_end_criteria_truncated(view_type: ViewType, tracker: dict):
+def test_end_criteria_truncated(view_type: ViewType, tracker: dict, monkeypatch: pytest.MonkeyPatch):
     """truncated is set when at least one aircraft is active at the end timestep."""
 
     gym_env = _get_env_instance(view_type)
     gym_env.reset()
-    _set_end_of_episode(gym_env, tracker)
+    _set_end_of_episode(gym_env, monkeypatch, tracker)
 
     assert gym_env.end_criteria() == (False, True)
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
-def test_end_criteria_out_sector_control(view_type: ViewType):
+def test_end_criteria_out_sector_control(view_type: ViewType, monkeypatch: pytest.MonkeyPatch):
     """Out of sector aircraft are active only when out of sector control is enabled."""
 
     gym_env = _get_env_instance(view_type)
@@ -180,7 +190,7 @@ def test_end_criteria_out_sector_control(view_type: ViewType):
     # policy.
     gym_env.use_default_outcomm_policy = False
     tracker = {"AC1": ACStateTracker(pos_status=PositionStatus.OUT_SECTOR, outcomm_status=False)}
-    _set_end_of_episode(gym_env, tracker)
+    _set_end_of_episode(gym_env, monkeypatch, tracker)
 
     gym_env.out_sector_control = True
     assert gym_env.end_criteria() == (False, True)
@@ -193,6 +203,17 @@ def test_end_criteria_out_sector_control(view_type: ViewType):
     gym_env.out_sector_control = True
     gym_env.ac_tracker["AC1"].outcomm_status = True
     assert gym_env.end_criteria() == (True, False)
+
+
+@pytest.mark.parametrize("view_type", VIEW_TYPES)
+def test_end_criteria_truncated_with_aircraft_yet_to_appear(view_type: ViewType, monkeypatch: pytest.MonkeyPatch):
+    """truncated is set when the sector is empty but aircraft are still due."""
+
+    gym_env = _get_env_instance(view_type)
+    gym_env.reset()
+    _set_end_of_episode(gym_env, monkeypatch, {}, events_remaining=True)
+
+    assert gym_env.end_criteria() == (False, True)
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)
