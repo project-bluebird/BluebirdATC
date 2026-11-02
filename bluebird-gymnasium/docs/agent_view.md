@@ -2,9 +2,13 @@
 
 Each environment in `bluebird_gymnasium` can support single agent (centralised) or multi-agent (decentralised) views.
 
-In a single agent view, an environment expects a single external agent interacting with it. The `step` method expects a scalar integer for the `action` argument. The `step` and `reset` methods produce a single quantity per step for the observed state, reward, done flag, truncated flag, and a Python dictionary of auxiliary information.
+In a single agent view, an environment expects a single external agent interacting with it. The `step` method expects a scalar integer for the `action` argument. The `step` and `reset` methods produce a single quantity per step for the observed state, reward, terminated flag, truncated flag, and a Python dictionary of auxiliary information.
 
-In a decentralised multi-agent environment, multiple agents interact with it. The environment expects a Python dictionary of actions from the agents, where each key is an agent id and each value is an action. The `step` and `reset` methods return a dictionary of observed state, rewards, done flags, truncated flags, and auxiliary information. Each dictionary contains a key-value pair for an agent, with the key being the agent id.
+In a decentralised multi-agent environment, multiple agents interact with it. The environment expects a Python dictionary of actions from the agents, where each key is an agent id and each value is an action. The `step` and `reset` methods return a dictionary of observed state, rewards, terminated flags, truncated flags, and auxiliary information. Each dictionary contains a key-value pair for an agent, with the key being the agent id.
+
+When the maximum number of steps is reached, either `terminated` or `truncated` is set to `True` (never both). `truncated` is set to `True` if there are still active aircraft. These are aircraft that can still be controlled (i.e., aircraft that are about to enter or are in the sector, have not been outcommed, are not background traffic, and have not reached their exit; also out of sector aircraft that have not been outcommed, if out of sector control is enabled), or aircraft scheduled to enter the sector that have not yet appeared (background traffic is excluded). Otherwise, `terminated` is set to `True`. The infinite environments (in `bluebird_gymnasium.envs.infinite`) always set `truncated` to `True`.
+
+The episode-level flags are also in the info dictionary as `__global_terminated__` and `__global_truncated__`. In the decentralised environment, the per-aircraft `terminated` and `truncated` flags only cover the aircraft in that step's dictionaries, so use the global flags to detect the end of an episode. Once either global flag is `True`, the environment must be reset before stepping again.
 
 
 

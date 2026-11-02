@@ -196,7 +196,6 @@ class Aircraft(Comparison):
     last_passed_current_idx: int | None
     cleared_instructions: Instructions
     selected_instructions: Instructions
-    _track_time: datetime | None
 
     def __init__(
         self,
@@ -381,7 +380,7 @@ class Aircraft(Comparison):
         self.ground_track_angle: float | None = None
 
         # By default the aircraft will maintain current heading and flight level
-        self.heading_changing_to: None | float = None
+        self.heading_changing_to: float | None = None
 
         # Set the percentile rank dictionary, based on random seed
         self.percentile_rank_dict: dict[str, float | None] = {}

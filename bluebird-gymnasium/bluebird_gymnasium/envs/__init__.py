@@ -7,12 +7,20 @@ from dataclasses import dataclass
 from typing import TypeAlias
 
 import numpy  # noqa: ICN001
+
+# aircraft scenario generator class(es)
+from bluebird_dt.scenario_manager import (
+    Custom,
+    Regular,
+    ScenarioManager,
+    TwoAircraft,
+)
 from numpy.typing import NDArray
 
 ActionConfig: TypeAlias = dict[str, bool | list[int]]
-AirspaceConfig: TypeAlias = dict[str, None | bool | str | list]
+AirspaceConfig: TypeAlias = dict[str, bool | str | list | None]
 ForwardFixesConfig: TypeAlias = dict[str, bool | int]
-RadarConfig: TypeAlias = dict[str, None | bool | str]
+RadarConfig: TypeAlias = dict[str, bool | str | None]
 RewardConfig: TypeAlias = dict[str, list[str | int | float]]
 ScenarioConfig: TypeAlias = dict[str, str | dict | int | float]
 SimulationLogConfig: TypeAlias = dict[str, bool | str]
@@ -32,7 +40,7 @@ Config: TypeAlias = (
 
 ObsType: TypeAlias = NDArray[numpy.float32] | dict[str, NDArray[numpy.float32]]
 RewardType: TypeAlias = float | dict[str, float]
-DoneType: TypeAlias = bool | dict[str, bool]
+TerminatedType: TypeAlias = bool | dict[str, bool]
 TruncatedType: TypeAlias = bool | dict[str, bool]
 InfoType: TypeAlias = dict[str, typing.Any] | dict[str, dict[str, typing.Any]]
 ActionType: TypeAlias = int | dict[str, int]
@@ -146,21 +154,13 @@ class EnvConfig:
     view_config: ViewConfig | None = None
     scenario_duration: int = 1800
     scenario_sec_per_step: int = 6
-    diagnostics_level: None | Diagnostics = (None,)
-    use_default_outcomm_policy: bool = (False,)
+    diagnostics_level: Diagnostics | None = None
+    use_default_outcomm_policy: bool = False
 
-
-# aircraft scenario generator class(es)
-from bluebird_dt.scenario_manager import (  # noqa: E402
-    Regular,
-    Tactical,
-    TwoAircraft,
-)
-from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager  # noqa: E402
 
 SCENARIO_CLS: dict[str, ScenarioManager] = {
+    "custom": Custom,
     "regular": Regular,
-    "tactical": Tactical,
     "twoaircraft": TwoAircraft,
 }
 

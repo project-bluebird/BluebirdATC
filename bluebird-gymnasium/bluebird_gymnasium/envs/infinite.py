@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import typing
-
-from bluebird_dt.predictor import LinearPredictor
 
 # simulator package
 from bluebird_dt.scenario_manager.infinite import Infinite
@@ -34,35 +32,6 @@ class ScenarioName(StrEnum):
     sector_y = "Y-Sector"
 
 
-def _configure_airspace_metadata(env: BaseEnv) -> None:
-    """Set airspace-derived metadata needed before scenario reset."""
-
-    airspace, _routes = Infinite.create_airspace(
-        env.config.scenario_config["scenario_name"],
-    )
-
-    # the airspace generator stores the origin in reverse order
-    # i.e., lon, lat
-    origin = airspace.geo_helper.origin  # format: (lon, lat)
-    origin = (origin[1], origin[0])  # format: (lat, lon)
-    env.config.airspace_config["origin"] = origin
-
-    # trajectory predictor for computing an estimated
-    # future (rollout) trajectories. used in safety reward functions.
-    env.rollout_predictor = LinearPredictor(
-        dt=12,
-        fix_proximity_threshold=2.0,
-        fixes=airspace.fixes,
-        use_turn_model=False,
-    )
-
-    airspace_sectors = list(airspace.sectors.keys())
-    if len(airspace_sectors) == 1:
-        env.active_airspace_sector = airspace_sectors[0]
-    else:
-        raise ValueError("Could not initialise Sector")
-
-
 class InfiniteEnv(BaseEnv):
     """gymnasium environment for the Air Traffic Control Game.
 
@@ -87,24 +56,11 @@ class InfiniteEnv(BaseEnv):
             config,
         )
 
-        # if the `exit_window_width` value was originally None, override the
-        # default set in the parent class with a new default here (based on
-        # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
-        if exit_window_width is None:
-            self.exit_window_width = 10
-
-        else:
-            self.exit_window_width = exit_window_width
-
         ####### scenario manager
         self.scenario_manager = None  # set in `_generate_scenario`
 
         ####### airspace metadata
-        _configure_airspace_metadata(self)
-
-        ####### reset env
-        self.reset()
+        self._setup_airspace(self.config.scenario_config["scenario_name"])
 
     def _generate_scenario(self) -> Simulator:
         """Generate a scenario in the simulator."""
@@ -112,7 +68,7 @@ class InfiniteEnv(BaseEnv):
         # set up simulation log name
         category = "Game"
         scenario_name = self.config.scenario_config["scenario_name"]
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
@@ -120,9 +76,9 @@ class InfiniteEnv(BaseEnv):
 
         # set up simulator manager
         sim = Infinite.setup(
-            scenario_name=self.config.scenario_config["scenario_name"],
+            scenario_name=scenario_name,
             random_seed=self._reset_seed,
-            autosave=False,
+            autosave_interval=None,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,
@@ -130,6 +86,24 @@ class InfiniteEnv(BaseEnv):
         self.scenario_manager = sim.scenario_manager
 
         return sim
+
+    def end_criteria(self) -> tuple[bool, bool]:
+        """Determine the end criteria: terminated or truncated
+
+        Returns:
+            a tuple containing the statuses of terminated and truncated.
+
+        In this environment, truncated is always set to true (while
+        terminated False) when the maximum number of timesteps have been
+        reached.
+        """
+
+        terminated = truncated = False
+        if self.timestep >= self.maxstep:
+            terminated = False
+            truncated = True
+
+        return terminated, truncated
 
     @classmethod
     def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
@@ -139,8 +113,8 @@ class InfiniteEnv(BaseEnv):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralised (single agent) or
-                decentralised (multi-agent).
+            view_type: the type of agent view, centralized (single agent) or
+                decentralized (multi-agent).
                 Defaults to "centralized".
 
         Returns:
@@ -272,24 +246,11 @@ class CustomInfiniteEnv(BaseEnv):
             config,
         )
 
-        # if the `exit_window_width` value was originally None, override the
-        # default set in the parent class with a new default here (based on
-        # the sector/airspace geometry).
-        exit_window_width = self.config.airspace_config.get("exit_window_width", None)
-        if exit_window_width is None:
-            self.exit_window_width = 10
-
-        else:
-            self.exit_window_width = exit_window_width
-
         ####### scenario manager
         self.scenario_manager = None  # set in `_generate_scenario`
 
         ####### airspace metadata
-        _configure_airspace_metadata(self)
-
-        ####### reset env
-        self.reset()
+        self._setup_airspace(self.config.scenario_config["scenario_name"])
 
     def _generate_scenario(self) -> Simulator:
         """Generate a scenario in the simulator."""
@@ -297,7 +258,7 @@ class CustomInfiniteEnv(BaseEnv):
         # set up simulation log name
         category = "Game"
         scenario_name = self.config.scenario_config["scenario_name"]
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
@@ -317,7 +278,7 @@ class CustomInfiniteEnv(BaseEnv):
             spawn_distance_threshold=self.config.scenario_config["spawn_distance_threshold"],
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
-            autosave=False,
+            autosave_interval=None,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,
@@ -325,6 +286,24 @@ class CustomInfiniteEnv(BaseEnv):
         self.scenario_manager = sim.scenario_manager
 
         return sim
+
+    def end_criteria(self) -> tuple[bool, bool]:
+        """Determine the end criteria: terminated or truncated
+
+        Returns:
+            a tuple containing the statuses of terminated and truncated.
+
+        In this environment, truncated is always set to true (while
+        terminated False) when the maximum number of timesteps have been
+        reached.
+        """
+
+        terminated = truncated = False
+        if self.timestep >= self.maxstep:
+            terminated = False
+            truncated = True
+
+        return terminated, truncated
 
     @classmethod
     def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
@@ -334,8 +313,8 @@ class CustomInfiniteEnv(BaseEnv):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralised (single agent) or
-                decentralised (multi-agent).
+            view_type: the type of agent view, centralized (single agent) or
+                decentralized (multi-agent).
                 Defaults to "centralized".
 
         Returns:
@@ -407,7 +386,7 @@ class CustomInfiniteEnv(BaseEnv):
             },
             "scenario_config": {
                 "scenario_name": ScenarioName.sector_xplus.value,
-                "initial_spawn_rate": 0.01,
+                "initial_spawn_rate": 0.03,
                 "max_spawn_rate": 0.1,
                 "spawn_rate_increment": 0.0,
                 "spawn_rate_increase_interval": 0.0,

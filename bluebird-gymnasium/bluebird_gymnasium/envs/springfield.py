@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import string
 import typing
 
@@ -20,15 +20,6 @@ from bluebird_gymnasium.utils.constants import (
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator import Simulator
-
-    from bluebird_gymnasium.envs import (
-        ActionType,
-        DoneType,
-        InfoType,
-        ObsType,
-        RewardType,
-        TruncatedType,
-    )
 
     try:
         from typing import Self
@@ -82,7 +73,7 @@ class SpringfieldEnv(BaseEnv):
             scenario_name=self.config.scenario_config["scenario"],
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
-            autosave=False,
+            autosave_interval=None,
             save_log_to_file=False,
         )
         airspace = sim.manager.environment.airspace
@@ -107,14 +98,11 @@ class SpringfieldEnv(BaseEnv):
         else:
             raise ValueError("Could not initialise sector")
 
-        ####### reset env
-        self.reset()
-
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
         category = string.capwords(SPRINGFIELD_SECTOR_NAME)
         scenario = self.config.scenario_config["scenario"]
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
@@ -125,27 +113,11 @@ class SpringfieldEnv(BaseEnv):
             category=category,
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
-            autosave=False,
+            autosave_interval=None,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,  # use the default in the scenario
         )
-
-    def step(self, action: ActionType) -> tuple[ObsType, RewardType, DoneType, TruncatedType, InfoType]:
-        obs, reward, done, truncated, info = super().step(action)
-
-        # Springfield can start before any aircraft is controllable; keep an
-        # empty decentralised done dict from ending loops that call all(...).
-        if (
-            self.config.view_config["type"] == ViewType.DECENTRALIZED
-            and isinstance(done, dict)
-            and not done
-            and self.timestep < self.maxstep
-        ):
-            done = {"__all__": False}
-            truncated = {"__all__": False}
-
-        return obs, reward, done, truncated, info
 
     @classmethod
     def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
@@ -155,8 +127,8 @@ class SpringfieldEnv(BaseEnv):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralised (single agent) or
-                decentralised (multi-agent).
+            view_type: the type of agent view, centralized (single agent) or
+                decentralized (multi-agent).
                 Defaults to "centralized".
 
         Returns:
@@ -296,7 +268,7 @@ if __name__ == "__main__":
         print(obs)
         pprint(info)
         for idx in range(50):
-            obs, reward, done, truncated, info = env.step(0)
+            obs, reward, terminated, truncated, info = env.step(0)
             print(idx, obs)
             pprint(info)
             print("-" * 50)
@@ -306,7 +278,7 @@ if __name__ == "__main__":
         pprint(info)
         for idx in range(50):
             actions = dict.fromkeys(obs.keys(), 0)
-            obs, reward, done, truncated, info = env.step(actions)
+            obs, reward, terminated, truncated, info = env.step(actions)
             print(idx, obs)
             pprint(info)
             print("-" * 50)

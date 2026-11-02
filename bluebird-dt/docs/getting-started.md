@@ -26,7 +26,7 @@ from bluebird_dt.core import Action
 from bluebird_dt.simulator.simulator import Simulator
 
 # Use Simulator
-sim = Simulator.from_category("Artificial", "I-Sector Two Aircraft")
+sim = Simulator.from_category("Two Aircraft", "I-Sector")
 
 # Evolve for 60 seconds, in 6 second radar sweeps
 for _ in range(0, 10):
@@ -36,11 +36,7 @@ for _ in range(0, 10):
 print(sim.manager.environment.aircraft)
 
 # Issue an action to one of the aircraft
-sim.manager.receive_actions(
-        [
-            Action("AIR0", "change_flight_level_to", 200)
-            ]
-        )
+sim.manager.receive_actions([Action("AIR0", "change_flight_level_to", 200)])
 ```
 
 This example is very simple, various examples of using the `bluebird_dt` package can be found in Jupyter notebooks, that can be viewed or downloaded via the *Examples* tab.

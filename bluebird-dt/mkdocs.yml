@@ -1,4 +1,6 @@
 site_name: bluebird-dt
+# Where these pages live in the repository, for the "edit this page" links.
+edit_uri: edit/main/bluebird-dt/docs/
 
 plugins:
   - macros:

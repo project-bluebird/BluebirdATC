@@ -1,7 +1,13 @@
-site_name: BluebirdATC documentation
+site_name: BluebirdATC documentation – Project Bluebird
+site_description: >-
+  Documentation for BluebirdATC, Project Bluebird's open-source digital twin
+  of UK en route airspace and training environment for AI air traffic control
+  agents.
 site_url: https://docs.projectbluebird.ai
 repo_url: https://github.com/project-bluebird/BluebirdATC
 repo_name: project-bluebird/BluebirdATC
+# The default points at a `master` branch this repository does not have.
+edit_uri: edit/main/docs/src/
 docs_dir: src
 site_dir: ../site
 dev_addr: 127.0.0.1:8010
@@ -19,6 +25,15 @@ watch:
   - ../bluebird-hmi/mkdocs.yml
 extra_css:
   - stylesheets/nav.css
+
+extra:
+  social:
+    - icon: material/web
+      link: https://www.projectbluebird.ai/
+      name: Project Bluebird website
+    - icon: fontawesome/brands/github
+      link: https://github.com/project-bluebird
+      name: Project Bluebird on GitHub
 
 theme:
   name: material
@@ -45,7 +60,6 @@ theme:
     - content.code.copy
     - content.tabs.link
     - content.action.edit
-    - content.code.copy
     - search.suggest
     - search.highlight
     - navigation.indexes
@@ -119,3 +133,5 @@ nav:
       - Build the docs for production: mkdocs-guide/#build-the-docs-for-production
       - File hierarchy: mkdocs-guide/#file-hierarchy
       - Example edit-serve-build workflow: mkdocs-guide/#example-edit-serve-build-workflow
+
+  - Project Bluebird website: https://www.projectbluebird.ai/

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import operator
 import typing
 from dataclasses import dataclass
@@ -10,6 +9,7 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel
 import typing_extensions
+from pydantic import BaseModel
 from typing_extensions import Self
 
 from bluebird_dt.core import (
@@ -53,10 +53,10 @@ TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindF
 class FlightPlanEvent(BaseModel):
     callsign: str
     datetime: datetime
-    route_filed: list[str] | None = None
+    route_filed: list[str]
     start_datetime: datetime | None = None
     end_datetime: datetime | None = None
-    squawk: int | None = None
+    squawk: str | None = None
     origin: str | None = None
     dest: str | None = None
     unexpanded_route: str | None = None
@@ -67,7 +67,7 @@ class FlightPlanEvent(BaseModel):
     filed_true_airspeed: float | int | None = None
     intention_code: str | None = None
     ufid: str | None = None
-    assigned_squawk: int | None = None
+    assigned_squawk: str | None = None
 
 
 class CoordinationEvent(BaseModel):
@@ -353,7 +353,7 @@ class EventHandler(typing.Generic[TAircraft]):
         the_datetime: datetime,
         callsign: str,
         attribute_name: str,
-        value: None | float | int | str | list,
+        value: float | int | str | list | None,
     ) -> None:
         """
         Add an aircraft_attribute_update event.
@@ -495,7 +495,7 @@ class EventHandler(typing.Generic[TAircraft]):
             previous_sector=aircraft.previous_sector,
             percentile_rank_dict=aircraft.percentile_rank_dict,
             pilot_type=aircraft.pilot.__class__.__name__,
-            pilot_action_queue=[json.dumps(queue_item) for queue_item in aircraft.pilot.action_queue],
+            pilot_action_queue=aircraft.pilot.action_queue_data(),
             predictor_params=aircraft.predictor_params,
             wake_vortex=aircraft.wake_vortex,
             random_seed=aircraft.random_seed,
@@ -591,8 +591,11 @@ class EventHandler(typing.Generic[TAircraft]):
         self.radar_df = self.radar_df.sort_index()
 
     def extend_flight_plan_events(self, events: list[FlightPlanEvent]):
-        new_flights = pd.DataFrame([event.model_dump() for event in events])
 
+        if len(events) == 0:
+            return
+
+        new_flights = pd.DataFrame([event.model_dump() for event in events])
         new_flights = new_flights.set_index("datetime")
         new_flights.index.name = "datetime"
 
@@ -687,6 +690,9 @@ class EventHandler(typing.Generic[TAircraft]):
         self.flight_df = self.flight_df.sort_index()
 
     def extend_clearance_events(self, clearance_events: list[ClearanceEvent]):
+        if len(clearance_events) == 0:
+            return
+
         new_clearances = pd.DataFrame([event.model_dump() for event in clearance_events])
         new_clearances["text_clearance"] = [None] * new_clearances.shape[0]
         new_clearances["text_pilot_response"] = [None] * new_clearances.shape[0]
@@ -774,6 +780,9 @@ class EventHandler(typing.Generic[TAircraft]):
         self,
         incomm_events: list[IncommEvent],
     ):
+        if len(incomm_events) == 0:
+            return
+
         new_incomm_events = pd.DataFrame([incomm_event.model_dump() for incomm_event in incomm_events])
         new_incomm_events = new_incomm_events.set_index("datetime")
         new_incomm_events.index.name = "datetime"
@@ -813,7 +822,7 @@ class EventHandler(typing.Generic[TAircraft]):
         # ensure date ordering is preserved
         self.incomm_df = self.incomm_df.sort_index()
 
-    def extend_coordinations(self, events: list[CoordinationEvent]):
+    def extend_coordination_events(self, events: list[CoordinationEvent]):
         if len(events) == 0:
             return
 
@@ -920,7 +929,7 @@ class EventHandler(typing.Generic[TAircraft]):
         previous_sector: str | None = None,
         percentile_rank_dict: dict | None = None,
         pilot_type: str | None = None,
-        pilot_action_queue: list[str] | None = None,
+        pilot_action_queue: list[dict[str, typing.Any]] | None = None,
         predictor_params: dict[str, float] | None = None,
         wake_vortex: str | None = None,
         random_seed: int | None = None,
@@ -978,8 +987,8 @@ class EventHandler(typing.Generic[TAircraft]):
             Dictionary of cumulative distribution percentile rank. Used for speed randomisation.
         pilot_type: str, optional
             Pilot type
-        pilot_action_queue: list[str], optional
-            Action queue of pilot
+        pilot_action_queue: list[dict[str, Any]], optional
+            Action queue of pilot, as created by Pilot.action_queue_data
         predictor_params: dict[str, float], optional
             Dictionary of predictor parameters
         wake_vortex: str, optional
@@ -1609,7 +1618,7 @@ def update_from_radar(
             )
         else:  # callsign is in environment, so update aircraft
             aircraft = environment.aircraft[row.callsign]
-            aircraft.set_position(row.lat, row.lon, environment.datetime)
+            aircraft.set_position(row.lat, row.lon)
 
             # don't update values if new values are zero (originally nan, transformed to zero)
             if row.fl is not None:
@@ -2128,7 +2137,13 @@ def update_coordination(
             secondary_coord_conditions=secondary_coord_conditions,
             the_datetime=the_datetime,
         )
-        environment.coordinations.add(new_coordination)
+
+        # don't add coordination if already present (possibly with a different timestamp)
+        coord_already_present = environment.coordinations.contains_excluding_times(new_coordination)
+
+        if not coord_already_present:
+            environment.coordinations.add(new_coordination)
+
     return environment
 
 
@@ -2261,7 +2276,7 @@ def update_aircraft_internals(
         # TODO: need to handle pilot type in a better way
         assert aircraft.pilot.__class__.__name__ == row.pilot_type
 
-        aircraft.pilot.action_queue = [json.dumps(queue_item) for queue_item in row.pilot_action_queue]
+        aircraft.pilot.set_action_queue_from_data(row.pilot_action_queue)
 
         aircraft.wake_vortex = row.wake_vortex
         aircraft.random_seed = row.random_seed

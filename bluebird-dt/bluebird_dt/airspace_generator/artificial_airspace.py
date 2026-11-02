@@ -1,13 +1,11 @@
 import typing
 
-from bluebird_dt.airspace_generator import (
-    SectorI,
-    SectorX,
-    SectorXPlus,
-    SectorY,
-    TwoSectors,
-)
 from bluebird_dt.airspace_generator.airspace_generator import AirspaceGenerator
+from bluebird_dt.airspace_generator.sector_i import SectorI
+from bluebird_dt.airspace_generator.sector_x import SectorX
+from bluebird_dt.airspace_generator.sector_xplus import SectorXPlus
+from bluebird_dt.airspace_generator.sector_y import SectorY
+from bluebird_dt.airspace_generator.two_sectors import TwoSectors
 from bluebird_dt.core import Airspace, Route
 from bluebird_dt.utility.geo_helper import GeoHelper
 

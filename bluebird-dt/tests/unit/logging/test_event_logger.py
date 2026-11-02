@@ -18,7 +18,7 @@ from bluebird_dt.predictor import RouteFollowPredictor, SimplePredictor, LinearP
 from bluebird_dt.scenario_manager import TwoAircraft
 from bluebird_dt.simulator import Simulator
 
-from bluebird_dt.simulator.simconfig import SaveConfig, SimulatorConfig
+from bluebird_dt.simulator.simconfig import SimConfig, SimulatorConfig
 from bluebird_dt.utility.logging_utils import read_tar_csv_to_df, read_tar_json_to_dict, read_tar_parquet_to_df
 from bluebird_dt.utility.paths import LOG_DIR
 
@@ -29,12 +29,12 @@ from tests.unit.logging.conftest import extract_first_row_from_df, query_row_fro
     [
         ("Springfield", "example-scenario", "LinearPredictor", 3, 0.2, 51),
         ("Springfield", "llm-scenario", "LinearPredictor", 5, -3, 23),
-        ("Artificial", "I-Sector Two Aircraft", "SimplePredictor", 3, 0.2, 51),
-        ("Artificial", "Y-Sector Two Aircraft", "SimplePredictor", 5, -3, 23),
+        ("Two Aircraft", "I-Sector", "SimplePredictor", 3, 0.2, 51),
+        ("Two Aircraft", "Y-Sector", "SimplePredictor", 5, -3, 23),
         ("Springfield", "example-scenario", "RouteFollowPredictor", 3, 0.2, 51),
         ("Springfield", "llm-scenario", "RouteFollowPredictor", 5, -3, 23),
-        ("Artificial", "I-Sector Two Aircraft", "RouteFollowPredictor", 3, 0.2, 51),
-        ("Artificial", "Y-Sector Two Aircraft", "RouteFollowPredictor", 5, -3, 23),
+        ("Two Aircraft", "I-Sector", "RouteFollowPredictor", 3, 0.2, 51),
+        ("Two Aircraft", "Y-Sector", "RouteFollowPredictor", 5, -3, 23),
     ],
 )
 def test_config_logged(
@@ -76,7 +76,7 @@ def test_config_logged(
     try:
         with tarfile.open(tar_file_name, "r:gz") as tar:
             data = read_tar_json_to_dict(tar, "config")
-            config = SaveConfig.model_validate(data)
+            config = SimConfig.model_validate(data)
 
             assert config.environment_manager.predictor.predictor_type == predictor_type
             assert config.environment_manager.predictor.fix_proximity == fix_proximity
@@ -326,7 +326,7 @@ def test_sectors_log_as_df(generate_two_sector):
     ],
 )
 def test_trim_and_clip(time_period: int, ticks_to_evolve: int, ticks_to_trim: int):
-    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
 
     for _ in range(0, ticks_to_evolve):
         sim.evolve(time_period)
@@ -340,7 +340,7 @@ def test_trim_and_clip(time_period: int, ticks_to_evolve: int, ticks_to_trim: in
 
     log = sim.manager.event_logger
     
-    # Aircraft will appear with time, so this is dependent to where we trim. The following should always be trye as the radar log should get trimmed as it gets updated every tick
+    # Aircraft will appear with time, so this depends on where we trim. The following should always be true because the radar log should get trimmed as it gets updated every tick
     assert len(log.radar_log) <= len(sim.manager.environment.aircraft) * (ticks_to_evolve - ticks_to_trim)
 
     # The tests don't have any aircraft disappear, so we expect at least an equal set of initialisers of aircraft internals as aircraft we have in the airspace
@@ -361,7 +361,7 @@ def test_trim():
     """
     Test that trimming a simulation run removes events
     """
-    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave=False)
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
     em = sim.manager
 
     # Prepare inputs for incomm and coordination

@@ -129,18 +129,18 @@ class Fixes(BaseModel, Comparison):
         >>> Fixes.from_json(
         >>>     '''
         >>>     {
-        >>>     "CAMBG": [52.2069, 0.1713E],
+        >>>     "CAMBG": [52.2069, 0.1713],
         >>>     "EXTER": [50.7350, -3.4153],
         >>>     "HTHRW": [51.4700, -0.4543],
-        >>>     "STHPN": [50.9515, -1.3577]"
+        >>>     "STHPN": [50.9515, -1.3577]
         >>>     }
         >>>     '''
         >>> )
         """
 
-        places = {}
+        places: dict[str, Pos2D] = {}
         for name, coord in json.loads(s).items():
-            places[name] = Pos2D(lat=coord[0], lon=coord[1])
+            places[name] = Pos2D.from_list(coord)
 
         return Fixes(places)
 
@@ -201,7 +201,7 @@ class Fixes(BaseModel, Comparison):
         dict
         """
 
-        data: dict[str, str] = {}
+        data: dict[str, list[float]] = {}
 
         for name, coord in self.places.items():
             data[name] = [coord.lat, coord.lon]
