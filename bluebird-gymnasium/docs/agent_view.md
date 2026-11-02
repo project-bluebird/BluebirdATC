@@ -6,7 +6,9 @@ In a single agent view, an environment expects a single external agent interacti
 
 In a decentralised multi-agent environment, multiple agents interact with it. The environment expects a Python dictionary of actions from the agents, where each key is an agent id and each value is an action. The `step` and `reset` methods return a dictionary of observed state, rewards, terminated flags, truncated flags, and auxiliary information. Each dictionary contains a key-value pair for an agent, with the key being the agent id.
 
-Either `terminated` or `truncated` is set to `True` when a terminating condition (the maximum number of steps reached) is reached in the gymnasium environments. At the terminating condition, when there are no more aircraft to be initialized or spawned in the scenario, `terminated` is set to `True`. Otherwise, `truncated` is set to `True`.
+When the maximum number of steps is reached, either `terminated` or `truncated` is set to `True` (never both). `truncated` is set to `True` if there are still active aircraft. These are aircraft that can still be controlled (i.e., aircraft that are about to enter or are in the sector, have not been outcommed, are not background traffic, and have not reached their exit; also out of sector aircraft that have not been outcommed, if out of sector control is enabled), or aircraft scheduled to enter the sector that have not yet appeared (background traffic is excluded). Otherwise, `terminated` is set to `True`. The infinite environments (in `bluebird_gymnasium.envs.infinite`) always set `truncated` to `True`.
+
+The episode-level flags are also in the info dictionary as `__global_terminated__` and `__global_truncated__`. In the decentralised environment, the per-aircraft `terminated` and `truncated` flags only cover the aircraft in that step's dictionaries, so use the global flags to detect the end of an episode. Once either global flag is `True`, the environment must be reset before stepping again.
 
 
 
