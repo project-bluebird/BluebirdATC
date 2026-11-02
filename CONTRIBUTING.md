@@ -14,6 +14,8 @@
 
  Don't worry about making everything perfect - it's more important to start the conversation than to have everything right first time.
 
+ Everyone taking part in the project, in issues, pull requests or anywhere else, is expected to follow our [code of conduct](CODE_OF_CONDUCT.md).
+
  ## Table of contents
 
  - [Where to start: issues](#where-to-start-issues)
