@@ -11,7 +11,7 @@ import pandas as pd
 import pytest
 
 from bluebird_dt.airspace_generator import SectorX
-from bluebird_dt.core import Action, Aircraft, Airspace, FlightPlan, Pilot, Route
+from bluebird_dt.core import Action, Aircraft, Airspace, FlightPlan, Pilot, Pos2D, Route
 from bluebird_dt.events import EventHandler
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import RouteFollowPredictor, SimplePredictor
@@ -610,6 +610,25 @@ def test_square_penumbra_limits(generate_i):
     assert max_lat == pytest.approx(raw_max_lat + penumbra_lat_under_test / constants.NM_PER_DEGREE)
     assert min_lon == pytest.approx(raw_min_lon - penumbra_lat_under_test / constants.NM_PER_DEGREE)
     assert max_lon == pytest.approx(raw_max_lon + penumbra_lat_under_test / constants.NM_PER_DEGREE)
+
+
+def test_expand_penumbra_to_include(generate_i):
+    """
+    expand_penumbra_to_include should widen the penumbra just enough to contain the positions with the margin to spare,
+    and leave it as it is when they are already inside.
+    """
+    airspace, _ = generate_i
+    em = _make_basic_em(airspace, penumbra_lat=10.0)
+    min_lat, max_lat, min_lon, max_lon = em.square_penumbra_limits()
+    centre = Pos2D(lat=(min_lat + max_lat) / 2, lon=(min_lon + max_lon) / 2)
+    em.expand_penumbra_to_include([centre], margin_nmi=1.0)
+    assert em.penumbra_lat == 10.0
+
+    # 6 and 3 penumbra_lat units beyond the north and west edges
+    north = Pos2D(lat=max_lat + 6 / constants.NM_PER_DEGREE, lon=centre.lon)
+    west = Pos2D(lat=centre.lat, lon=min_lon - 3 / constants.NM_PER_DEGREE)
+    em.expand_penumbra_to_include([centre, west, north], margin_nmi=1.0)
+    assert em.penumbra_lat == pytest.approx(17.0)
 
 
 def test_get_sector_airspace(generate_two_sector):

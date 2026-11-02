@@ -312,6 +312,43 @@ def test_aircraft_drawn_together_do_not_overlap(generate_x):
     sim.evolve(6)
     assert list(sim.manager.environment.aircraft) == ["AIR-01"]
 
+
+@pytest.mark.parametrize("aircraft_on_route", [False, True])
+def test_aircraft_spawned_far_behind_their_fixes_are_kept(aircraft_on_route):
+    """
+    Aircraft spawned further behind their fixes than the default penumbra reaches should be in the environment once they
+    spawn, as the penumbra should grow to fit them.
+    """
+    sim = Infinite.setup(
+        "X-Sector",
+        spawn_distance_behind_fix=50,
+        aircraft_on_route=aircraft_on_route,
+        random_seed=0,
+        autosave_interval=None,
+    )
+    sm = sim.scenario_manager
+    # three aircraft drawn in the update at 6 s, due at 12 s
+    sm.rng = ScriptedPoisson(sm.rng, [3])
+    sim.evolve(6)
+    assert {"AIR-02", "AIR-03", "AIR-04"} <= set(sim.manager.environment.aircraft)
+
+
+@pytest.mark.parametrize("scenario_name", AirspaceLoader.list_airspaces())
+def test_penumbra_contains_every_start_point(scenario_name):
+    """
+    On every airspace, the penumbra should contain every start point spawn_aircraft gives aircraft offset sideways from
+    their routes, both on their first fixes, as for the starter aircraft, and behind them.
+    """
+    airspace, routes, sector_name = AirspaceLoader.load(scenario_name)
+    sm = Infinite(airspace=airspace, routes=routes, sector_name=sector_name, aircraft_on_route=False, random_seed=0)
+    em = sm.create_env_manager()
+    min_lat, max_lat, min_lon, max_lon = em.square_penumbra_limits()
+    for spawn_distance_behind_fix in (0, sm.spawn_distance_behind_fix):
+        for _ in range(200):
+            aircraft, _, _ = sm.spawn_aircraft(routes, callsign="TEST", spawn_distance_behind_fix=spawn_distance_behind_fix)
+            assert min_lat < aircraft.lat <= max_lat and min_lon < aircraft.lon <= max_lon
+
+
 @pytest.mark.parametrize(
     "min_spawn_distance",
     [
