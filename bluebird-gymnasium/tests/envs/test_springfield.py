@@ -92,27 +92,31 @@ def test_step(view_type: ViewType):
 
 
 def test_decentralized_step_does_not_stop_before_controllable_aircraft():
-    """Test the initial Springfield decentralised empty-agent warm-up."""
+    """Test the initial Springfield decentralised empty-agent warm-up.
+
+    Springfield starts with an empty sector. While the observation is still
+    empty, the global terminated/truncated flags must stay False, and the
+    episode must continue until a controllable aircraft appears.
+    """
 
     gym_env = _get_env_instance(ViewType.DECENTRALIZED)
     obs, _ = gym_env.reset(seed=100)
 
     assert obs == {}
 
-    obs, _, terminated, truncated, _ = gym_env.step({})
+    max_steps = 25
+    for _ in range(max_steps):
+        obs, _, terminated, truncated, info = gym_env.step({})
 
-    assert terminated == {"__all__": False}
-    assert truncated == {"__all__": False}
-    assert not all(terminated.values())
+        assert info["__global_terminated__"] is False
+        assert info["__global_truncated__"] is False
 
-    for _ in range(25):
         if len(obs) > 0:
             break
-        obs, _, terminated, truncated, _ = gym_env.step({})
 
     assert len(obs) > 0
-    assert "__all__" not in terminated
     assert not all(terminated.values())
+    assert not any(truncated.values())
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)

@@ -148,6 +148,7 @@ def test_custom_env_spawns_additional_aircraft():
     config.scenario_duration = 60
 
     gym_env = CustomInfiniteEnv(config=config)
+    gym_env.reset()
     initial_aircraft_count = len(gym_env.get_simulator_env().aircraft)
 
     gym_env.step(0)

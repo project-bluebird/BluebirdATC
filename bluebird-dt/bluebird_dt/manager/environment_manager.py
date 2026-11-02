@@ -570,6 +570,45 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
             action for action in self._actions_to_issue if action.callsign not in callsigns_to_remove
         ]
 
+    def events_remaining(self, include_background: bool = True, sector_name: str | None = None) -> bool:
+        """
+        Determine whether there are upcoming events (i.e., new Aircraft) in the scenario.
+
+        Parameters
+        ----------
+        include_background: bool, default True
+            If False, only count upcoming Aircraft that will enter `sector_name`
+            (i.e., ignore background traffic). An Aircraft is background traffic
+            if it has no entry coordination into `sector_name`.
+        sector_name: str, optional
+            The sector used to identify background traffic. Required if
+            `include_background` is False.
+
+        Returns
+        ----------
+        bool
+        """
+
+        radar_df = self.event_handler.radar_df
+        if radar_df.empty:
+            return False
+
+        if include_background:
+            return self.environment.time <= radar_df.index.max().replace(tzinfo=timezone.utc).timestamp()
+
+        if sector_name is None:
+            raise ValueError("`sector_name` must be set when `include_background` is False.")
+
+        # aircraft with radar events still to come that are not yet in the environment
+        upcoming_df = radar_df[radar_df.index >= self.environment.datetime]
+        upcoming_callsigns = set(upcoming_df["callsign"]) - set(self.environment.aircraft)
+
+        # of those, aircraft that will enter the sector (i.e., not background traffic)
+        coordination_df = self.event_handler.coordination_df
+        entering_callsigns = set(coordination_df.loc[coordination_df["to_sector"] == sector_name, "callsign"])
+
+        return len(upcoming_callsigns & entering_callsigns) > 0
+
     def finished(self) -> bool:
         """
         Determine whether the scenario is finished.
@@ -585,9 +624,7 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
 
         # if there are any remaining events or any aircraft left in the airspace,
         # then we aren't finished.
-        no_events_left = (
-            self.environment.time > self.event_handler.radar_df.index.max().replace(tzinfo=timezone.utc).timestamp()
-        )
+        no_events_left = not self.events_remaining()
         no_aircraft_left = len(self.environment.aircraft) == 0
 
         return no_events_left and no_aircraft_left
