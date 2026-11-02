@@ -2444,11 +2444,11 @@ class BaseEnv(gym.Env):
             del _statuses
 
         # next state
-        next_state, self.selected_aircraft = self.state_formatter(_state)
+        next_state_per_aircraft, self.selected_aircraft = self.state_formatter(_state)
 
         # concatenate (previous) action to the (next) state if the
         # `concat_prev_action` flag is set in `self.config.view_config`
-        next_state = {
+        next_state_per_aircraft = {
             callsign: self.maybe_concat_action(
                 state_vec,
                 # aircraft with no action (new or outcommed)
@@ -2456,22 +2456,22 @@ class BaseEnv(gym.Env):
                 actions.get(callsign, ACTION_NOOP),
                 self.action_p.get_total_num_actions(),
             )
-            for callsign, state_vec in next_state.items()
+            for callsign, state_vec in next_state_per_aircraft.items()
         }
 
         # log more information
-        _callsigns = set(next_state.keys()).intersection(set(self._prev_timestep_obs.keys()))
+        _callsigns = set(next_state_per_aircraft.keys()).intersection(set(self._prev_timestep_obs.keys()))
 
         for callsign in _callsigns:
             sim_time = self.simulator_env.datetime
             info[callsign]["simulator_time"] = sim_time.strftime("%Y-%m-%d %H:%M:%S")
             info[callsign]["obs"] = self._prev_timestep_obs[callsign]
-            info[callsign]["next_obs"] = next_state[callsign]
+            info[callsign]["next_obs"] = next_state_per_aircraft[callsign]
 
-        self._prev_step_obs = next_state
+        self._prev_step_obs = next_state_per_aircraft
 
         # get the total reward for each aircraft
-        reward = {
+        reward_per_aircraft = {
             # callsign: ac_data["total_reward"]
             # for callsign, ac_data in info.items()
             callsign: info[callsign]["total_reward"]
@@ -2485,12 +2485,12 @@ class BaseEnv(gym.Env):
         info["__global_terminated__"] = global_terminated
         info["__global_truncated__"] = global_truncated
 
-        terminated = _final_terminateds
+        terminated_per_aircraft = _final_terminateds
         if global_terminated or global_truncated:
             # if aircraft is terminated (True), then truncated should be False
-            truncated = {callsign: not aircraft_terminated for callsign, aircraft_terminated in terminated.items()}
+            truncated_per_aircraft = {callsign: not aircraft_terminated for callsign, aircraft_terminated in terminated_per_aircraft.items()}
         else:
-            truncated = dict.fromkeys(_final_terminateds.keys(), False)
+            truncated_per_aircraft = dict.fromkeys(_final_terminateds.keys(), False)
 
         # mop up.
         # check for aircraft that the agent can no longer control.
@@ -2543,9 +2543,9 @@ class BaseEnv(gym.Env):
         # aircraft are deleted from the airspace (sometimes before
         # they are transferred.
         for callsign in callsigns_deleted:
-            reward[callsign] = 0.0
-            terminated[callsign] = True
-            truncated[callsign] = False
+            reward_per_aircraft[callsign] = 0.0
+            terminated_per_aircraft[callsign] = True
+            truncated_per_aircraft[callsign] = False
             info[callsign] = None
             # to consider:
             # should such aircraft be included in `self.ac_archived`?
@@ -2555,7 +2555,7 @@ class BaseEnv(gym.Env):
             # (i.e., as other aircraft use data in `self.ac_tracker`)
 
         info["__simulator_environment__"] = self.simulator_env
-        return next_state, reward, terminated, truncated, info
+        return next_state_per_aircraft, reward_per_aircraft, terminated_per_aircraft, truncated_per_aircraft, info
 
     def _aircraft_in_sector(self, callsign: str) -> bool:
         """Check whether an aircraft is currently in the defined sector."""
