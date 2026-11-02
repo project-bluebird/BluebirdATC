@@ -2488,7 +2488,9 @@ class BaseEnv(gym.Env):
         terminated_per_aircraft = _final_terminateds
         if global_terminated or global_truncated:
             # if aircraft is terminated (True), then truncated should be False
-            truncated_per_aircraft = {callsign: not aircraft_terminated for callsign, aircraft_terminated in terminated_per_aircraft.items()}
+            truncated_per_aircraft = {
+                callsign: not aircraft_terminated for callsign, aircraft_terminated in terminated_per_aircraft.items()
+            }
         else:
             truncated_per_aircraft = dict.fromkeys(_final_terminateds.keys(), False)
 
