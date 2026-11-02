@@ -327,7 +327,7 @@ class Simulator:
                     # Flight school specific param
                     random_seed=None,
                     num_starter_aircraft=2,
-                    initial_spawn_rate=0.005,
+                    initial_spawn_rate=0.025,
                     spawn_rate_increment=0.005,
                     spawn_rate_increase_interval=30,
                     max_spawn_rate=0.1,

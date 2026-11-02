@@ -30,14 +30,16 @@ from bluebird_dt.core import (
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
 from bluebird_dt.utility.geo_helper import GeoHelper
 
+# Random positions stay clear of the poles and the 180th meridian, so the areas and airway volumes built around them
+# can't cross either. The Pos2D limits have their own fixed test values in core_conftest.py.
 def make_random_lat() -> float:
-    """Return a latitude between +/- 90 rounded to 2 decimal places"""
-    return round(random.uniform(-90.000, +90.000), 2)
+    """Return a latitude between +/- 80 rounded to 2 decimal places"""
+    return round(random.uniform(-80.000, +80.000), 2)
 
 
 def make_random_lon() -> float:
-    """Return a longitude between +/- 180 rounded to 2 decimal places"""
-    return round(random.uniform(-180.000, +180.000), 2)
+    """Return a longitude between +/- 170 rounded to 2 decimal places"""
+    return round(random.uniform(-170.000, +170.000), 2)
 
 
 def make_random_lat_lon() -> tuple[float, float]:
@@ -45,11 +47,6 @@ def make_random_lat_lon() -> tuple[float, float]:
     lat = make_random_lat()
     lon = make_random_lon()
     return lat, lon
-
-
-def make_random_area_origin() -> tuple[float, float]:
-    """Return a lat lon pair clear of the poles and the 180th meridian, so small areas around it don't cross them"""
-    return round(random.uniform(-80.000, +80.000), 2), round(random.uniform(-170.000, +170.000), 2)
 
 
 def make_random_fl() -> int:
@@ -266,7 +263,7 @@ def make_random_area() -> Area:
     n = random.choice([5, 6, 7, 8, 9])
     # One heading in each of n equal slices keeps the gaps under 180 degrees, so the polygon can't cross itself
     headings = [round(random.uniform(i, i + 1) * 360 / n, 4) for i in range(n)]
-    origin = make_random_area_origin()
+    origin = make_random_lat_lon()
     gh = GeoHelper(origin)
     boundary = []
     for heading in headings:
@@ -308,7 +305,7 @@ def make_random_uniform_windfield() -> WindField:
 
 def make_random_adjacent_areas() -> tuple[Area, Area]:
     """Return two irregular Areas with adjacent edges"""
-    origin = make_random_area_origin()
+    origin = make_random_lat_lon()
     gh = GeoHelper(origin)
 
     areas = []

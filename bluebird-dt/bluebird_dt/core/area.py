@@ -4,6 +4,7 @@ import json
 import math
 
 import numpy as np
+import shapely
 from geopy.distance import geodesic
 from shapely.geometry import LineString, Point, Polygon
 from shapely.geometry.multipoint import MultiPoint
@@ -250,6 +251,11 @@ class Area(Comparison):
         """
         Find the nearest segment of the area to a point.
 
+        The polygon exterior is oriented counter-clockwise before selecting the
+        segment. Consequently, when traversing the returned segment from its first
+        point to its second point, the interior of the polygon is always on the
+        left-hand side.
+
         This function relies on the projection of WGS coordinates on a flat plane to calculate the closes point of
         a segment to the point.
         This assumption should have limited impact to the solution.
@@ -265,7 +271,7 @@ class Area(Comparison):
             The two points, as (longitude, latitude), defining the limits of the
 
         """
-        polygon_coordinates = self.boundary.exterior.coords
+        polygon_coordinates = shapely.geometry.polygon.orient(self.boundary).exterior.coords
 
         min_distance = float("inf")
         nearest_segment = None

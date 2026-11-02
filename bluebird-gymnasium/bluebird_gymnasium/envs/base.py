@@ -214,6 +214,8 @@ class BaseEnv(gym.Env):
         self.scenario_duration = self.config.scenario_duration
         self.scenario_sec_per_step = self.config.scenario_sec_per_step
         self.maxstep = self.scenario_duration // self.scenario_sec_per_step
+        self.timestep = 0
+        self._needs_reset = True
 
         # diagnostics
         if self.config.diagnostics_level is None:
@@ -237,12 +239,15 @@ class BaseEnv(gym.Env):
         else:
             self.exit_window_width = exit_window_width
 
-        # use default outcomm policy: it is only valid for use when "outcomm"
+        # use default outcomm policy: it is only valid for use when "simple_outcomm"
         # in action config is set to False.
-        if self.config.action_config.get("outcomm", False) is True and self.config.use_default_outcomm_policy is True:
+        if (
+            self.config.action_config.get("simple_outcomm", False) is True
+            and self.config.use_default_outcomm_policy is True
+        ):
             _msg = (
                 "`config.use_default_outcomm_policy` can only be set to True when "
-                "`config.action_config['outcomm']` is set to False"
+                "`config.action_config['simple_outcomm']` is set to False"
             )
             raise ValueError(_msg)
         self.use_default_outcomm_policy = config.use_default_outcomm_policy
@@ -264,7 +269,6 @@ class BaseEnv(gym.Env):
         self._out_sector_control = self.config.airspace_config.get("out_sector_control", False)
 
         # other attributes
-        self.timestep = 0
         self.traffic_monitor = TrafficMonitor()
 
         ## stores the name of the (active) sector in the airspace
@@ -716,9 +720,22 @@ class BaseEnv(gym.Env):
 
     @out_sector_control.setter
     def out_sector_control(self, value: bool) -> None:
-        """Set the flag which determine out of sector control."""
+        """Set the flag which determine out of sector control.
+
+        Raises:
+            ValueError: if out of sector control is enabled while the default
+                outcomm policy is in use (same check as in `__init__`).
+        """
 
         assert isinstance(value, bool)
+        if value is True and self.use_default_outcomm_policy is True:
+            _msg = (
+                "cannot set `out_sector_control` to `True` when "
+                "`use_default_outcomm_policy` is set to `True`. "
+                "set `use_default_outcomm_policy` to `False` to allow out of "
+                "sector control in the airspace."
+            )
+            raise ValueError(_msg)
         self._out_sector_control = value
 
         # update position status filter for states
@@ -1360,6 +1377,7 @@ class BaseEnv(gym.Env):
         super().reset(seed=seed, options=options)
 
         self.timestep = 0
+        self._needs_reset = False
 
         self.ac_success_metric.clear()
         self.ac_archived.clear()
@@ -1471,6 +1489,67 @@ class BaseEnv(gym.Env):
         info["__simulator_environment__"] = self.simulator_env
         return state, info
 
+    def end_criteria(self) -> tuple[bool, bool]:
+        """Determine the end criteria: terminated or truncated
+
+        Returns:
+            a tuple containing the statuses of terminated and truncated.
+
+        Note: both terminated and truncated are set to `False` when the
+        configured maximum number of timesteps in the scenario has not been
+        reached. Otherwise, truncated is set to true if there are still
+        "active" aircraft in the scenario at the end timestep or terminated
+        is set to true if there are no active aircraft.
+
+        An aircraft is active if it is tracked and not terminated (see
+        `_is_aircraft_terminated`), or if it is scheduled to enter the sector
+        but yet to appear in the simulator. Note, an outcommed aircraft that
+        is still inside the sector keeps its `IN_SECTOR` position status
+        until it reaches its exit window or leaves the sector, but it is not
+        active.
+        """
+
+        terminated = truncated = False
+        if self.timestep >= self.maxstep:
+            active_aircraft = [
+                callsign for callsign, ac_info in self.ac_tracker.items() if not self._is_aircraft_terminated(ac_info)
+            ]
+
+            # aircraft scheduled in the scenario, but yet to appear in the
+            # simulator (e.g., when `scenario_duration` is shorter than the
+            # scenario) are also active. background traffic (i.e., aircraft
+            # that will not enter the sector) is ignored.
+            if len(active_aircraft) > 0 or self.manager.events_remaining(
+                include_background=False,
+                sector_name=self.active_airspace_sector,
+            ):
+                truncated = True
+            else:
+                terminated = True
+
+        return terminated, truncated
+
+    def _is_aircraft_terminated(self, ac_info: ACStateTracker) -> bool:
+        """Check whether a tracked aircraft is terminated.
+
+        An aircraft is terminated if it has reached its exit, has been
+        outcommed, or is out of the sector when out of sector control is not
+        enabled. This rule is shared by the per-aircraft terminated flags and
+        the global end criteria.
+
+        Args:
+            ac_info: the tracked information of the aircraft.
+
+        Returns:
+            True if the aircraft is terminated, otherwise False.
+        """
+
+        return (
+            ac_info.pos_status == PositionStatus.EXIT_REACHED
+            or ac_info.outcomm_status is True
+            or (ac_info.pos_status == PositionStatus.OUT_SECTOR and self._out_sector_control is False)
+        )
+
     def step(self, action: ActionType) -> tuple[ObsType, RewardType, TerminatedType, TruncatedType, InfoType]:
         """Move simulation forward one step.
 
@@ -1494,7 +1573,7 @@ class BaseEnv(gym.Env):
             `numpy.ndarray`.
         """
 
-        if self.timestep >= self.maxstep:
+        if self._needs_reset:
             raise gym.error.ResetNeeded("Trying to step in a scenario/episode that has ended. Reset the environment.")
 
         self._logged_actions.clear()
@@ -1574,6 +1653,11 @@ class BaseEnv(gym.Env):
         # flag in `self.config.simulation_log_config` is set to `True`.
         if (ret_values[2] or ret_values[3]) and self.config.simulation_log_config["save_simulation"]:
             self.save_simulation_logs()
+
+        # check the global terminated/truncated flags in `info` dict if the
+        # environment needs to be reset.
+        if ret_values[-1]["__global_terminated__"] or ret_values[-1]["__global_truncated__"]:
+            self._needs_reset = True
 
         return ret_values
 
@@ -1852,9 +1936,8 @@ class BaseEnv(gym.Env):
             _rewards[callsign] = self.compute_reward(callsign, actions_rf_in[callsign])
 
             if callsign in self.ac_tracker_prev_step:
-                # previous step (p_) outcomm and position status
-                p_outcomm = self.ac_tracker_prev_step[callsign].outcomm_status
-                p_pos = self.ac_tracker_prev_step[callsign].pos_status
+                # previous step (p_) tracked information
+                p_info = self.ac_tracker_prev_step[callsign]
             else:
                 # aircraft was just added, after the simulator was
                 # updated/evolved in this current call to `step(...)`.
@@ -1866,11 +1949,10 @@ class BaseEnv(gym.Env):
                 # respectively when the dynamic data was initialised for the
                 # new aircraft in an earlier portion of this mdethod.
 
-                # assumed previous step (p_) outcomm and position status
-                p_outcomm = self.ac_tracker[callsign].outcomm_status
-                p_pos = self.ac_tracker[callsign].pos_status
+                # assumed previous step (p_) tracked information
+                p_info = self.ac_tracker[callsign]
 
-            if p_pos == PositionStatus.BEFORE_ENTRY:
+            if p_info.pos_status == PositionStatus.BEFORE_ENTRY:
                 # aircraft is yet to incomm. therefore, mask all rewards
                 # as zeros (regardless of compute rewards). this is because
                 # the aircraft is not yet in the controlled sector.
@@ -1882,7 +1964,7 @@ class BaseEnv(gym.Env):
                     _rewards[callsign][key] = 0.0
                 _final_reward_callsigns.append(callsign)
 
-            elif p_pos in [PositionStatus.OUT_SECTOR, PositionStatus.EXIT_REACHED] or p_outcomm is True:
+            elif self._is_aircraft_terminated(p_info):
                 # aircraft that has outcommed, or incorrect navigated out of
                 # sector or reached the sector exit it's still tracked for
                 # a number of timestep (i.e., in `.ac_tracker`) even though
@@ -1892,19 +1974,19 @@ class BaseEnv(gym.Env):
                 # external agent can no longer issue actions to them.
                 #
                 # note, if `self._out_sector_control` is `True`, then aircraft
-                # with position status OUT_SECTOR is included in
-                # the final reward computation as the aircraft can still be
-                # controlled by the external agent.
-                if p_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
-                    _final_reward_callsigns.append(callsign)
-                else:
-                    for key in _rewards[callsign]:
-                        _rewards[callsign][key] = 0.0
-                    # do not include the aircraft in `_final_reward_callsigns`
+                # with position status OUT_SECTOR that hasn't outcommed is not
+                # terminated (see `_is_aircraft_terminated`). so, it is
+                # included in the final reward computation (else branch
+                # below) as the aircraft can still be controlled by the
+                # external agent.
+                for key in _rewards[callsign]:
+                    _rewards[callsign][key] = 0.0
+                # do not include the aircraft in `_final_reward_callsigns`
 
             else:
-                # aircraft that hasn't outcommed and position status
-                # set to in sector PositionStatus.IN_SECTOR
+                # aircraft that hasn't outcommed and position status set to
+                # in sector `IN_SECTOR` (or out of sector `OUT_SECTOR`, if
+                # `self._out_sector_control` is `True`)
                 _final_reward_callsigns.append(callsign)
 
             ac_info[callsign]["rewards"] = _rewards[callsign]
@@ -1989,14 +2071,10 @@ class BaseEnv(gym.Env):
         info["total_step_reward"] = reward
 
         # check for terminated/truncated flag
-        if self.timestep >= self.maxstep:
-            terminated = truncated = True
-        else:
-            terminated = truncated = False
+        terminated, truncated = self.end_criteria()
 
         # global terminated/truncated flag.
-        # same as terminated and truncated above. added for
-        # compatibility with decentralized setup.
+        # same as terminated and truncated above in centralized setup.
         info["__global_terminated__"] = terminated
         info["__global_truncated__"] = truncated
 
@@ -2027,24 +2105,21 @@ class BaseEnv(gym.Env):
         #       within real-world ATC formulation.
         #       NOTE 2: if `self._out_sector_control` is `True`, do NOT apply
         #       threshold to check when to remove the aircraft from being
-        #       actively tracked. Rather, keep aircraft in the active tracker.
+        #       actively tracked. Rather, keep aircraft in the active tracker,
+        #       unless it has outcommed (it can no longer be controlled).
 
         callsigns_to_move = []
-        for callsign in self.ac_tracker:
-            # next/current (c_) outcomm and position status
-            c_outcomm = self.ac_tracker[callsign].outcomm_status
-            c_pos = self.ac_tracker[callsign].pos_status
-            if c_outcomm is True or c_pos == PositionStatus.EXIT_REACHED or c_pos == PositionStatus.OUT_SECTOR:
-                # do not stopped an out of sector from being tracked (even
-                # after distance threshold is reached) if the out of sector
-                # control flag is set.
-                if c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
-                    continue
+        for callsign, ac_info in self.ac_tracker.items():
+            # only aircraft that can no longer be controlled are candidates
+            # to be removed from active tracking (see
+            # `_is_aircraft_terminated`).
+            if not self._is_aircraft_terminated(ac_info):
+                continue
 
-                _d1 = self.ac_tracker[callsign].dist_away_from_sector_exit
-                _d2 = self.ac_tracker[callsign].dist_away_from_incorrect_sector_exit
-                if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
-                    callsigns_to_move.append(callsign)
+            _d1 = ac_info.dist_away_from_sector_exit
+            _d2 = ac_info.dist_away_from_incorrect_sector_exit
+            if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
+                callsigns_to_move.append(callsign)
 
         for callsign in callsigns_to_move:
             self.ac_archived[callsign] = self.ac_tracker[callsign]
@@ -2259,9 +2334,8 @@ class BaseEnv(gym.Env):
             _rewards[callsign] = self.compute_reward(callsign, act)
 
             if callsign in self.ac_tracker_prev_step:
-                # previous step (p_) outcomm and position status
-                p_outcomm = self.ac_tracker_prev_step[callsign].outcomm_status
-                p_pos = self.ac_tracker_prev_step[callsign].pos_status
+                # previous step (p_) tracked information
+                p_info = self.ac_tracker_prev_step[callsign]
             else:
                 # aircraft was just added, after the simulator was
                 # updated/evolved in this current call to `step(...)`.
@@ -2273,11 +2347,10 @@ class BaseEnv(gym.Env):
                 # respectively when the dynamic data was initialised for the
                 # new aircraft in an earlier portion of this mdethod.
 
-                # assumed previous step (p_) outcomm and position status
-                p_outcomm = self.ac_tracker[callsign].outcomm_status
-                p_pos = self.ac_tracker[callsign].pos_status
+                # assumed previous step (p_) tracked information
+                p_info = self.ac_tracker[callsign]
 
-            if p_pos == PositionStatus.BEFORE_ENTRY:
+            if p_info.pos_status == PositionStatus.BEFORE_ENTRY:
                 # aircraft is yet to incomm. therefore, mask all rewards
                 # as zeros (regardless of compute rewards). this is because
                 # the aircraft is not yet in the controlled sector.
@@ -2289,7 +2362,7 @@ class BaseEnv(gym.Env):
                     _rewards[callsign][key] = 0.0
                 _final_reward_callsigns.append(callsign)
 
-            elif p_pos in [PositionStatus.OUT_SECTOR, PositionStatus.EXIT_REACHED] or p_outcomm is True:
+            elif self._is_aircraft_terminated(p_info):
                 # aircraft that has outcommed, or incorrect navigated out of
                 # sector or reached the sector exit it's still tracked for
                 # a number of timestep (i.e., in `.ac_tracker`) even though
@@ -2299,37 +2372,27 @@ class BaseEnv(gym.Env):
                 # external agent can no longer issue actions to them.
                 #
                 # note, if `self._out_sector_control` is `True`, then aircraft
-                # with position status OUT_SECTOR is included in the final
-                # reward computation as the aircraft can still be controlled
-                # by the external agent.
-                if p_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
-                    _final_reward_callsigns.append(callsign)
-                else:
-                    for key in _rewards[callsign]:
-                        _rewards[callsign][key] = 0.0
-                    # do not include the aircraft in `_final_reward_callsigns`
+                # with position status OUT_SECTOR that hasn't outcommed is not
+                # terminated (see `_is_aircraft_terminated`). so, it is
+                # included in the final reward computation (else branch
+                # below) as the aircraft can still be controlled by the
+                # external agent.
+                for key in _rewards[callsign]:
+                    _rewards[callsign][key] = 0.0
+                # do not include the aircraft in `_final_reward_callsigns`
 
             else:
-                # aircraft that hasn't outcommed and position status
-                # set to in sector `IN_SECTOR`
+                # aircraft that hasn't outcommed and position status set to
+                # in sector `IN_SECTOR` (or out of sector `OUT_SECTOR`, if
+                # `self._out_sector_control` is `True`)
                 _final_reward_callsigns.append(callsign)
 
             info[callsign]["rewards"] = _rewards[callsign]
             info[callsign]["total_reward"] = np.sum(list(_rewards[callsign].values())).item()
 
             # compute final terminateds for aircraft
-            # if callsign in actions.keys():
             if callsign in _final_reward_callsigns:
-                c_outcomm = self.ac_tracker[callsign].outcomm_status
-                c_pos = self.ac_tracker[callsign].pos_status
-                if (
-                    c_pos == PositionStatus.EXIT_REACHED
-                    or c_outcomm is True
-                    or (c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is False)
-                ):
-                    _final_terminateds[callsign] = True
-                else:
-                    _final_terminateds[callsign] = False
+                _final_terminateds[callsign] = self._is_aircraft_terminated(self.ac_tracker[callsign])
 
             # log action in info
             # if this is a new aircraft or an outcommed aircraft, there is
@@ -2382,11 +2445,11 @@ class BaseEnv(gym.Env):
             del _statuses
 
         # next state
-        next_state, self.selected_aircraft = self.state_formatter(_state)
+        next_state_per_aircraft, self.selected_aircraft = self.state_formatter(_state)
 
         # concatenate (previous) action to the (next) state if the
         # `concat_prev_action` flag is set in `self.config.view_config`
-        next_state = {
+        next_state_per_aircraft = {
             callsign: self.maybe_concat_action(
                 state_vec,
                 # aircraft with no action (new or outcommed)
@@ -2394,22 +2457,22 @@ class BaseEnv(gym.Env):
                 actions.get(callsign, ACTION_NOOP),
                 self.action_p.get_total_num_actions(),
             )
-            for callsign, state_vec in next_state.items()
+            for callsign, state_vec in next_state_per_aircraft.items()
         }
 
         # log more information
-        _callsigns = set(next_state.keys()).intersection(set(self._prev_timestep_obs.keys()))
+        _callsigns = set(next_state_per_aircraft.keys()).intersection(set(self._prev_timestep_obs.keys()))
 
         for callsign in _callsigns:
             sim_time = self.simulator_env.datetime
             info[callsign]["simulator_time"] = sim_time.strftime("%Y-%m-%d %H:%M:%S")
             info[callsign]["obs"] = self._prev_timestep_obs[callsign]
-            info[callsign]["next_obs"] = next_state[callsign]
+            info[callsign]["next_obs"] = next_state_per_aircraft[callsign]
 
-        self._prev_step_obs = next_state
+        self._prev_step_obs = next_state_per_aircraft
 
         # get the total reward for each aircraft
-        reward = {
+        reward_per_aircraft = {
             # callsign: ac_data["total_reward"]
             # for callsign, ac_data in info.items()
             callsign: info[callsign]["total_reward"]
@@ -2417,21 +2480,20 @@ class BaseEnv(gym.Env):
         }
 
         # check for terminated/truncated flag
-        if self.timestep >= self.maxstep:
-            terminated = dict.fromkeys(_final_terminateds.keys(), True)
-            truncated = dict.fromkeys(_final_terminateds.keys(), True)
+        global_terminated, global_truncated = self.end_criteria()
 
-            # global terminated/truncated flag: independent of aircraft/agents.
-            info["__global_terminated__"] = True
-            info["__global_truncated__"] = True
+        # global terminated/truncated flag: independent of aircraft/agents.
+        info["__global_terminated__"] = global_terminated
+        info["__global_truncated__"] = global_truncated
 
+        terminated_per_aircraft = _final_terminateds
+        if global_terminated or global_truncated:
+            # if aircraft is terminated (True), then truncated should be False
+            truncated_per_aircraft = {
+                callsign: not aircraft_terminated for callsign, aircraft_terminated in terminated_per_aircraft.items()
+            }
         else:
-            terminated = _final_terminateds
-            truncated = dict.fromkeys(_final_terminateds.keys(), False)
-
-            # global terminated/truncated flag: independent of aircraft/agents.
-            info["__global_terminated__"] = False
-            info["__global_truncated__"] = False
+            truncated_per_aircraft = dict.fromkeys(_final_terminateds.keys(), False)
 
         # mop up.
         # check for aircraft that the agent can no longer control.
@@ -2460,24 +2522,21 @@ class BaseEnv(gym.Env):
         #       within real-world ATC formulation.
         #       NOTE 2: if `self._out_sector_control` is `True`, do NOT apply
         #       threshold to check when to remove the aircraft from being
-        #       actively tracked. Rather, keep aircraft in the active tracker.
+        #       actively tracked. Rather, keep aircraft in the active tracker,
+        #       unless it has outcommed (it can no longer be controlled).
 
         callsigns_to_move = []
-        for callsign in self.ac_tracker:
-            # next/current (c_) outcomm and position status
-            c_outcomm = self.ac_tracker[callsign].outcomm_status
-            c_pos = self.ac_tracker[callsign].pos_status
-            if c_outcomm is True or c_pos == PositionStatus.EXIT_REACHED or c_pos == PositionStatus.OUT_SECTOR:
-                # do not stopped an out of sector from being tracked (even
-                # after distance threshold is reached) if the out of sector
-                # control flag is set.
-                if c_pos == PositionStatus.OUT_SECTOR and self._out_sector_control is True:
-                    continue
+        for callsign, ac_info in self.ac_tracker.items():
+            # only aircraft that can no longer be controlled are candidates
+            # to be removed from active tracking (see
+            # `_is_aircraft_terminated`).
+            if not self._is_aircraft_terminated(ac_info):
+                continue
 
-                _d1 = self.ac_tracker[callsign].dist_away_from_sector_exit
-                _d2 = self.ac_tracker[callsign].dist_away_from_incorrect_sector_exit
-                if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
-                    callsigns_to_move.append(callsign)
+            _d1 = ac_info.dist_away_from_sector_exit
+            _d2 = ac_info.dist_away_from_incorrect_sector_exit
+            if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
+                callsigns_to_move.append(callsign)
 
         for callsign in callsigns_to_move:
             self.ac_archived[callsign] = self.ac_tracker[callsign]
@@ -2487,9 +2546,9 @@ class BaseEnv(gym.Env):
         # aircraft are deleted from the airspace (sometimes before
         # they are transferred.
         for callsign in callsigns_deleted:
-            reward[callsign] = 0.0
-            terminated[callsign] = True
-            truncated[callsign] = False
+            reward_per_aircraft[callsign] = 0.0
+            terminated_per_aircraft[callsign] = True
+            truncated_per_aircraft[callsign] = False
             info[callsign] = None
             # to consider:
             # should such aircraft be included in `self.ac_archived`?
@@ -2499,7 +2558,7 @@ class BaseEnv(gym.Env):
             # (i.e., as other aircraft use data in `self.ac_tracker`)
 
         info["__simulator_environment__"] = self.simulator_env
-        return next_state, reward, terminated, truncated, info
+        return next_state_per_aircraft, reward_per_aircraft, terminated_per_aircraft, truncated_per_aircraft, info
 
     def _aircraft_in_sector(self, callsign: str) -> bool:
         """Check whether an aircraft is currently in the defined sector."""
@@ -3270,8 +3329,8 @@ class BaseEnv(gym.Env):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralised (single agent) or
-                decentralised (multi-agent).
+            view_type: the type of agent view, centralized (single agent) or
+                decentralized (multi-agent).
                 Defaults to "centralized".
 
         Returns:
