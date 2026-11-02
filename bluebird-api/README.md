@@ -1,6 +1,5 @@
 # The REST API for BluebirdATC [![PyPI version](https://img.shields.io/pypi/v/bluebird-api?logo=pypi&logoColor=white)](https://pypi.org/project/bluebird-api/) <img src="../images/BBATC_logo.png" alt="BluebirdATC logo" align="right" height="160" />
 
-
 `bluebird-api` runs the BluebirdATC digital twin in a server process, such that the simulation will evolve at regular time intervals, and Agents and/or frontend visualization software can interact with it via HTTP requests.
 In particular, users can:
 * Query available scenario categories and scenarios.
@@ -19,13 +18,9 @@ uvx bluebird-api@latest
 ```
 
 1. Open [http://localhost:8000](http://localhost:8000) — you should see `"Hello, BluebirdATC!"`.
-2. Navigate to [http://localhost:8000/hmi](http://localhost:8000/hmi) to open the radar visualisation.
-3. Select **Load new scenario** in the top left, choose a scenario type (eg. `Springfield`) and scenario (eg `test1`), and press **Load**.
-
-This package includes a prebuilt HMI available by navigating to [http://localhost:8000/hmi](http://localhost:8000/hmi).
-Initially, no scenario would be loaded, therefore showing the Bluebird logo on the radar.
-To load a scenario, the top left of the window select `Load new scenario`.
-A window will appear in the middle of the screen, select `Springfield`, then `example-scenario` and finally, `Load`.
+2. Navigate to [http://localhost:8000/hmi](http://localhost:8000/hmi) to open the radar visualisation (the HMI), which comes prebuilt with this package. No scenario is loaded yet, so the radar shows the Bluebird logo.
+3. Select **Load New Scenario** in the top left, choose a scenario category (e.g. `Springfield`) and a scenario (e.g. `example-scenario`), and press **Load**.
+4. Press the play button, which replaces **Load New Scenario**, to start the simulation.
 
 > **Note: Running on a remote machine/cloud?**
 Currently, the built version of the app is configured to look for the API running on `localhost`.  For deploying on remote machines, or a cloud service, it will be necessary to modify `src/api/config.ts` accordingly, and rebuild via `npm run build`.
@@ -88,7 +83,7 @@ A more complete multi-language example (including Julia) is in [NonPythonAgents.
 
 ## Documentation
 
-Documentation of the endpoints of the API is available by running 
+Documentation of the endpoints of the API is available by running
 
 ```bash
 uvx bluebird-api@latest
