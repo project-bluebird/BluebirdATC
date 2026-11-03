@@ -20,6 +20,7 @@ from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.outcomm_handler import OutcommHandler
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
+from bluebird_dt.utility import geometry
 from bluebird_dt.utility.scenario_manager_utils import laterally_offset_start_point
 
 
@@ -170,7 +171,8 @@ class Infinite(
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
-            Distance to expand airspace lateral boundary by - UoM: NMI
+            Minimum distance to expand airspace lateral boundary by - UoM: NMI. Widened to fit the aircraft's start
+            points if they are further out.
         fl_limits: tuple[int, int]
             min, max FL at which aircraft can be spawned.
             Note that these values may be superseded if the airspace has more restrictive limits.
@@ -229,6 +231,21 @@ class Infinite(
         # shuffle the starting fixes.
         self.rng.shuffle(self.start_fixes)
 
+    def max_lateral_offset(self, route: Route) -> float:
+        """
+        The largest sideways offset from a route of an aircraft starting on it, in NMI: half the length of the segment
+        of the sector boundary closest to its first fix.
+
+        Parameters
+            route: Route
+                the route the aircraft starts on
+        """
+        volume = self.airspace.sectors[self.sector_name].volumes[0]
+        segment = volume.area.nearest_segment_to_point(self.airspace.fixes.places[route.filed[0]])
+        segment_start = Pos2D(lat=segment[0][1], lon=segment[0][0])
+        segment_end = Pos2D(lat=segment[1][1], lon=segment[1][0])
+        return segment_start.distance(segment_end) / 2
+
     def spawn_aircraft(
         self,
         possible_routes: list[Route],
@@ -249,7 +266,6 @@ class Infinite(
         """
         if len(self.airspace.sectors[self.sector_name].volumes) == 0:
             raise ValueError("Selected airspace has no Volumes.  Please choose another airspace.")
-        volume = self.airspace.sectors[self.sector_name].volumes[0]
         possible_flight_levels = self.airspace.sectors[self.sector_name].all_ifr_flight_levels(self.fl_limits)
 
         route = self.rng.choice(np.asarray(possible_routes))
@@ -260,12 +276,6 @@ class Infinite(
         speed = self.rng.uniform(self.speed_range[0], self.speed_range[1])
 
         # Laterally offset the aircraft from their spawning point to minimise clashes
-        # Note the distance is chosen based on the length of the segment of the sector boundary
-        # closest to the starting fix.
-        segment = volume.area.nearest_segment_to_point(first_fix)
-        segment_start = Pos2D(lat=segment[0][1], lon=segment[0][0])
-        segment_end = Pos2D(lat=segment[1][1], lon=segment[1][0])
-        segment_length = segment_start.distance(segment_end)
         # Use GeoHelper tool to get offset spawn positions
         gh = self.airspace.geo_helper
         # If aircraft is on route, no lateral offset from route centre line.
@@ -276,7 +286,7 @@ class Infinite(
             # Offset by a random amount, up to half the length of the nearest sector boundary line.
             # since GeoHelper.forward takes (x,y), give it longitude then latitude
             updated_start_pos = laterally_offset_start_point(
-                airspace=self.airspace, route=route, offset_range=(0, segment_length / 2), rng=self.rng
+                airspace=self.airspace, route=route, offset_range=(0, self.max_lateral_offset(route)), rng=self.rng
             )
             on_route = False
 
@@ -309,6 +319,36 @@ class Infinite(
         )
 
         return aircraft, coordination_entry, coordination_exit
+
+    def furthest_start_points(self) -> list[Pos2D]:
+        """
+        The start points spawn_aircraft can give that are furthest out on each route: max_lateral_offset to either
+        side of its first fix, or on the fix if aircraft_on_route, for the starter aircraft, and those points moved
+        spawn_distance_behind_fix back along the route, for the aircraft drawn in update. Every other start point is
+        between these.
+
+        Returns
+        -------
+        list[Pos2D]
+        """
+        gh = self.airspace.geo_helper
+        start_points: list[Pos2D] = []
+        for route in self.routes:
+            first_fix = self.airspace.fixes.places[route.filed[0]]
+            second_fix = self.airspace.fixes.places[route.filed[1]]
+            # aircraft start up to max_lateral_offset to either side of the route, or on it if aircraft_on_route
+            offset = 0.0 if self.aircraft_on_route else self.max_lateral_offset(route)
+            # backwards along the route, as in spawn_aircraft: opposite to the heading from the first fix to the second
+            backwards = (first_fix.bearing_to(second_fix) + 180.0) % 360
+            # the points at the largest offset to either side, or the first fix twice if on route. Smaller offsets
+            # are between these two, on the line joining them.
+            for offset_heading in geometry.get_perpendicular_headings(first_fix, second_fix, gh):
+                lon, lat = gh.forward(first_fix.lon, first_fix.lat, heading=offset_heading, distance=offset)
+                # 0 for the starter aircraft, spawn_distance_behind_fix for the aircraft drawn in update
+                for distance in (0.0, self.spawn_distance_behind_fix):
+                    point_lon, point_lat = gh.forward(lon, lat, heading=backwards, distance=distance)
+                    start_points.append(Pos2D(lat=point_lat, lon=point_lon))
+        return start_points
 
     def add_starting_aircraft(self, event_handler: TEventHandler) -> TEventHandler:
         """
@@ -418,6 +458,9 @@ Creating Infinite Scenario
             penumbra_lat=self.lateral_buffer_distance,
             log_filename=log_filename,
         )
+        # the environment manager removes aircraft outside its penumbra, so widen it to fit every start point. Those
+        # between the furthest ones can bulge out by a fraction of a metre, which the margin covers.
+        em.expand_penumbra_to_include(self.furthest_start_points(), margin_nmi=0.1)
         # set the visibility flag of fixes to True only if they are in the penumbra
         em.set_local_fixes_visibility()
 
@@ -603,7 +646,8 @@ Creating Infinite Scenario
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by, in units of FL
         lateral_buffer_distance: int or float, default is 20
-            Distance to expand airspace lateral boundary by, in units of NMI
+            Minimum distance to expand airspace lateral boundary by, in units of NMI. Widened to fit the aircraft's
+            start points if they are further out.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool

@@ -154,8 +154,8 @@ class EnvConfig:
     view_config: ViewConfig | None = None
     scenario_duration: int = 1800
     scenario_sec_per_step: int = 6
-    diagnostics_level: Diagnostics | None = (None,)
-    use_default_outcomm_policy: bool = (False,)
+    diagnostics_level: Diagnostics | None = None
+    use_default_outcomm_policy: bool = False
 
 
 SCENARIO_CLS: dict[str, ScenarioManager] = {

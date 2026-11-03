@@ -21,15 +21,6 @@ from bluebird_gymnasium.utils.constants import (
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator import Simulator
 
-    from bluebird_gymnasium.envs import (
-        ActionType,
-        InfoType,
-        ObsType,
-        RewardType,
-        TerminatedType,
-        TruncatedType,
-    )
-
     try:
         from typing import Self
     except ImportError:
@@ -107,9 +98,6 @@ class SpringfieldEnv(BaseEnv):
         else:
             raise ValueError("Could not initialise sector")
 
-        ####### reset env
-        self.reset()
-
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
         category = string.capwords(SPRINGFIELD_SECTOR_NAME)
@@ -131,22 +119,6 @@ class SpringfieldEnv(BaseEnv):
             predictor=None,  # use the default in the scenario
         )
 
-    def step(self, action: ActionType) -> tuple[ObsType, RewardType, TerminatedType, TruncatedType, InfoType]:
-        obs, reward, terminated, truncated, info = super().step(action)
-
-        # Springfield can start before any aircraft is controllable; keep an
-        # empty decentralised terminated dict from ending loops that call all(...).
-        if (
-            self.config.view_config["type"] == ViewType.DECENTRALIZED
-            and isinstance(terminated, dict)
-            and not terminated
-            and self.timestep < self.maxstep
-        ):
-            terminated = {"__all__": False}
-            truncated = {"__all__": False}
-
-        return obs, reward, terminated, truncated, info
-
     @classmethod
     def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
@@ -155,8 +127,8 @@ class SpringfieldEnv(BaseEnv):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralised (single agent) or
-                decentralised (multi-agent).
+            view_type: the type of agent view, centralized (single agent) or
+                decentralized (multi-agent).
                 Defaults to "centralized".
 
         Returns:

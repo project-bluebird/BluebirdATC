@@ -1,5 +1,5 @@
 import copy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import logging
 import io
 import json
@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from bluebird_dt.core import Action, Aircraft, Airspace, FlightPlan, Pilot, Route
+from bluebird_dt.airspace_generator import SectorX
+from bluebird_dt.core import Action, Aircraft, Airspace, FlightPlan, Pilot, Pos2D, Route
 from bluebird_dt.events import EventHandler
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import RouteFollowPredictor, SimplePredictor
@@ -457,6 +458,52 @@ def test_rewind_leaves_earlier_logs_unchanged(generate_i: tuple[Airspace, list[R
     assert em.event_logger.aircraft_internals_log[: len(logged)] == logged
 
 
+def test_rewind_next_fix_index_follows_radar() -> None:
+    """
+    Check that after a rewind, a radar-driven aircraft's next_fix_index is the same as without the rewind, including
+    once the simulation passes the time it was rewound from, where the event handler's aircraft internals end
+    """
+    airspace, _ = SectorX(60, 120, (60, 400), 70).generate_airspace()
+    fixes = airspace.fixes.places
+
+    def make_env_manager(event_handler: EventHandler) -> EnvironmentManager:
+        predictor = SimplePredictor(dt=1.0, fix_proximity_threshold=2.0, fixes=airspace.fixes)
+        return EnvironmentManager(airspace=airspace, event_handler=event_handler, predictor=predictor)
+
+    # log a live run of one aircraft through the turn at ABYSS
+    live = make_env_manager(EventHandler())
+    route = FlightPlan(Route(["WITCH", "ABYSS", "HAUNT", "LIMBO"]))
+    aircraft = Aircraft(fixes["WITCH"].lat, fixes["WITCH"].lon, 100, 70.0, route, "AIR0")
+    aircraft.speed_tas = 290
+    aircraft.cleared_instructions.cas = aircraft.selected_instructions.cas = 250
+    live.environment.aircraft["AIR0"] = aircraft
+    live.event_logger.log_environment(live.environment)
+    for _ in range(150):
+        live.evolve(6)
+
+    def replay(rewind: bool) -> dict[datetime, int | None]:
+        # replay the radar and flight plan without the aircraft internals, so the aircraft is driven by radar
+        event_handler = live.event_logger.to_event_handler()
+        event_handler.aircraft_internals_df = event_handler.aircraft_internals_df.iloc[0:0]
+        em = make_env_manager(event_handler)
+        em.initialise_env_with_event_handler()
+        start = em.environment.datetime
+        if rewind:
+            # rewind at 4 min to 2 min, after which the event handler's aircraft internals end at 4 min
+            while em.environment.datetime < start + timedelta(minutes=4):
+                em.evolve(6)
+            em.rewind_to_time(pd.Timestamp(start + timedelta(minutes=2)))
+        next_fix_indexes = {}
+        while em.environment.datetime < start + timedelta(seconds=6 * 149):
+            em.evolve(6)
+            next_fix_indexes[em.environment.datetime] = em.environment.aircraft["AIR0"].next_fix_index
+        return next_fix_indexes
+
+    control = replay(rewind=False)
+    rewound = replay(rewind=True)
+    assert rewound == {time: control[time] for time in rewound}
+
+
 def _make_basic_em(airspace, *, predictor_dt=1.0, fix_thresh=2.0, penumbra_lat=5.0, penumbra_fl=10):
     """
     Helper to create a minimal EnvironmentManager with an empty EventHandler.
@@ -563,6 +610,25 @@ def test_square_penumbra_limits(generate_i):
     assert max_lat == pytest.approx(raw_max_lat + penumbra_lat_under_test / constants.NM_PER_DEGREE)
     assert min_lon == pytest.approx(raw_min_lon - penumbra_lat_under_test / constants.NM_PER_DEGREE)
     assert max_lon == pytest.approx(raw_max_lon + penumbra_lat_under_test / constants.NM_PER_DEGREE)
+
+
+def test_expand_penumbra_to_include(generate_i):
+    """
+    expand_penumbra_to_include should widen the penumbra just enough to contain the positions with the margin to spare,
+    and leave it as it is when they are already inside.
+    """
+    airspace, _ = generate_i
+    em = _make_basic_em(airspace, penumbra_lat=10.0)
+    min_lat, max_lat, min_lon, max_lon = em.square_penumbra_limits()
+    centre = Pos2D(lat=(min_lat + max_lat) / 2, lon=(min_lon + max_lon) / 2)
+    em.expand_penumbra_to_include([centre], margin_nmi=1.0)
+    assert em.penumbra_lat == 10.0
+
+    # 6 and 3 penumbra_lat units beyond the north and west edges
+    north = Pos2D(lat=max_lat + 6 / constants.NM_PER_DEGREE, lon=centre.lon)
+    west = Pos2D(lat=centre.lat, lon=min_lon - 3 / constants.NM_PER_DEGREE)
+    em.expand_penumbra_to_include([centre, west, north], margin_nmi=1.0)
+    assert em.penumbra_lat == pytest.approx(17.0)
 
 
 def test_get_sector_airspace(generate_two_sector):
