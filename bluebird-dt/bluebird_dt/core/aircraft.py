@@ -1126,10 +1126,10 @@ class Aircraft(Comparison):
                 route_fixes=current,
             )
 
-        if next_current_fix is None:
+        if next_current_fix is None and current is not None:
             # Past last fix
             self.last_passed_current_idx = len(current) - 1
-        else:
+        elif current is not None:
             next_current_idx = current.index(next_current_fix)
             if last_current_idx is None:
                 if next_current_idx > 0:

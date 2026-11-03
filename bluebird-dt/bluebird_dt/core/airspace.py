@@ -1114,10 +1114,14 @@ class Airspace(Comparison):
         ----------
         str | None
             The name of the Fix on the Route closest to the given Aircraft's current position, moving in the direction
-            of the Route's exit. Returns None if passed the final fix of the route.
+            of the Route's exit. Returns None if passed the final fix of the route the aircraft has no flight plan or route
+            and no route_fixes where passed.
         """
 
         if route_fixes is None:
+            if aircraft.flight_plan is None or aircraft.flight_plan.route.current is None:
+                return None
+
             route_fixes = aircraft.flight_plan.route.current
 
         all_fixes = self.fixes.places
@@ -1131,6 +1135,9 @@ class Airspace(Comparison):
                 stacklevel=2,
             )
             route_fixes = [fix for fix in route_fixes if fix not in unknown_fixes]
+
+        if len(route_fixes) == 0:
+            return None
 
         # special case: the route has only one fix. Either the aircraft is near the end of its route
         # or this can occur in real-world data.

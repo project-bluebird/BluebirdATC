@@ -22,79 +22,28 @@ from bluebird_dt.core import (
     Route,
     WindField,
 )
-from bluebird_dt.events.event_dtypes import EventDtypes
+from bluebird_dt.events.event_dtypes import (
+    AircraftAttributeUpdateEvent,
+    AircraftInternalsEvent,
+    ClearanceEvent,
+    CoordinationEvent,
+    EventDtypes,
+    FlightPlanEvent,
+    IncommEvent,
+    RadarEvent,
+    SectorsEvent,
+)
 from bluebird_dt.logger import logger
 from bluebird_dt.utility.convert import tas_from_ground_speed
+from sortedcontainers import SortedDict
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.events import EventLogger
     from bluebird_dt.manager import EnvironmentManager
 
-pd.set_option("future.no_silent_downcasting", True)
-
-
-def pd_concat_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
-    """
-    Combine both dataframes
-    """
-    if df2.empty:
-        return df1
-    if df1.empty:
-        return df2
-    return pd.concat([df1, df2])
-
-
 TAircraft = typing_extensions.TypeVar("TAircraft", bound=Aircraft, default=Aircraft)
 TWindField = typing_extensions.TypeVar("TWindField", bound=WindField, default=WindField)
 TForecastWindField = typing_extensions.TypeVar("TForecastWindField", bound=WindField, default=WindField)
-
-
-class FlightPlanEvent(BaseModel):
-    callsign: str
-    datetime: datetime
-    route_filed: list[str]
-    start_datetime: datetime | None = None
-    end_datetime: datetime | None = None
-    squawk: str | None = None
-    origin: str | None = None
-    dest: str | None = None
-    unexpanded_route: str | None = None
-    sector_crossing_seq: str | None = None
-    actype: str | None = None
-    milcivil: str | None = None
-    requested_flight_level: float | int | None = None
-    filed_true_airspeed: float | int | None = None
-    intention_code: str | None = None
-    ufid: str | None = None
-    assigned_squawk: str | None = None
-
-
-class CoordinationEvent(BaseModel):
-    datetime: datetime
-    callsign: str
-    from_sector: str
-    to_sector: str
-    fl: float
-    fix: str
-    direction: str
-    level_by: bool | None = None
-    level_by_details: str | None = None
-    secondary_coord_conditions: str | None = None
-
-
-class IncommEvent(BaseModel):
-    datetime: datetime
-    callsign: str
-    sector_name: str
-
-
-class ClearanceEvent(BaseModel):
-    datetime: datetime
-    callsign: str
-    kind: str
-    value: str
-    agent: str | None = None
-    sector: list[str] | None = None
 
 
 class EventHandler(typing.Generic[TAircraft]):
@@ -103,14 +52,15 @@ class EventHandler(typing.Generic[TAircraft]):
     """
 
     typeof_aircraft: type[TAircraft]
-    radar_df: pd.DataFrame
-    flight_df: pd.DataFrame
-    clearances_df: pd.DataFrame
-    coordination_df: pd.DataFrame
-    sectors_df: pd.DataFrame
-    incomm_df: pd.DataFrame
-    aircraft_internals_df: pd.DataFrame
-    ac_attribute_update_df: pd.DataFrame
+
+    _radar_events: SortedDict[datetime, list[RadarEvent]]
+    _flight_df: SortedDict[datetime, list[FlightPlanEvent]]
+    _clearances_df: SortedDict[datetime, list[ClearanceEvent]]
+    _coordination_df: SortedDict[datetime, list[CoordinationEvent]]
+    _sectors_df: SortedDict[datetime, list[SectorsEvent]]
+    _incomm_df: SortedDict[datetime, list[IncommEvent]]
+    _aircraft_internals_df: SortedDict[datetime, list[AircraftInternalsEvent]]
+    _ac_attribute_update_df: SortedDict[datetime, list[AircraftAttributeUpdateEvent]]
 
     @dataclass
     class IgnoreFlags:
@@ -150,14 +100,14 @@ class EventHandler(typing.Generic[TAircraft]):
 
     def __init__(
         self,
-        radar_dataframe: pd.DataFrame | None = None,
-        flight_df: pd.DataFrame | None = None,
-        clearances_df: pd.DataFrame | None = None,
-        coordination_df: pd.DataFrame | None = None,
-        sectors_df: pd.DataFrame | None = None,
-        incomm_df: pd.DataFrame | None = None,
-        aircraft_internals_df: pd.DataFrame | None = None,
-        ac_attribute_update_df: pd.DataFrame | None = None,
+        radar_events: SortedDict[datetime, list[RadarEvent]] | None = None,
+        flight_plan_events: SortedDict[datetime, list[RadarEvent]] | None = None,
+        clearance_events: SortedDict[datetime, list[ClearanceEvent]] | None = None,
+        coordination_events: SortedDict[datetime, list[CoordinationEvent]] | None = None,
+        sector_events: SortedDict[datetime, list[SectorsEvent]] | None = None,
+        incomm_events: SortedDict[datetime, list[IncommEvent]] | None = None,
+        aircraft_internals_events: SortedDict[datetime, list[AircraftInternalsEvent]] | None = None,
+        ac_attribute_update_events: SortedDict[datetime, list[AircraftAttributeUpdateEvent]] | None = None,
         ignore: IgnoreFlags | None = None,
         typeof_aircraft: type[TAircraft] = Aircraft,
     ):
@@ -1746,7 +1696,9 @@ def update_from_flight_plans(
             # if filed route hasn't changed, keep current route
             new_route_current = route.current if list(row.route_filed) == list(route.filed) else row.route_filed
 
-        route = Route(filed=list(row.route_filed), current=list(new_route_current))
+        route = Route(
+            filed=list(row.route_filed), current=list(new_route_current) if new_route_current is not None else None
+        )
 
         aircraft.flight_plan = FlightPlan(
             route=route,
