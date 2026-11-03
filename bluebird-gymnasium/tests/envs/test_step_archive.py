@@ -21,6 +21,7 @@ def test_step_archives_aircraft_beyond_exit_threshold(view_type: ViewType):
     """
 
     config = SectorIEnv.get_default_env_config(view_type)
+    config.use_default_outcomm_policy = False
     gym_env = SectorIEnv(config=config)
     gym_env.reset()
 
@@ -81,6 +82,7 @@ def test_step_archive_and_deleted_aircraft(view_type: ViewType):
     """
 
     config = SectorIEnv.get_default_env_config(view_type)
+    config.use_default_outcomm_policy = False
     gym_env = SectorIEnv(config=config)
     gym_env.reset()
 
