@@ -1511,7 +1511,9 @@ class BaseEnv(gym.Env):
         terminated = truncated = False
         if self.timestep >= self.maxstep:
             active_aircraft = [
-                callsign for callsign, ac_info in self.ac_tracker.items() if not self._is_aircraft_terminated(ac_info)
+                callsign
+                for callsign, aircraft_tracked_state in self.ac_tracker.items()
+                if not self._is_aircraft_terminated(aircraft_tracked_state)
             ]
 
             # aircraft scheduled in the scenario, but yet to appear in the
@@ -1528,7 +1530,7 @@ class BaseEnv(gym.Env):
 
         return terminated, truncated
 
-    def _is_aircraft_terminated(self, ac_info: ACStateTracker) -> bool:
+    def _is_aircraft_terminated(self, aircraft_tracked_state: ACStateTracker) -> bool:
         """Check whether a tracked aircraft is terminated.
 
         An aircraft is terminated if it has reached its exit, has been
@@ -1537,16 +1539,16 @@ class BaseEnv(gym.Env):
         the global end criteria.
 
         Args:
-            ac_info: the tracked information of the aircraft.
+            aircraft_tracked_state: the tracked information of the aircraft.
 
         Returns:
             True if the aircraft is terminated, otherwise False.
         """
 
         return (
-            ac_info.pos_status == PositionStatus.EXIT_REACHED
-            or ac_info.outcomm_status is True
-            or (ac_info.pos_status == PositionStatus.OUT_SECTOR and self._out_sector_control is False)
+            aircraft_tracked_state.pos_status == PositionStatus.EXIT_REACHED
+            or aircraft_tracked_state.outcomm_status is True
+            or (aircraft_tracked_state.pos_status == PositionStatus.OUT_SECTOR and self._out_sector_control is False)
         )
 
     def step(self, action: ActionType) -> tuple[ObsType, RewardType, TerminatedType, TruncatedType, InfoType]:
@@ -2054,10 +2056,7 @@ class BaseEnv(gym.Env):
         # finalize info dict and compute total reward
         # if len(self.ac_tracker) > 0:
         if len(_final_reward_callsigns) > 0:
-            reward = np.mean(
-                # [ac_info[cs]["total_reward"] for cs in self.ac_tracker.keys()]
-                [ac_info[cs]["total_reward"] for cs in _final_reward_callsigns]
-            ).item()
+            reward = np.mean([ac_info[cs]["total_reward"] for cs in _final_reward_callsigns]).item()
             # set 1.0 as upper bound. this is the best performance that can
             # be achieved in a single step except when aircraft transfers
             # out of sector where it receives an additional bonus reward
@@ -2108,15 +2107,15 @@ class BaseEnv(gym.Env):
         #       unless it has outcommed (it can no longer be controlled).
 
         callsigns_to_move = []
-        for callsign, ac_info in self.ac_tracker.items():
+        for callsign, aircraft_tracked_state in self.ac_tracker.items():
             # only aircraft that can no longer be controlled are candidates
             # to be removed from active tracking (see
             # `_is_aircraft_terminated`).
-            if not self._is_aircraft_terminated(ac_info):
+            if not self._is_aircraft_terminated(aircraft_tracked_state):
                 continue
 
-            _d1 = ac_info.dist_away_from_sector_exit
-            _d2 = ac_info.dist_away_from_incorrect_sector_exit
+            _d1 = aircraft_tracked_state.dist_away_from_sector_exit
+            _d2 = aircraft_tracked_state.dist_away_from_incorrect_sector_exit
             if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
                 callsigns_to_move.append(callsign)
 
@@ -2525,15 +2524,15 @@ class BaseEnv(gym.Env):
         #       unless it has outcommed (it can no longer be controlled).
 
         callsigns_to_move = []
-        for callsign, ac_info in self.ac_tracker.items():
+        for callsign, aircraft_tracked_state in self.ac_tracker.items():
             # only aircraft that can no longer be controlled are candidates
             # to be removed from active tracking (see
             # `_is_aircraft_terminated`).
-            if not self._is_aircraft_terminated(ac_info):
+            if not self._is_aircraft_terminated(aircraft_tracked_state):
                 continue
 
-            _d1 = ac_info.dist_away_from_sector_exit
-            _d2 = ac_info.dist_away_from_incorrect_sector_exit
+            _d1 = aircraft_tracked_state.dist_away_from_sector_exit
+            _d2 = aircraft_tracked_state.dist_away_from_incorrect_sector_exit
             if _d1 > DISTANCE_AWAY_FROM_EXIT_THRESHOLD or _d2 > DISTANCE_AWAY_FROM_INCORRECT_EXIT_THRESHOLD:
                 callsigns_to_move.append(callsign)
 
