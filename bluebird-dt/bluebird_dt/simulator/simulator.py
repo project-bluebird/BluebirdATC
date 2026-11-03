@@ -6,10 +6,10 @@ import os
 import time
 import typing
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Self
 
 import pandas as pd
-from typing_extensions import Self
 
 from bluebird_dt.core import Action, Aircraft, Coordination, WindField
 from bluebird_dt.logger import ContextFilter, CustomFormatter, logger
@@ -116,7 +116,7 @@ class Simulator:
         if not isinstance(env_manager, EnvironmentManager):
             raise TypeError(f"env_manager must be of type EnvironmentManager, got {type(env_manager).__name__}")
 
-        initialization_datetime = datetime.now(tz=timezone.utc)
+        initialization_datetime = datetime.now(tz=UTC)
         self.scenario_manager = scenario_manager
 
         self.category = category
@@ -944,7 +944,7 @@ class Simulator:
             Returns None if no saving should be conducted
         """
         current_simtime = self.manager.environment.datetime
-        current_realtime = datetime.now(tz=timezone.utc)
+        current_realtime = datetime.now(tz=UTC)
         if self.saver.should_save(autosave, current_simtime, current_realtime):
             if self.saver.should_chunk(current_simtime, current_realtime):
                 self._chunk()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import typing
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import lru_cache
 
 import dateutil.parser
@@ -99,7 +99,7 @@ def string_to_timestamp(s: str | None) -> float | None:
     if s is None:
         return None
 
-    return dateutil.parser.isoparse(s).replace(tzinfo=timezone.utc).timestamp()
+    return dateutil.parser.isoparse(s).replace(tzinfo=UTC).timestamp()
 
 
 @typing.overload
@@ -130,7 +130,7 @@ def timestamp_to_string(t: float | None) -> str | None:
     if t is None:
         return None
 
-    return datetime.fromtimestamp(t, tz=timezone.utc).isoformat(timespec="microseconds")[:-6]
+    return datetime.fromtimestamp(t, tz=UTC).isoformat(timespec="microseconds")[:-6]
 
 
 @lru_cache(maxsize=10000)
