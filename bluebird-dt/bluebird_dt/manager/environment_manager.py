@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import io
 import typing
-from datetime import UTC
 from collections.abc import Sequence
 from typing import Generic, NamedTuple
 
