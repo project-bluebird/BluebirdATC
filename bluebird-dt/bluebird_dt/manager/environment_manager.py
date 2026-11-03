@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import typing
 from collections.abc import Sequence
-from datetime import timezone
+from datetime import UTC
 from typing import Generic, NamedTuple
 
 import numpy as np
@@ -619,7 +619,7 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
             return False
 
         if include_background:
-            return self.environment.time <= radar_df.index.max().replace(tzinfo=timezone.utc).timestamp()
+            return self.environment.time <= radar_df.index.max().replace(tzinfo=UTC).timestamp()
 
         if sector_name is None:
             raise ValueError("`sector_name` must be set when `include_background` is False.")
