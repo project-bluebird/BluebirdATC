@@ -1,5 +1,5 @@
 import copy
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 import logging
 import io
 import json
@@ -667,7 +667,7 @@ def test_finished(generate_i):
 
     # Remove aircraft and jump time beyond last event
     em.environment.aircraft = {}
-    last_event_ts = em.event_handler.radar_df.index.max().replace(tzinfo=timezone.utc).timestamp()
+    last_event_ts = em.event_handler.radar_df.index.max().replace(tzinfo=UTC).timestamp()
     em.environment.time = last_event_ts + 10
     assert em.finished() is True
 
