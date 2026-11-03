@@ -25,7 +25,8 @@ class CustomScenarioManagerConfig(BaseModel):
     Configuration of a custom scenario manager
     """
 
-    scenario_manager: typing.Literal["custom"] = Field(default="custom")
+    # Custom was called Tactical before #71, and logs written before then record "tactical"
+    scenario_manager: typing.Literal["custom", "tactical"] = Field(default="custom")
 
 
 TAircraft = typing.TypeVar("TAircraft", bound=Aircraft)
