@@ -144,6 +144,28 @@ class TestAPI:
 
             assert response.status_code == 200
 
+        def test_actions_invalid_value(self, client, callsign):
+            """
+            Test that a batch with an action the simulator would reject gets a 422
+            with the simulator's message, and that none of the batch is queued.
+            """
+            valid_action = {
+                "callsign": callsign,
+                "agent": "human",
+                "kind": "change_flight_level_to",
+                "value": "300",
+                "sector": "SPRINGFIELD"
+            }
+            invalid_action = valid_action | {"kind": "message", "value": ["a", "b"]}
+            manager = client.app.state.runner_store.current_runner.sim.manager
+            n_queued = len(manager._actions_to_issue)
+
+            response = client.post(f"/actions", json=[valid_action, invalid_action])
+
+            assert response.status_code == 422
+            assert "Action value must be a string for message" in response.text
+            assert len(manager._actions_to_issue) == n_queued
+
 class TestFunctions:
     """
     Test returns and side effects of functions in routes.py
@@ -442,7 +464,7 @@ class TestFunctions:
         """
 
         @pytest.mark.parametrize(
-            ("action_kind", "expected_warning"),
+            ("action_kind", "value_required"),
             [
                 ("route_direct_to", True),
                 ("maintain_current_heading", False),
@@ -457,21 +479,25 @@ class TestFunctions:
             ],
         )
         @pytest.mark.asyncio
-        async def test_action_warnings(self, runner: Runner, callsign: str, action_kind: str, expected_warning: bool, caplog: pytest.LogCaptureFixture):
+        async def test_action_missing_value(self, runner: Runner, callsign: str, action_kind: str, value_required: bool, caplog: pytest.LogCaptureFixture):
             """
-            Test that action() raises a warning when action value is required
-            but not supplied.
+            Test that an ActionInput without a value fails validation when the
+            action kind needs one, and is sent without a warning otherwise.
             """
+            if value_required:
+                with pytest.raises(ValidationError, match="Value cannot be None"):
+                    ActionInput(agent="human", callsign=callsign,
+                                kind=action_kind, value=None,
+                                sector="Springfield")
+                return
+
             params = [ActionInput(agent="human", callsign=callsign,
                                   kind=action_kind, value=None,
                                   sector="Springfield")]
-            
+
             with caplog.at_level(logging.WARN):
-                await routers.core.actions(runner, params) is not None
-                if expected_warning:
-                    assert "An error occurred sending actions" in caplog.text
-                else:
-                    assert len(caplog.record_tuples) == 0
+                assert await routers.core.actions(runner, params) is True
+                assert len(caplog.record_tuples) == 0
 
         @pytest.mark.parametrize("action_kind", ["barrel_roll", ""])
         @pytest.mark.asyncio

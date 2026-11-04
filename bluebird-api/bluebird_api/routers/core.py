@@ -153,7 +153,8 @@ async def dynamic_data(  # noqa: ANN201
 async def actions(runner: RunnerDep, action_input: list[ActionInput]) -> bool:
     """
     Send actions to the simulator. The POST body should be a JSON list of
-    actions.
+    actions. If the simulator would reject any of them, none are sent and
+    the response is 422.
     """
 
     timed_actions = []

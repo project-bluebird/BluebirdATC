@@ -1,7 +1,8 @@
 import typing
 
+from bluebird_dt.core import Action
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 SUPPORTED_ACTIONS_LIST = [action for actions in SUPPORTED_ACTIONS.values() for action in actions]
 
@@ -31,6 +32,18 @@ class ActionInput(BaseModel):
         description="The sector that the action is being performed in.",
         json_schema_extra={"example": "sector_1"},
     )
+
+    @model_validator(mode="after")
+    def check_simulator_accepts_action(self) -> typing.Self:
+        """Build the simulator's `Action` so that a value it rejects fails validation instead of being dropped."""
+        try:
+            Action(self.callsign, self.kind, self.value, self.agent)
+        except Exception as err:
+            # Action can also raise a bare Exception or a TypeError, which pydantic would let through instead of
+            # reporting it as a validation error.
+            raise ValueError(str(err)) from err
+
+        return self
 
 
 class HmiRunnerInformation(BaseModel):
