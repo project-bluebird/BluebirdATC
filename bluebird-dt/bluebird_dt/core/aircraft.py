@@ -649,13 +649,10 @@ class Aircraft(Comparison):
         else:
             selected_instructions = Instructions()
 
-        # Set cleared  and selected fl and heading to current values if not provided
-        if cleared_instructions.heading is None:
-            cleared_instructions.heading = heading
+        # Set cleared and selected fl to the current fl if not provided. A None heading means no heading is
+        # instructed, as in the constructor, so it is left as None.
         if cleared_instructions.fl is None:
             cleared_instructions.fl = fl
-        if selected_instructions.heading is None:
-            selected_instructions.heading = heading
         if selected_instructions.fl is None:
             selected_instructions.fl = fl
 
