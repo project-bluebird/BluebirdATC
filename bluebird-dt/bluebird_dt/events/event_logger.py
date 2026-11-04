@@ -7,11 +7,12 @@ import operator
 import tarfile
 import typing
 from datetime import datetime
+from typing import Self
 
 import pandas as pd
 import typing_extensions
 from pydantic import BaseModel, Field, RootModel
-from typing_extensions import Self, override
+from typing_extensions import override
 
 from bluebird_dt.core import Action, Aircraft, Environment
 from bluebird_dt.events import EventHandler

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import typing
+from enum import StrEnum
 
 # simulator package
 from bluebird_dt.scenario_manager.infinite import Infinite
@@ -14,7 +15,6 @@ from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
 from bluebird_gymnasium.utils.constants import (
     DEFAULT_RENDER_DIR,
 )
-from bluebird_gymnasium.utils.types import StrEnum
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator import Simulator
@@ -22,7 +22,7 @@ if typing.TYPE_CHECKING:
     try:
         from typing import Self
     except ImportError:
-        from typing_extensions import Self
+        from typing import Self
 
 
 class ScenarioName(StrEnum):

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import io
 import typing
-from datetime import timezone
+from collections.abc import Sequence
+from datetime import UTC
 from typing import Generic, NamedTuple
 
 import numpy as np
@@ -18,6 +19,7 @@ from bluebird_dt.core import (
     Coordination,
     Environment,
     Fixes,
+    Pos2D,
 )
 from bluebird_dt.core.wind import WindField
 from bluebird_dt.events import EventHandler, EventLogger
@@ -338,6 +340,29 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
 
         return min_lat, max_lat, min_lon, max_lon
 
+    def expand_penumbra_to_include(self, positions: Sequence[Pos2D], margin_nmi: float = 0.0) -> None:
+        """
+        Widen the square penumbra around the airspace, if needed, so that it contains all the positions, for scenarios
+        that start aircraft further out than penumbra_lat reaches.
+
+        Parameters
+        ----------
+        positions: Sequence[Pos2D]
+            The positions the penumbra has to contain.
+        margin_nmi: float, default = 0.0
+            How far inside the penumbra the positions have to be, in NMI like penumbra_lat.
+        """
+        if not positions:
+            return
+        min_lat, max_lat, min_lon, max_lon = self.square_penumbra_limits()
+        lats = [p.lat for p in positions]
+        lons = [p.lon for p in positions]
+        # how far the box around the positions goes beyond the penumbra, in degrees
+        beyond = max(min_lat - min(lats), max(lats) - max_lat, min_lon - min(lons), max(lons) - max_lon)
+        needed = beyond * constants.NM_PER_DEGREE + margin_nmi
+        if needed > 0:
+            self.penumbra_lat += needed
+
     def get_sector_airspace(self, sector_names: str | list[str] | None, local_fixes: bool = False) -> Airspace:
         """
         Return given Sector(s) as an Airspace object (with associated Fixes).
@@ -594,7 +619,7 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
             return False
 
         if include_background:
-            return self.environment.time <= radar_df.index.max().replace(tzinfo=timezone.utc).timestamp()
+            return self.environment.time <= radar_df.index.max().replace(tzinfo=UTC).timestamp()
 
         if sector_name is None:
             raise ValueError("`sector_name` must be set when `include_background` is False.")
