@@ -1117,8 +1117,11 @@ class Airspace(Comparison):
             of the Route's exit. Returns None if passed the final fix of the route.
         """
 
-        if route_fixes is None:
+        if route_fixes is None and aircraft.flight_plan is not None:
             route_fixes = aircraft.flight_plan.route.current
+
+        if route_fixes is None:
+            return None
 
         all_fixes = self.fixes.places
 

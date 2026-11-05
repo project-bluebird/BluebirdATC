@@ -61,4 +61,4 @@ class SimConfig(BaseModel, Generic[TScenarios]):
     simulator: SimulatorConfig
     environment_manager: EnvironmentConfig
     scenario: TScenarios | None
-    save_config: SaveConfig
+    save_config: SaveConfig | None = None

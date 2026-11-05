@@ -1746,7 +1746,9 @@ def update_from_flight_plans(
             # if filed route hasn't changed, keep current route
             new_route_current = route.current if list(row.route_filed) == list(route.filed) else row.route_filed
 
-        route = Route(filed=list(row.route_filed), current=list(new_route_current))
+        route = Route(
+            filed=list(row.route_filed), current=(list(new_route_current) if new_route_current is not None else None)
+        )
 
         aircraft.flight_plan = FlightPlan(
             route=route,
