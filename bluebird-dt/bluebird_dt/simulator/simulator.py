@@ -530,44 +530,20 @@ class Simulator:
             `Static` data for the scenario
         """
         func_start_time = datetime.now()
-        airspace = self.manager.get_sector_airspace(
-            None, local_fixes=self.category not in ["Basic Training", "Artificial", "Replay"]
-        )
+        airspace = self.manager.get_sector_airspace(None, local_fixes=False)
 
-        # extract the fixes from all aircraft that are in the scenario
-        all_aircraft_fixes = {
-            fix for route_filed in self.manager.event_handler.flight_df.route_filed for fix in route_filed
-        }
-
-        # If we replaced environment via the API, we might not have Events, but
-        # still have aircraft - add fixes from their routes as well.
-        flight_plans = [
-            ac.flight_plan for ac in self.manager.environment.aircraft.values() if ac.flight_plan is not None
-        ]
-        fixes_from_routes = {fix for fp in flight_plans for fix in fp.route.filed}
-
-        # add and remove duplicates
-        all_aircraft_fixes = all_aircraft_fixes.union(fixes_from_routes)
-
-        # filter the airspace fixes to only those that appear in the aircraft fixes
-        # and airport fixes (4 letters)
         fixes: list[dict[str, typing.Any]] = []
 
         for i, (name, pos) in enumerate(airspace.fixes.places.items()):
-            # include all fixes in replay
-            if self.category in ["Basic Training", "Replay", "Springfield"] or (
-                name.isalpha()
-                and (
-                    name in all_aircraft_fixes
-                    or (
-                        # airports start with E and have 4 letters (until we have proper data filtering)
-                        len(name) == 4 and name.startswith("E")
-                    )
-                )
-            ):
-                fixes.append(
-                    {"id": i, "name": name, "lat": pos.lat, "lon": pos.lon, "visible": airspace.fixes.visibility[name]}
-                )
+            fixes.append(
+                {
+                    "id": i,
+                    "name": name,
+                    "lat": pos.lat,
+                    "lon": pos.lon,
+                    "visible": airspace.fixes.visibility.get(name, True),
+                }
+            )
 
         sectors = {}
         for name, sector in airspace._individual_sectors.items():
