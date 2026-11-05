@@ -167,6 +167,34 @@ class TestAPI:
             assert "Action value must be a string for message" in response.text
             assert len(manager._actions_to_issue) == n_queued
 
+        @pytest.mark.parametrize(
+            ("action_kind", "action_value", "expected_value"),
+            [
+                ("descend_now,level_by_fix", [200, "FIX1"], (200, "FIX1")),
+                ("expect_level_by_fix,climb", [200, "FIX1", 300], (200, "FIX1", 300)),
+                ("change_heading_to_by_direction", [90, "left"], (90, "left")),
+                ("using_speed_limit", True, True),
+            ],
+        )
+        def test_actions_json_values(self, client, callsign, action_kind, action_value, expected_value):
+            """
+            Test that a JSON list reaches the simulator as a tuple for the action
+            kinds that take one, and that a JSON boolean stays a boolean.
+            """
+            action = {
+                "callsign": callsign,
+                "agent": "human",
+                "kind": action_kind,
+                "value": action_value,
+                "sector": "SPRINGFIELD"
+            }
+
+            response = client.post(f"/actions", json=[action])
+
+            assert response.status_code == 200
+            manager = client.app.state.runner_store.current_runner.sim.manager
+            assert manager._actions_to_issue[-1].value == expected_value
+
 class TestFunctions:
     """
     Test returns and side effects of functions in routes.py

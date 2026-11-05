@@ -18,7 +18,7 @@ class ClearanceAndResponse(BaseModel):
     pilot_response: str | None
 
 
-ActionValueType = int | float | str | list[str] | tuple[int, str] | tuple[int, str, int] | None
+ActionValueType = bool | int | float | str | list[str] | tuple[int, str] | tuple[int, str, int] | None
 
 
 class Action(Comparison):
