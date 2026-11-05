@@ -2946,7 +2946,7 @@ class BaseEnv(gym.Env):
         """
 
         # send action to the simulator
-        to_send = [action.data() for action in actions_st if action is not None]
+        to_send = [action for action in actions_st if action is not None]
 
         self.simulator.action(to_send)
 

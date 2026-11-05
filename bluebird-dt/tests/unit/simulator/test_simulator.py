@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from bluebird_dt.core import Coordination
+from bluebird_dt.core import Action, Coordination
 from bluebird_dt.logger import logger
 from bluebird_dt.manager.environment_manager import EnvironmentConfig, PredictorConfig
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
@@ -206,13 +206,25 @@ def test_evolve_with_invalid_delta():
         sim.evolve(0)
 
 
-def test_action_invalid_payload_returns_false():
+def test_action_adds_to_queue():
     """
-    Create a sim and check that adding an invalid action to the queue is rejected.
+    Create a sim and check that an Action reaches the queue.
 
     """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
-    assert sim.action([{"callsign": "AIR01"}]) is False
+    action = Action(next(iter(sim.manager.environment.aircraft)), "change_flight_level_to", 300, "test")
+    sim.action([action])
+    assert sim.manager._actions_to_issue == [action]
+
+
+def test_action_invalid_payload_raises():
+    """
+    Create a sim and check that an invalid action raises instead of being dropped with a warning.
+
+    """
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
+    with pytest.raises(AttributeError):
+        sim.action([{"callsign": "AIR01"}])
 
 
 @pytest.mark.asyncio
