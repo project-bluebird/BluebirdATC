@@ -536,7 +536,7 @@ class Simulator:
 
         for i, (name, pos) in enumerate(airspace.fixes.places.items()):
             fixes.append(
-                {"id": i, "name": name, "lat": pos.lat, "lon": pos.lon, "visible": airspace.fixes.visibility[name]}
+                {"id": i, "name": name, "lat": pos.lat, "lon": pos.lon, "visible": airspace.fixes.visibility.get(name, True)}
             )
 
         sectors = {}
