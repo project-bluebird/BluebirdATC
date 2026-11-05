@@ -3,6 +3,7 @@ import logging
 import os
 
 import pytest
+from fastapi import HTTPException
 from pydantic import ValidationError
 from bluebird_api import routers
 from bluebird_api import routes
@@ -146,8 +147,8 @@ class TestAPI:
 
         def test_actions_invalid_value(self, client, callsign):
             """
-            Test that a batch with an action the simulator would reject gets a 422
-            with the simulator's message, and that none of the batch is queued.
+            Test that a batch with an invalid action gets a 422 with the Action's
+            message, and that none of the batch is queued.
             """
             valid_action = {
                 "callsign": callsign,
@@ -481,19 +482,20 @@ class TestFunctions:
         @pytest.mark.asyncio
         async def test_action_missing_value(self, runner: Runner, callsign: str, action_kind: str, value_required: bool, caplog: pytest.LogCaptureFixture):
             """
-            Test that an ActionInput without a value fails validation when the
-            action kind needs one, and is sent without a warning otherwise.
+            Test that actions() answers 422 for a missing value when the action
+            kind needs one, and sends the action without a warning otherwise.
             """
-            if value_required:
-                with pytest.raises(ValidationError, match="Value cannot be None"):
-                    ActionInput(agent="human", callsign=callsign,
-                                kind=action_kind, value=None,
-                                sector="Springfield")
-                return
-
             params = [ActionInput(agent="human", callsign=callsign,
                                   kind=action_kind, value=None,
                                   sector="Springfield")]
+
+            if value_required:
+                with pytest.raises(HTTPException) as excinfo:
+                    await routers.core.actions(runner, params)
+
+                assert excinfo.value.status_code == 422
+                assert "Value cannot be None" in excinfo.value.detail
+                return
 
             with caplog.at_level(logging.WARN):
                 assert await routers.core.actions(runner, params) is True
@@ -547,6 +549,20 @@ class TestFunctions:
             assert last_action["agent"] == "human"
             assert last_action["kind"] == action_kind
             assert last_action["value"] == action_value
+
+        @pytest.mark.asyncio
+        async def test_actions_bandboxed_sector(self, runner: Runner, callsign):
+            """
+            Test that actions() expands a bandboxed sector into its individual sectors
+            """
+            runner.sim.manager.environment.airspace._airspace_configuration["box"] = ["a", "b"]
+            params = [ActionInput(agent="human", callsign=callsign,
+                                  kind="change_flight_level_to", value=300,
+                                  sector="box")]
+
+            await routers.core.actions(runner, params)
+
+            assert runner.sim.manager._actions_to_issue[-1].sector == ["a", "b"]
 
         @pytest.mark.asyncio
         async def test_set_tick_frequency_negative_period(self, runner: Runner):
