@@ -1,5 +1,5 @@
 import typing
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import typing_extensions
@@ -356,9 +356,6 @@ Creating TwoAircraft Scenario
             penumbra_lat=self.lateral_buffer_distance,
             log_filename=log_filename,
         )
-        # set the visibility flag of fixes to True only if they are in the penumbra
-        em.set_local_fixes_visibility()
-
         em.initialise_env_with_event_handler()
 
         return em
@@ -493,7 +490,7 @@ Creating TwoAircraft Scenario
 
         # if needed, fast-forward to the first aircraft entry time, ensuring that it is
         # a multiple of the evolve time-step
-        first_entry_time = sim.manager.event_handler.radar_df.index.min().replace(tzinfo=timezone.utc).timestamp()
+        first_entry_time = sim.manager.event_handler.radar_df.index.min().replace(tzinfo=UTC).timestamp()
 
         time_step = 6.0
 

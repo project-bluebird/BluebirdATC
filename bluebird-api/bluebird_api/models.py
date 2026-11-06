@@ -1,5 +1,6 @@
 import typing
 
+from bluebird_dt.core.action import ActionValueType
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
 from pydantic import BaseModel, Field
 
@@ -21,9 +22,10 @@ class ActionInput(BaseModel):
         description="The kind of action to perform. Must be a string that is one of the supported actions.",
         json_schema_extra={"example": "change_heading_to"},
     )
-    value: typing.Any = Field(
+    value: ActionValueType = Field(
         description=(
-            "The value associated with the action. The type of this value depends on the action being performed."
+            "The value associated with the action. The type of this value depends on the action being performed. "
+            'An action that takes a tuple takes it as a JSON list, e.g. [200, "FIX1"] for descend_now,level_by_fix.'
         ),
         json_schema_extra={"example": 90},
     )

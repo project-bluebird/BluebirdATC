@@ -1,11 +1,10 @@
-import typing
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pandas as pd
-from bluebird_dt.core import WindField
+from bluebird_dt.core import Action, WindField
 from bluebird_dt.events.event_logger import SimStartStop
 from bluebird_dt.simulator.common import list_sim_scenario_categories, list_sim_scenarios
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from bluebird_api.models import ActionInput
 from bluebird_api.runner import RunnerDep, RunnerStoreDep
@@ -153,39 +152,36 @@ async def dynamic_data(  # noqa: ANN201
 async def actions(runner: RunnerDep, action_input: list[ActionInput]) -> bool:
     """
     Send actions to the simulator. The POST body should be a JSON list of
-    actions.
+    actions. If any of them is invalid, none are sent and the response is 422.
     """
 
-    timed_actions = []
+    airspace = runner.sim.manager.environment.airspace
+    parsed_actions = []
 
     for act in action_input:
         agent = act.agent
         callsign = act.callsign
         kind = act.kind
         value = act.value
-        sector = act.sector
+        # The sector may be a bandbox configuration: Action takes its individual sectors, e.g. ["25", "26"].
+        sector = airspace.expand_bandbox_sector(act.sector)
 
         action_time = (
             datetime.fromtimestamp(
                 runner.sim.manager.environment.time,
-                tz=timezone.utc,
+                tz=UTC,
             ).isoformat(timespec="microseconds")[:-6]
         ).replace("T", " ")
 
         print(f"{action_time} : {agent} : {callsign} -> {kind} = {value}")
 
-        action: dict[str, typing.Any] = {
-            "agent": agent,
-            "callsign": callsign,
-            "kind": kind,
-            "value": value,
-            "time": action_time,
-            "sector": sector,
-        }
+        try:
+            parsed_actions.append(Action(callsign, kind, value, agent, sector=sector))
+        except Exception as err:
+            # Action can raise a bare Exception or a TypeError as well as a ValueError
+            raise HTTPException(422, str(err)) from err
 
-        timed_actions.append(action)
-
-    runner.sim.action(timed_actions)
+    runner.sim.action(parsed_actions)
 
     return True
 

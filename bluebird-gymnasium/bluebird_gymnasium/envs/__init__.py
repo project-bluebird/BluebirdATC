@@ -47,9 +47,9 @@ ActionType: TypeAlias = int | dict[str, int]
 
 
 ## enums
-from enum import IntEnum  # noqa: E402
+from enum import IntEnum, StrEnum  # noqa: E402
 
-from bluebird_gymnasium.utils.types import MetaEnum, StrEnum  # noqa: E402
+from bluebird_gymnasium.utils.types import MetaEnum  # noqa: E402
 
 
 class SuccessMetric(IntEnum, metaclass=MetaEnum):

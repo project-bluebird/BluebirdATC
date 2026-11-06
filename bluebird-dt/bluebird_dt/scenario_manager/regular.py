@@ -247,7 +247,6 @@ Creating Regular Scenario with {self.num_aircraft} aircraft.
             penumbra_lat=self.lateral_buffer_distance,
             log_filename=log_filename,
         )
-
         em.initialise_env_with_event_handler()
 
         return em

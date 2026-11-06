@@ -202,6 +202,28 @@ def test_aircraft_from_json(example_aircraft_json_no_pilot):
     assert aircraft.pilot.callsign == aircraft.callsign
 
 
+def test_aircraft_from_json_headings():
+    """
+    Test that a None cleared or selected heading stays None through to_json and from_json,
+    and that a heading that is set is kept.
+    """
+    flight_plan = FlightPlan(Route(["a", "b", "c"]))
+    aircraft = Aircraft(50.7351, -3.4153, 120, 66.7, flight_plan, "AIR0")
+
+    restored = Aircraft.from_json(aircraft.to_json())
+
+    assert restored.cleared_instructions.heading is None
+    assert restored.selected_instructions.heading is None
+
+    aircraft.cleared_instructions.heading = 90.0
+    aircraft.selected_instructions.heading = 80.0
+
+    restored = Aircraft.from_json(aircraft.to_json())
+
+    assert restored.cleared_instructions.heading == 90.0
+    assert restored.selected_instructions.heading == 80.0
+
+
 def test_aircraft_pilot_callsigns(example_aircraft_pilot):
     """
     Test that Aircraft callsigns are equal to the Pilot callsigns.

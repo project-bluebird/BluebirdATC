@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import typing
+from enum import StrEnum
 
 # simulator package
 from bluebird_dt.scenario_manager.infinite import Infinite
@@ -14,7 +15,6 @@ from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
 from bluebird_gymnasium.utils.constants import (
     DEFAULT_RENDER_DIR,
 )
-from bluebird_gymnasium.utils.types import StrEnum
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator import Simulator
@@ -22,7 +22,7 @@ if typing.TYPE_CHECKING:
     try:
         from typing import Self
     except ImportError:
-        from typing_extensions import Self
+        from typing import Self
 
 
 class ScenarioName(StrEnum):
@@ -149,8 +149,12 @@ class InfiniteEnv(BaseEnv):
                     10,
                 ],
                 "simple_heading_route_parallel": False,
-                "simple_fl_descent": [10, ],
-                "simple_fl_climb": [10, ],
+                "simple_fl_descent": [
+                    10,
+                ],
+                "simple_fl_climb": [
+                    10,
+                ],
                 "simple_fl_intermediate": False,
                 "simple_fl_exit": False,
                 "simple_speed_increase": False,
@@ -183,7 +187,7 @@ class InfiniteEnv(BaseEnv):
                     "lateral_centreline_distance_shaped",
                     "safety_simple_avoidance_exp",
                     "climb_target_exp",
-                    "descent_target_exp"
+                    "descent_target_exp",
                 ],
                 "coeffs": [1.0, 1.0, 1.0, 1.0, 1.0],
             },
@@ -352,8 +356,12 @@ class CustomInfiniteEnv(BaseEnv):
                     10,
                 ],
                 "simple_heading_route_parallel": False,
-                "simple_fl_descent": [10, ],
-                "simple_fl_climb": [10, ],
+                "simple_fl_descent": [
+                    10,
+                ],
+                "simple_fl_climb": [
+                    10,
+                ],
                 "simple_fl_intermediate": False,
                 "simple_fl_exit": False,
                 "simple_speed_increase": False,
@@ -386,7 +394,7 @@ class CustomInfiniteEnv(BaseEnv):
                     "lateral_centreline_distance_shaped",
                     "safety_simple_avoidance_exp",
                     "climb_target_exp",
-                    "descent_target_exp"
+                    "descent_target_exp",
                 ],
                 "coeffs": [1.0, 1.0, 1.0, 1.0, 1.0],
             },
