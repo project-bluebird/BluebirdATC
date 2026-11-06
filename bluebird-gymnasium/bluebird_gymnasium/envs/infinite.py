@@ -181,8 +181,11 @@ class InfiniteEnv(BaseEnv):
                 "fns": [
                     "position_status_const",
                     "lateral_centreline_distance_shaped",
+                    "safety_simple_avoidance_exp",
+                    "climb_target_exp",
+                    "descent_target_exp"
                 ],
-                "coeffs": [1.0, 1.0],
+                "coeffs": [1.0, 1.0, 1.0, 1.0, 1.0],
             },
             "scenario_config": {"scenario_name": ScenarioName.sector_xplus.value},
             "simulation_log_config": {
@@ -381,8 +384,11 @@ class CustomInfiniteEnv(BaseEnv):
                 "fns": [
                     "position_status_const",
                     "lateral_centreline_distance_shaped",
+                    "safety_simple_avoidance_exp",
+                    "climb_target_exp",
+                    "descent_target_exp"
                 ],
-                "coeffs": [1.0, 1.0],
+                "coeffs": [1.0, 1.0, 1.0, 1.0, 1.0],
             },
             "scenario_config": {
                 "scenario_name": ScenarioName.sector_xplus.value,
