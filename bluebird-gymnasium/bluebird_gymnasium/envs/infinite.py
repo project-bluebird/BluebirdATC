@@ -106,7 +106,7 @@ class InfiniteEnv(BaseEnv):
         return terminated, truncated
 
     @classmethod
-    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.DECENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
@@ -148,9 +148,9 @@ class InfiniteEnv(BaseEnv):
                 "simple_heading_right": [
                     10,
                 ],
-                "simple_heading_route_parallel": True,
-                "simple_fl_descent": False,
-                "simple_fl_climb": False,
+                "simple_heading_route_parallel": False,
+                "simple_fl_descent": [10, ],
+                "simple_fl_climb": [10, ],
                 "simple_fl_intermediate": False,
                 "simple_fl_exit": False,
                 "simple_speed_increase": False,
@@ -306,7 +306,7 @@ class CustomInfiniteEnv(BaseEnv):
         return terminated, truncated
 
     @classmethod
-    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.DECENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
@@ -348,9 +348,9 @@ class CustomInfiniteEnv(BaseEnv):
                 "simple_heading_right": [
                     10,
                 ],
-                "simple_heading_route_parallel": True,
-                "simple_fl_descent": False,
-                "simple_fl_climb": False,
+                "simple_heading_route_parallel": False,
+                "simple_fl_descent": [10, ],
+                "simple_fl_climb": [10, ],
                 "simple_fl_intermediate": False,
                 "simple_fl_exit": False,
                 "simple_speed_increase": False,
