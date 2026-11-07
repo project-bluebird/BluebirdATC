@@ -162,7 +162,7 @@ class Infinite(
         aircraft_on_route: bool
             If True, spawned aircraft will not be laterally displaced from their starting fix,
             and will have "on_route" set to True.  Default is False.
-        start_time: int
+        start_time: float
             Start time of scenario, in unix time (seconds)
         max_spawn_attempts: int
             How many times to try and randomly spawn an aircraft that doesn't clash with existing aircraft
@@ -511,7 +511,7 @@ Creating Infinite Scenario
             num_to_spawn += self.rng.poisson(self.current_spawn_rate)
 
         for _ in range(num_to_spawn):
-            spawn_time = env_manager.environment.time + 6
+            spawn_time = current_time + 6
             next_callsign = f"AIR-{self.next_callsign_number:02d}"
             # aircraft spawned earlier, including in this update, that aren't in the environment yet
             waiting_aircraft = [ac for time, ac in self.waiting_aircraft if time > current_time]
@@ -545,7 +545,7 @@ Creating Infinite Scenario
             env_manager.event_handler.add_coordination(spawn_time - timedelta(seconds=1), exit_coord)
             env_manager.event_handler.add_aircraft(spawn_time, aircraft)
 
-        self.waiting_aircraft = [ac for ac in self.waiting_aircraft if env_manager.environment.time < ac[0]]
+        self.waiting_aircraft = [ac for ac in self.waiting_aircraft if current_time < ac[0]]
 
         return env_manager
 
