@@ -326,11 +326,12 @@ class Simulator:
                     save_chunk_interval=save_chunk_interval,
                     # Flight school specific param
                     random_seed=None,
+                    fl_limits=(200, 350),
                     num_starter_aircraft=2,
-                    initial_spawn_rate=0.025,
-                    spawn_rate_increment=0.005,
-                    spawn_rate_increase_interval=30,
-                    max_spawn_rate=0.1,
+                    initial_spawn_rate=0.005,
+                    spawn_rate_increment=0.001,
+                    spawn_rate_increase_interval=300,
+                    max_spawn_rate=0.01,
                     total_time_seconds=3600.0,
                 )
             case _:

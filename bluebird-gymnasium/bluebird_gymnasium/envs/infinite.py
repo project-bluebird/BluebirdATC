@@ -106,7 +106,7 @@ class InfiniteEnv(BaseEnv):
         return terminated, truncated
 
     @classmethod
-    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.DECENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
@@ -148,9 +148,13 @@ class InfiniteEnv(BaseEnv):
                 "simple_heading_right": [
                     10,
                 ],
-                "simple_heading_route_parallel": True,
-                "simple_fl_descent": False,
-                "simple_fl_climb": False,
+                "simple_heading_route_parallel": False,
+                "simple_fl_descent": [
+                    10,
+                ],
+                "simple_fl_climb": [
+                    10,
+                ],
                 "simple_fl_intermediate": False,
                 "simple_fl_exit": False,
                 "simple_speed_increase": False,
@@ -181,8 +185,11 @@ class InfiniteEnv(BaseEnv):
                 "fns": [
                     "position_status_const",
                     "lateral_centreline_distance_shaped",
+                    "safety_simple_avoidance_exp",
+                    "climb_target_exp",
+                    "descent_target_exp",
                 ],
-                "coeffs": [1.0, 1.0],
+                "coeffs": [1.0, 1.0, 1.0, 1.0, 1.0],
             },
             "scenario_config": {"scenario_name": ScenarioName.sector_xplus.value},
             "simulation_log_config": {
@@ -275,6 +282,7 @@ class CustomInfiniteEnv(BaseEnv):
             spawn_rate_increment=self.config.scenario_config["spawn_rate_increment"],
             spawn_rate_increase_interval=self.config.scenario_config["spawn_rate_increase_interval"],
             max_spawn_rate=self.config.scenario_config["max_spawn_rate"],
+            fl_limits=self.config.scenario_config["fl_limits"],
             spawn_distance_threshold=self.config.scenario_config["spawn_distance_threshold"],
             use_wind=self.config.scenario_config["use_wind"],
             use_forecast=self.config.scenario_config["use_forecast"],
@@ -306,7 +314,7 @@ class CustomInfiniteEnv(BaseEnv):
         return terminated, truncated
 
     @classmethod
-    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.DECENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
@@ -348,9 +356,13 @@ class CustomInfiniteEnv(BaseEnv):
                 "simple_heading_right": [
                     10,
                 ],
-                "simple_heading_route_parallel": True,
-                "simple_fl_descent": False,
-                "simple_fl_climb": False,
+                "simple_heading_route_parallel": False,
+                "simple_fl_descent": [
+                    10,
+                ],
+                "simple_fl_climb": [
+                    10,
+                ],
                 "simple_fl_intermediate": False,
                 "simple_fl_exit": False,
                 "simple_speed_increase": False,
@@ -381,17 +393,21 @@ class CustomInfiniteEnv(BaseEnv):
                 "fns": [
                     "position_status_const",
                     "lateral_centreline_distance_shaped",
+                    "safety_simple_avoidance_exp",
+                    "climb_target_exp",
+                    "descent_target_exp",
                 ],
-                "coeffs": [1.0, 1.0],
+                "coeffs": [1.0, 1.0, 1.0, 1.0, 1.0],
             },
             "scenario_config": {
                 "scenario_name": ScenarioName.sector_xplus.value,
-                "initial_spawn_rate": 0.03,
-                "max_spawn_rate": 0.1,
-                "spawn_rate_increment": 0.0,
-                "spawn_rate_increase_interval": 0.0,
+                "initial_spawn_rate": 0.005,
+                "max_spawn_rate": 0.01,
+                "spawn_rate_increment": 0.001,
+                "spawn_rate_increase_interval": 300,
                 "spawn_distance_threshold": 10,
-                "random_seed": 1251,
+                "fl_limits": (200, 350),
+                "random_seed": None,
                 "num_starter_aircraft": 2,
                 "use_wind": True,
                 "use_forecast": True,

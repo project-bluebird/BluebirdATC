@@ -74,7 +74,7 @@ class Infinite(
     sector_name: str | None
     speed_range: tuple[float, float] | None
     aircraft_on_route: bool
-    start_time: int
+    start_time: float
     vertical_buffer_distance: float | int
     lateral_buffer_distance: float | int
     current_spawn_rate: float
@@ -86,7 +86,7 @@ class Infinite(
     outcomm_handler: OutcommHandler | None
     last_spawn_time: float
     last_draw_time: float
-    lats_spawn_rate_increase: float
+    last_spawn_rate_increase: float
     min_spawn_delta: float
     next_callsign_number: int
     fl_limits: tuple[int, int]
@@ -112,7 +112,7 @@ class Infinite(
         num_starter_aircraft: int = 2,
         speed_range: tuple[float, float] | None = None,
         aircraft_on_route: bool = True,
-        start_time: int = 0,
+        start_time: float = 0.0,
         max_spawn_attempts: int = 10,
         min_spawn_delta: float = 6.0,
         vertical_buffer_distance: float | int = 500,
@@ -162,7 +162,7 @@ class Infinite(
         aircraft_on_route: bool
             If True, spawned aircraft will not be laterally displaced from their starting fix,
             and will have "on_route" set to True.  Default is False.
-        start_time: int
+        start_time: float
             Start time of scenario, in unix time (seconds)
         max_spawn_attempts: int
             How many times to try and randomly spawn an aircraft that doesn't clash with existing aircraft
@@ -484,35 +484,37 @@ Creating Infinite Scenario
         if self.outcomm_handler is not None:
             self.outcomm_handler.update(env_manager)
 
+        current_time = env_manager.environment.time
+
         # If total_time_seconds was specified, and we have gone beyond that,
         # return without spawning any aircraft.
-        if self.total_time_seconds and env_manager.environment.time - self.start_time > self.total_time_seconds:
+        if self.total_time_seconds and current_time - self.start_time > self.total_time_seconds:
             return env_manager
 
         # Has enough time passed to increment the spawn rate?
         if self.spawn_rate_increment > 0 and self.current_spawn_rate < self.max_spawn_rate:
-            time_since_last_rate_increase = env_manager.environment.time - self.last_spawn_rate_increase
+            time_since_last_rate_increase = current_time - self.last_spawn_rate_increase
             if time_since_last_rate_increase >= self.spawn_rate_increase_interval:
                 self.current_spawn_rate = min(self.current_spawn_rate + self.spawn_rate_increment, self.max_spawn_rate)
-                self.last_spawn_rate_increase = env_manager.environment.time
+                self.last_spawn_rate_increase = current_time
 
         # Has enough time passed to spawn a new aircraft?
-        time_since_last_spawn = env_manager.environment.time - self.last_spawn_time
+        time_since_last_spawn = current_time - self.last_spawn_time
         if time_since_last_spawn < self.min_spawn_delta:
             return env_manager
         # Do a Poisson trial for each second since the last trials, to see how many aircraft to spawn.
         # Seconds within min_spawn_delta of the last spawn are drawn at the next update that can spawn.
-        num_seconds = int(env_manager.environment.time - self.last_draw_time)
+        num_seconds = int(current_time - self.last_draw_time)
         self.last_draw_time += num_seconds
         num_to_spawn = 0
         for _ in range(num_seconds):
             num_to_spawn += self.rng.poisson(self.current_spawn_rate)
 
         for _ in range(num_to_spawn):
-            spawn_time = env_manager.environment.time + 6
+            spawn_time = current_time + 6
             next_callsign = f"AIR-{self.next_callsign_number:02d}"
             # aircraft spawned earlier, including in this update, that aren't in the environment yet
-            waiting_aircraft = [ac for time, ac in self.waiting_aircraft if time > env_manager.environment.time]
+            waiting_aircraft = [ac for time, ac in self.waiting_aircraft if time > current_time]
 
             # spawn these aircraft behind their starting fixes
             safe_to_spawn = False
@@ -543,7 +545,7 @@ Creating Infinite Scenario
             env_manager.event_handler.add_coordination(spawn_time - timedelta(seconds=1), exit_coord)
             env_manager.event_handler.add_aircraft(spawn_time, aircraft)
 
-        self.waiting_aircraft = [ac for ac in self.waiting_aircraft if env_manager.environment.time < ac[0]]
+        self.waiting_aircraft = [ac for ac in self.waiting_aircraft if current_time < ac[0]]
 
         return env_manager
 
