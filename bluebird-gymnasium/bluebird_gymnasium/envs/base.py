@@ -1649,15 +1649,19 @@ class BaseEnv(gym.Env):
         if self.render_mode == "human":
             self.render()
 
-        # save the simulation logs to disk if the episode has ended
-        # (i.e., terminated or truncated set to `True`) and "save_simulation"
-        # flag in `self.config.simulation_log_config` is set to `True`.
-        if (ret_values[2] or ret_values[3]) and self.config.simulation_log_config["save_simulation"]:
+        # save the simulation logs to disk if the episode has ended (i.e., the
+        # global terminated or truncated flag in `info` is set to `True`) and
+        # "save_simulation" flag in `self.config.simulation_log_config` is set
+        # to `True`. the global flags are used because, in the decentralised
+        # setup, terminated and truncated are per-aircraft dicts, which are
+        # truthy whenever any aircraft is tracked.
+        episode_ended = ret_values[-1]["__global_terminated__"] or ret_values[-1]["__global_truncated__"]
+        if episode_ended and self.config.simulation_log_config["save_simulation"]:
             self.save_simulation_logs()
 
         # check the global terminated/truncated flags in `info` dict if the
         # environment needs to be reset.
-        if ret_values[-1]["__global_terminated__"] or ret_values[-1]["__global_truncated__"]:
+        if episode_ended:
             self._needs_reset = True
 
         return ret_values
