@@ -198,7 +198,7 @@ class InfiniteEnv(BaseEnv):
             },
             "state_repr_config": {
                 "encoder_cls": "relative",
-                "k_nearest_aircraft": 0,
+                "k_nearest_aircraft": 3,
             },
             "view_config": {
                 "type": view_type,
@@ -418,7 +418,7 @@ class CustomInfiniteEnv(BaseEnv):
             },
             "state_repr_config": {
                 "encoder_cls": "relative",
-                "k_nearest_aircraft": 0,
+                "k_nearest_aircraft": 3,
             },
             "view_config": {
                 "type": view_type,
