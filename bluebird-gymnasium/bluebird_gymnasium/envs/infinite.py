@@ -6,6 +6,7 @@ from enum import StrEnum
 
 # simulator package
 from bluebird_dt.scenario_manager.infinite import Infinite
+from bluebird_dt.simulator.presets import FLIGHT_SCHOOL_SETTINGS
 
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import CentralizedSampler, EnvConfig, ViewType
@@ -232,6 +233,12 @@ class CustomInfiniteEnv(BaseEnv):
     Calling `.reset()` or `.reset(seed=None)` preserves the configured
     scenario seed.
 
+    Every other entry of `config.scenario_config` is passed to
+    `Infinite.setup` as a keyword argument, so a key that `Infinite.setup`
+    does not accept raises a `TypeError` when the scenario is generated.
+    The default scenario is the Flight School challenge
+    (`FLIGHT_SCHOOL_SETTINGS` in `bluebird_dt.simulator.presets`).
+
     Args:
         render_mode: the mode to visualise (render) the simulator. It can
             only be set to None or one of the following:
@@ -271,25 +278,18 @@ class CustomInfiniteEnv(BaseEnv):
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario_name}_{timestamp}{suffix}"
 
-        # set up simulator manager
+        # set up simulator manager. every scenario_config entry except
+        # random_seed goes to Infinite.setup, so a misspelt key raises a
+        # TypeError instead of being silently ignored.
+        scenario_settings = dict(self.config.scenario_config)
+        config_seed = scenario_settings.pop("random_seed", None)
         sim = Infinite.setup(
-            scenario_name=self.config.scenario_config["scenario_name"],
-            random_seed=(
-                self._reset_seed if self._reset_seed is not None else self.config.scenario_config["random_seed"]
-            ),
-            num_starter_aircraft=self.config.scenario_config["num_starter_aircraft"],
-            initial_spawn_rate=self.config.scenario_config["initial_spawn_rate"],
-            spawn_rate_increment=self.config.scenario_config["spawn_rate_increment"],
-            spawn_rate_increase_interval=self.config.scenario_config["spawn_rate_increase_interval"],
-            max_spawn_rate=self.config.scenario_config["max_spawn_rate"],
-            fl_limits=self.config.scenario_config["fl_limits"],
-            spawn_distance_threshold=self.config.scenario_config["spawn_distance_threshold"],
-            use_wind=self.config.scenario_config["use_wind"],
-            use_forecast=self.config.scenario_config["use_forecast"],
+            random_seed=self._reset_seed if self._reset_seed is not None else config_seed,
             autosave_interval=None,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,
+            **scenario_settings,
         )
         self.scenario_manager = sim.scenario_manager
 
@@ -400,15 +400,10 @@ class CustomInfiniteEnv(BaseEnv):
                 "coeffs": [1.0, 1.0, 1.0, 1.0, 1.0],
             },
             "scenario_config": {
-                "scenario_name": ScenarioName.sector_xplus.value,
-                "initial_spawn_rate": 0.005,
-                "max_spawn_rate": 0.01,
-                "spawn_rate_increment": 0.001,
-                "spawn_rate_increase_interval": 300,
+                # the Flight School challenge: sector, flight levels and spawn rates
+                **FLIGHT_SCHOOL_SETTINGS,
                 "spawn_distance_threshold": 10,
-                "fl_limits": (200, 350),
                 "random_seed": None,
-                "num_starter_aircraft": 2,
                 "use_wind": True,
                 "use_forecast": True,
             },

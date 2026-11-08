@@ -15,6 +15,7 @@ from bluebird_dt.core import Action, Aircraft, Coordination, WindField
 from bluebird_dt.logger import ContextFilter, CustomFormatter, logger
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor
+from bluebird_dt.simulator.presets import FLIGHT_SCHOOL_SETTINGS
 from bluebird_dt.simulator.saver import SaveData, Saver
 from bluebird_dt.simulator.simconfig import SaveConfig, SimConfig, SimulatorConfig
 from bluebird_dt.utility.convert import timestamp_to_string
@@ -314,7 +315,6 @@ class Simulator:
             case "Flight School":
                 return Infinite.setup(
                     typeof_simulator=cls,
-                    scenario_name="Xplus-Sector",
                     use_wind=use_wind,
                     use_forecast=use_forecast,
                     predictor=predictor,
@@ -324,15 +324,10 @@ class Simulator:
                     save_csv=save_csv,
                     autosave_interval=autosave_interval,
                     save_chunk_interval=save_chunk_interval,
-                    # Flight school specific param
                     random_seed=None,
-                    fl_limits=(200, 350),
-                    num_starter_aircraft=2,
-                    initial_spawn_rate=0.005,
-                    spawn_rate_increment=0.001,
-                    spawn_rate_increase_interval=300,
-                    max_spawn_rate=0.01,
+                    # spawning stops after the hour of the Flight School game
                     total_time_seconds=3600.0,
+                    **FLIGHT_SCHOOL_SETTINGS,
                 )
             case _:
                 raise ValueError(f"Unknown scenario category: {category}")
