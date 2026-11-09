@@ -1,19 +1,20 @@
 import gc
+import json
 import os
 import uuid
 import weakref
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
-from bluebird_dt.core import Coordination
+from bluebird_dt.core import Action, Coordination
 from bluebird_dt.logger import logger
+from bluebird_dt.manager.environment_manager import EnvironmentConfig, PredictorConfig
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.utility.config_models import SaveConfig, SimConfig
-from bluebird_dt.utility import convert
+from bluebird_dt.utility.config_models import SaveConfig, SimConfig, SimulatorConfig
 from bluebird_dt.simulator import Simulator
 from typing import Any
 
@@ -100,6 +101,55 @@ def test_sim_config(category: str, scenario_name:str, scenario_config_type: type
     assert isinstance(sim.config(), SimConfig)
     assert isinstance(sim.config().scenario, scenario_config_type)
 
+def test_sim_config_serialization() -> None:
+    """SimConfig must preserve scenario data through serialization."""
+
+    class TestScenarioConfig(BaseModel):
+        scenario_manager: str
+        seed: int
+
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+    config = SimConfig[TestScenarioConfig](
+        scenario_name="test",
+        scenario_category=None,
+        simulator=SimulatorConfig(projection_centre=(51.0, -1.0)),
+        environment_manager=EnvironmentConfig(
+            penumbra_latitude=50.0,
+            penumbra_flight_level=300.0,
+            predictor=PredictorConfig(
+                predictor_type="test",
+                fix_proximity=5.0,
+            ),
+        ),
+        scenario=TestScenarioConfig(
+            scenario_manager="custom",
+            seed=42,
+        ),
+        save_config=SaveConfig(
+            save_csv=False,
+            autosave_interval=None,
+            save_chunk_interval=None,
+            load_simtime=now,
+            load_realtime=now,
+        ),
+    )
+
+    # Verify JSON serialization.
+    serialized = config.model_dump_json()
+    data = json.loads(serialized)
+
+    assert data["scenario"] == {
+        "scenario_manager": "custom",
+        "seed": 42,
+    }
+
+    assert json.loads(config.model_dump_json()) == data
+
+    # Verify deserialization preserves the original configuration.
+    restored = SimConfig[TestScenarioConfig].model_validate_json(serialized)
+    assert restored == config
+
 @pytest.mark.parametrize(
     "the_datetime, expected_number_of_new_coordinations",
     [
@@ -159,13 +209,25 @@ def test_evolve_with_invalid_delta():
         sim.evolve(0)
 
 
-def test_action_invalid_payload_returns_false():
+def test_action_adds_to_queue():
     """
-    Create a sim and check that adding an invalid action to the queue is rejected.
+    Create a sim and check that an Action reaches the queue.
 
     """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
-    assert sim.action([{"callsign": "AIR01"}]) is False
+    action = Action(next(iter(sim.manager.environment.aircraft)), "change_flight_level_to", 300, "test")
+    sim.action([action])
+    assert sim.manager._actions_to_issue == [action]
+
+
+def test_action_invalid_payload_raises():
+    """
+    Create a sim and check that an invalid action raises instead of being dropped with a warning.
+
+    """
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
+    with pytest.raises(AttributeError):
+        sim.action([{"callsign": "AIR01"}])
 
 
 @pytest.mark.asyncio

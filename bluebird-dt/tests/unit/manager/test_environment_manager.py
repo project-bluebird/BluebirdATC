@@ -1,20 +1,24 @@
 import copy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, UTC
 import logging
 import io
+import json
 import tarfile
 import warnings
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from bluebird_dt.core import Action, Aircraft, Airspace, FlightPlan, Route
+from bluebird_dt.airspace_generator import SectorX
+from bluebird_dt.core import Action, Aircraft, Airspace, FlightPlan, Pilot, Pos2D, Route
 from bluebird_dt.events import EventHandler
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import RouteFollowPredictor, SimplePredictor
 from bluebird_dt.scenario_manager import Custom
 from bluebird_dt.core import Coordination
 from bluebird_dt.utility import constants
+from bluebird_dt.utility.logging_utils import read_tar_parquet_to_df
 
 def test_bandboxing(generate_two_sector: tuple[Airspace, list[Route]]) -> None:
     """
@@ -304,20 +308,18 @@ def test_evolve(generate_i: tuple[Airspace, list[Route]]) -> None:
     # SIMULATED AIRCRAFT x3
     em = Custom(3, airspace=airspace, routes=routes).create_env_manager()
 
-    # change start_times - set by callsign to avoid dependence on row order
-    radar_df = em.event_handler.radar_df
-    ac_internal_df = em.event_handler.ac_internals_df
+    # change start_times - set by callsign to avoid dependence on row order. Custom starts an aircraft later if it
+    # shares an earlier one's start fix and entry FL, which can put AIR2's row before AIR1's. Writing the new times
+    # into the index would leave pandas treating it as sorted, so build new indexes and sort by them.
     new_start_times = {
         "AIR0": datetime(1970, 1, 1, 0, 0, 0),
         "AIR1": datetime(1970, 1, 1, 0, 0, 6),
         "AIR2": datetime(1970, 1, 1, 0, 0, 12),
     }
-    radar_idx = radar_df.index.to_numpy()
-    for i, callsign in enumerate(radar_df["callsign"]):
-        radar_idx[i] = new_start_times[callsign]
-    ac_internal_idx = ac_internal_df.index.to_numpy()
-    for i, callsign in enumerate(ac_internal_df["callsign"]):
-        ac_internal_idx[i] = new_start_times[callsign]
+    for df_name in ["radar_df", "aircraft_internals_df"]:
+        df = getattr(em.event_handler, df_name)
+        new_index = pd.DatetimeIndex(df["callsign"].map(new_start_times).to_numpy(), name=df.index.name)
+        setattr(em.event_handler, df_name, df.set_axis(new_index).sort_index())
 
     em.initialise_env_with_event_handler()
 
@@ -408,6 +410,99 @@ def test_rewind_to_time(generate_i: tuple[Airspace, list[Route]]) -> None:
 
     # assert logs are identical
     assert em.event_logger == orig_event_logger
+
+
+def test_rewind_restores_queued_actions(generate_i: tuple[Airspace, list[Route]]) -> None:
+    """
+    Check that an action waiting in a pilot's queue is logged, restored by a rewind and then processed
+    """
+    airspace, routes = generate_i
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
+    em.initialise_env_with_event_handler()
+    callsign = next(iter(em.environment.aircraft))
+
+    # queue an action without processing it, as a pilot that delays actions would
+    queued = Action(callsign, "change_flight_level_to", 200)
+    em.environment.aircraft[callsign].pilot.receive_actions([queued], em.environment)
+    queue = copy.deepcopy(em.environment.aircraft[callsign].pilot.action_queue)
+    em.evolve(6)
+
+    em.rewind_to_time(em.environment.datetime)
+    restored = em.environment.aircraft[callsign]
+    assert restored.pilot.action_queue == queue
+
+    # the restored action is processed along with the next clearance
+    clearance = Action(callsign, "change_cas_to", 280)
+    em.receive_actions([clearance])
+    em.evolve(6)
+    assert restored.cleared_instructions.vertical_action == queued
+    assert restored.cleared_instructions.speed_action == clearance
+    assert restored.pilot.action_queue == []
+
+
+def test_rewind_leaves_earlier_logs_unchanged(generate_i: tuple[Airspace, list[Route]]) -> None:
+    """
+    Check that flying on after a rewind doesn't change the logs the aircraft were restored from
+    """
+    airspace, routes = generate_i
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
+    em.initialise_env_with_event_handler()
+    em.evolve(6)
+    logged = copy.deepcopy(em.event_logger.aircraft_internals_log)
+
+    em.rewind_to_time(em.environment.datetime)
+    # the pilot writes this clearance into the aircraft's predictor_params
+    em.receive_actions([Action(next(iter(em.environment.aircraft)), "using_speed_limit", False)])
+    em.evolve(6)
+
+    assert em.event_logger.aircraft_internals_log[: len(logged)] == logged
+
+
+def test_rewind_next_fix_index_follows_radar() -> None:
+    """
+    Check that after a rewind, a radar-driven aircraft's next_fix_index is the same as without the rewind, including
+    once the simulation passes the time it was rewound from, where the event handler's aircraft internals end
+    """
+    airspace, _ = SectorX(60, 120, (60, 400), 70).generate_airspace()
+    fixes = airspace.fixes.places
+
+    def make_env_manager(event_handler: EventHandler) -> EnvironmentManager:
+        predictor = SimplePredictor(dt=1.0, fix_proximity_threshold=2.0, fixes=airspace.fixes)
+        return EnvironmentManager(airspace=airspace, event_handler=event_handler, predictor=predictor)
+
+    # log a live run of one aircraft through the turn at ABYSS
+    live = make_env_manager(EventHandler())
+    route = FlightPlan(Route(["WITCH", "ABYSS", "HAUNT", "LIMBO"]))
+    aircraft = Aircraft(fixes["WITCH"].lat, fixes["WITCH"].lon, 100, 70.0, route, "AIR0")
+    aircraft.speed_tas = 290
+    aircraft.cleared_instructions.cas = aircraft.selected_instructions.cas = 250
+    live.environment.aircraft["AIR0"] = aircraft
+    live.event_logger.log_environment(live.environment)
+    for _ in range(150):
+        live.evolve(6)
+
+    def replay(rewind: bool) -> dict[datetime, int | None]:
+        # replay the radar and flight plan without the aircraft internals, so the aircraft is driven by radar
+        event_handler = live.event_logger.to_event_handler()
+        event_handler.aircraft_internals_df = event_handler.aircraft_internals_df.iloc[0:0]
+        em = make_env_manager(event_handler)
+        em.initialise_env_with_event_handler()
+        start = em.environment.datetime
+        if rewind:
+            # rewind at 4 min to 2 min, after which the event handler's aircraft internals end at 4 min
+            while em.environment.datetime < start + timedelta(minutes=4):
+                em.evolve(6)
+            em.rewind_to_time(pd.Timestamp(start + timedelta(minutes=2)))
+        next_fix_indexes = {}
+        while em.environment.datetime < start + timedelta(seconds=6 * 149):
+            em.evolve(6)
+            next_fix_indexes[em.environment.datetime] = em.environment.aircraft["AIR0"].next_fix_index
+        return next_fix_indexes
+
+    control = replay(rewind=False)
+    rewound = replay(rewind=True)
+    assert rewound == {time: control[time] for time in rewound}
+
 
 def _make_basic_em(airspace, *, predictor_dt=1.0, fix_thresh=2.0, penumbra_lat=5.0, penumbra_fl=10):
     """
@@ -517,6 +612,25 @@ def test_square_penumbra_limits(generate_i):
     assert max_lon == pytest.approx(raw_max_lon + penumbra_lat_under_test / constants.NM_PER_DEGREE)
 
 
+def test_expand_penumbra_to_include(generate_i):
+    """
+    expand_penumbra_to_include should widen the penumbra just enough to contain the positions with the margin to spare,
+    and leave it as it is when they are already inside.
+    """
+    airspace, _ = generate_i
+    em = _make_basic_em(airspace, penumbra_lat=10.0)
+    min_lat, max_lat, min_lon, max_lon = em.square_penumbra_limits()
+    centre = Pos2D(lat=(min_lat + max_lat) / 2, lon=(min_lon + max_lon) / 2)
+    em.expand_penumbra_to_include([centre], margin_nmi=1.0)
+    assert em.penumbra_lat == 10.0
+
+    # 6 and 3 penumbra_lat units beyond the north and west edges
+    north = Pos2D(lat=max_lat + 6 / constants.NM_PER_DEGREE, lon=centre.lon)
+    west = Pos2D(lat=centre.lat, lon=min_lon - 3 / constants.NM_PER_DEGREE)
+    em.expand_penumbra_to_include([centre, west, north], margin_nmi=1.0)
+    assert em.penumbra_lat == pytest.approx(17.0)
+
+
 def test_get_sector_airspace(generate_two_sector):
     """
     - sector_names=None returns "all individual sectors"
@@ -553,7 +667,7 @@ def test_finished(generate_i):
 
     # Remove aircraft and jump time beyond last event
     em.environment.aircraft = {}
-    last_event_ts = em.event_handler.radar_df.index.max().replace(tzinfo=timezone.utc).timestamp()
+    last_event_ts = em.event_handler.radar_df.index.max().replace(tzinfo=UTC).timestamp()
     em.environment.time = last_event_ts + 10
     assert em.finished() is True
 
@@ -768,6 +882,30 @@ def test_save_logs(generate_i):
     with tarfile.open(fileobj=buf, mode="r:*") as tf:
         members = tf.getmembers()
         assert len(members) > 0
+
+
+def test_save_logs_internals_read_back_with_json(generate_i):
+    """
+    Test that the dict and queue columns of the saved aircraft internals, with a NumPy float and a queued action,
+    read back with json.loads.
+    """
+    airspace, routes = generate_i
+    em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
+    em.initialise_env_with_event_handler()
+    aircraft = next(iter(em.environment.aircraft.values()))
+    aircraft.predictor_params = {"turn_radius": np.float64(4.45), "descending_to_level_by_point": True}
+    aircraft.pilot.receive_actions([Action(aircraft.callsign, "change_flight_level_to", 200)], em.environment)
+    em.event_logger.log_environment(em.environment)
+
+    buf = em.write_logs_to_buffer(sim_config=em.config(), save_csv=False)
+    buf.seek(0)
+    with tarfile.open(fileobj=buf, mode="r:*") as tf:
+        saved = read_tar_parquet_to_df(tf, "ac_internals").iloc[-1]
+
+    assert json.loads(saved["predictor_params"]) == {"turn_radius": 4.45, "descending_to_level_by_point": True}
+    pilot = Pilot(aircraft.callsign)
+    pilot.set_action_queue_from_data(json.loads(saved["pilot_action_queue"]))
+    assert pilot.action_queue == aircraft.pilot.action_queue
 
 
 def test_initialise_with_event_handler(generate_i):

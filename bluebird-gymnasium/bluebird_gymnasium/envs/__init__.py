@@ -40,16 +40,16 @@ Config: TypeAlias = (
 
 ObsType: TypeAlias = NDArray[numpy.float32] | dict[str, NDArray[numpy.float32]]
 RewardType: TypeAlias = float | dict[str, float]
-DoneType: TypeAlias = bool | dict[str, bool]
+TerminatedType: TypeAlias = bool | dict[str, bool]
 TruncatedType: TypeAlias = bool | dict[str, bool]
 InfoType: TypeAlias = dict[str, typing.Any] | dict[str, dict[str, typing.Any]]
 ActionType: TypeAlias = int | dict[str, int]
 
 
 ## enums
-from enum import IntEnum  # noqa: E402
+from enum import IntEnum, StrEnum  # noqa: E402
 
-from bluebird_gymnasium.utils.types import MetaEnum, StrEnum  # noqa: E402
+from bluebird_gymnasium.utils.types import MetaEnum  # noqa: E402
 
 
 class SuccessMetric(IntEnum, metaclass=MetaEnum):
@@ -154,8 +154,8 @@ class EnvConfig:
     view_config: ViewConfig | None = None
     scenario_duration: int = 1800
     scenario_sec_per_step: int = 6
-    diagnostics_level: Diagnostics | None = (None,)
-    use_default_outcomm_policy: bool = (False,)
+    diagnostics_level: Diagnostics | None = None
+    use_default_outcomm_policy: bool = False
 
 
 SCENARIO_CLS: dict[str, ScenarioManager] = {

@@ -1,6 +1,6 @@
 import os
 import typing
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Generic
 
 import pandas as pd
@@ -437,7 +437,7 @@ class SpringfieldScenarioManager(
         # first, create all the add aircraft events for foreground,and, potentially, background aircraft
         for row in df_scenarios.itertuples():
             aircraft_spawn_time, aircraft = self._generate_aircraft_and_coordination_to_add(row)
-            aircraft_spawn_time = datetime.fromtimestamp(aircraft_spawn_time, timezone.utc).replace(tzinfo=None)
+            aircraft_spawn_time = datetime.fromtimestamp(aircraft_spawn_time, UTC).replace(tzinfo=None)
 
             event_handler.add_aircraft(aircraft_spawn_time, aircraft)
 

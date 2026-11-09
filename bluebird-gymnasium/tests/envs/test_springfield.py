@@ -64,12 +64,12 @@ def test_step(view_type: ViewType):
 
     if view_type == ViewType.CENTRALIZED:
         action = 0  # NOOP action.
-        obs, reward, done, truncated, info = gym_env.step(action)
+        obs, reward, terminated, truncated, info = gym_env.step(action)
         timestep_after = gym_env.timestep
 
         assert isinstance(obs, np.ndarray)
         assert isinstance(reward, float)
-        assert isinstance(done, bool)
+        assert isinstance(terminated, bool)
         assert isinstance(truncated, bool)
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after
@@ -77,12 +77,12 @@ def test_step(view_type: ViewType):
 
     else:  # decentralised
         action = {}  # no action on any aircraft
-        obs, reward, done, truncated, info = gym_env.step(action)
+        obs, reward, terminated, truncated, info = gym_env.step(action)
         timestep_after = gym_env.timestep
 
         assert isinstance(obs, dict)
         assert isinstance(reward, dict)
-        assert isinstance(done, dict)
+        assert isinstance(terminated, dict)
         assert isinstance(truncated, dict)
         assert isinstance(info, dict)
         assert (timestep_before + 1) == timestep_after
@@ -92,27 +92,31 @@ def test_step(view_type: ViewType):
 
 
 def test_decentralized_step_does_not_stop_before_controllable_aircraft():
-    """Test the initial Springfield decentralised empty-agent warm-up."""
+    """Test the initial Springfield decentralised empty-agent warm-up.
+
+    Springfield starts with an empty sector. While the observation is still
+    empty, the global terminated/truncated flags must stay False, and the
+    episode must continue until a controllable aircraft appears.
+    """
 
     gym_env = _get_env_instance(ViewType.DECENTRALIZED)
     obs, _ = gym_env.reset(seed=100)
 
     assert obs == {}
 
-    obs, _, done, truncated, _ = gym_env.step({})
+    max_steps = 25
+    for _ in range(max_steps):
+        obs, _, terminated, truncated, info = gym_env.step({})
 
-    assert done == {"__all__": False}
-    assert truncated == {"__all__": False}
-    assert not all(done.values())
+        assert info["__global_terminated__"] is False
+        assert info["__global_truncated__"] is False
 
-    for _ in range(25):
         if len(obs) > 0:
             break
-        obs, _, done, truncated, _ = gym_env.step({})
 
     assert len(obs) > 0
-    assert "__all__" not in done
-    assert not all(done.values())
+    assert not all(terminated.values())
+    assert not any(truncated.values())
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)

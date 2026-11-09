@@ -416,6 +416,8 @@ class ActionParser:
             _msg = "`action` should be of type {0}, not {1}."
             raise ValueError(_msg.format(type({}), type(action)))
 
+        # avoid mutating action dict sent from the agent.
+        action = action.copy()
         for act in action.values():
             if act > (self.total_num_actions - 1):
                 _msg = (

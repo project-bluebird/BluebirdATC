@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import typing
+from enum import StrEnum
 
 # simulator package
 from bluebird_dt.scenario_manager.infinite import Infinite
@@ -14,7 +15,6 @@ from bluebird_gymnasium.envs.base import BaseEnv, ScenarioGenSeedMode
 from bluebird_gymnasium.utils.constants import (
     DEFAULT_RENDER_DIR,
 )
-from bluebird_gymnasium.utils.types import StrEnum
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.simulator import Simulator
@@ -22,7 +22,7 @@ if typing.TYPE_CHECKING:
     try:
         from typing import Self
     except ImportError:
-        from typing_extensions import Self
+        from typing import Self
 
 
 class ScenarioName(StrEnum):
@@ -62,16 +62,13 @@ class InfiniteEnv(BaseEnv):
         ####### airspace metadata
         self._setup_airspace(self.config.scenario_config["scenario_name"])
 
-        ####### reset env
-        self.reset()
-
     def _generate_scenario(self) -> Simulator:
         """Generate a scenario in the simulator."""
 
         # set up simulation log name
         category = "Game"
         scenario_name = self.config.scenario_config["scenario_name"]
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
@@ -90,6 +87,24 @@ class InfiniteEnv(BaseEnv):
 
         return sim
 
+    def end_criteria(self) -> tuple[bool, bool]:
+        """Determine the end criteria: terminated or truncated
+
+        Returns:
+            a tuple containing the statuses of terminated and truncated.
+
+        In this environment, truncated is always set to true (while
+        terminated False) when the maximum number of timesteps have been
+        reached.
+        """
+
+        terminated = truncated = False
+        if self.timestep >= self.maxstep:
+            terminated = False
+            truncated = True
+
+        return terminated, truncated
+
     @classmethod
     def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
@@ -98,8 +113,8 @@ class InfiniteEnv(BaseEnv):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralised (single agent) or
-                decentralised (multi-agent).
+            view_type: the type of agent view, centralized (single agent) or
+                decentralized (multi-agent).
                 Defaults to "centralized".
 
         Returns:
@@ -237,16 +252,13 @@ class CustomInfiniteEnv(BaseEnv):
         ####### airspace metadata
         self._setup_airspace(self.config.scenario_config["scenario_name"])
 
-        ####### reset env
-        self.reset()
-
     def _generate_scenario(self) -> Simulator:
         """Generate a scenario in the simulator."""
 
         # set up simulation log name
         category = "Game"
         scenario_name = self.config.scenario_config["scenario_name"]
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        timestamp = dt.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
         suffix = self.config.simulation_log_config.get("log_suffix", None)
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
@@ -275,6 +287,24 @@ class CustomInfiniteEnv(BaseEnv):
 
         return sim
 
+    def end_criteria(self) -> tuple[bool, bool]:
+        """Determine the end criteria: terminated or truncated
+
+        Returns:
+            a tuple containing the statuses of terminated and truncated.
+
+        In this environment, truncated is always set to true (while
+        terminated False) when the maximum number of timesteps have been
+        reached.
+        """
+
+        terminated = truncated = False
+        if self.timestep >= self.maxstep:
+            terminated = False
+            truncated = True
+
+        return terminated, truncated
+
     @classmethod
     def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
@@ -283,8 +313,8 @@ class CustomInfiniteEnv(BaseEnv):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralised (single agent) or
-                decentralised (multi-agent).
+            view_type: the type of agent view, centralized (single agent) or
+                decentralized (multi-agent).
                 Defaults to "centralized".
 
         Returns:
@@ -356,7 +386,7 @@ class CustomInfiniteEnv(BaseEnv):
             },
             "scenario_config": {
                 "scenario_name": ScenarioName.sector_xplus.value,
-                "initial_spawn_rate": 0.01,
+                "initial_spawn_rate": 0.03,
                 "max_spawn_rate": 0.1,
                 "spawn_rate_increment": 0.0,
                 "spawn_rate_increase_interval": 0.0,

@@ -1,10 +1,10 @@
 [project]
 name = "bluebird-dt-docs"
-version = "0.3.0"
-requires-python = ">=3.10"
+version = "0.4.0"
+requires-python = ">=3.11"
 
 dependencies = [
-    "bluebird-dt==0.2.0",
+    "bluebird-dt==0.4.0",
     "bluebird-api==0.2.0",
     "bluebird-gymnasium==0.2.0",
     "mkdocs==1.6.1",
@@ -28,7 +28,7 @@ bluebird-gymnasium = { workspace = true }
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.format]
 quote-style = "double"

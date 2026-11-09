@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import json
 import operator
 import typing
 from dataclasses import dataclass, fields
-from datetime import datetime, timedelta, timezone
-from typing import ClassVar
+from datetime import UTC, datetime, timedelta
+from typing import ClassVar, Self, TypeVar
 
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel
-from typing_extensions import Self, TypeVar
 
 from bluebird_dt.core import (
     Action,
@@ -494,7 +492,7 @@ class EventHandler(typing.Generic[TAircraft]):
             previous_sector=aircraft.previous_sector,
             percentile_rank_dict=aircraft.percentile_rank_dict,
             pilot_type=aircraft.pilot.__class__.__name__,
-            pilot_action_queue=[json.dumps(queue_item) for queue_item in aircraft.pilot.action_queue],
+            pilot_action_queue=aircraft.pilot.action_queue_data(),
             predictor_params=aircraft.predictor_params,
             wake_vortex=aircraft.wake_vortex,
             random_seed=aircraft.random_seed,
@@ -930,7 +928,7 @@ class EventHandler(typing.Generic[TAircraft]):
         previous_sector: str | None = None,
         percentile_rank_dict: dict | None = None,
         pilot_type: str | None = None,
-        pilot_action_queue: list[str] | None = None,
+        pilot_action_queue: list[dict[str, typing.Any]] | None = None,
         predictor_params: dict[str, float] | None = None,
         wake_vortex: str | None = None,
         random_seed: int | None = None,
@@ -988,8 +986,8 @@ class EventHandler(typing.Generic[TAircraft]):
             Dictionary of cumulative distribution percentile rank. Used for speed randomisation.
         pilot_type: str, optional
             Pilot type
-        pilot_action_queue: list[str], optional
-            Action queue of pilot
+        pilot_action_queue: list[dict[str, Any]], optional
+            Action queue of pilot, as created by Pilot.action_queue_data
         predictor_params: dict[str, float], optional
             Dictionary of predictor parameters
         wake_vortex: str, optional
@@ -1128,7 +1126,7 @@ class EventHandler(typing.Generic[TAircraft]):
         environment.reset()
 
         # set environment time to new_time
-        environment.time = new_time.replace(tzinfo=timezone.utc).timestamp()
+        environment.time = new_time.replace(tzinfo=UTC).timestamp()
 
         # update from radar
         # only use last 6 seconds
@@ -2281,7 +2279,7 @@ def update_ac_internals(
         # TODO: need to handle pilot type in a better way
         assert aircraft.pilot.__class__.__name__ == row.pilot_type
 
-        aircraft.pilot.action_queue = [json.dumps(queue_item) for queue_item in row.pilot_action_queue]
+        aircraft.pilot.set_action_queue_from_data(row.pilot_action_queue)
 
         aircraft.wake_vortex = row.wake_vortex
         aircraft.random_seed = row.random_seed

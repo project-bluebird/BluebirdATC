@@ -215,6 +215,7 @@ def test_save_skip(sim_elapsed: float, real_elapsed: float, autosave: bool):
         assert sim.save(autosave=autosave) is True
         assert os.path.exists(os.path.join(LOG_DIR, log_filename + ".tar.gz"))
         assert os.path.exists(os.path.join(LOG_DIR, "runtime_logs", log_filename + ".log"))
+        sim.close()
         os.remove(os.path.join(LOG_DIR, log_filename + ".tar.gz"))
         os.remove(os.path.join(LOG_DIR, "runtime_logs", log_filename + ".log"))
 
@@ -247,6 +248,7 @@ def test_save_proceed(sim_elapsed: float, real_elapsed: float, autosave: bool):
     assert sim.save(autosave=autosave) is True
     assert os.path.exists(os.path.join(LOG_DIR, log_filename + ".tar.gz"))
     assert os.path.exists(os.path.join(LOG_DIR, "runtime_logs", log_filename + ".log"))
+    sim.close()
     os.remove(os.path.join(LOG_DIR, log_filename + ".tar.gz"))
     os.remove(os.path.join(LOG_DIR, "runtime_logs", log_filename + ".log"))
 

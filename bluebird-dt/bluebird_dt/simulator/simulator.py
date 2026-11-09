@@ -6,10 +6,10 @@ import os
 import time
 import typing
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Self
 
 import pandas as pd
-from typing_extensions import Self
 
 from bluebird_dt.core import Action, Aircraft, Coordination, WindField
 from bluebird_dt.logger import ContextFilter, CustomFormatter, logger
@@ -117,7 +117,7 @@ class Simulator:
         if not isinstance(env_manager, EnvironmentManager):
             raise TypeError(f"env_manager must be of type EnvironmentManager, got {type(env_manager).__name__}")
 
-        initialization_datetime = datetime.now(tz=timezone.utc)
+        initialization_datetime = datetime.now(tz=UTC)
         self.scenario_manager = scenario_manager
 
         self.category = category
@@ -329,7 +329,7 @@ class Simulator:
                     # Flight school specific param
                     random_seed=None,
                     num_starter_aircraft=2,
-                    initial_spawn_rate=0.005,
+                    initial_spawn_rate=0.025,
                     spawn_rate_increment=0.005,
                     spawn_rate_increase_interval=30,
                     max_spawn_rate=0.1,
@@ -545,44 +545,20 @@ class Simulator:
             `Static` data for the scenario
         """
         func_start_time = datetime.now()
-        airspace = self.manager.get_sector_airspace(
-            None, local_fixes=self.category not in ["Basic Training", "Artificial", "Replay"]
-        )
+        airspace = self.manager.get_sector_airspace(None, local_fixes=False)
 
-        # extract the fixes from all aircraft that are in the scenario
-        all_aircraft_fixes = {
-            fix for route_filed in self.manager.event_handler.flight_plan_df.route_filed for fix in route_filed
-        }
-
-        # If we replaced environment via the API, we might not have Events, but
-        # still have aircraft - add fixes from their routes as well.
-        flight_plans = [
-            ac.flight_plan for ac in self.manager.environment.aircraft.values() if ac.flight_plan is not None
-        ]
-        fixes_from_routes = {fix for fp in flight_plans for fix in fp.route.filed}
-
-        # add and remove duplicates
-        all_aircraft_fixes = all_aircraft_fixes.union(fixes_from_routes)
-
-        # filter the airspace fixes to only those that appear in the aircraft fixes
-        # and airport fixes (4 letters)
         fixes: list[dict[str, typing.Any]] = []
 
         for i, (name, pos) in enumerate(airspace.fixes.places.items()):
-            # include all fixes in replay
-            if self.category in ["Basic Training", "Replay", "Springfield"] or (
-                name.isalpha()
-                and (
-                    name in all_aircraft_fixes
-                    or (
-                        # airports start with E and have 4 letters (until we have proper data filtering)
-                        len(name) == 4 and name.startswith("E")
-                    )
-                )
-            ):
-                fixes.append(
-                    {"id": i, "name": name, "lat": pos.lat, "lon": pos.lon, "visible": airspace.fixes.visibility[name]}
-                )
+            fixes.append(
+                {
+                    "id": i,
+                    "name": name,
+                    "lat": pos.lat,
+                    "lon": pos.lon,
+                    "visible": airspace.fixes.visibility.get(name, True),
+                }
+            )
 
         sectors = {}
         for name, sector in airspace._individual_sectors.items():
@@ -790,53 +766,16 @@ class Simulator:
             "aircraft": aircraft_data,
         }
 
-    def action(self, actions: list[dict[str, typing.Any]]) -> bool:
+    def action(self, actions: list[Action]) -> None:
         """
         Add actions to the queue.
 
         Parameters
         ----------
-        actions: list[dict[str, Any]]
-            List of dictionaries. Each dictionary represents a single Action
-
-        Returns
-        -------
-        bool
+        actions: list[Action]
+            The actions to add.
         """
-        try:
-            actions_parsed: list[Action] = []
-
-            for act in actions:
-                # The sector may be passed as the bandbox configuration, which for consistency, parsed on
-                # the edge to be a list of individual sectors, e.g. ["25", "26"] representing the sector frequencies.
-
-                sector_unparsed: list[str] | str | None = act.get("sector", None)
-                sector: list[str] | None = (
-                    self.manager.environment.airspace.expand_bandbox_sector(sector_unparsed)
-                    if isinstance(sector_unparsed, str)
-                    else sector_unparsed
-                )
-
-                actions_parsed.append(
-                    Action(
-                        act["callsign"],
-                        act["kind"],
-                        act["value"],
-                        act["agent"],
-                        sector=sector,
-                    )
-                )
-
-            self.manager.receive_actions(actions_parsed)
-
-        except Exception as err:
-            logger.warning(
-                f"WARNING! An error occurred sending actions: {err}",
-                stacklevel=2,
-            )
-            return False
-
-        return True
+        self.manager.receive_actions(actions)
 
     def config(
         self,
@@ -960,7 +899,7 @@ class Simulator:
             Returns None if no saving should be conducted
         """
         current_simtime = self.manager.environment.datetime
-        current_realtime = datetime.now(tz=timezone.utc)
+        current_realtime = datetime.now(tz=UTC)
         if self.saver.should_save(autosave, current_simtime, current_realtime):
             if self.saver.should_chunk(current_simtime, current_realtime):
                 self._chunk()

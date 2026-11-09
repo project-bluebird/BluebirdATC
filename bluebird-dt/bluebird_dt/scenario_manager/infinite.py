@@ -1,6 +1,8 @@
+import itertools
 import math
 import typing
-from datetime import datetime, timedelta, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -18,6 +20,7 @@ from bluebird_dt.predictor import Predictor, SimplePredictor
 from bluebird_dt.scenario_manager.outcomm_handler import OutcommHandler
 from bluebird_dt.scenario_manager.scenario_manager import ScenarioManager
 from bluebird_dt.simulator import Simulator
+from bluebird_dt.utility import geometry
 from bluebird_dt.utility.scenario_manager_utils import laterally_offset_start_point
 
 
@@ -82,6 +85,7 @@ class Infinite(
     max_spawn_attempts: int
     outcomm_handler: OutcommHandler | None
     last_spawn_time: float
+    last_draw_time: float
     lats_spawn_rate_increase: float
     min_spawn_delta: float
     next_callsign_number: int
@@ -99,7 +103,7 @@ class Infinite(
         initial_spawn_rate: float = 0.01,
         max_spawn_rate: float = 0.1,
         spawn_rate_increment: float = 0.0,
-        spawn_rate_increase_interval: float = 0.0,
+        spawn_rate_increase_interval: float = 300.0,
         spawn_distance_threshold: float = 10,
         spawn_distance_behind_fix: float = 10.0,
         total_time_seconds: float | None = None,
@@ -138,6 +142,7 @@ class Infinite(
             if we choose to "ramp up" the spawn rate, this determines the step size
         spawn_rate_increase_interval: float
             if we "ramp up", this determines time in seconds between increasing the spawn rate by spawn_rate_increment.
+            Default is 300.0.
         spawn_distance_threshold: float
             Minimum distance in nautical miles for spawning an aircraft behind an existing one
         spawn_distance_behind_fix: float
@@ -166,7 +171,8 @@ class Infinite(
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by - UoM: FL
         lateral_buffer_distance: int or float, default is 20
-            Distance to expand airspace lateral boundary by - UoM: NMI
+            Minimum distance to expand airspace lateral boundary by - UoM: NMI. Widened to fit the aircraft's start
+            points if they are further out.
         fl_limits: tuple[int, int]
             min, max FL at which aircraft can be spawned.
             Note that these values may be superseded if the airspace has more restrictive limits.
@@ -212,18 +218,33 @@ class Infinite(
         self.rng = np.random.default_rng(random_seed)
         self.outcomm_handler = OutcommHandler() if automatic_outcomm else None
 
-        self.last_spawn_time = 0.0
-        self.last_spawn_rate_increase = 0.0
+        self.last_spawn_time = float(start_time)
+        self.last_draw_time = float(start_time)
+        self.last_spawn_rate_increase = float(start_time)
         self.min_spawn_delta = min_spawn_delta
         self.next_callsign_number = 0
-        # keep a buffer of the aircraft to add, may add to env_manager in
-        # the next tick after initial creation.
-        self.aircraft_to_add: list[TAircraft] = []
+        # (spawn time, aircraft) of spawned aircraft that aren't in the environment yet
+        self.waiting_aircraft: list[tuple[float, TAircraft]] = []
         # list of possible fixes to spawn aircraft at
         # (first fixes in all allowed Routes)
         self.start_fixes: list[str] = sorted({route.filed[0] for route in self.routes})
         # shuffle the starting fixes.
         self.rng.shuffle(self.start_fixes)
+
+    def max_lateral_offset(self, route: Route) -> float:
+        """
+        The largest sideways offset from a route of an aircraft starting on it, in NMI: half the length of the segment
+        of the sector boundary closest to its first fix.
+
+        Parameters
+            route: Route
+                the route the aircraft starts on
+        """
+        volume = self.airspace.sectors[self.sector_name].volumes[0]
+        segment = volume.area.nearest_segment_to_point(self.airspace.fixes.places[route.filed[0]])
+        segment_start = Pos2D(lat=segment[0][1], lon=segment[0][0])
+        segment_end = Pos2D(lat=segment[1][1], lon=segment[1][0])
+        return segment_start.distance(segment_end) / 2
 
     def spawn_aircraft(
         self,
@@ -245,11 +266,7 @@ class Infinite(
         """
         if len(self.airspace.sectors[self.sector_name].volumes) == 0:
             raise ValueError("Selected airspace has no Volumes.  Please choose another airspace.")
-        volume = self.airspace.sectors[self.sector_name].volumes[0]
-        # choose the more restrictive of the sectors FL bounds and this instance's bounds.
-        min_fl = max(volume.min_fl, self.fl_limits[0])
-        max_fl = min(volume.max_fl, self.fl_limits[1])
-        possible_flight_levels = np.arange(min_fl, max_fl + 10, 10, dtype="float")  # ensure floats
+        possible_flight_levels = self.airspace.sectors[self.sector_name].all_ifr_flight_levels(self.fl_limits)
 
         route = self.rng.choice(np.asarray(possible_routes))
         first_fix = self.airspace.fixes.places[route.filed[0]]
@@ -259,12 +276,6 @@ class Infinite(
         speed = self.rng.uniform(self.speed_range[0], self.speed_range[1])
 
         # Laterally offset the aircraft from their spawning point to minimise clashes
-        # Note the distance is chosen based on the length of the segment of the sector boundary
-        # closest to the starting fix.
-        segment = volume.area.nearest_segment_to_point(first_fix)
-        segment_start = Pos2D(lat=segment[0][1], lon=segment[0][0])
-        segment_end = Pos2D(lat=segment[1][1], lon=segment[1][0])
-        segment_length = segment_start.distance(segment_end)
         # Use GeoHelper tool to get offset spawn positions
         gh = self.airspace.geo_helper
         # If aircraft is on route, no lateral offset from route centre line.
@@ -275,7 +286,7 @@ class Infinite(
             # Offset by a random amount, up to half the length of the nearest sector boundary line.
             # since GeoHelper.forward takes (x,y), give it longitude then latitude
             updated_start_pos = laterally_offset_start_point(
-                airspace=self.airspace, route=route, offset_range=(0, segment_length / 2), rng=self.rng
+                airspace=self.airspace, route=route, offset_range=(0, self.max_lateral_offset(route)), rng=self.rng
             )
             on_route = False
 
@@ -309,6 +320,36 @@ class Infinite(
 
         return aircraft, coordination_entry, coordination_exit
 
+    def furthest_start_points(self) -> list[Pos2D]:
+        """
+        The start points spawn_aircraft can give that are furthest out on each route: max_lateral_offset to either
+        side of its first fix, or on the fix if aircraft_on_route, for the starter aircraft, and those points moved
+        spawn_distance_behind_fix back along the route, for the aircraft drawn in update. Every other start point is
+        between these.
+
+        Returns
+        -------
+        list[Pos2D]
+        """
+        gh = self.airspace.geo_helper
+        start_points: list[Pos2D] = []
+        for route in self.routes:
+            first_fix = self.airspace.fixes.places[route.filed[0]]
+            second_fix = self.airspace.fixes.places[route.filed[1]]
+            # aircraft start up to max_lateral_offset to either side of the route, or on it if aircraft_on_route
+            offset = 0.0 if self.aircraft_on_route else self.max_lateral_offset(route)
+            # backwards along the route, as in spawn_aircraft: opposite to the heading from the first fix to the second
+            backwards = (first_fix.bearing_to(second_fix) + 180.0) % 360
+            # the points at the largest offset to either side, or the first fix twice if on route. Smaller offsets
+            # are between these two, on the line joining them.
+            for offset_heading in geometry.get_perpendicular_headings(first_fix, second_fix, gh):
+                lon, lat = gh.forward(first_fix.lon, first_fix.lat, heading=offset_heading, distance=offset)
+                # 0 for the starter aircraft, spawn_distance_behind_fix for the aircraft drawn in update
+                for distance in (0.0, self.spawn_distance_behind_fix):
+                    point_lon, point_lat = gh.forward(lon, lat, heading=backwards, distance=distance)
+                    start_points.append(Pos2D(lat=point_lat, lon=point_lon))
+        return start_points
+
     def add_starting_aircraft(self, event_handler: TEventHandler) -> TEventHandler:
         """
         Generate the aircraft that will be there at the start of the scenario and add them to Eventhandler
@@ -341,7 +382,7 @@ class Infinite(
             aircraft, entry_coord, exit_coord = self.spawn_aircraft(
                 possible_routes, callsign=callsign, spawn_distance_behind_fix=0
             )
-            start_time = pd.to_datetime(float(i), unit="s")
+            start_time = pd.to_datetime(float(self.start_time + i), unit="s")
             aircraft.simulated = True
             # ensure coordinations are in the environment before the aircraft
             event_handler.add_coordination(start_time - timedelta(seconds=1), entry_coord)
@@ -417,8 +458,9 @@ Creating Infinite Scenario
             penumbra_lat=self.lateral_buffer_distance,
             log_filename=log_filename,
         )
-        # set the visibility flag of fixes to True only if they are in the penumbra
-        em.set_local_fixes_visibility()
+        # the environment manager removes aircraft outside its penumbra, so widen it to fit every start point. Those
+        # between the furthest ones can bulge out by a fraction of a metre, which the margin covers.
+        em.expand_penumbra_to_include(self.furthest_start_points(), margin_nmi=0.1)
 
         em.initialise_env_with_event_handler()
 
@@ -458,15 +500,19 @@ Creating Infinite Scenario
         time_since_last_spawn = env_manager.environment.time - self.last_spawn_time
         if time_since_last_spawn < self.min_spawn_delta:
             return env_manager
-        # Loop through each second since last spawn, do Poisson trial on each to see if we
-        # will spawn
+        # Do a Poisson trial for each second since the last trials, to see how many aircraft to spawn.
+        # Seconds within min_spawn_delta of the last spawn are drawn at the next update that can spawn.
+        num_seconds = int(env_manager.environment.time - self.last_draw_time)
+        self.last_draw_time += num_seconds
         num_to_spawn = 0
-        for _ in range(int(time_since_last_spawn)):
+        for _ in range(num_seconds):
             num_to_spawn += self.rng.poisson(self.current_spawn_rate)
 
         for _ in range(num_to_spawn):
             spawn_time = env_manager.environment.time + 6
             next_callsign = f"AIR-{self.next_callsign_number:02d}"
+            # aircraft spawned earlier, including in this update, that aren't in the environment yet
+            waiting_aircraft = [ac for time, ac in self.waiting_aircraft if time > env_manager.environment.time]
 
             # spawn these aircraft behind their starting fixes
             safe_to_spawn = False
@@ -475,14 +521,16 @@ Creating Infinite Scenario
                 aircraft, entry_coord, exit_coord = self.spawn_aircraft(
                     self.routes, callsign=next_callsign, spawn_distance_behind_fix=self.spawn_distance_behind_fix
                 )
-                safe_to_spawn = check_safe_to_spawn(aircraft, env_manager.environment, self.spawn_distance_threshold)
+                safe_to_spawn = check_safe_to_spawn(
+                    aircraft, env_manager.environment, self.spawn_distance_threshold, waiting_aircraft
+                )
                 attempt_count += 1
                 if safe_to_spawn or attempt_count > self.max_spawn_attempts:
                     break
             # if we couldn't find a safe way in max_spawn_attempts tries, just continue.
             if not safe_to_spawn:
                 continue
-            self.aircraft_to_add.append((spawn_time, aircraft))
+            self.waiting_aircraft.append((spawn_time, aircraft))
             self.next_callsign_number += 1
             self.last_spawn_time = spawn_time
 
@@ -495,11 +543,7 @@ Creating Infinite Scenario
             env_manager.event_handler.add_coordination(spawn_time - timedelta(seconds=1), exit_coord)
             env_manager.event_handler.add_aircraft(spawn_time, aircraft)
 
-        # If the time has come to add aircraft to env manager, do it now.
-        for ac in self.aircraft_to_add:
-            if env_manager.environment.time >= ac[0]:
-                env_manager.environment.aircraft[ac[1].callsign] = ac[1]
-                self.aircraft_to_add.remove(ac)
+        self.waiting_aircraft = [ac for ac in self.waiting_aircraft if env_manager.environment.time < ac[0]]
 
         return env_manager
 
@@ -518,9 +562,9 @@ Creating Infinite Scenario
         save_chunk_interval: timedelta | None = None,
         random_seed: int | None = None,
         num_starter_aircraft: int = 2,
-        initial_spawn_rate: float = 0.01,
+        initial_spawn_rate: float = 0.03,
         spawn_rate_increment: float = 0,
-        spawn_rate_increase_interval: float | None = None,
+        spawn_rate_increase_interval: float = 300.0,
         max_spawn_rate: float = 0.1,
         total_time_seconds: float | None = None,
         speed_range: tuple[float, float] | None = None,
@@ -575,8 +619,8 @@ Creating Infinite Scenario
             Average frequency (in Hz) of spawning new aircraft
         spawn_rate_increment: float
             Spawn rate will change by this number at set intervals
-        spawn_rate_increase_interval: int
-            If specified, time in seconds between spawn rate increases
+        spawn_rate_increase_interval: float
+            Time in seconds between spawn rate increases. Defaults to 300.0.
         max_spawn_rate: float
             Spawn rate cannot exceed this value
         total_time_seconds: float | None
@@ -600,7 +644,8 @@ Creating Infinite Scenario
         vertical_buffer_distance: int or float, default is 500
             Distance to expand airspace vertical boundary by, in units of FL
         lateral_buffer_distance: int or float, default is 20
-            Distance to expand airspace lateral boundary by, in units of NMI
+            Minimum distance to expand airspace lateral boundary by, in units of NMI. Widened to fit the aircraft's
+            start points if they are further out.
         use_wind: bool
             Whether the wind, if available, is present in the scenario. Defaults to True.
         use_forecast: bool
@@ -683,7 +728,7 @@ Creating Infinite Scenario
 
         # if needed, fast-forward to the first aircraft entry time, ensuring that it is
         # a multiple of the evolve time-step
-        first_entry_time = sim.manager.event_handler.radar_df.index.min().replace(tzinfo=timezone.utc).timestamp()
+        first_entry_time = sim.manager.event_handler.radar_df.index.min().replace(tzinfo=UTC).timestamp()
 
         time_step = 6.0
 
@@ -766,7 +811,7 @@ Creating Infinite Scenario
             scenario_manager=self,
             env_manager=env_manager,
             projection_centre=self.projection_centre,
-            category=category,
+            category=category if category is not None else "Infinite",
             scenario_name=scenario_name,
             use_wind=use_wind,
             use_forecast=use_forecast,
@@ -780,11 +825,17 @@ Creating Infinite Scenario
         )
 
 
-def check_safe_to_spawn(new_ac: TAircraft, env: Environment, spawn_distance_threshold: float = 10.0) -> bool:
+def check_safe_to_spawn(
+    new_ac: TAircraft,
+    env: Environment,
+    spawn_distance_threshold: float = 10.0,
+    waiting_aircraft: Iterable[Aircraft] = (),
+) -> bool:
     """
-    Check if it is safe to spawn a new aircraft given existing aircraft in the environment.
+    Check if it is safe to spawn a new aircraft given existing aircraft in the environment, and aircraft waiting to be
+    added to it.
 
-    Safe = no existing aircraft are within `spawn_distance_threshold` laterally with level range overlap
+    Safe = no existing or waiting aircraft are within `spawn_distance_threshold` laterally with level range overlap
 
     Parameters
     ----------
@@ -792,6 +843,8 @@ def check_safe_to_spawn(new_ac: TAircraft, env: Environment, spawn_distance_thre
         The new aircraft to be spawned.
     env: Environment
         The existing environment.
+    waiting_aircraft: Iterable[Aircraft]
+        Aircraft that have been spawned but are not in the environment yet. Defaults to none.
 
     Returns
     -------
@@ -802,8 +855,7 @@ def check_safe_to_spawn(new_ac: TAircraft, env: Environment, spawn_distance_thre
     new_ac_sfl = new_ac.selected_fl
 
     new_ac_fl_range = __get_level_range_rounded_to_nearest_10(new_ac_afl, new_ac_sfl)
-    for existing_callsign in env.aircraft:
-        existing_ac = env.aircraft[existing_callsign]
+    for existing_ac in itertools.chain(env.aircraft.values(), waiting_aircraft):
         if existing_ac.current_sector == "background":
             continue
         existing_ac_afl = existing_ac.fl

@@ -1,7 +1,9 @@
-ATC clearances are issued by an Air Traffic Controller (ATCO) to an aircraft (i.e., to the pilot), which results in the modification of the flight trajectory of the aircraft. 
-The instructions are broadly classified into lateral, vertical and speed instructions. 
-Lateral instructions modify the heading or instruct the aircraft to fly on its defined route. 
-Vertical instructions modify the altitude (measured in feet or flight level; `flight level = feet / 100`) of an aircraft. 
+# Clearances
+
+ATC clearances are issued by an Air Traffic Controller (ATCO) to an aircraft (i.e., to the pilot), which results in the modification of the flight trajectory of the aircraft.
+The instructions are broadly classified into lateral, vertical and speed instructions.
+Lateral instructions modify the heading or instruct the aircraft to fly on its defined route.
+Vertical instructions modify the altitude (measured in feet or flight level; `flight level = feet / 100`) of an aircraft.
 Speed instructions modify the calibrated airspeed (CAS) measured in knots, causing the aircraft to reduce or increase its speed. Instructions can be specified in absolute or relative terms. For example, if an aircraft’s current heading is 150 degrees and needs to fly 170 degrees, a relative instruction could be issued to turn the aircraft right by 20 degrees or an absolute instruction could be issued to set the aircraft’s heading to 170 degrees.
 
 For information about the types of actions which can be issued and the values of these see [the API reference for the Action class](../bluebird-dt/source.md#bluebird_dt.core.Action.__init__)
