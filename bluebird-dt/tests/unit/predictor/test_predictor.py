@@ -3,8 +3,10 @@
 import pytest
 
 from bluebird_dt.core import Action, Aircraft, Environment, Fixes, FlightPlan, Pos2D, Route
+from bluebird_dt.core.wind import WindField
 from bluebird_dt.predictor import LinearPredictor
 from bluebird_dt.utility.clearance import which_way
+from bluebird_dt.utility.convert import KT_TO_MPS, heading_from_ground_track
 
 # An approach with a 98 degree turn at the second to last fix and only 4 nmi of final leg
 # to run, which an aircraft with a large turn radius cannot fly.
@@ -157,3 +159,38 @@ def test_reversal_turns_the_way_the_clearance_says(
 
     turned = "right" if (headings[0] - heading) % 360 < 180 else "left"
     assert turned == which_way(heading, target)
+
+
+def test_route_direct_turn_radius_uses_ground_track():
+    """
+    In a crosswind, the turn radius for a route direct comes from the turn in ground track, not in heading.
+    """
+
+    # A 60 kt wind from the north on an aircraft tracking 090 at 450 kt gives about 8 degrees of drift. The fix is
+    # 5 degrees right of the track, so the turn is 5 degrees, but it is about 13 degrees from the heading.
+    wind_field = WindField.uniform(wind_speed=60.0 * KT_TO_MPS, wind_direction=0.0)
+    start = Pos2D(0.0, 0.0)
+    fixes = {"DIRECT": start.forward(60.0, 95.0), "NEXT": start.forward(120.0, 95.0)}
+    wind_vector = wind_field.get_wind_vector(220.0, start.lat, start.lon)
+
+    aircraft = Aircraft(
+        lat=start.lat,
+        lon=start.lon,
+        fl=220.0,
+        heading=heading_from_ground_track(90.0, 450.0, wind_vector),
+        flight_plan=FlightPlan(Route(["DIRECT", "NEXT"])),
+        callsign="TEST1",
+        selected_fl=220,
+        aircraft_type="A320",
+    )
+    aircraft.next_fix_index = 0
+    aircraft.on_route = True
+    aircraft.cleared_instructions.cas = 450.0
+    aircraft.selected_instructions.cas = 450.0
+    aircraft.cleared_instructions.lateral_action = Action("TEST1", "route_direct_to", "DIRECT")
+
+    predictor = LinearPredictor(dt=1.0, fix_proximity_threshold=2.0, fixes=Fixes(fixes), use_cas_as_tas=True)
+    predictor.predict_aircraft(aircraft, 1.0, wind_field=wind_field, deepcopy_aircraft=False)
+
+    # The radius of a 5 degree turn at the 446 kt ground speed. The 12.7 degree turn from the heading gives 32.7 nmi.
+    assert aircraft.predictor_params["turn_radius"] == pytest.approx(83.0, abs=0.1)

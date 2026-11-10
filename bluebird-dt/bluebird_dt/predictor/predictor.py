@@ -330,9 +330,10 @@ class Predictor(ABC):
             )
 
             # if a route direct has been issued (which sets the turn radius to None, then recalculate the turn radius)
+            # from the turn the aircraft's ground track makes onto the bearing to the fix
             if last_lateral_action_kind == "route_direct_to" and aircraft.predictor_params.get("turn_radius") is None:
                 bearing_to_fix = aircraft.pos2d().bearing_to(target_pos)
-                turn_angle = aircraft.heading - bearing_to_fix
+                turn_angle = ground_track_angle - bearing_to_fix
                 _, turn_radius = self.distance_and_turn_radius_from_angle(aircraft, turn_angle, ground_speed)
                 aircraft.predictor_params["turn_radius"] = turn_radius
 
