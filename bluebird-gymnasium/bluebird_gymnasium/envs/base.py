@@ -515,13 +515,7 @@ class BaseEnv(gym.Env):
             origin = (origin[1], origin[0])  # format: (lat, lon)
             self.config.airspace_config["origin"] = origin
 
-        # trajectory predictor for computing an estimated
-        # future (rollout) trajectories. used in safety reward functions.
-        self.rollout_predictor = LinearPredictor(
-            dt=12,
-            fix_proximity_threshold=2.0,
-            fixes=airspace.fixes,
-        )
+        self._setup_predictor(airspace)
         # if the `exit_window_width` value was originally None, override the
         # default set in the parent class with a new default here (based on
         # the sector/airspace geometry).
@@ -539,6 +533,19 @@ class BaseEnv(gym.Env):
             raise ValueError("Could not initialise Sector")
 
         return airspace, routes
+
+    def _setup_predictor(self, airspace: Airspace):
+        """
+        By default, setup a LinearPredictor for rollout prediction.
+        Can be overridden by child classes.
+        """
+        # trajectory predictor for computing an estimated
+        # future (rollout) trajectories. used in safety reward functions.
+        self.rollout_predictor = LinearPredictor(
+            dt=12,
+            fix_proximity_threshold=2.0,
+            fixes=airspace.fixes,
+        )
 
     @contextlib.contextmanager
     def _use_reset_seed_for_scenario_generation(self, seed: int | None):

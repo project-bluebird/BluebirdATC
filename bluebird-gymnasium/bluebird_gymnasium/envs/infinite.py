@@ -3,6 +3,12 @@ from __future__ import annotations
 import datetime as dt
 import typing
 from enum import StrEnum
+from typing import override
+
+from bluebird_dt.core import Airspace
+
+# predictor class for rollout
+from bluebird_dt.predictor import SimplePredictor
 
 # simulator package
 from bluebird_dt.scenario_manager.infinite import Infinite
@@ -265,6 +271,15 @@ class CustomInfiniteEnv(BaseEnv):
 
         ####### airspace metadata
         self._setup_airspace(self.config.scenario_config["scenario_name"])
+
+    @override
+    def _setup_predictor(self, airspace: Airspace):
+        """
+        Setup a SimplePredictor, like that of the Infinite scenario manager.
+        """
+        # trajectory predictor for computing an estimated
+        # future (rollout) trajectories. used in safety reward functions.
+        self.rollout_predictor = SimplePredictor(dt=3.0, fix_proximity_threshold=2.0, fixes=airspace.fixes)
 
     def _generate_scenario(self) -> Simulator:
         """Generate a scenario in the simulator."""
