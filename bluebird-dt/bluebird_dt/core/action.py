@@ -6,10 +6,12 @@ import re
 import typing
 
 import numpy as np
+import typing_extensions
 from pydantic import BaseModel
 from typing_extensions import override
 
 from bluebird_dt.mixin import Comparison
+from bluebird_dt.utility.models import BandboxSectorName, IndividualSectorName
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
 
 
@@ -19,9 +21,15 @@ class ClearanceAndResponse(BaseModel):
 
 
 ActionValueType = bool | int | float | str | list[str] | tuple[int, str] | tuple[int, str, int] | None
+TSector = typing_extensions.TypeVar(
+    "TSector",
+    typing.Sequence[IndividualSectorName],
+    typing.Sequence[IndividualSectorName] | BandboxSectorName,
+    default=typing.Sequence[IndividualSectorName],
+)
 
 
-class Action(Comparison):
+class Action(Comparison, typing.Generic[TSector]):
     """
     Fundamental unit of communication between Agent and Predictor.
     """
@@ -32,7 +40,7 @@ class Action(Comparison):
     agent: str | None
     voice_representation: ClearanceAndResponse | None
     text_representation: ClearanceAndResponse | None
-    sector: list[str] | None
+    sector: TSector | None
 
     def __init__(
         self,
@@ -42,7 +50,7 @@ class Action(Comparison):
         agent: str | None = None,
         text_representation: ClearanceAndResponse | None = None,
         voice_representation: ClearanceAndResponse | None = None,
-        sector: list[str] | None = None,
+        sector: TSector | None = None,
     ):
         """
         Construct a new instance.
@@ -111,8 +119,7 @@ class Action(Comparison):
             Optional voice representation of the clearance, including clearance and pilot response
         sector: list of str, optional
             List of the individual sector frequency this action was sent from/to. Its value is optional for
-            backwards compatibility, with `None` values either being replaced by the name of the sector frequency the
-            aircraft is currently on if sent to the API, or assumed to be for the entire airspace ("all").
+            backwards compatibility, with `None`.
 
         Examples
         --------
@@ -509,7 +516,10 @@ class Action(Comparison):
         else:
             value = self.value
 
-        frequency_sector_string = ",".join(self.sector) if self.sector is not None else "all"
+        if isinstance(self.sector, str):
+            frequency_sector_string = self.sector
+        else:
+            frequency_sector_string = ",".join(self.sector) if self.sector is not None else "all"
 
         if self.agent is not None:
             return f"{self.callsign} {self.kind} {value} {self.agent} on {frequency_sector_string}"
