@@ -586,10 +586,10 @@ class WindField(BaseModel):
                 # Interpolate based on the altitude, compute wind swing and linearly interpolate
                 # speed and direction
                 else:
-                    for i in range(1, len(wind_dir_raw)):
-                        if wind_dir_raw[i - 1] > 270.0 and wind_dir_raw[i] < 90.0:
-                            # wind is veering (direction going clockwise with altitude)
-                            wind_dir_raw[i] = wind_dir_raw[i] + 360.0
+                    # Unwrap the directions so that each level differs from the one before by at most 180 degrees,
+                    # so the interpolation goes the shorter way round between levels, whether the wind is veering
+                    # or backing and whether or not it passes through north
+                    wind_dir_raw = np.unwrap(wind_dir_raw, period=360.0)
 
                     wind_spd_interp = np.interp(pressure_level, np.flip(pressure_array), np.flip(wind_spd_raw))
                     wind_dir_interp = np.interp(pressure_level, np.flip(pressure_array), np.flip(wind_dir_raw))
