@@ -6,8 +6,9 @@ import os
 import time
 import typing
 from collections import defaultdict
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Self
+from typing import Self, cast
 
 import pandas as pd
 
@@ -19,6 +20,7 @@ from bluebird_dt.simulator.presets import FLIGHT_SCHOOL_SETTINGS
 from bluebird_dt.simulator.saver import SaveData, Saver
 from bluebird_dt.simulator.simconfig import SaveConfig, SimConfig, SimulatorConfig
 from bluebird_dt.utility.convert import timestamp_to_string
+from bluebird_dt.utility.models import BandboxSectorName, IndividualSectorName
 from bluebird_dt.utility.paths import LOG_DIR
 
 if typing.TYPE_CHECKING:
@@ -747,7 +749,7 @@ class Simulator:
             "aircraft": aircraft_data,
         }
 
-    def action(self, actions: list[Action]) -> None:
+    def action(self, actions: Sequence[Action[BandboxSectorName | list[IndividualSectorName]]]) -> None:
         """
         Add actions to the queue.
 
@@ -756,7 +758,12 @@ class Simulator:
         actions: list[Action]
             The actions to add.
         """
-        self.manager.receive_actions(actions)
+        for action in actions:
+            if isinstance(action.sector, str):
+                action.sector = self.manager.environment.airspace.expand_bandbox_sector(action.sector)
+
+        # CAST: the call above ensures that action.sector has been casted to always be a sequence
+        self.manager.receive_actions(cast(list[Action[Sequence[str]]], actions))
 
     def config(
         self,

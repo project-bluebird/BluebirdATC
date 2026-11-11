@@ -1,6 +1,7 @@
 import typing
 
 from bluebird_dt.core.action import ActionValueType
+from bluebird_dt.utility.models import BandboxSectorName, IndividualSectorName
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
 from pydantic import BaseModel, Field
 
@@ -29,7 +30,7 @@ class ActionInput(BaseModel):
         ),
         json_schema_extra={"example": 90},
     )
-    sector: str = Field(
+    sector: list[IndividualSectorName] | BandboxSectorName = Field(
         description="The sector that the action is being performed in.",
         json_schema_extra={"example": "sector_1"},
     )
