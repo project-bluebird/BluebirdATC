@@ -9,7 +9,7 @@ from typing import Any
 FLIGHT_SCHOOL_SETTINGS: Mapping[str, Any] = MappingProxyType(
     {
         "scenario_name": "Xplus-Sector",
-        "fl_limits": (200, 350),
+        "fl_limits": (300, 350),
         "num_starter_aircraft": 2,
         "initial_spawn_rate": 0.005,
         "spawn_rate_increment": 0.001,
