@@ -592,6 +592,26 @@ class TestFunctions:
 
             assert runner.sim.manager._actions_to_issue[-1].sector == ["a", "b"]
 
+        
+        @pytest.mark.asyncio
+        async def test_actions_individual_sectors(self, runner: Runner, callsign):
+            """
+            Test that actions() preserves a list of individual sectors.
+            """
+            params = [
+                ActionInput(
+                    agent="human",
+                    callsign=callsign,
+                    kind="change_flight_level_to",
+                    value=300,
+                    sector=["a", "b"],
+                )
+            ]
+
+            await routers.core.actions(runner, params)
+
+            assert runner.sim.manager._actions_to_issue[-1].sector == ["a", "b"]
+
         @pytest.mark.asyncio
         async def test_set_tick_frequency_negative_period(self, runner: Runner):
             """

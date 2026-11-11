@@ -154,17 +154,14 @@ async def actions(runner: RunnerDep, action_input: list[ActionInput]) -> bool:
     Send actions to the simulator. The POST body should be a JSON list of
     actions. If any of them is invalid, none are sent and the response is 422.
     """
-
-    airspace = runner.sim.manager.environment.airspace
-    parsed_actions = []
+    parsed_actions: list[Action] = []
 
     for act in action_input:
         agent = act.agent
         callsign = act.callsign
         kind = act.kind
         value = act.value
-        # The sector may be a bandbox configuration: Action takes its individual sectors, e.g. ["25", "26"].
-        sector = airspace.expand_bandbox_sector(act.sector)
+        sector = act.sector
 
         action_time = (
             datetime.fromtimestamp(

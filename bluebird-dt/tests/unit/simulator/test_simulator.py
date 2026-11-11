@@ -229,6 +229,57 @@ def test_action_invalid_payload_raises():
     with pytest.raises(AttributeError):
         sim.action([{"callsign": "AIR01"}])
 
+def test_action_expands_bandbox_sector():
+    """
+    Create a sim and check that a bandbox sector is expanded before the Action
+    reaches the queue.
+    """
+    sim = Simulator.from_category(
+        category="Springfield",
+        scenario_name="example-scenario",
+        autosave_interval=None,
+    )
+    callsign = next(iter(sim.manager.environment.aircraft))
+    sim.manager.environment.airspace._airspace_configuration["box"] = ["a", "b"]
+
+    action = Action(
+        callsign,
+        "change_flight_level_to",
+        300,
+        "test",
+        sector="box",
+    )
+
+    sim.action([action])
+
+    assert sim.manager._actions_to_issue == [action]
+    assert sim.manager._actions_to_issue[0].sector == ["a", "b"]
+
+
+def test_action_preserves_individual_sectors():
+    """
+    Create a sim and check that individual sectors are preserved when the Action
+    reaches the queue.
+    """
+    sim = Simulator.from_category(
+        category="Springfield",
+        scenario_name="example-scenario",
+        autosave_interval=None,
+    )
+    callsign = next(iter(sim.manager.environment.aircraft))
+
+    action = Action(
+        callsign,
+        "change_flight_level_to",
+        300,
+        "test",
+        sector=["a", "b"],
+    )
+
+    sim.action([action])
+
+    assert sim.manager._actions_to_issue == [action]
+    assert sim.manager._actions_to_issue[0].sector == ["a", "b"]
 
 @pytest.mark.asyncio
 async def test_close_releases_runtime_log_file():
