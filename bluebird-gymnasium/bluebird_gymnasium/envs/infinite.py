@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime as dt
 import typing
 from enum import StrEnum
-from typing import override
 
 from bluebird_dt.core import Airspace
 
@@ -13,6 +12,7 @@ from bluebird_dt.predictor import SimplePredictor
 # simulator package
 from bluebird_dt.scenario_manager.infinite import Infinite
 from bluebird_dt.simulator.presets import FLIGHT_SCHOOL_SETTINGS
+from typing_extensions import override
 
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import CentralizedSampler, EnvConfig, ViewType
