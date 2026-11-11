@@ -858,8 +858,6 @@ def check_safe_to_spawn(
 
     new_ac_fl_range = __get_level_range_rounded_to_nearest_10(new_ac_afl, new_ac_sfl)
     for existing_ac in itertools.chain(env.aircraft.values(), waiting_aircraft):
-        if existing_ac.current_sector == "background":
-            continue
         existing_ac_afl = existing_ac.fl
         existing_ac_sfl = existing_ac.selected_fl
 

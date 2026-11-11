@@ -376,8 +376,6 @@ def test_check_safe_to_spawn(generate_simple_environment, min_spawn_distance):
 
         expected_safe = True
         for existing_ac in env.aircraft.values():
-            if existing_ac.current_sector == "background":
-                continue
             distance = a.pos2d().distance(existing_ac.pos2d())
             same_fl = a.fl == existing_ac.fl
             overlapping_fl = (
