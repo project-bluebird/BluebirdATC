@@ -4,13 +4,14 @@ import json
 import os
 import tarfile
 import warnings
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Generic, TypeVar
+from typing import Generic, Self, TypeVar
 
 import numpy as np
 import pandas as pd
 from pydantic import ValidationError
-from typing_extensions import Self, override
+from typing_extensions import override
 
 from bluebird_dt.core import Aircraft, Airspace, Fixes, Pos2D, Sector, WindField
 from bluebird_dt.events.event_handler import EventHandler, EventHandlerArgs
@@ -29,9 +30,32 @@ from bluebird_dt.scenario_manager.scenario_manager import (
 from bluebird_dt.scenario_manager.scenario_manager_configs import BluebirdSimConfig, ReplayScenarioConfig, SimConfig
 from bluebird_dt.simulator import Simulator
 from bluebird_dt.utility.logging_utils import read_logs_from_tar
-from bluebird_dt.utility.paths import LOG_DIR
+from bluebird_dt.utility.paths import get_log_dir
 
 TSimConfig = TypeVar("TSimConfig", bound=SimConfig)
+
+
+def _load_logged_value(value: str, legacy_parser: Callable[[str], object]) -> object:
+    """
+    Parse a value saved as a JSON string in the logs, falling back to legacy_parser for logs written before these
+    values were saved with json.dumps.
+
+    Parameters
+    ----------
+    value: str
+        The saved value
+    legacy_parser: Callable[[str], object]
+        Parser for the Python repr that older logs saved
+
+    Returns
+    ----------
+    object
+        The parsed value
+    """
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return legacy_parser(value)
 
 
 class ReplayerFromLogs(
@@ -93,7 +117,7 @@ class ReplayerFromLogs(
         self.replay_data_cleaned = False
 
     @classmethod
-    def from_replay_dir_path(cls, replay_dir_name: str, replay_dir_path: str = LOG_DIR) -> Self:
+    def from_replay_dir_path(cls, replay_dir_name: str, replay_dir_path: str | None = None) -> Self:
         """
         Create a ScenarioManager to load data from reading log files
 
@@ -101,7 +125,7 @@ class ReplayerFromLogs(
         ----------
         replay_dir_name: str
             Name of replay directory containing the log files to be used to create the simulation
-        replay_dir_path: str, default is the default replay directory
+        replay_dir_path: str or None, default is the default replay directory
             Path to the directory containing the specific replay directory
 
         Returns
@@ -109,6 +133,8 @@ class ReplayerFromLogs(
         ReplayerFromLogs scenario manager
             ScenarioManager to create scenarios from logs
         """
+        if replay_dir_path is None:
+            replay_dir_path = get_log_dir("bluebird_dt")
         full_path = os.path.join(replay_dir_path, replay_dir_name + ".tar.gz")
         if not os.path.exists(full_path):
             raise ValueError(f"File {full_path} doesn't exist")
@@ -157,20 +183,15 @@ class ReplayerFromLogs(
                 "sectors"
             ].sectors_configuration.map(ast.literal_eval)
         if "ac_internals" in self.replay_data:
-            self.replay_data["ac_internals"]["pilot_action_queue"] = self.replay_data["ac_internals"][
-                "pilot_action_queue"
-            ].map(ast.literal_eval)
+            # These columns are saved with json.dumps; older logs saved them as Python reprs, so fall back to those
+            for column in ("pilot_action_queue", "percentile_rank_dict", "operation_params"):
+                self.replay_data["ac_internals"][column] = self.replay_data["ac_internals"][column].map(
+                    lambda x: _load_logged_value(x, ast.literal_eval)
+                )
+            # Older logs can hold reprs such as np.float64(4.45) in predictor_params, which literal_eval can't parse
             self.replay_data["ac_internals"]["predictor_params"] = self.replay_data["ac_internals"][
                 "predictor_params"
-            ].map(
-                lambda x: eval(x, {"np": np, "__builtins__": {}})  # Temporary hot fix to handle (np.float(x))
-            )
-            self.replay_data["ac_internals"]["percentile_rank_dict"] = self.replay_data["ac_internals"][
-                "percentile_rank_dict"
-            ].map(ast.literal_eval)
-            self.replay_data["ac_internals"]["operation_params"] = self.replay_data["ac_internals"][
-                "operation_params"
-            ].map(ast.literal_eval)
+            ].map(lambda x: _load_logged_value(x, lambda v: eval(v, {"np": np, "__builtins__": {}})))
 
             # Set all aircraft internals such that aircraft.simulated = False as this is a replay by default
             self.replay_data["ac_internals"]["simulated"] = False
@@ -386,7 +407,7 @@ Loading Replay Scenario:- Sectors: {self.replay_dir_name}
             A fully configured simulator instance
         """
 
-        scenario_manager = cls.from_replay_dir_path(replay_dir_name=scenario_name, replay_dir_path=LOG_DIR)
+        scenario_manager = cls.from_replay_dir_path(replay_dir_name=scenario_name)
 
         sim = scenario_manager.to_simulator(
             scenario_name=scenario_name,

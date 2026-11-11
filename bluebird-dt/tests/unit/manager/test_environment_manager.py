@@ -316,7 +316,7 @@ def test_evolve(generate_i: tuple[Airspace, list[Route]]) -> None:
         "AIR1": datetime(1970, 1, 1, 0, 0, 6),
         "AIR2": datetime(1970, 1, 1, 0, 0, 12),
     }
-    for df_name in ["radar_df", "aircraft_internals_df"]:
+    for df_name in ["radar_df", "ac_internals_df"]:
         df = getattr(em.event_handler, df_name)
         new_index = pd.DatetimeIndex(df["callsign"].map(new_start_times).to_numpy(), name=df.index.name)
         setattr(em.event_handler, df_name, df.set_axis(new_index).sort_index())
@@ -448,14 +448,14 @@ def test_rewind_leaves_earlier_logs_unchanged(generate_i: tuple[Airspace, list[R
     em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
     em.initialise_env_with_event_handler()
     em.evolve(6)
-    logged = copy.deepcopy(em.event_logger.aircraft_internals_log)
+    logged = copy.deepcopy(em.event_logger.ac_internals_log)
 
     em.rewind_to_time(em.environment.datetime)
     # the pilot writes this clearance into the aircraft's predictor_params
     em.receive_actions([Action(next(iter(em.environment.aircraft)), "using_speed_limit", False)])
     em.evolve(6)
 
-    assert em.event_logger.aircraft_internals_log[: len(logged)] == logged
+    assert em.event_logger.ac_internals_log[: len(logged)] == logged
 
 
 def test_rewind_next_fix_index_follows_radar() -> None:
@@ -484,7 +484,7 @@ def test_rewind_next_fix_index_follows_radar() -> None:
     def replay(rewind: bool) -> dict[datetime, int | None]:
         # replay the radar and flight plan without the aircraft internals, so the aircraft is driven by radar
         event_handler = live.event_logger.to_event_handler()
-        event_handler.aircraft_internals_df = event_handler.aircraft_internals_df.iloc[0:0]
+        event_handler.ac_internals_df = event_handler.ac_internals_df.iloc[0:0]
         em = make_env_manager(event_handler)
         em.initialise_env_with_event_handler()
         start = em.environment.datetime

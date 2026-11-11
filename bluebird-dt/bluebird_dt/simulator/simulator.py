@@ -18,7 +18,7 @@ from bluebird_dt.predictor import Predictor
 from bluebird_dt.simulator.saver import SaveData, Saver
 from bluebird_dt.utility.config_models import SaveConfig, SimConfig, SimulatorConfig
 from bluebird_dt.utility.convert import timestamp_to_string
-from bluebird_dt.utility.paths import LOG_DIR
+from bluebird_dt.utility.paths import get_log_dir
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.scenario_manager.custom import Custom, CustomScenarioManagerConfig
@@ -172,9 +172,9 @@ class Simulator:
         """
         if self.log_filename is None:
             raise Exception("Failed to setup logging as log_filename is empty")
-        os.makedirs(os.path.join(LOG_DIR, "runtime_logs"), exist_ok=True)
+        os.makedirs(os.path.join(get_log_dir("bluebird_dt"), "runtime_logs"), exist_ok=True)
         self.logging_file_handler = logging.FileHandler(
-            os.path.join(LOG_DIR, "runtime_logs", self.log_filename + ".log")
+            os.path.join(get_log_dir("bluebird_dt"), "runtime_logs", self.log_filename + ".log")
         )
         self.logging_file_handler.setFormatter(CustomFormatter())
         logger.addHandler(self.logging_file_handler)

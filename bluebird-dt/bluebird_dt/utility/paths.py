@@ -41,7 +41,8 @@ def get_log_dir(app_subdir: str = "") -> str:
     return os.path.join(base, app_subdir) if app_subdir else base
 
 
-# Resolved once at import for backwards compatibility with existing ``LOG_DIR`` imports.
+# Resolved once at import for backwards compatibility with existing ``LOG_DIR`` imports. bluebird-dt itself calls
+# get_log_dir() when it reads or writes logs, so changes to BLUEBIRD_LOG_DIR after import take effect.
 LOG_DIR: str = get_log_dir("bluebird_dt")
 
 AIRCRAFT_DATA_DIR = ROOT_DIR.joinpath("aircraft_data")

@@ -481,7 +481,7 @@ async def test_saver_force_dispatch_writes_save_data(tmp_path):
     assert saver.save_status.last_save_task_save_simtime is None
     assert saver.save_status.last_save_task_save_realtime is None
 
-    with patch("bluebird_dt.simulator.saver.LOG_DIR", str(tmp_path)):
+    with patch("bluebird_dt.simulator.saver.get_log_dir", return_value=str(tmp_path)):
         assert await saver.dispatch(savedata, force=True) is True
 
     assert (tmp_path / "direct-saver-test.tar.gz").read_bytes() == b"save contents"

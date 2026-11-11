@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from bluebird_dt.logger import logger
 from bluebird_dt.utility.config_models import SaveConfig
-from bluebird_dt.utility.paths import LOG_DIR
+from bluebird_dt.utility.paths import get_log_dir
 
 
 @dataclass(slots=True, frozen=True)
@@ -208,7 +208,7 @@ class Saver:
         """
         self.save_status.set_saving()
         log_path = os.path.join(
-            LOG_DIR,
+            get_log_dir("bluebird_dt"),
             save_data.log_name
             + (
                 f"/{save_data.save_config.save_chunk_id}.tar.gz"
@@ -234,7 +234,7 @@ class Saver:
         self.save_status.set_saving()
         try:
             log_path = os.path.join(
-                LOG_DIR,
+                get_log_dir("bluebird_dt"),
                 save_data.log_name
                 + (
                     f"/{save_data.save_config.save_chunk_id}.tar.gz"

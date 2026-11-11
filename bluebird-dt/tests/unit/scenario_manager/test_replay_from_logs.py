@@ -64,6 +64,7 @@ def test_replay_scenario(tmp_path, monkeypatch, category, scenario_name):
             assert len(df_replay) > 0
 
 def test_replay_wind(tmp_path, monkeypatch):
+    monkeypatch.setenv("BLUEBIRD_LOG_DIR", str(tmp_path))
     s = Simulator.from_category("Two Aircraft", "I-Sector")
     wf = WindField.uniform(wind_speed=20, wind_direction=90)
     fwf = WindField.uniform(wind_speed=25, wind_direction=85)
