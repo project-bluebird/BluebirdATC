@@ -875,7 +875,7 @@ def check_safe_to_spawn(
 
         # Additional check: want to avoid AC spawning exactly at same level as existing AC
         # (for this the lateral threshold should be larger)
-        if new_ac_afl == existing_ac_afl and lateral_distance < 60:
+        if math.isclose(new_ac_afl, existing_ac_afl, abs_tol=1e-3) and lateral_distance < 60:
             return False
 
     return True
