@@ -234,7 +234,7 @@ class Infinite(
     def max_lateral_offset(self, route: Route) -> float:
         """
         The largest sideways offset from a route of an aircraft starting on it, in NMI: half the length of the segment
-        of the sector boundary closest to its first fix.
+        of the sector boundary closest to its first fix, multiplied by 0.99 (to ensure aircraft is not on the boundary).
 
         Parameters
             route: Route
@@ -244,7 +244,8 @@ class Infinite(
         segment = volume.area.nearest_segment_to_point(self.airspace.fixes.places[route.filed[0]])
         segment_start = Pos2D(lat=segment[0][1], lon=segment[0][0])
         segment_end = Pos2D(lat=segment[1][1], lon=segment[1][0])
-        return segment_start.distance(segment_end) / 2
+        # Use factor 0.99 to ensure aircraft not on sector boundary.
+        return 0.99 * segment_start.distance(segment_end) / 2
 
     def spawn_aircraft(
         self,
