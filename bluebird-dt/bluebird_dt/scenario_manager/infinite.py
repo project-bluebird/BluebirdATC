@@ -46,6 +46,10 @@ TEventLogger = typing_extensions.TypeVar("TEventLogger", bound=EventLogger, defa
 TSimulator = typing_extensions.TypeVar("TSimulator", bound=Simulator, default=Simulator)
 
 
+# minimum lateral distance (NM) between a new aircraft and one at the same level, unless set otherwise
+DEFAULT_SAME_LEVEL_SPAWN_DISTANCE = 60.0
+
+
 class Infinite(
     ScenarioManager[InfiniteScenarioManagerConfig],
     typing.Generic[TAircraft, TWindField, TForecastWindField, TEnvironmentManager, TEventLogger, TEventHandler],
@@ -80,6 +84,7 @@ class Infinite(
     current_spawn_rate: float
     fix_spawn_target_interval: int
     spawn_distance_threshold: float
+    same_level_spawn_distance: float
     spawn_distance_behind_fix: float
     num_starter_aircraft: int
     max_spawn_attempts: int
@@ -105,6 +110,7 @@ class Infinite(
         spawn_rate_increment: float = 0.0,
         spawn_rate_increase_interval: float = 300.0,
         spawn_distance_threshold: float = 10,
+        same_level_spawn_distance: float = DEFAULT_SAME_LEVEL_SPAWN_DISTANCE,
         spawn_distance_behind_fix: float = 10.0,
         total_time_seconds: float | None = None,
         random_seed: int | None = None,
@@ -145,6 +151,9 @@ class Infinite(
             Default is 300.0.
         spawn_distance_threshold: float
             Minimum distance in nautical miles for spawning an aircraft behind an existing one
+        same_level_spawn_distance: float
+            Minimum distance in nautical miles between a new aircraft and an aircraft at the same level that is in
+            comm with a sector. Aircraft handed off to the background keep at least the default of 60 NM.
         spawn_distance_behind_fix: float
             Distance behind starting fix that an aircraft will spawn
         total_time_seconds: float | None
@@ -197,9 +206,12 @@ class Infinite(
         self.max_spawn_rate = max_spawn_rate
         self.spawn_rate_increment = spawn_rate_increment
         self.spawn_rate_increase_interval = spawn_rate_increase_interval
-        if spawn_distance_threshold < 0 or spawn_distance_behind_fix < 0:
-            raise ValueError("spawn_distance_threshold, spawn_distance_behind fix must all be >=0")
+        if spawn_distance_threshold < 0 or spawn_distance_behind_fix < 0 or same_level_spawn_distance < 0:
+            raise ValueError(
+                "spawn_distance_threshold, same_level_spawn_distance, spawn_distance_behind fix must all be >=0"
+            )
         self.spawn_distance_threshold = spawn_distance_threshold
+        self.same_level_spawn_distance = same_level_spawn_distance
         self.spawn_distance_behind_fix = spawn_distance_behind_fix
         self.total_time_seconds = total_time_seconds
         self.num_starter_aircraft = num_starter_aircraft
@@ -525,7 +537,11 @@ Creating Infinite Scenario
                     self.routes, callsign=next_callsign, spawn_distance_behind_fix=self.spawn_distance_behind_fix
                 )
                 safe_to_spawn = check_safe_to_spawn(
-                    aircraft, env_manager.environment, self.spawn_distance_threshold, waiting_aircraft
+                    aircraft,
+                    env_manager.environment,
+                    self.spawn_distance_threshold,
+                    waiting_aircraft,
+                    same_level_distance=self.same_level_spawn_distance,
                 )
                 attempt_count += 1
                 if safe_to_spawn or attempt_count > self.max_spawn_attempts:
@@ -572,6 +588,7 @@ Creating Infinite Scenario
         total_time_seconds: float | None = None,
         speed_range: tuple[float, float] | None = None,
         spawn_distance_threshold: float = 10.0,
+        same_level_spawn_distance: float = DEFAULT_SAME_LEVEL_SPAWN_DISTANCE,
         spawn_distance_behind_fix: float = 10.0,
         max_spawn_attempts: int = 10,
         min_spawn_delta: float = 6.0,
@@ -632,6 +649,9 @@ Creating Infinite Scenario
             Optional, if not set, aircraft speeds are set between 350 and 450 knots.
         spawn_distance_threshold: float
             Minimum spawn distance from nearest aircraft with overlapping fl range.
+        same_level_spawn_distance: float
+            Minimum spawn distance from an aircraft at the same level that is in comm with a sector. Aircraft handed
+            off to the background keep at least the default of 60 NM.
         spawn_distance_behind_fix: float
             Distance behind starting fix that an aircraft will spawn
         max_spawn_attempts: int
@@ -707,6 +727,7 @@ Creating Infinite Scenario
             total_time_seconds=total_time_seconds,
             speed_range=speed_range,
             spawn_distance_threshold=spawn_distance_threshold,
+            same_level_spawn_distance=same_level_spawn_distance,
             vertical_buffer_distance=vertical_buffer_distance,
             lateral_buffer_distance=lateral_buffer_distance,
             fl_limits=fl_limits,
@@ -833,12 +854,16 @@ def check_safe_to_spawn(
     env: Environment,
     spawn_distance_threshold: float = 10.0,
     waiting_aircraft: Iterable[Aircraft] = (),
+    same_level_distance: float = DEFAULT_SAME_LEVEL_SPAWN_DISTANCE,
 ) -> bool:
     """
     Check if it is safe to spawn a new aircraft given existing aircraft in the environment, and aircraft waiting to be
     added to it.
 
-    Safe = no existing or waiting aircraft are within `spawn_distance_threshold` laterally with level range overlap
+    Safe = no existing or waiting aircraft are within `spawn_distance_threshold` laterally with level range overlap,
+    and none at exactly the same level is within `same_level_distance`. Aircraft handed off to the background keep a
+    same-level distance of at least the default (60 NM): nobody controls them any more, so a new aircraft must not
+    appear close to them at their level.
 
     Parameters
     ----------
@@ -848,6 +873,9 @@ def check_safe_to_spawn(
         The existing environment.
     waiting_aircraft: Iterable[Aircraft]
         Aircraft that have been spawned but are not in the environment yet. Defaults to none.
+    same_level_distance: float
+        Minimum lateral distance in nautical miles from an aircraft at the same level that is in comm with a sector.
+        Defaults to 60.
 
     Returns
     -------
@@ -875,8 +903,11 @@ def check_safe_to_spawn(
             return False
 
         # Additional check: want to avoid AC spawning exactly at same level as existing AC
-        # (for this the lateral threshold should be larger)
-        if math.isclose(new_ac_afl, existing_ac_afl, abs_tol=1e-3) and lateral_distance < 60:
+        # (for this the lateral threshold should be larger, and at least the default for handed-off aircraft)
+        same_level_limit = same_level_distance
+        if existing_ac.current_sector == "background":
+            same_level_limit = max(same_level_distance, DEFAULT_SAME_LEVEL_SPAWN_DISTANCE)
+        if math.isclose(new_ac_afl, existing_ac_afl, abs_tol=1e-3) and lateral_distance < same_level_limit:
             return False
 
     return True

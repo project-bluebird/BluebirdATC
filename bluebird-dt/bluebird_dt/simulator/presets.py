@@ -15,6 +15,7 @@ FLIGHT_SCHOOL_SETTINGS: Mapping[str, Any] = MappingProxyType(
         "spawn_rate_increment": 0.0015,
         "spawn_rate_increase_interval": 300,
         "max_spawn_rate": 0.03,
+        "same_level_spawn_distance": 40,
     }
 )
 """
