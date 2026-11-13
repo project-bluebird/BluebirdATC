@@ -4,8 +4,15 @@ import datetime as dt
 import typing
 from enum import StrEnum
 
+from bluebird_dt.core import Airspace
+
+# predictor class for rollout
+from bluebird_dt.predictor import SimplePredictor
+
 # simulator package
 from bluebird_dt.scenario_manager.infinite import Infinite
+from bluebird_dt.simulator.presets import FLIGHT_SCHOOL_SETTINGS
+from typing_extensions import override
 
 # simulator gymnasium wrapper
 from bluebird_gymnasium.envs import CentralizedSampler, EnvConfig, ViewType
@@ -106,7 +113,7 @@ class InfiniteEnv(BaseEnv):
         return terminated, truncated
 
     @classmethod
-    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.DECENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
@@ -148,9 +155,13 @@ class InfiniteEnv(BaseEnv):
                 "simple_heading_right": [
                     10,
                 ],
-                "simple_heading_route_parallel": True,
-                "simple_fl_descent": False,
-                "simple_fl_climb": False,
+                "simple_heading_route_parallel": False,
+                "simple_fl_descent": [
+                    10,
+                ],
+                "simple_fl_climb": [
+                    10,
+                ],
                 "simple_fl_intermediate": False,
                 "simple_fl_exit": False,
                 "simple_speed_increase": False,
@@ -181,8 +192,11 @@ class InfiniteEnv(BaseEnv):
                 "fns": [
                     "position_status_const",
                     "lateral_centreline_distance_shaped",
+                    "safety_simple_avoidance_exp",
+                    "climb_target_exp",
+                    "descent_target_exp",
                 ],
-                "coeffs": [1.0, 1.0],
+                "coeffs": [1.0, 1.0, 1.0, 1.0, 1.0],
             },
             "scenario_config": {"scenario_name": ScenarioName.sector_xplus.value},
             "simulation_log_config": {
@@ -191,7 +205,7 @@ class InfiniteEnv(BaseEnv):
             },
             "state_repr_config": {
                 "encoder_cls": "relative",
-                "k_nearest_aircraft": 0,
+                "k_nearest_aircraft": 3,
             },
             "view_config": {
                 "type": view_type,
@@ -225,6 +239,12 @@ class CustomInfiniteEnv(BaseEnv):
     Calling `.reset()` or `.reset(seed=None)` preserves the configured
     scenario seed.
 
+    Every other entry of `config.scenario_config` is passed to
+    `Infinite.setup` as a keyword argument, so a key that `Infinite.setup`
+    does not accept raises a `TypeError` when the scenario is generated.
+    The default scenario is the Flight School challenge
+    (`FLIGHT_SCHOOL_SETTINGS` in `bluebird_dt.simulator.presets`).
+
     Args:
         render_mode: the mode to visualise (render) the simulator. It can
             only be set to None or one of the following:
@@ -252,6 +272,15 @@ class CustomInfiniteEnv(BaseEnv):
         ####### airspace metadata
         self._setup_airspace(self.config.scenario_config["scenario_name"])
 
+    @override
+    def _setup_predictor(self, airspace: Airspace):
+        """
+        Setup a SimplePredictor, like that of the Infinite scenario manager.
+        """
+        # trajectory predictor for computing an estimated
+        # future (rollout) trajectories. used in safety reward functions.
+        self.rollout_predictor = SimplePredictor(dt=3.0, fix_proximity_threshold=2.0, fixes=airspace.fixes)
+
     def _generate_scenario(self) -> Simulator:
         """Generate a scenario in the simulator."""
 
@@ -264,24 +293,18 @@ class CustomInfiniteEnv(BaseEnv):
         suffix = "" if suffix is None or suffix == "" else f"__{suffix}"
         log_filename = f"{category}_{scenario_name}_{timestamp}{suffix}"
 
-        # set up simulator manager
+        # set up simulator manager. every scenario_config entry except
+        # random_seed goes to Infinite.setup, so a misspelt key raises a
+        # TypeError instead of being silently ignored.
+        scenario_settings = dict(self.config.scenario_config)
+        config_seed = scenario_settings.pop("random_seed", None)
         sim = Infinite.setup(
-            scenario_name=self.config.scenario_config["scenario_name"],
-            random_seed=(
-                self._reset_seed if self._reset_seed is not None else self.config.scenario_config["random_seed"]
-            ),
-            num_starter_aircraft=self.config.scenario_config["num_starter_aircraft"],
-            initial_spawn_rate=self.config.scenario_config["initial_spawn_rate"],
-            spawn_rate_increment=self.config.scenario_config["spawn_rate_increment"],
-            spawn_rate_increase_interval=self.config.scenario_config["spawn_rate_increase_interval"],
-            max_spawn_rate=self.config.scenario_config["max_spawn_rate"],
-            spawn_distance_threshold=self.config.scenario_config["spawn_distance_threshold"],
-            use_wind=self.config.scenario_config["use_wind"],
-            use_forecast=self.config.scenario_config["use_forecast"],
+            random_seed=self._reset_seed if self._reset_seed is not None else config_seed,
             autosave_interval=None,
             save_log_to_file=False,
             log_filename=log_filename,
             predictor=None,
+            **scenario_settings,
         )
         self.scenario_manager = sim.scenario_manager
 
@@ -306,7 +329,7 @@ class CustomInfiniteEnv(BaseEnv):
         return terminated, truncated
 
     @classmethod
-    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.CENTRALIZED) -> EnvConfig:
+    def get_default_env_config(cls: type[Self], view_type: ViewType | str = ViewType.DECENTRALIZED) -> EnvConfig:
         """Class method: Get the default config for an environment instance.
 
         Defined in each child class that inherits this base class.
@@ -348,9 +371,13 @@ class CustomInfiniteEnv(BaseEnv):
                 "simple_heading_right": [
                     10,
                 ],
-                "simple_heading_route_parallel": True,
-                "simple_fl_descent": False,
-                "simple_fl_climb": False,
+                "simple_heading_route_parallel": False,
+                "simple_fl_descent": [
+                    10,
+                ],
+                "simple_fl_climb": [
+                    10,
+                ],
                 "simple_fl_intermediate": False,
                 "simple_fl_exit": False,
                 "simple_speed_increase": False,
@@ -381,18 +408,17 @@ class CustomInfiniteEnv(BaseEnv):
                 "fns": [
                     "position_status_const",
                     "lateral_centreline_distance_shaped",
+                    "safety_simple_avoidance_exp",
+                    "climb_target_exp",
+                    "descent_target_exp",
                 ],
-                "coeffs": [1.0, 1.0],
+                "coeffs": [1.0, 1.0, 1.0, 1.0, 1.0],
             },
             "scenario_config": {
-                "scenario_name": ScenarioName.sector_xplus.value,
-                "initial_spawn_rate": 0.03,
-                "max_spawn_rate": 0.1,
-                "spawn_rate_increment": 0.0,
-                "spawn_rate_increase_interval": 0.0,
+                # the Flight School challenge: sector, flight levels and spawn rates
+                **FLIGHT_SCHOOL_SETTINGS,
                 "spawn_distance_threshold": 10,
-                "random_seed": 1251,
-                "num_starter_aircraft": 2,
+                "random_seed": None,
                 "use_wind": True,
                 "use_forecast": True,
             },
@@ -402,7 +428,7 @@ class CustomInfiniteEnv(BaseEnv):
             },
             "state_repr_config": {
                 "encoder_cls": "relative",
-                "k_nearest_aircraft": 0,
+                "k_nearest_aircraft": 3,
             },
             "view_config": {
                 "type": view_type,

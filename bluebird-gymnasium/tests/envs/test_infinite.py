@@ -4,6 +4,7 @@ import typing
 
 import numpy as np
 import pytest
+from bluebird_dt.simulator.presets import FLIGHT_SCHOOL_SETTINGS
 
 from bluebird_gymnasium.envs import ViewType
 from bluebird_gymnasium.envs.infinite import (
@@ -154,6 +155,29 @@ def test_custom_env_spawns_additional_aircraft():
     gym_env.step(0)
 
     assert len(gym_env.get_simulator_env().aircraft) > initial_aircraft_count
+
+
+def test_custom_env_uses_flight_school_settings():
+    """Test that the default CustomInfiniteEnv scenario is set up from FLIGHT_SCHOOL_SETTINGS."""
+
+    gym_env = CustomInfiniteEnv(config=CustomInfiniteEnv.get_default_env_config(ViewType.DECENTRALIZED))
+    gym_env.reset()
+
+    assert gym_env.config.scenario_config["scenario_name"] == FLIGHT_SCHOOL_SETTINGS["scenario_name"]
+    for key, value in FLIGHT_SCHOOL_SETTINGS.items():
+        if key != "scenario_name":
+            assert getattr(gym_env.scenario_manager, key) == value, key
+
+
+def test_custom_env_rejects_unknown_scenario_config_key():
+    """Test that a scenario_config key Infinite.setup does not accept raises instead of being ignored."""
+
+    config = CustomInfiniteEnv.get_default_env_config(ViewType.DECENTRALIZED)
+    config.scenario_config["fl_range"] = (200, 350)
+    gym_env = CustomInfiniteEnv(config=config)
+
+    with pytest.raises(TypeError, match="fl_range"):
+        gym_env.reset()
 
 
 @pytest.mark.parametrize("view_type", VIEW_TYPES)

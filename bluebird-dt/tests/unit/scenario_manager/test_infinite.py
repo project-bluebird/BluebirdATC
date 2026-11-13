@@ -376,8 +376,6 @@ def test_check_safe_to_spawn(generate_simple_environment, min_spawn_distance):
 
         expected_safe = True
         for existing_ac in env.aircraft.values():
-            if existing_ac.current_sector == "background":
-                continue
             distance = a.pos2d().distance(existing_ac.pos2d())
             same_fl = a.fl == existing_ac.fl
             overlapping_fl = (
@@ -391,6 +389,30 @@ def test_check_safe_to_spawn(generate_simple_environment, min_spawn_distance):
                 expected_safe = False
                 break
         assert expected_safe == check_safe_to_spawn(a, env, min_spawn_distance)
+
+
+def test_check_safe_to_spawn_same_level_distance(generate_simple_environment):
+    """
+    A shorter same-level distance lets an aircraft spawn closer to one in comm at its level, but an aircraft handed
+    off to the background still keeps the default 60 NM.
+    Simple environment fixture has two aircraft:
+    AIR0: lat,lon = (-1.0,0.0), FL=150, here handed off to the background
+    AIR1: lat,lon = (1.0,0.0), FL=200, in comm with sector_i
+    """
+    env = generate_simple_environment
+    env.aircraft["AIR0"].current_sector = "background"
+    env.aircraft["AIR1"].current_sector = "sector_i"
+
+    # a new aircraft 50 NM from AIR1, at its level: blocked at 60 NM, allowed at 40 NM
+    near_in_comm = Aircraft(callsign="TEST", lat=1.0 - 50 / 60, lon=0.0, fl=200.0, heading=0, flight_plan=None)
+    assert not check_safe_to_spawn(near_in_comm, env)
+    assert check_safe_to_spawn(near_in_comm, env, same_level_distance=40.0)
+
+    # a new aircraft 50 NM from the handed-off AIR0, at its level: blocked either way
+    near_handed_off = Aircraft(callsign="TEST", lat=-1.0 + 50 / 60, lon=0.0, fl=150.0, heading=0, flight_plan=None)
+    assert not check_safe_to_spawn(near_handed_off, env)
+    assert not check_safe_to_spawn(near_handed_off, env, same_level_distance=40.0)
+
 
 def test_different_aircraft_type():
     """
