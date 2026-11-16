@@ -136,7 +136,7 @@ def timestamp_to_string(t: float | None) -> str | None:
 @lru_cache(maxsize=10000)
 def pressure_from_fl(flight_level: float) -> float:
     """
-    Calculate the pressure in an atmosphere at a given flight level.
+    Calculate the pressure (Pa) in an atmosphere at a given flight level.
     Note here we first convert the flight level to a pressure altitude (Hp)
     See equations 3.26 in EEC Technical/Scientific Report No. 2010-001.
 
@@ -148,25 +148,28 @@ def pressure_from_fl(flight_level: float) -> float:
     Returns
     -------
     float
-        The atmospheric pressure at the corresponding flight level height.
+        The atmospheric pressure (Pa) at the corresponding flight level height.
     """
-    Hp = flight_level * FL_TO_M
+    # Pressure altitude in metres
+    Hp_m = flight_level * FL_TO_M
 
-    if Hp <= constants.HP_TROP:
-        pressure = constants.P_ZERO * (1.0 + constants.BETA_T * Hp / constants.T_ZERO) ** constants.EXPO
+    if Hp_m <= constants.HP_TROP:
+        pressure_pa = constants.P_ZERO * (1.0 + constants.BETA_T * Hp_m / constants.T_ZERO) ** constants.EXPO
 
     else:
         T_isa_trop = constants.T_ZERO + constants.BETA_T * constants.HP_TROP
         P_trop = constants.P_ZERO * (1.0 + constants.BETA_T * constants.HP_TROP / constants.T_ZERO) ** constants.EXPO
-        pressure = P_trop * math.exp(-1.0 * constants.G_ACC * (Hp - constants.HP_TROP) / (constants.R_GAS * T_isa_trop))
+        pressure_pa = P_trop * math.exp(
+            -1.0 * constants.G_ACC * (Hp_m - constants.HP_TROP) / (constants.R_GAS * T_isa_trop)
+        )
 
-    return pressure
+    return pressure_pa
 
 
 @lru_cache(maxsize=10000)
 def temperature_from_fl(flight_level: float, delta_T: float) -> float:
     """
-    Calculate the temperature in an atmosphere at a given flight level.
+    Calculate the temperature in K at a given flight level.
     Note here we first convert the flight level to a pressure altitude (Hp)
     See equations 3.28 in EEC Technical/Scientific Report No. 2010-001.
 
@@ -181,26 +184,27 @@ def temperature_from_fl(flight_level: float, delta_T: float) -> float:
     Returns
     -------
     float
-        The bada atmospheric temperature at the corresponding flight level
+        The bada atmospheric temperature (K) at the corresponding flight level
         height.
     """
-    Hp = flight_level * FL_TO_M
+    # Pressure altitude in metres
+    Hp_m = flight_level * FL_TO_M
 
-    if Hp <= constants.HP_TROP:
-        temperature = constants.T_ZERO + delta_T + constants.BETA_T * Hp
+    if Hp_m <= constants.HP_TROP:
+        temperature_K = constants.T_ZERO + delta_T + constants.BETA_T * Hp_m
 
     else:
         T_isa_trop = constants.T_ZERO + constants.BETA_T * constants.HP_TROP
         T_trop = T_isa_trop + delta_T
-        temperature = T_trop
+        temperature_K = T_trop
 
-    return temperature
+    return temperature_K
 
 
 @lru_cache(maxsize=10000)
-def density_from_fl(flight_level: float, delta_T: float, fl_pressure: float | None = None) -> float:
+def density_from_fl(flight_level: float, delta_T: float, fl_pressure_pa: float | None = None) -> float:
     """
-    Calculate the density in an atmosphere at a given flight level.
+    Calculate the density in kg/m^3 at a given flight level.
 
     Parameters
     ----------
@@ -211,28 +215,33 @@ def density_from_fl(flight_level: float, delta_T: float, fl_pressure: float | No
         The BADA atmosphere temperature differential at a pressure
         altitude of zero (in K)
     fl_pressure : float, optional
-        The atmospheric pressure at the corresponding flight level height.
+        The atmospheric pressure (Pa) at the corresponding flight level height.
         If this is not specified, then it is calculated using the given flight level.
 
     Returns
     -------
     float
-        The bada atmospheric density at the corresponding flight level
+        The bada atmospheric density (kg/m^3) at the corresponding flight level
         height.
     """
-    if fl_pressure is None:
-        fl_pressure = pressure_from_fl(flight_level)
+    if fl_pressure_pa is None:
+        fl_pressure_pa = pressure_from_fl(flight_level)
 
-    return fl_pressure / (constants.R_GAS * temperature_from_fl(flight_level, delta_T=delta_T))
+    return fl_pressure_pa / (constants.R_GAS * temperature_from_fl(flight_level, delta_T=delta_T))
 
 
 @lru_cache(maxsize=10000)
 def geopot_altitude_from_fl(flight_level: float, delta_T: float, delta_P: float) -> float:
     """
-    Calculate the geopotential height at a given flight level, by
+    Calculate the geopotential height (m) at a given flight level, by
     first converting the flight level to pressure altitude (Hp) and
     then using equations 3-31 in ECC Technical/Scientific Report
     No. 2010-001.
+
+    In our implementation of the BADA equations we have assumed that
+    a geopotential metre == an SI metre. This seems to be the same
+    assumption made in BADA, although an explicit conversion from
+    feet/FLs to metres is not given in the technical report.
 
     Parameters
     ----------
@@ -249,11 +258,12 @@ def geopot_altitude_from_fl(flight_level: float, delta_T: float, delta_P: float)
     -------
     float
         The geopotential height in the bada atmosphere at the given flight
-        level height.
+        level height (in m).
     """
-    Hp = flight_level * FL_TO_M
+    # Pressure altitude in metres
+    Hp_m = flight_level * FL_TO_M
 
-    if Hp <= constants.HP_TROP:
+    if Hp_m <= constants.HP_TROP:
         if delta_P != 0.0:
             P_msl = constants.P_ZERO + delta_P
             Hp_msl = (constants.T_ZERO / constants.BETA_T) * ((P_msl / constants.P_ZERO) ** constants.EXPO_INV - 1.0)
@@ -264,15 +274,15 @@ def geopot_altitude_from_fl(flight_level: float, delta_T: float, delta_P: float)
         T_isa_msl = constants.T_ZERO + constants.BETA_T * Hp_msl
 
         geopot_altitude = (
-            Hp
+            Hp_m
             - Hp_msl
-            + (delta_T / constants.BETA_T) * math.log((constants.T_ZERO + constants.BETA_T * Hp) / T_isa_msl)
+            + (delta_T / constants.BETA_T) * math.log((constants.T_ZERO + constants.BETA_T * Hp_m) / T_isa_msl)
         )
 
     else:
         T_isa_trop = constants.T_ZERO + constants.BETA_T * constants.HP_TROP
         T_trop = T_isa_trop + delta_T
-        geopot_altitude = constants.HP_TROP + (T_trop / T_isa_trop) * (Hp - constants.HP_TROP)
+        geopot_altitude = constants.HP_TROP + (T_trop / T_isa_trop) * (Hp_m - constants.HP_TROP)
 
     return geopot_altitude
 
@@ -280,7 +290,7 @@ def geopot_altitude_from_fl(flight_level: float, delta_T: float, delta_P: float)
 @lru_cache(maxsize=10000)
 def geodet_altitude_from_fl(flight_level: float, delta_T: float, delta_P: float) -> float:
     """
-    Calculate the geodetic height at a given flight level. Here we
+    Calculate the geodetic height (m) at a given flight level. Here we
     first calculate the geopotential height and then convert to
     geodetic height using equation 2-7 in ECC Technical/Scientific Report
     No. 2010-001.
@@ -300,11 +310,12 @@ def geodet_altitude_from_fl(flight_level: float, delta_T: float, delta_P: float)
     -------
     float
         The geodetic height in the bada atmosphere at the given flight level
-        height.
+        height (in m).
     """
-    H = geopot_altitude_from_fl(flight_level, delta_T=delta_T, delta_P=delta_P)
+    # compute gepotential altitude in metres
+    H_m = geopot_altitude_from_fl(flight_level, delta_T=delta_T, delta_P=delta_P)
 
-    return constants.R_E * H / (constants.R_E - H)
+    return constants.R_E * H_m / (constants.R_E - H_m)
 
 
 @lru_cache(maxsize=10000)
@@ -329,10 +340,10 @@ def cas_to_tas(flight_level: float, calibrated_air_speed: float, delta_T: float)
     float
         The true air speed of the aircraft (in m/s)
     """
-    fl_pressure = pressure_from_fl(flight_level)
+    fl_pressure_pa = pressure_from_fl(flight_level)
 
-    p_over_rho = fl_pressure / density_from_fl(flight_level, delta_T=delta_T, fl_pressure=fl_pressure)
-    p_ratio = constants.P_ZERO / fl_pressure
+    p_over_rho = fl_pressure_pa / density_from_fl(flight_level, delta_T=delta_T, fl_pressure_pa=fl_pressure_pa)
+    p_ratio = constants.P_ZERO / fl_pressure_pa
 
     x = 1.0 + 0.5 * constants.MU * (calibrated_air_speed**2) / constants.P_OVER_RHO_ZERO
     x = (1.0 + p_ratio * (x ** (1.0 / constants.MU) - 1.0)) ** constants.MU
@@ -360,10 +371,10 @@ def tas_to_cas(flight_level: float, true_air_speed: float, delta_T: float) -> fl
     float
         The calibrated air speed of the aircraft (in m/s)
     """
-    fl_pressure = pressure_from_fl(flight_level)
+    fl_pressure_pa = pressure_from_fl(flight_level)
 
-    p_over_rho = fl_pressure / density_from_fl(flight_level, delta_T=delta_T, fl_pressure=fl_pressure)
-    p_ratio = fl_pressure / constants.P_ZERO
+    p_over_rho = fl_pressure_pa / density_from_fl(flight_level, delta_T=delta_T, fl_pressure_pa=fl_pressure_pa)
+    p_ratio = fl_pressure_pa / constants.P_ZERO
 
     x = 1.0 + 0.5 * constants.MU * (true_air_speed**2) / p_over_rho
     x = (1.0 + p_ratio * (x ** (1.0 / constants.MU) - 1.0)) ** constants.MU
@@ -452,14 +463,14 @@ def mach_cas_trans_altitude(mach: float, calibrated_air_speed: float, delta_T: f
 
     if P_trans < P_trop:
         T_isa_trop = constants.T_ZERO + constants.BETA_T * constants.HP_TROP
-        transition_altitude = constants.HP_TROP - (constants.R_GAS * T_isa_trop / constants.G_ACC) * math.log(
+        transition_altitude_m = constants.HP_TROP - (constants.R_GAS * T_isa_trop / constants.G_ACC) * math.log(
             P_trans / P_trop
         )
     else:
         temperature_ratio = pressure_ratio ** (-1.0 * constants.BETA_T * constants.R_GAS / constants.G_ACC)
-        transition_altitude = (temperature_ratio - 1.0) * (constants.T_ZERO + delta_T) / constants.BETA_T
+        transition_altitude_m = (temperature_ratio - 1.0) * (constants.T_ZERO + delta_T) / constants.BETA_T
 
-    return transition_altitude
+    return transition_altitude_m
 
 
 def horizontal_tas(tas: float, vertical_speed: float) -> float:
@@ -539,17 +550,17 @@ def tas_from_ground_speed(ground_speed: float, ground_track_angle: float, wind_v
         True airspeed of the aircraft (in knots)
     """
     if wind_vector is None:
-        true_airspeed = ground_speed
+        true_airspeed_kts = ground_speed
     else:
-        true_airspeed_eastward = (
+        true_airspeed_eastward_kts = (
             ground_speed * math.sin(math.radians(ground_track_angle)) - wind_vector.u_comp * MPS_TO_KT
         )
-        true_airspeed_northward = (
+        true_airspeed_northward_kts = (
             ground_speed * math.cos(math.radians(ground_track_angle)) - wind_vector.v_comp * MPS_TO_KT
         )
 
-        true_airspeed = math.sqrt(true_airspeed_eastward**2 + true_airspeed_northward**2)
-    return true_airspeed
+        true_airspeed_kts = math.sqrt(true_airspeed_eastward_kts**2 + true_airspeed_northward_kts**2)
+    return true_airspeed_kts
 
 
 def heading_from_ground_track(
