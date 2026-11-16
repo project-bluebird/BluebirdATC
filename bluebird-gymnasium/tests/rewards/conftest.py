@@ -31,6 +31,8 @@ def gym_env() -> SectorXEnv:
         "simple_route_direct": True,
         "simple_outcomm": True,
     }
+    # the default outcomm policy cannot be used alongside the outcomm action
+    config.use_default_outcomm_policy = False
 
     env = SectorXEnv(config=config)
     _, _ = env.reset()

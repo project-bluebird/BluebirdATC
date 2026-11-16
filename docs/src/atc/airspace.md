@@ -12,7 +12,7 @@ Controlled airspace is that which requires pilots to obtain ATC clearance to ent
 
 Uncontrolled airspace is any airspace that is not controlled airspace.
 
-## Sector
+## Sector
 
 Refers to a collection of volumes, pre-defined three-dimensional polyhedron, managed by one controller.
 Aircraft must stay within their sector before their exit co-ordination is reached.
@@ -25,7 +25,7 @@ Refers to a specific geographical location (defined using latitude and longitude
 An aircraft's route will be made up of these
 Air traffic controllers may issue clearances for aircraft to fly to a waypoint in their route.
 
-### Fix
+### Fix
 
 A fix represents exact geographical coordinates (latitude and longitude) in space.
 

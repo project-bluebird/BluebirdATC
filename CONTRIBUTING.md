@@ -14,6 +14,8 @@
 
  Don't worry about making everything perfect - it's more important to start the conversation than to have everything right first time.
 
+ Everyone taking part in the project, in issues, pull requests or anywhere else, is expected to follow our [code of conduct](CODE_OF_CONDUCT.md).
+
  ## Table of contents
 
  - [Where to start: issues](#where-to-start-issues)
@@ -182,8 +184,14 @@ We recognise that the use of AI tools for writing code is becoming more and more
  You can also install the [pre-commit][pre-commit] hooks so that ruff runs on your changes every time you commit:
 
  ```bash
- uv run pre-commit install
+ pre-commit install
  ```
+
+To install pre-commit globally you can use:
+
+```bash
+uv tool install pre-commit
+```
 
  ---
 

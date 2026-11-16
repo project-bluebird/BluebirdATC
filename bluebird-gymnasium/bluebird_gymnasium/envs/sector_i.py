@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:
     try:
         from typing import Self
     except ImportError:
-        from typing_extensions import Self
+        from typing import Self
 
 
 class SectorIEnv(BaseEnv):
@@ -54,9 +54,6 @@ class SectorIEnv(BaseEnv):
         )
 
         self.scenario_manager = None  # set in _generate_scenario
-
-        ####### reset env
-        self.reset()
 
     def _generate_scenario(self) -> Simulator:
         # set up simulation log name
@@ -90,8 +87,8 @@ class SectorIEnv(BaseEnv):
 
         Args:
             cls: the class
-            view_type: the type of agent view, centralised (single agent) or
-                decentralised (multi-agent).
+            view_type: the type of agent view, centralized (single agent) or
+                decentralized (multi-agent).
                 Defaults to "centralized".
 
         Returns:
@@ -215,7 +212,7 @@ if __name__ == "__main__":
         print(obs)
         pprint(info)
         for idx in range(50):
-            obs, reward, done, truncated, info = env.step(0)
+            obs, reward, terminated, truncated, info = env.step(0)
             print(idx, obs)
             pprint(info)
             print("-" * 50)
@@ -225,7 +222,7 @@ if __name__ == "__main__":
         pprint(info)
         for idx in range(20):
             actions = dict.fromkeys(obs.keys(), 0)
-            obs, reward, done, truncated, info = env.step(actions)
+            obs, reward, terminated, truncated, info = env.step(actions)
             print(idx, obs)
             pprint(info)
             print("-" * 50)

@@ -6,6 +6,7 @@ from itertools import repeat
 from typing import TYPE_CHECKING, Any, overload
 
 import numpy as np
+import numpy.typing as npt
 from pyproj import Geod, Proj
 from shapely.geometry import MultiPoint, Point
 from shapely.ops import transform
@@ -149,8 +150,8 @@ class GeoHelper:
     @overload  # (x, ...), (y, ...) -> (x, ...), (y, ...)
     def forward(
         self,
-        x: Iterable,
-        y: Iterable,
+        x: Iterable[float],
+        y: Iterable[float],
         z: None = None,
         distance: float = 0.0,
         heading: float = 0.0,
@@ -159,8 +160,8 @@ class GeoHelper:
     @overload  # [(x, ...), (y, ...), z] -> [(x, ...), (y, ...), z]
     def forward(
         self,
-        x: Iterable,
-        y: Iterable,
+        x: Iterable[float],
+        y: Iterable[float],
         z: float,
         distance: float = 0.0,
         heading: float = 0.0,
@@ -169,18 +170,18 @@ class GeoHelper:
     @overload  # ((x, ...), (y, ...), (z, ...)) -> ((x, ...), (y, ...), (z, ...))
     def forward(
         self,
-        x: Iterable,
-        y: Iterable,
-        z: Iterable,
+        x: Iterable[float],
+        y: Iterable[float],
+        z: Iterable[float],
         distance: float = 0.0,
         heading: float = 0.0,
     ) -> tuple[Iterable[float], Iterable[float], Iterable[float]]: ...
 
     def forward(
         self,
-        x: float | Iterable,
-        y: float | Iterable,
-        z: float | Iterable | None = None,
+        x: float | Iterable[float],
+        y: float | Iterable[float],
+        z: float | Iterable[float] | None = None,
         distance: float = 0.0,
         heading: float = 0.0,
     ) -> tuple[Any, ...]:
@@ -235,32 +236,32 @@ class GeoHelper:
     @overload
     def distance(
         self,
-        lat: np.ndarray,
-        lon: np.ndarray,
-        lat_origin: np.ndarray,
-        lon_origin: np.ndarray,
-    ) -> np.ndarray: ...
+        lat: npt.NDArray[np.floating],
+        lon: npt.NDArray[np.floating],
+        lat_origin: npt.NDArray[np.floating],
+        lon_origin: npt.NDArray[np.floating],
+    ) -> npt.NDArray[np.floating]: ...
 
     def distance(
         self,
-        lat: float | np.ndarray,
-        lon: float | np.ndarray,
-        lat_origin: float | np.ndarray,
-        lon_origin: float | np.ndarray,
-    ) -> float | np.ndarray:
+        lat: float | npt.NDArray[np.floating],
+        lon: float | npt.NDArray[np.floating],
+        lat_origin: float | npt.NDArray[np.floating],
+        lon_origin: float | npt.NDArray[np.floating],
+    ) -> float | npt.NDArray[np.floating]:
         """
         Returns the haversine distance between the two provided points (lat, lon) -> (lat_origin, lon_origin) in
         nautical miles, or the distance between the two provided arrays of points.
 
         Parameters
         ----------
-        lat : float, np.ndarray
+        lat : float, npt.NDArray[np.floating]
             Latitude of the first point(s).
-        lon : float, np.ndarray
+        lon : float, npt.NDArray[np.floating]
             Longitude of the first point(s).
-        lat_origin : float, np.ndarray
+        lat_origin : float, npt.NDArray[np.floating]
             Latitude of the origin point(s).
-        lon_origin : float, np.ndarray
+        lon_origin : float, npt.NDArray[np.floating]
             Longitude of the origin point(s).
 
         Returns
@@ -280,32 +281,32 @@ class GeoHelper:
     @overload
     def bearing_to(
         self,
-        lat: np.ndarray,
-        lon: np.ndarray,
-        lat_origin: np.ndarray,
-        lon_origin: np.ndarray,
-    ) -> np.ndarray: ...
+        lat: npt.NDArray[np.floating],
+        lon: npt.NDArray[np.floating],
+        lat_origin: npt.NDArray[np.floating],
+        lon_origin: npt.NDArray[np.floating],
+    ) -> npt.NDArray[np.floating]: ...
 
     def bearing_to(
         self,
-        lat: float | np.ndarray,
-        lon: float | np.ndarray,
-        lat_origin: float | np.ndarray,
-        lon_origin: float | np.ndarray,
-    ) -> float | np.ndarray:
+        lat: float | npt.NDArray[np.floating],
+        lon: float | npt.NDArray[np.floating],
+        lat_origin: float | npt.NDArray[np.floating],
+        lon_origin: float | npt.NDArray[np.floating],
+    ) -> float | npt.NDArray[np.floating]:
         """
         Returns the bearing between the two provided points (lat, lon) -> (lat_origin, lon_origin) or
         the bearing between the two provided arrays of points.
 
         Parameters
         ----------
-        lat : float, np.ndarray
+        lat : float, npt.NDArray[np.floating]
             Latitude of the first point(s).
-        lon : float, np.ndarray
+        lon : float, npt.NDArray[np.floating]
             Longitude of the first point(s).
-        lat_origin : float, np.ndarray
+        lat_origin : float, npt.NDArray[np.floating]
             Latitude of the origin point(s).
-        lon_origin : float, np.ndarray
+        lon_origin : float, npt.NDArray[np.floating]
             Longitude of the origin point(s).
 
         Returns

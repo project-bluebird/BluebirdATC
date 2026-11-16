@@ -1,7 +1,5 @@
 import json
 import math
-import os
-import shutil
 
 import numpy as np
 import pytest
@@ -9,7 +7,6 @@ import scipy
 from pydantic import ValidationError
 
 from bluebird_dt.core.wind import WindField, WindVector
-from bluebird_dt.utility.paths import ROOT_DIR
 
 
 def test_wind_vector() -> None:
@@ -379,7 +376,7 @@ def test_artificial_wind_field() -> None:
     assert np.allclose(wind_field.v_comp, expected_v_comp, atol=1e-2)
 
 
-def test_save_load_artificial() -> None:
+def test_save_load_artificial(tmp_path) -> None:
     """
     Test saving then loading artificial wind yields identical results
     """
@@ -402,13 +399,7 @@ def test_save_load_artificial() -> None:
         no_grid_points=no_grid_points,
     )
 
-    test_data_dir = os.path.join(
-        ROOT_DIR.joinpath("tests"), "test_data", "artificial_save_load_test"
-    )
-    test_filename = os.path.join(test_data_dir, "artificial_wind_field.json")
-
-    # make test directory
-    os.makedirs(test_data_dir, exist_ok=True)
+    test_filename = str(tmp_path / "artificial_wind_field.json")
 
     # save wind field
     orig_wind_field.save(test_filename)
@@ -419,11 +410,8 @@ def test_save_load_artificial() -> None:
     # Check original and serialised/deserialised wind fields are identical
     assert new_wind_field == orig_wind_field
 
-    # delete the test directory files
-    shutil.rmtree(test_data_dir)
 
-
-def test_save_load_uniform() -> None:
+def test_save_load_uniform(tmp_path) -> None:
     """
     Test saving then loading wind created using uniform constructor yields identical results
     """
@@ -442,13 +430,7 @@ def test_save_load_uniform() -> None:
         no_grid_points=no_grid_points,
     )
 
-    test_data_dir = os.path.join(
-        ROOT_DIR.joinpath("tests"), "test_data", "artificial_save_load_test"
-    )
-    test_filename = os.path.join(test_data_dir, "uniform_wind_field.json")
-
-    # make test directory
-    os.makedirs(test_data_dir, exist_ok=True)
+    test_filename = str(tmp_path / "uniform_wind_field.json")
 
     # save wind field
     orig_wind_field.save(test_filename)
@@ -458,9 +440,6 @@ def test_save_load_uniform() -> None:
 
     # Check original and serialised/deserialised wind fields are identical
     assert new_wind_field == orig_wind_field
-
-    # delete the test directory files
-    shutil.rmtree(test_data_dir)
 
 
 def test_uniform_wind_field() -> None:

@@ -1,6 +1,5 @@
 ![bluebird-logo](images/bluebird_logo.png)
 
-
 ## Project Overview
 
 [Project Bluebird](https://www.projectbluebird.ai/) is a £13.7m EPSRC Prosperity Partnership between NATS, The University of Exeter and The Alan Turing Institute to augment and optimise air-traffic control using multi-agent systems. Our ambition is to deliver the world’s first AI system to control a section of airspace in live shadow trials, working with Air Traffic Controllers to help manage the complexities of their role.
@@ -41,7 +40,7 @@ The BluebirdATC repo is made up of four packages, `bluebird-dt`, `bluebird-api`,
 
 </div>
 
-If you are unfamiliar with ATC concepts, an introduction is available [here](atc/index.md).
+If you are unfamiliar with ATC concepts, an [introduction to ATC](atc/index.md) is available.
 
 ### Versioning
 

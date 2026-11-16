@@ -10,6 +10,7 @@ import pandas as pd
 from datetime import timedelta
 
 from bluebird_dt.scenario_manager import Custom
+from bluebird_dt.scenario_manager.custom import CustomScenarioManagerConfig
 from bluebird_dt.predictor import SimplePredictor
 
 @pytest.mark.parametrize(
@@ -524,3 +525,12 @@ def test_sim_from_category(scenario_name):
     """
     s = Simulator.from_category("Custom", scenario_name)
     assert isinstance(s, Simulator)
+
+
+def test_config_reads_tactical():
+    """
+    Test that the config of a log written when this scenario manager was called Tactical can be read.
+    """
+    config = CustomScenarioManagerConfig.model_validate_json('{"scenario_manager": "tactical"}')
+    assert config.scenario_manager == "tactical"
+    assert CustomScenarioManagerConfig().scenario_manager == "custom"

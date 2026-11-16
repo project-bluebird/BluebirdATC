@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 import typing
 from datetime import datetime as datetime_type
+from typing import Self
 
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from typing_extensions import Self
 
 from bluebird_dt.core.aircraft import Aircraft
 from bluebird_dt.core.airspace import Airspace

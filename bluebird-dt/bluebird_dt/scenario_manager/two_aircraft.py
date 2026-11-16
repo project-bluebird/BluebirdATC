@@ -1,5 +1,5 @@
 import typing
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import typing_extensions
@@ -254,11 +254,7 @@ class TwoAircraft(
         route_fwd = self.rng.choice(self.routes)
         route_rev = Route(route_fwd.filed[::-1])
         routes = [route_fwd, route_rev]
-        volume = self.airspace.sectors[self.sector_name].volumes[0]
-        # use the more restrictive out of this instances fl_limits and the airspace bounds.
-        min_fl = max(volume.min_fl, self.fl_limits[0])
-        max_fl = min(volume.max_fl, self.fl_limits[1])
-        allowed_FLs = [float(x) for x in np.arange(min_fl, max_fl + 10, 10)]
+        allowed_FLs = self.airspace.sectors[self.sector_name].all_ifr_flight_levels(self.fl_limits).tolist()
 
         # randomly generate entry/exit coordinations for first aircraft
         coordinations_fwd = self.get_overflier_coordination_FLs(allowed_FLs, aircraft_scenario)
@@ -360,9 +356,6 @@ Creating TwoAircraft Scenario
             penumbra_lat=self.lateral_buffer_distance,
             log_filename=log_filename,
         )
-        # set the visibility flag of fixes to True only if they are in the penumbra
-        em.set_local_fixes_visibility()
-
         em.initialise_env_with_event_handler()
 
         return em
@@ -497,7 +490,7 @@ Creating TwoAircraft Scenario
 
         # if needed, fast-forward to the first aircraft entry time, ensuring that it is
         # a multiple of the evolve time-step
-        first_entry_time = sim.manager.event_handler.radar_df.index.min().replace(tzinfo=timezone.utc).timestamp()
+        first_entry_time = sim.manager.event_handler.radar_df.index.min().replace(tzinfo=UTC).timestamp()
 
         time_step = 6.0
 

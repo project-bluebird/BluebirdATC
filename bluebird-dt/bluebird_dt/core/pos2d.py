@@ -262,6 +262,9 @@ class Pos2D(BaseModel, Comparison):
 
         return Pos4D(lat=self.lat, lon=self.lon, fl=fl, time=time)
 
+    def bisect(self, b: Pos2D) -> Pos2D:
+        return self.forward(dist=self.distance(b) / 2.0, heading=self.bearing_to(b))
+
     def forward(self, dist: float, heading: float) -> Pos2D:
         """
         Determine the two-dimensional location

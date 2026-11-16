@@ -57,25 +57,25 @@ Main locations:
 
 ## Example edit-serve-build workflow
 
-* Start local docs server from repo root:
+- Start local docs server from repo root:
 
 ```bash
 ./scripts/docs-serve
 ```
 
-* Edit a docs file, for example: `bluebird-hmi/docs/index.md`
+- Edit a docs file, for example: `bluebird-hmi/docs/index.md`
 
-* Check the change in browser at: `http://localhost:8010`.
+- Check the change in browser at: `http://localhost:8010`.
 
-* If navigation changed, also update the corresponding `mkdocs.yml` file. 
+- If navigation changed, also update the corresponding `mkdocs.yml` file.
 
 - For a top-level change: `docs/mkdocs.yml`.
-- For a package-level change: e.g. `bluebird-hmi/mkdocs.yml`.  
+- For a package-level change: e.g. `bluebird-hmi/mkdocs.yml`.
 
-* Run a production build check:
+- Run a production build check:
 
 ```bash
 ./scripts/docs-build
 ```
 
-* Commit your markdown and `mkdocs.yml` changes together.
+- Commit your markdown and `mkdocs.yml` changes together.

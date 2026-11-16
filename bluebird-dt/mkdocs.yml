@@ -33,5 +33,6 @@ nav:
     - Simulation example: examples/Intro-Part-2.ipynb
     - Simulation example: examples/Intro-Part-3.ipynb
     - Simulation example: examples/Intro-Part-4.ipynb
+    - Simulation example: examples/Intro-Part-5.ipynb
     - Radar visualisation: examples/render/radar.ipynb
   - Source reference: source.md
