@@ -302,9 +302,9 @@ class Pos4D(BaseModel, Comparison):
              Distance in nautical miles.
         """
 
-        if isinstance(other, Pos3D | Pos4D):
-            other = other.pos2d()
-        return self.pos2d().distance(other)
+        # same as `self.pos2d().distance(other.pos2d())`, without building the
+        # two intermediate Pos2D objects.
+        return Pos2D.geo_helper.distance(lat=self.lat, lon=self.lon, lat_origin=other.lat, lon_origin=other.lon)
 
     def interval(self, other: Pos4D, speed: float) -> float:
         """
