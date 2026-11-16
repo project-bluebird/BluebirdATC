@@ -16,14 +16,14 @@ if typing.TYPE_CHECKING:
 
 
 # Lengths
-# Multiply to convert meters [m] to feet [ft]
+# Multiply to convert metres [m] to feet [ft]
 M_TO_FT = 10000.0 / 3048.0  # 3.2808398950131235
-# Multiply to convert feet [ft] to meters [m]
+# Multiply to convert feet [ft] to metres [m]
 FT_TO_M = 1.0 / M_TO_FT
 
-# Multiply to convert nautical miles [nmi] to meters [m]
+# Multiply to convert nautical miles [nmi] to metres [m]
 NMI_TO_M = 1852.0
-# Multiply to convert meters [m] to nautical miles [nmi]
+# Multiply to convert metres [m] to nautical miles [nmi]
 M_TO_NMI = 1.0 / NMI_TO_M
 
 # Multiply to convert nautical miles [nmi] to feet [ft]
@@ -31,13 +31,17 @@ NMI_TO_FT = NMI_TO_M * M_TO_FT
 # Multiply to convert feet [ft] to nautical miles [nmi]
 FT_TO_NMI = 1.0 / NMI_TO_FT
 
+# In our implementation of the BADA equations we have assumed that a geopotential
+# metre == an SI metre. This seems to be the same assumption made in BADA,
+# although an explicit conversion from feet/FLs to metres is not given in the
+# technical report.
 # Multiply to convert flight levels [FL] to feet [ft]
 FL_TO_FT = 100.0
 # Multiply to convert ft [ft] to flight levels [FL]
 FT_TO_FL = 1.0 / FL_TO_FT
-# Multiply to convert flight levels [FL] to meters [m]
+# Multiply to convert flight levels [FL] to metres [m]
 FL_TO_M = FL_TO_FT * FT_TO_M
-# Multiply to convert meters [m] to nautical miles [nmi]
+# Multiply to convert metres [m] to nautical miles [nmi]
 M_TO_FL = 1.0 / FL_TO_M
 
 # Multiply to convert flight levels [FL] to nautical miles [nmi]
@@ -46,9 +50,9 @@ FL_TO_NMI = FL_TO_M * M_TO_NMI
 NMI_TO_FL = 1.0 / FL_TO_NMI
 
 # Speeds
-# Multiply to convert meters per second [m/s] to knots [kt]
+# Multiply to convert metres per second [m/s] to knots [kt]
 MPS_TO_KT = 3600.0 / 1852.0  # 1.9438444924406046
-# Multiply to convert knots [kt] to meters per second [m/s]
+# Multiply to convert knots [kt] to metres per second [m/s]
 KT_TO_MPS = 1.0 / MPS_TO_KT
 
 # Multiply to convert feet per minute [ft/min] to metres per second [m/s]
@@ -137,8 +141,8 @@ def timestamp_to_string(t: float | None) -> str | None:
 def pressure_from_fl(flight_level: float) -> float:
     """
     Calculate the pressure (Pa) in an atmosphere at a given flight level.
-    Note here we first convert the flight level to a pressure altitude (Hp)
-    See equations 3.26 in EEC Technical/Scientific Report No. 2010-001.
+    Note here we first convert the flight level to a pressure altitude (Hp),
+    in metres. See equations 3.26 in EEC Technical/Scientific Report No. 2010-001.
 
     Parameters
     ----------
@@ -171,7 +175,7 @@ def temperature_from_fl(flight_level: float, delta_T: float) -> float:
     """
     Calculate the temperature in K at a given flight level.
     Note here we first convert the flight level to a pressure altitude (Hp)
-    See equations 3.28 in EEC Technical/Scientific Report No. 2010-001.
+    in metres. See equations 3.28 in EEC Technical/Scientific Report No. 2010-001.
 
     Parameters
     ----------
@@ -214,7 +218,7 @@ def density_from_fl(flight_level: float, delta_T: float, fl_pressure_pa: float |
     delta_T : float
         The BADA atmosphere temperature differential at a pressure
         altitude of zero (in K)
-    fl_pressure : float, optional
+    fl_pressure_pa : float, optional
         The atmospheric pressure (Pa) at the corresponding flight level height.
         If this is not specified, then it is calculated using the given flight level.
 
@@ -237,11 +241,6 @@ def geopot_altitude_from_fl(flight_level: float, delta_T: float, delta_P: float)
     first converting the flight level to pressure altitude (Hp) and
     then using equations 3-31 in ECC Technical/Scientific Report
     No. 2010-001.
-
-    In our implementation of the BADA equations we have assumed that
-    a geopotential metre == an SI metre. This seems to be the same
-    assumption made in BADA, although an explicit conversion from
-    feet/FLs to metres is not given in the technical report.
 
     Parameters
     ----------
@@ -273,7 +272,7 @@ def geopot_altitude_from_fl(flight_level: float, delta_T: float, delta_P: float)
 
         T_isa_msl = constants.T_ZERO + constants.BETA_T * Hp_msl
 
-        geopot_altitude = (
+        geopot_altitude_m = (
             Hp_m
             - Hp_msl
             + (delta_T / constants.BETA_T) * math.log((constants.T_ZERO + constants.BETA_T * Hp_m) / T_isa_msl)
@@ -282,9 +281,9 @@ def geopot_altitude_from_fl(flight_level: float, delta_T: float, delta_P: float)
     else:
         T_isa_trop = constants.T_ZERO + constants.BETA_T * constants.HP_TROP
         T_trop = T_isa_trop + delta_T
-        geopot_altitude = constants.HP_TROP + (T_trop / T_isa_trop) * (Hp_m - constants.HP_TROP)
+        geopot_altitude_m = constants.HP_TROP + (T_trop / T_isa_trop) * (Hp_m - constants.HP_TROP)
 
-    return geopot_altitude
+    return geopot_altitude_m
 
 
 @lru_cache(maxsize=10000)
@@ -312,7 +311,7 @@ def geodet_altitude_from_fl(flight_level: float, delta_T: float, delta_P: float)
         The geodetic height in the bada atmosphere at the given flight level
         height (in m).
     """
-    # compute gepotential altitude in metres
+    # compute geopotential altitude in metres
     H_m = geopot_altitude_from_fl(flight_level, delta_T=delta_T, delta_P=delta_P)
 
     return constants.R_E * H_m / (constants.R_E - H_m)
