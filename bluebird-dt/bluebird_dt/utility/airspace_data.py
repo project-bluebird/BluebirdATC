@@ -119,6 +119,7 @@ def load_volumes(geojson_path: str) -> list[Volume]:
         A list of Volume objects, each representing a volume defined in the GeoJSON file.
     """
     from bluebird_dt.core import Pos2D, Volume
+
     print(geojson_path)
     with open(geojson_path) as sector_geojson_file:
         sector_dict_full = json.load(sector_geojson_file)
@@ -138,8 +139,8 @@ def load_volumes(geojson_path: str) -> list[Volume]:
         print(props)
 
         # extract the flight levels. note #SFC = SurFaCe (height = 0), otherwise it is of form e.g. FL250
-        min_fl = 0 if props["base"] == "SFC" else int(float(props["base"][2:]))
-        max_fl = int(float(props["top"][2:]))
+        min_fl = 0  # if props["base"] == "SFC" else int(float(props["base"][2:]))
+        max_fl = 660  # int(float(props["top"][2:]))
 
         # extract the area coordinates; stored in the first element of the coordinates list
         area_coordinates = [Pos2D(coordinate[1], coordinate[0]) for coordinate in coords[0]]
