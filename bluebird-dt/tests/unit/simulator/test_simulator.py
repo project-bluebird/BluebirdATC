@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from bluebird_dt.core import Coordination
+from bluebird_dt.core import Action, Coordination
 from bluebird_dt.logger import logger
 from bluebird_dt.manager.environment_manager import EnvironmentConfig, PredictorConfig
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
@@ -206,14 +206,77 @@ def test_evolve_with_invalid_delta():
         sim.evolve(0)
 
 
-def test_action_invalid_payload_returns_false():
+def test_action_adds_to_queue():
     """
-    Create a sim and check that adding an invalid action to the queue is rejected.
+    Create a sim and check that an Action reaches the queue.
 
     """
     sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
-    assert sim.action([{"callsign": "AIR01"}]) is False
+    action = Action(next(iter(sim.manager.environment.aircraft)), "change_flight_level_to", 300, "test")
+    sim.action([action])
+    assert sim.manager._actions_to_issue == [action]
 
+
+def test_action_invalid_payload_raises():
+    """
+    Create a sim and check that an invalid action raises instead of being dropped with a warning.
+
+    """
+    sim = Simulator.from_category(category="Springfield", scenario_name="example-scenario", autosave_interval=None)
+    with pytest.raises(AttributeError):
+        sim.action([{"callsign": "AIR01"}])
+
+def test_action_expands_bandbox_sector():
+    """
+    Create a sim and check that a bandbox sector is expanded before the Action
+    reaches the queue.
+    """
+    sim = Simulator.from_category(
+        category="Springfield",
+        scenario_name="example-scenario",
+        autosave_interval=None,
+    )
+    callsign = next(iter(sim.manager.environment.aircraft))
+    sim.manager.environment.airspace._airspace_configuration["box"] = ["a", "b"]
+
+    action = Action(
+        callsign,
+        "change_flight_level_to",
+        300,
+        "test",
+        sector="box",
+    )
+
+    sim.action([action])
+
+    assert sim.manager._actions_to_issue == [action]
+    assert sim.manager._actions_to_issue[0].sector == ["a", "b"]
+
+
+def test_action_preserves_individual_sectors():
+    """
+    Create a sim and check that individual sectors are preserved when the Action
+    reaches the queue.
+    """
+    sim = Simulator.from_category(
+        category="Springfield",
+        scenario_name="example-scenario",
+        autosave_interval=None,
+    )
+    callsign = next(iter(sim.manager.environment.aircraft))
+
+    action = Action(
+        callsign,
+        "change_flight_level_to",
+        300,
+        "test",
+        sector=["a", "b"],
+    )
+
+    sim.action([action])
+
+    assert sim.manager._actions_to_issue == [action]
+    assert sim.manager._actions_to_issue[0].sector == ["a", "b"]
 
 @pytest.mark.asyncio
 async def test_close_releases_runtime_log_file():

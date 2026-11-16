@@ -461,8 +461,6 @@ Creating Infinite Scenario
         # the environment manager removes aircraft outside its penumbra, so widen it to fit every start point. Those
         # between the furthest ones can bulge out by a fraction of a metre, which the margin covers.
         em.expand_penumbra_to_include(self.furthest_start_points(), margin_nmi=0.1)
-        # set the visibility flag of fixes to True only if they are in the penumbra
-        em.set_local_fixes_visibility()
 
         em.initialise_env_with_event_handler()
 
