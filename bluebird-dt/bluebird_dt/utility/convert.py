@@ -41,12 +41,12 @@ FL_TO_FT = 100.0
 FT_TO_FL = 1.0 / FL_TO_FT
 # Multiply to convert flight levels [FL] to metres [m]
 FL_TO_M = FL_TO_FT * FT_TO_M
-# Multiply to convert metres [m] to nautical miles [nmi]
+# Multiply to convert metres [m] to flight levels [FL]
 M_TO_FL = 1.0 / FL_TO_M
 
 # Multiply to convert flight levels [FL] to nautical miles [nmi]
 FL_TO_NMI = FL_TO_M * M_TO_NMI
-# Multiply to convert nautical miles [nmi] to flight levels [nmi]
+# Multiply to convert nautical miles [nmi] to flight levels [FL]
 NMI_TO_FL = 1.0 / FL_TO_NMI
 
 # Speeds
@@ -214,7 +214,7 @@ def density_from_fl(flight_level: float, delta_T: float, fl_pressure_pa: float |
     ----------
     flight_level : float
         A flight level. The value is not used to calculate pressure from flight
-        level if `fl_pressure` is not None.
+        level if `fl_pressure_pa` is not None.
     delta_T : float
         The BADA atmosphere temperature differential at a pressure
         altitude of zero (in K)
@@ -225,8 +225,7 @@ def density_from_fl(flight_level: float, delta_T: float, fl_pressure_pa: float |
     Returns
     -------
     float
-        The bada atmospheric density (kg/m^3) at the corresponding flight level
-        height.
+        The bada atmospheric density (kg/m^3) at the corresponding flight level.
     """
     if fl_pressure_pa is None:
         fl_pressure_pa = pressure_from_fl(flight_level)
