@@ -146,7 +146,14 @@ class Area(Comparison):
         bool
         """
 
-        return self.boundary.buffer(epsilon).intersects(Point(position.lon, position.lat))
+        # buffering the boundary is the costly part, and gives the same polygon
+        # every time: keep it, and rebuild only if the boundary or epsilon change
+        # (e.g. `Airspace` reassigns `area.boundary` when bandboxing sectors)
+        cached = self.__dict__.get("_buffered_boundary")
+        if cached is None or cached[0] is not self.boundary or cached[1] != epsilon:
+            cached = (self.boundary, epsilon, self.boundary.buffer(epsilon))
+            self._buffered_boundary = cached
+        return cached[2].intersects(Point(position.lon, position.lat))
 
     def on_boundary(self, position: Pos2D | Pos3D | Pos4D, epsilon: float = 0.08) -> bool:
         """
