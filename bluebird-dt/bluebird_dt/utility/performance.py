@@ -1,7 +1,6 @@
+import bisect
 import functools
 import json
-
-import numpy as np
 
 from bluebird_dt.core.aircraft import FlightState
 from bluebird_dt.logger import logger
@@ -164,7 +163,7 @@ def cas_and_mach_from_table(
 
     # 3. within the min/max fl bounds we have data for
     else:
-        fl_index = np.where(np.array(flight_levels) <= aircraft_fl)[0][-1]
+        fl_index = bisect.bisect_right(flight_levels, aircraft_fl) - 1  # flight levels are ascending
         interp_weight = (aircraft_fl - flight_levels[fl_index]) / (
             flight_levels[fl_index + 1] - flight_levels[fl_index]
         )
@@ -336,7 +335,7 @@ def rocd_from_table(
 
     # 3. within the min/max fl bounds we have data for
     else:
-        fl_index = np.where(np.array(flight_levels) <= aircraft_fl)[0][-1]
+        fl_index = bisect.bisect_right(flight_levels, aircraft_fl) - 1  # flight levels are ascending
         interp_weight = (aircraft_fl - flight_levels[fl_index]) / (
             flight_levels[fl_index + 1] - flight_levels[fl_index]
         )

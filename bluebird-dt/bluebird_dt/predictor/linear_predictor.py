@@ -35,6 +35,12 @@ from bluebird_dt.utility.performance import (
 )
 
 
+@functools.lru_cache(maxsize=1024)
+def _mach_cas_transition_altitude(mach: float, cas_mps: float, delta_T: float) -> float:
+    """`mach_cas_trans_altitude`, cached: its inputs take very few distinct values."""
+    return mach_cas_trans_altitude(mach, cas_mps, delta_T=delta_T)
+
+
 class LinearPredictor(Predictor):
     """
     Evolves Aircraft with constant speed and vertical speed along their heading. A turn model can be turned on or off,
@@ -367,7 +373,6 @@ class LinearPredictor(Predictor):
             Boolean indicating whether Aircraft is flying below transition (True) or above transition (False)
         """
         ac_lookup_key = self._get_aircraft_lookup_key(aircraft.aircraft_type)
-        performance_table = self._get_performance_profile(ac_lookup_key)
         speed_uncertainty = self._get_performance_uncertainty(ac_lookup_key)
 
         # Use the speed schedule for the aircraft's current flight phase, so the transition altitude is consistent
@@ -376,27 +381,31 @@ class LinearPredictor(Predictor):
         ranks = aircraft.percentile_rank_dict
 
         if aircraft.selected_instructions.cas is None:
-            cas_values = [value for value in performance_table[cas_key] if value is not None]
-            if not cas_values:
+            cas_trans = self._max_schedule_speed(ac_lookup_key, cas_key)
+            if cas_trans is None:
                 return False  # no CAS schedule — aircraft always uses Mach
-            cas_trans = max(cas_values)
             cas_trans += lateral_speed_offset(speed_uncertainty, cas_key, ranks.get(cas_key))
         else:
             cas_trans = aircraft.selected_instructions.cas
 
         if aircraft.selected_instructions.mach is None:
-            mach_values = [value for value in (performance_table.get(mach_key) or []) if value is not None]
-            if not mach_values:
+            mach_trans = self._max_schedule_speed(ac_lookup_key, mach_key)
+            if mach_trans is None:
                 return True  # no Mach schedule — aircraft always uses CAS
-            mach_trans = max(mach_values)
             mach_trans += lateral_speed_offset(speed_uncertainty, mach_key, ranks.get(mach_key))
         else:
             mach_trans = aircraft.selected_instructions.mach
 
-        mach_cas_transition_altitude = mach_cas_trans_altitude(mach_trans, cas_trans * KT_TO_MPS, delta_T=self.delta_T)
+        mach_cas_transition_altitude = _mach_cas_transition_altitude(mach_trans, cas_trans * KT_TO_MPS, self.delta_T)
         current_altitude_Hp = aircraft.fl * FL_TO_M
         transition_delta = current_altitude_Hp - mach_cas_transition_altitude
         return transition_delta < 0
+
+    @functools.lru_cache
+    def _max_schedule_speed(self, ac_lookup_key: str | None, speed_key: str) -> float | None:
+        """Largest non-None value of a speed schedule (e.g. "cas_cr"), or None if it has none."""
+        values = [value for value in (self._get_performance_profile(ac_lookup_key).get(speed_key) or []) if value is not None]
+        return max(values) if values else None
 
     def speed_from_tables(self, aircraft: Aircraft) -> tuple[float, float | None]:
         """
