@@ -4,11 +4,12 @@ import operator
 import typing
 from dataclasses import dataclass, fields
 from datetime import UTC, datetime, timedelta
-from typing import ClassVar, Self, TypeVar
+from typing import ClassVar, Self
 
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel
+from typing_extensions import TypeVar
 
 from bluebird_dt.core import (
     Action,
