@@ -533,6 +533,32 @@ def test_fl_interpolation_mode():
     assert wind_vector.v_comp == pytest.approx(expected_v, abs=1e-6)
 
 
+@pytest.mark.parametrize(
+    ("direction_at_200", "direction_at_100", "expected_dir"), [(10.0, 350.0, 0.0), (350.0, 100.0, 45.0)]
+)
+def test_fl_interpolation_takes_the_shorter_way_round(
+    direction_at_200: float, direction_at_100: float, expected_dir: float
+) -> None:
+    """
+    Halfway between two levels, the direction is halfway along the shorter way round, including through north.
+    """
+    wind_field = WindField.artificial(
+        wind_speed=[10.0, 10.0],
+        wind_direction=[direction_at_200, direction_at_100],
+        pressure_array=[200.0, 100.0],
+        min_lat=0.0,
+        max_lat=1.0,
+        min_lon=0.0,
+        max_lon=1.0,
+        no_grid_points=2,
+        interpolation_method="fl_interpolation",
+    )
+    wind_vector = wind_field.get_wind_vector_using_plevels(pressure_level=150.0, latitude=0.5, longitude=0.5)
+
+    assert wind_vector.u_comp == pytest.approx(10.0 * math.sin(math.radians(expected_dir + 180.0)), abs=1e-6)
+    assert wind_vector.v_comp == pytest.approx(10.0 * math.cos(math.radians(expected_dir + 180.0)), abs=1e-6)
+
+
 def test_fl_interpolation_requires_wind_speed_and_direction() -> None:
     """
     A WindField with interpolation_method='fl_interpolation' must carry both
