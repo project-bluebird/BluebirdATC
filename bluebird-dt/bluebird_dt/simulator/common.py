@@ -3,6 +3,7 @@ import os
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.logger import logger
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager
+from bluebird_dt.simulator.presets import FLIGHT_SCHOOL_SETTINGS
 from bluebird_dt.utility.paths import LOG_DIR
 
 
@@ -30,7 +31,7 @@ def list_sim_scenarios(category: str) -> list[str]:
         return AirspaceLoader.list_airspaces()
 
     if category == "Flight School":
-        return ["Xplus-Sector"]
+        return [FLIGHT_SCHOOL_SETTINGS["scenario_name"]]
 
     if category == "Artificial":
         logger.warning(

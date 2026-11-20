@@ -14,6 +14,7 @@ from bluebird_dt.logger import logger
 from bluebird_dt.manager.environment_manager import EnvironmentConfig, PredictorConfig
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
 from bluebird_dt.simulator import Simulator
+from bluebird_dt.simulator.presets import FLIGHT_SCHOOL_SETTINGS
 from bluebird_dt.simulator.simconfig import SaveConfig, SimConfig, SimulatorConfig
 from bluebird_dt.utility.paths import LOG_DIR
 
@@ -195,6 +196,18 @@ def test_from_category_with_unknown_category():
     """
     with pytest.raises(ValueError):
         Simulator.from_category(category="Unknown", scenario_name="nope")
+
+
+def test_flight_school_uses_preset():
+    """
+    The Flight School category should set up its scenario from FLIGHT_SCHOOL_SETTINGS.
+    """
+    sim = Simulator.from_category(category="Flight School", scenario_name="Xplus-Sector", autosave_interval=None)
+
+    assert sim.scenario_name == FLIGHT_SCHOOL_SETTINGS["scenario_name"]
+    for key, value in FLIGHT_SCHOOL_SETTINGS.items():
+        if key != "scenario_name":
+            assert getattr(sim.scenario_manager, key) == value, key
 
 
 def test_evolve_with_invalid_delta():
