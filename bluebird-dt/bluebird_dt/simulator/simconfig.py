@@ -8,6 +8,20 @@ from bluebird_dt.manager.environment_manager import EnvironmentConfig
 
 class SimulatorConfig(BaseModel):
     projection_centre: tuple[float, float] | None
+    use_wind: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the simulator was asked to use the scenario's wind, if it has one. "
+            "None for a log saved before this field was recorded."
+        ),
+    )
+    use_forecast: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the simulator was asked to use the scenario's forecasted wind, if it has one. "
+            "None for a log saved before this field was recorded."
+        ),
+    )
 
 
 class SaveConfig(BaseModel):
