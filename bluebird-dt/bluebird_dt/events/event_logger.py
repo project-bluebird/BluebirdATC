@@ -24,7 +24,7 @@ from bluebird_dt.utility.logging_utils import (
 )
 
 if typing.TYPE_CHECKING:
-    from bluebird_dt.simulator.simconfig import SimConfig
+    from bluebird_dt.utility.config_models import SimConfig
 
 DEFAULT_TRIM_AND_CUT_TIMEDELTA = pd.Timedelta(hours=4)
 
@@ -196,7 +196,7 @@ class EventLogger:
         self.forecast_log = None
         self.individual_sectors_log = None
         self._previous_ac_internals = []
-        self.aircraft_internals_log = []
+        self.ac_internals_log = []
 
         if log_name is not None:
             self.log_name = log_name
@@ -247,12 +247,10 @@ class EventLogger:
         environment: Environment
             The environment to be logged
         """
-        # log the wind field and for now assume they don't change
-        if self.wind_field_log is None:
-            if environment.wind_field is None:
-                self.wind_field_log = json.dumps({})
-            else:
-                self.wind_field_log = environment.wind_field.to_json()
+        if environment.wind_field is None:
+            self.wind_field_log = json.dumps({})
+        else:
+            self.wind_field_log = environment.wind_field.to_json()
 
     def _log_forecast(self, environment: Environment):
         """
@@ -265,12 +263,10 @@ class EventLogger:
         environment: Environment
             The environment to be logged
         """
-        # log the forecasted wind field and for now assume they don't change
-        if self.forecast_log is None:
-            if environment.forecast_wind_field is None:
-                self.forecast_log = json.dumps({})
-            else:
-                self.forecast_log = environment.forecast_wind_field.to_json()
+        if environment.forecast_wind_field is None:
+            self.forecast_log = json.dumps({})
+        else:
+            self.forecast_log = environment.forecast_wind_field.to_json()
 
     def log_environment(self, environment: Environment, previous_only: bool = False):
         """
@@ -398,7 +394,7 @@ class EventLogger:
         if not previous_only:
             # deepcopy as mutable objects are stored
             ac_internals_changes = copy.deepcopy(ac_internals_changes)
-            self.aircraft_internals_log.extend(ac_internals_changes)
+            self.ac_internals_log.extend(ac_internals_changes)
 
     def _log_radar(self, environment: Environment):
         """
@@ -473,7 +469,7 @@ class EventLogger:
                 and not isinstance(new_flight_log[col], list)  # pd.isna fails on lists as returns multiple bools
                 and pd.isna(new_flight_log[col])
             )
-            for col in EventDtypes.flight_dtypes
+            for col in EventDtypes.flight_plan_dtypes
             if col not in ["datetime", "start_datetime", "end_datetime", "callsign"]
         )
 
@@ -681,14 +677,14 @@ class EventLogger:
         """
         # transform flight log to dataframe
         if self.flight_log:
-            flight_df = pd.DataFrame.from_records([v for vals in self.flight_log.values() for v in vals]).astype(
-                EventDtypes.flight_dtypes
+            flight_plan_df = pd.DataFrame.from_records([v for vals in self.flight_log.values() for v in vals]).astype(
+                EventDtypes.flight_plan_dtypes
             )
         else:
             # else create empty dataframe with correct columns
-            flight_df = pd.DataFrame(columns=EventDtypes.flight_dtypes)
+            flight_plan_df = pd.DataFrame(columns=EventDtypes.flight_plan_dtypes)
 
-        return flight_df
+        return flight_plan_df
 
     def clearance_log_as_df(self) -> pd.DataFrame:
         """
@@ -773,13 +769,13 @@ class EventLogger:
             The aircraft_internals log as an EventHandler DataFrame
         """
         # transform aircraft_internals log to dataframe
-        if self.aircraft_internals_log:
+        if self.ac_internals_log:
             # deep copy the records, so that the DataFrame, and any aircraft restored from it, don't share dicts with
             # the log
-            ac_internals_df = pd.DataFrame.from_records(copy.deepcopy(self.aircraft_internals_log))
+            ac_internals_df = pd.DataFrame.from_records(copy.deepcopy(self.ac_internals_log))
         else:
             # else create empty dataframe with correct columns
-            ac_internals_df = pd.DataFrame(columns=EventDtypes.aircraft_internals_dtypes)
+            ac_internals_df = pd.DataFrame(columns=EventDtypes.ac_internals_dtypes)
 
         return ac_internals_df
 
@@ -818,13 +814,13 @@ class EventLogger:
         save_csv: bool
             A flag to determine if csv should be saved
         """
-        flight_df = self.flight_log_as_df()
+        flight_plan_df = self.flight_log_as_df()
 
         # save flight plans log
         if save_csv:
-            save_df_to_csv_tar(flight_df, tar, "flight_plan")
+            save_df_to_csv_tar(flight_plan_df, tar, "flight_plan")
 
-        save_df_to_parquet_tar(flight_df, tar, "flight_plan")
+        save_df_to_parquet_tar(flight_plan_df, tar, "flight_plan")
 
     def _save_clearances(self, tar: tarfile.TarFile, save_csv: bool | None = True):
         """
@@ -1136,13 +1132,13 @@ class EventLogger:
         last_aircraft_internals_log_per_callsign: dict[str, typing.Any] = {}
         future_aircraft_internal_logs: list[typing.Any] = []
 
-        for log in self.aircraft_internals_log:
+        for log in self.ac_internals_log:
             if not comp(log["datetime"], comparison_datetime):
                 future_aircraft_internal_logs.append(log)
             elif not comp(log["datetime"], comparison_datetime - expire):
                 last_aircraft_internals_log_per_callsign[log["callsign"]] = log
 
-        self.aircraft_internals_log = (
+        self.ac_internals_log = (
             sorted(last_aircraft_internals_log_per_callsign.values(), key=lambda x: x["datetime"])
             + future_aircraft_internal_logs
         )
@@ -1211,9 +1207,7 @@ class EventLogger:
         self.sectors_log = [log for log in self.sectors_log if not comp(log["datetime"], comparison_datetime)]
         self.incomm_log = [log for log in self.incomm_log if not comp(log["datetime"], comparison_datetime)]
         self.coordination_log = [log for log in self.coordination_log if not comp(log["datetime"], comparison_datetime)]
-        self.aircraft_internals_log = [
-            log for log in self.aircraft_internals_log if not comp(log["datetime"], comparison_datetime)
-        ]
+        self.ac_internals_log = [log for log in self.ac_internals_log if not comp(log["datetime"], comparison_datetime)]
 
         return self
 
@@ -1227,12 +1221,12 @@ class EventLogger:
             The logged events as an EventHandler
         """
         return EventHandler(
-            radar_dataframe=self.radar_log_as_df(),
-            flight_df=self.flight_log_as_df(),
+            radar_df=self.radar_log_as_df(),
+            flight_plan_df=self.flight_log_as_df(),
             clearances_df=self.clearance_log_as_df(),
             coordination_df=self.coordination_log_as_df(),
             sectors_df=self.sectors_log_as_df(),
             incomm_df=self.incomm_log_as_df(),
-            aircraft_internals_df=self.aircraft_internals_log_as_df(),
+            ac_internals_df=self.aircraft_internals_log_as_df(),
             ac_attribute_update_df=None,  # taken into account via the ac_internals. Exists for convenience.
         )

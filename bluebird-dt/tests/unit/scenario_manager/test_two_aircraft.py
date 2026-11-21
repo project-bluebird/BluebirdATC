@@ -56,7 +56,7 @@ def test_all_airspaces(airspace_routes, request):
     sector_name = list(airspace.sectors.keys())[0]
     em = TwoAircraft(total_time=100, scenario_type="random", airspace=airspace, routes=routes).create_env_manager()
 
-    flight_plans = em.event_handler.flight_df
+    flight_plans = em.event_handler.flight_plan_df
 
     assert len(em.event_handler.radar_df) == 2
     ac1_flight_plan = flight_plans.iloc[0]
@@ -107,7 +107,7 @@ def test_repeat(generate_i):
         env_manager = gen.create_env_manager()
 
         radar_events_df = env_manager.event_handler.radar_df
-        ac_internal_events_df = env_manager.event_handler.aircraft_internals_df
+        ac_internal_events_df = env_manager.event_handler.ac_internals_df
         coord_df = env_manager.event_handler.coordination_df
 
         # test number of events matches number of aircraft

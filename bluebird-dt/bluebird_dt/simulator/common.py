@@ -3,7 +3,7 @@ import os
 from bluebird_dt.airspace_generator.airspace_loader import AirspaceLoader
 from bluebird_dt.logger import logger
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager
-from bluebird_dt.utility.paths import LOG_DIR
+from bluebird_dt.utility.paths import get_log_dir
 
 
 def list_sim_scenario_categories() -> list[str]:
@@ -11,7 +11,7 @@ def list_sim_scenario_categories() -> list[str]:
     List the available scenario categories.
     """
 
-    return ["Two Aircraft", "Regular", "Custom", "Infinite", "Springfield", "Flight School"]
+    return ["Two Aircraft", "Regular", "Custom", "Infinite", "Springfield", "Flight School", "Replay"]
 
 
 def list_sim_scenarios(category: str) -> list[str]:
@@ -20,7 +20,8 @@ def list_sim_scenarios(category: str) -> list[str]:
     """
 
     # make directory for replay files if it doesn't exist already
-    os.makedirs(LOG_DIR, exist_ok=True)
+    log_dir = get_log_dir("bluebird_dt")
+    os.makedirs(log_dir, exist_ok=True)
 
     if category == "Springfield":
         return SpringfieldScenarioManager.list_scenarios()
@@ -32,6 +33,14 @@ def list_sim_scenarios(category: str) -> list[str]:
     if category == "Flight School":
         return ["Xplus-Sector"]
 
+    if category == "Replay":
+        return sorted(
+            [
+                file.removesuffix(".tar.gz")
+                for file in os.listdir(log_dir)
+                if file.endswith(".tar.gz") and not file.startswith(".")
+            ]
+        )
     if category == "Artificial":
         logger.warning(
             """

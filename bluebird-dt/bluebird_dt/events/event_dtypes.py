@@ -22,7 +22,7 @@ class EventDtypes:
         "selected_fl": "float64",  # optional
     }
 
-    flight_dtypes: ClassVar[dict[str, str]] = {
+    flight_plan_dtypes: ClassVar[dict[str, str]] = {
         "datetime": "datetime64[us]",
         "callsign": "category",
         "route_filed": "object",  # numpy array
@@ -79,7 +79,7 @@ class EventDtypes:
         "datetime": "datetime64[us]",
     }
 
-    aircraft_internals_dtypes: ClassVar[dict[str, str]] = {
+    ac_internals_dtypes: ClassVar[dict[str, str]] = {
         "callsign": "string",
         "datetime": "datetime64[us]",
         "rate_of_turn": "float64",

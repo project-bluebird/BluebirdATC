@@ -454,6 +454,34 @@ class WindField(BaseModel):
         """
         return cls.model_validate_json(s)
 
+    @classmethod
+    def from_dict(
+        cls: type[WindField],
+        data: dict,
+    ) -> WindField | None:
+        """
+        Construct a new wind field instance from a dictionary matching the WindField model schema.
+
+        Parameters
+        ----------
+        data : dict
+            Dictionary of WindField data matching the WindField model schema.
+
+        Returns
+        -------
+        WindField | None :
+            A wind object, or ``None`` if ``data`` is empty / ``None``.
+        """
+        if not data:
+            logger.warning(
+                "Trying to instantiate wind field from empty data. Returning None "
+                "(this will be the case for a replay with no wind field data).",
+                stacklevel=2,
+            )
+            return None
+
+        return cls.model_validate(data)
+
     def get_wind_vector_using_plevels(self, pressure_level: float, latitude: float, longitude: float) -> WindVector:
         """
         Interpolate a wind field at a given latitude, longitude and

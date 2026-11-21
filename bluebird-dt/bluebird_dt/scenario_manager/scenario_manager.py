@@ -3,10 +3,23 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
-from bluebird_dt.events.event_handler import EventHandler
+from bluebird_dt.core import WindField
+from bluebird_dt.core.aircraft import Aircraft
+from bluebird_dt.events.event_handler import EventHandler, EventHandlerArgs
+from bluebird_dt.events.event_logger import EventLogger
 from bluebird_dt.manager import EnvironmentManager
+from bluebird_dt.simulator.simulator import Simulator
 
+# Define generic types here - will be used for scenario managers
+# that may have other scenario managers inheriting from them.
 TConfig = TypeVar("TConfig", bound=BaseModel)
+TAircraft = TypeVar("TAircraft", bound=Aircraft)
+TWindField = TypeVar("TWindField", bound=WindField)
+TForecastWindField = TypeVar("TForecastWindField", bound=WindField)
+TEventLogger = TypeVar("TEventLogger", bound=EventLogger)
+TEventHandler = TypeVar("TEventHandler", bound=EventHandler[Aircraft])
+TEventHandlerArgs = TypeVar("TEventHandlerArgs", bound=EventHandlerArgs)
+TSimulator = TypeVar("TSimulator", bound=Simulator)
 
 
 class ScenarioManager(ABC, Generic[TConfig]):

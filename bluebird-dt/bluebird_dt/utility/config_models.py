@@ -10,6 +10,7 @@ class SimulatorConfig(BaseModel):
     projection_centre: tuple[float, float] | None
 
 
+# Config objects used by the Simulator when saving to logfiles.
 class SaveConfig(BaseModel):
     save_csv: bool = Field(description=("The log will be saved with csv files in addition to parquet if True."))
     autosave_interval: timedelta | None = Field(

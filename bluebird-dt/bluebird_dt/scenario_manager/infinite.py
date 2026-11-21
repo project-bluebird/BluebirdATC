@@ -100,7 +100,7 @@ class Infinite(
         airspace: Airspace,
         routes: list[Route],
         sector_name: str | None = None,
-        initial_spawn_rate: float = 0.03,
+        initial_spawn_rate: float = 0.01,
         max_spawn_rate: float = 0.1,
         spawn_rate_increment: float = 0.0,
         spawn_rate_increase_interval: float = 300.0,
