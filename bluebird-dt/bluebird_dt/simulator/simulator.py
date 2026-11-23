@@ -17,15 +17,16 @@ from bluebird_dt.logger import ContextFilter, CustomFormatter, logger
 from bluebird_dt.manager import EnvironmentManager
 from bluebird_dt.predictor import Predictor
 from bluebird_dt.simulator.saver import SaveData, Saver
-from bluebird_dt.simulator.simconfig import SaveConfig, SimConfig, SimulatorConfig
+from bluebird_dt.utility.config_models import SaveConfig, SimConfig, SimulatorConfig
 from bluebird_dt.utility.convert import timestamp_to_string
 from bluebird_dt.utility.models import BandboxSectorName, IndividualSectorName
-from bluebird_dt.utility.paths import LOG_DIR
+from bluebird_dt.utility.paths import get_log_dir
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.scenario_manager.custom import Custom, CustomScenarioManagerConfig
     from bluebird_dt.scenario_manager.infinite import Infinite, InfiniteScenarioManagerConfig
     from bluebird_dt.scenario_manager.regular import Regular, RegularScenarioManagerConfig
+    from bluebird_dt.scenario_manager.replayer_from_logs import ReplayerFromLogs, ReplayScenarioConfig
     from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
     from bluebird_dt.scenario_manager.two_aircraft import TwoAircraft, TwoAircraftScenarioManagerConfig
 
@@ -49,7 +50,7 @@ class Simulator:
 
     def __init__(
         self,
-        scenario_manager: SpringfieldScenarioManager | Infinite | TwoAircraft | Custom | Regular,
+        scenario_manager: SpringfieldScenarioManager | Infinite | TwoAircraft | Custom | Regular | ReplayerFromLogs,
         env_manager: EnvironmentManager,
         projection_centre: tuple[float, float] | None = None,
         category: str | None = None,
@@ -173,9 +174,9 @@ class Simulator:
         """
         if self.log_filename is None:
             raise Exception("Failed to setup logging as log_filename is empty")
-        os.makedirs(os.path.join(LOG_DIR, "runtime_logs"), exist_ok=True)
+        os.makedirs(os.path.join(get_log_dir("bluebird_dt"), "runtime_logs"), exist_ok=True)
         self.logging_file_handler = logging.FileHandler(
-            os.path.join(LOG_DIR, "runtime_logs", self.log_filename + ".log")
+            os.path.join(get_log_dir("bluebird_dt"), "runtime_logs", self.log_filename + ".log")
         )
         self.logging_file_handler.setFormatter(CustomFormatter())
         logger.addHandler(self.logging_file_handler)
@@ -233,6 +234,7 @@ class Simulator:
         from bluebird_dt.scenario_manager.custom import Custom
         from bluebird_dt.scenario_manager.infinite import Infinite
         from bluebird_dt.scenario_manager.regular import Regular
+        from bluebird_dt.scenario_manager.replayer_from_logs import ReplayerFromLogs
         from bluebird_dt.scenario_manager.springfield import (
             SpringfieldScenarioManager,
         )
@@ -335,6 +337,19 @@ class Simulator:
                     max_spawn_rate=0.1,
                     total_time_seconds=3600.0,
                 )
+            case "Replay":
+                return ReplayerFromLogs.setup(
+                    scenario_name=scenario_name,
+                    use_wind=use_wind,
+                    use_forecast=use_forecast,
+                    attach_context_to_logger=attach_context_to_logger,
+                    save_log_to_file=save_log_to_file,
+                    log_filename=log_filename,
+                    predictor=predictor,
+                    save_csv=save_csv,
+                    autosave_interval=autosave_interval,
+                    save_chunk_interval=save_chunk_interval,
+                )  # TODO: add use_wind as parameter
             case _:
                 raise ValueError(f"Unknown scenario category: {category}")
 
@@ -777,6 +792,7 @@ class Simulator:
         | SpringfieldScenarioManagerConfig
         | TwoAircraftScenarioManagerConfig
         | InfiniteScenarioManagerConfig
+        | ReplayScenarioConfig
     ]:
         """
         Obtain the configuration this instance of a simulator is running with.

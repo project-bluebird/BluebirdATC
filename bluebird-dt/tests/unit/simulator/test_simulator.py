@@ -14,7 +14,10 @@ from bluebird_dt.logger import logger
 from bluebird_dt.manager.environment_manager import EnvironmentConfig, PredictorConfig
 from bluebird_dt.scenario_manager.springfield import SpringfieldScenarioManager, SpringfieldScenarioManagerConfig
 from bluebird_dt.simulator import Simulator
-from bluebird_dt.simulator.simconfig import SaveConfig, SimConfig, SimulatorConfig
+from bluebird_dt.utility.config_models import SaveConfig, SimConfig, SimulatorConfig
+from bluebird_dt.simulator import Simulator
+from typing import Any
+
 from bluebird_dt.utility.paths import LOG_DIR
 
 

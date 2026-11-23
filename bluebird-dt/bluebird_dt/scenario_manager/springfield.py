@@ -109,12 +109,12 @@ class SpringfieldScenarioManager(
         self.typeof_event_handler = typeof_event_handler
         self.event_handler_ignore_flags = typeof_event_handler.IgnoreFlags(
             radar_if_simmed=True,
-            flight_if_simmed=False,
+            flight_plan_if_simmed=False,
             clearance_if_simmed=False,
             coordination_if_simmed=False,
             sectors_if_simmed=False,
             incomm_if_simmed=False,
-            aircraft_internals_if_simmed=True,
+            ac_internals_if_simmed=True,
             ac_attribute_if_simmed=False,
             airspace_config_updates=True,
         )

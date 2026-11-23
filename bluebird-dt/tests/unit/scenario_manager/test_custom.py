@@ -75,7 +75,7 @@ def test_all_airspaces(airspace_routes, lateral_offset, request):
         env_manager = Custom(num_aircraft, lateral_offset=lateral_offset, airspace=airspace, routes=routes).create_env_manager()
 
         radar_events_df = env_manager.event_handler.radar_df
-        ac_internal_events_df = env_manager.event_handler.aircraft_internals_df
+        ac_internal_events_df = env_manager.event_handler.ac_internals_df
         coord_df = env_manager.event_handler.coordination_df
 
         # test number of events matches number of aircraft
@@ -111,7 +111,7 @@ def test_repeat(generate_i, lateral_offset):
         env_manager = gen.create_env_manager()
 
         radar_events_df = env_manager.event_handler.radar_df
-        ac_internal_events_df = env_manager.event_handler.aircraft_internals_df
+        ac_internal_events_df = env_manager.event_handler.ac_internals_df
         coord_df = env_manager.event_handler.coordination_df
 
         # test number of events matches number of aircraft
@@ -249,10 +249,10 @@ def test_aircraft_entry_spawn_point(generate_i):
 
     entries = defaultdict(list)
 
-    flight_plans = em.event_handler.flight_df.groupby("callsign").last()
+    flight_plans = em.event_handler.flight_plan_df.groupby("callsign").last()
 
     # check there is a unique callsign per flight plan entry
-    assert len(flight_plans) == len(em.event_handler.flight_df)
+    assert len(flight_plans) == len(em.event_handler.flight_plan_df)
 
     for _, radar_row in em.event_handler.radar_df.iterrows():
         start_fix = flight_plans.loc[radar_row.callsign].route_filed[0]
@@ -365,7 +365,7 @@ def test_to_simulator(generate_i):
     assert simulator.category == "Custom"
 
     radar_events_df = simulator.manager.event_handler.radar_df
-    ac_internal_events_df = simulator.manager.event_handler.aircraft_internals_df
+    ac_internal_events_df = simulator.manager.event_handler.ac_internals_df
     coord_df = simulator.manager.event_handler.coordination_df
 
     # test number of events matches number of aircraft

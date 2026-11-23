@@ -6,7 +6,7 @@ from bluebird_dt.scenario_manager import Custom
 from bluebird_dt.simulator import Simulator
 from bluebird_dt.events.event_handler import (
     EventHandler, update_incomm, update_coordination, set_cleared_fl_to_selected_fl, update_from_clearances, 
-    update_airspace_configuration, update_aircraft_internals, update_from_radar, update_from_flight_plans, 
+    update_airspace_configuration, update_ac_internals, update_from_radar, update_from_flight_plans, 
     update_selected_fl_from_radar, update_aircraft_attribute
 )
 from bluebird_dt.events.event_logger import EventLogger
@@ -33,8 +33,8 @@ def test_init():
     event_handler = EventHandler()
     expected_radar_keys = [k for k in EventDtypes.radar_dtypes if k != "datetime"]
     assert list(event_handler.radar_df.columns) == expected_radar_keys
-    expected_flight_keys = [k for k in EventDtypes.flight_dtypes if k != "datetime"]
-    assert list(event_handler.flight_df.columns) == expected_flight_keys
+    expected_flight_keys = [k for k in EventDtypes.flight_plan_dtypes if k != "datetime"]
+    assert list(event_handler.flight_plan_df.columns) == expected_flight_keys
     expected_clearance_keys = [k for k in EventDtypes.clearance_dtypes if k != "datetime"]
     assert list(event_handler.clearances_df.columns) == expected_clearance_keys
     expected_coord_keys = [k for k in EventDtypes.coord_dtypes if k != "datetime"]
@@ -43,8 +43,8 @@ def test_init():
     assert list(event_handler.sectors_df.columns) == expected_sectors_keys
     expected_incomm_keys = [k for k in EventDtypes.incomm_dtypes if k != "datetime"]
     assert list(event_handler.incomm_df.columns) == expected_incomm_keys
-    expected_aircraft_internals_keys = [k for k in EventDtypes.aircraft_internals_dtypes if k != "datetime"]
-    assert list(event_handler.aircraft_internals_df.columns) == expected_aircraft_internals_keys
+    expected_aircraft_internals_keys = [k for k in EventDtypes.ac_internals_dtypes if k != "datetime"]
+    assert list(event_handler.ac_internals_df.columns) == expected_aircraft_internals_keys
     expected_ac_attribute_update_keys = [k for k in EventDtypes.ac_attribute_update_dtypes if k != "datetime"]
     assert list(event_handler.ac_attribute_update_df.columns) == expected_ac_attribute_update_keys
 
@@ -56,32 +56,32 @@ def test_reset_events():
     event_handler = manager.event_handler
 
     radar_df_before = build_default_test_df(EventDtypes.radar_dtypes, env)
-    flight_df_before = build_default_test_df(EventDtypes.flight_dtypes, env)
+    flight_df_before = build_default_test_df(EventDtypes.flight_plan_dtypes, env)
     clearances_df_before = build_default_test_df(EventDtypes.clearance_dtypes, env)
     coordination_df_before = build_default_test_df(EventDtypes.coord_dtypes, env)
     sectors_df_before = build_default_test_df(EventDtypes.sectors_dtypes, env)
     incomm_df_before = build_default_test_df(EventDtypes.incomm_dtypes, env)
-    aircraft_internals_df_before = build_default_test_df(EventDtypes.aircraft_internals_dtypes, env)
+    aircraft_internals_df_before = build_default_test_df(EventDtypes.ac_internals_dtypes, env)
     ac_attribute_update_df_before = build_default_test_df(EventDtypes.ac_attribute_update_dtypes, env)
 
     event_handler.radar_df = copy.deepcopy(radar_df_before)
-    event_handler.flight_df = copy.deepcopy(flight_df_before)
+    event_handler.flight_plan_df = copy.deepcopy(flight_df_before)
     event_handler.clearances_df = copy.deepcopy(clearances_df_before)
     event_handler.coordination_df = copy.deepcopy(coordination_df_before)
     event_handler.sectors_df = copy.deepcopy(sectors_df_before)
     event_handler.incomm_df = copy.deepcopy(incomm_df_before)
-    event_handler.aircraft_internals_df = copy.deepcopy(aircraft_internals_df_before)
+    event_handler.ac_internals_df = copy.deepcopy(aircraft_internals_df_before)
     event_handler.ac_attribute_update_df = copy.deepcopy(ac_attribute_update_df_before)
 
     event_handler.reset_events()
 
     assert event_handler.radar_df.empty
-    assert event_handler.flight_df.empty
+    assert event_handler.flight_plan_df.empty
     assert event_handler.clearances_df.empty
     assert event_handler.coordination_df.empty
     assert event_handler.sectors_df.empty
     assert event_handler.incomm_df.empty
-    assert event_handler.aircraft_internals_df.empty
+    assert event_handler.ac_internals_df.empty
     assert event_handler.ac_attribute_update_df.empty
 
 def test_add_optional_radar_columns_if_required():
@@ -142,24 +142,24 @@ def test_set_dataframe_indices_to_datetime():
     event_handler = sim.manager.event_handler
     event_handler.radar_df = pd.DataFrame(columns=EventDtypes.radar_dtypes)
     event_handler.clearances_df = pd.DataFrame(columns=EventDtypes.clearance_dtypes)
-    event_handler.flight_df = pd.DataFrame(columns=EventDtypes.flight_dtypes)
+    event_handler.flight_plan_df = pd.DataFrame(columns=EventDtypes.flight_plan_dtypes)
     event_handler.clearances_df = pd.DataFrame(columns=EventDtypes.clearance_dtypes)
     event_handler.coordination_df = pd.DataFrame(columns=EventDtypes.coord_dtypes)
     event_handler.sectors_df = pd.DataFrame(columns=EventDtypes.sectors_dtypes)
     event_handler.incomm_df = pd.DataFrame(columns=EventDtypes.incomm_dtypes)
-    event_handler.aircraft_internals_df = pd.DataFrame(columns=EventDtypes.aircraft_internals_dtypes)
+    event_handler.ac_internals_df = pd.DataFrame(columns=EventDtypes.ac_internals_dtypes)
     event_handler.ac_attribute_update_df = pd.DataFrame(columns=EventDtypes.ac_attribute_update_dtypes)
 
     event_handler.set_dataframe_indices_to_datetime()
 
     assert event_handler.radar_df.index.name == 'datetime'
     assert event_handler.clearances_df.index.name == 'datetime'
-    assert event_handler.flight_df.index.name == 'datetime'
+    assert event_handler.flight_plan_df.index.name == 'datetime'
     assert event_handler.clearances_df.index.name == 'datetime'
     assert event_handler.coordination_df.index.name == 'datetime'
     assert event_handler.sectors_df.index.name == 'datetime'
     assert event_handler.incomm_df.index.name == 'datetime'
-    assert event_handler.aircraft_internals_df.index.name == 'datetime'
+    assert event_handler.ac_internals_df.index.name == 'datetime'
     assert event_handler.ac_attribute_update_df.index.name == 'datetime'
 
 def test_ensure_specific_format_for_specific_columns():
@@ -203,7 +203,7 @@ def test_fillna_for_specific_columns():
     test_coord_df = pd.DataFrame([{ "callsign": "test1", "level_by_details": None, "secondary_coord_conditions": None }])
     event_handler.coordination_df = test_coord_df
     test_flight_df = pd.DataFrame([{ "callsign": "test1", "sector_crossing_seq": None }])
-    event_handler.flight_df = test_flight_df
+    event_handler.flight_plan_df = test_flight_df
 
     event_handler.fillna_for_specific_columns()
 
@@ -213,7 +213,7 @@ def test_fillna_for_specific_columns():
     assert coord_df_after["level_by_details"] == ""
     assert coord_df_after["secondary_coord_conditions"] == ""
 
-    flight_df_after = event_handler.flight_df
+    flight_df_after = event_handler.flight_plan_df
     flight_df_after = flight_df_after[flight_df_after["callsign"] == "test1"].iloc[0]
     assert flight_df_after["sector_crossing_seq"] == ""
 
@@ -228,12 +228,12 @@ def test_ensure_dataframe_data_types():
 
     # Reset the indexes back to datetime field for all event handler dataframes
     event_handler.radar_df = event_handler.radar_df.reset_index().rename(columns={"index": "datetime"})
-    event_handler.flight_df = event_handler.flight_df.reset_index().rename(columns={"index": "datetime"})
+    event_handler.flight_plan_df = event_handler.flight_plan_df.reset_index().rename(columns={"index": "datetime"})
     event_handler.clearances_df = event_handler.clearances_df.reset_index().rename(columns={"index": "datetime"})
     event_handler.coordination_df = event_handler.coordination_df.reset_index().rename(columns={"index": "datetime"})
     event_handler.sectors_df = event_handler.sectors_df.reset_index().rename(columns={"index": "datetime"})
     event_handler.incomm_df = event_handler.incomm_df.reset_index().rename(columns={"index": "datetime"})
-    event_handler.aircraft_internals_df = event_handler.aircraft_internals_df.reset_index().rename(columns={"index": "datetime"})
+    event_handler.ac_internals_df = event_handler.ac_internals_df.reset_index().rename(columns={"index": "datetime"})
     event_handler.ac_attribute_update_df = event_handler.ac_attribute_update_df.reset_index().rename(columns={"index": "datetime"})
 
     # Test with an incorrect but castable type
@@ -261,10 +261,10 @@ def test_ensure_dataframes_are_date_ordered():
 
     unordered_dates = ["2025-03-01", "2025-01-15", "2025-02-10", "2025-01-01" ]
     df = pd.DataFrame({"value": [1,2,3,4]}, index=pd.to_datetime(unordered_dates))
-    event_handler.flight_df = df
+    event_handler.flight_plan_df = df
     assert df.index.is_monotonic_increasing == False
     event_handler.ensure_dataframes_are_date_ordered()
-    assert event_handler.flight_df.index.is_monotonic_increasing == True
+    assert event_handler.flight_plan_df.index.is_monotonic_increasing == True
 
 def test_add_aircraft(generate_simple_environment: Environment):
     """
@@ -282,11 +282,11 @@ def test_add_aircraft(generate_simple_environment: Environment):
     radar_df_before = radar_df_before[radar_df_before["callsign"]==callsign]
     assert radar_df_before.empty is True
 
-    flight_df_before = event_handler.flight_df
+    flight_df_before = event_handler.flight_plan_df
     flight_df_before = flight_df_before[flight_df_before["callsign"]==callsign]
     assert flight_df_before.empty is True
 
-    before_ac_internals_df = event_handler.aircraft_internals_df
+    before_ac_internals_df = event_handler.ac_internals_df
     before_ac_internals_df = before_ac_internals_df[before_ac_internals_df["callsign"]==callsign]
     assert before_ac_internals_df.empty is True
 
@@ -302,12 +302,12 @@ def test_add_aircraft(generate_simple_environment: Environment):
     assert len(radar_df_after) > len(radar_df_before)
 
     # Test flight event created
-    flight_df_after = event_handler.flight_df
+    flight_df_after = event_handler.flight_plan_df
     flight_df_after = flight_df_after[flight_df_after["callsign"]==callsign]
     assert len(flight_df_after) > len(flight_df_before)
 
     # Test a/c internals updated
-    after_ac_internals_df = event_handler.aircraft_internals_df
+    after_ac_internals_df = event_handler.ac_internals_df
     assert len(after_ac_internals_df) > len(before_ac_internals_df)
     after_ac_internals_df = after_ac_internals_df[after_ac_internals_df["callsign"]==callsign]
     newly_added_row = after_ac_internals_df.iloc[-1]
@@ -367,10 +367,10 @@ def test_add_flight_plan_event(flight_plan: dict[str, Any]):
     """
     env, manager, _, callsign, _, _ = setup_test_sim()
     event_handler = manager.event_handler
-    flight_df_before = event_handler.flight_df
+    flight_df_before = event_handler.flight_plan_df
     flight_df_before = flight_df_before[flight_df_before["callsign"]==callsign]
     event_handler.add_flight_plan_event(env.datetime, callsign, flight_plan["route_filed"])
-    flight_df_after = event_handler.flight_df
+    flight_df_after = event_handler.flight_plan_df
     flight_df_after = flight_df_after[flight_df_after["callsign"]==callsign]
     assert len(flight_df_after) > len(flight_df_before)
 
@@ -546,7 +546,7 @@ def test_add_coordination():
     test_add_coordination_minimal_props()
     test_add_coordination_full_props()
 
-def test_add_aircraft_internals_event():
+def test_add_ac_internals_event():
     """
     Test creating an aircraft internals event.
     """
@@ -556,12 +556,12 @@ def test_add_aircraft_internals_event():
     # Set a date later than previous events for aircraft
     the_datetime = env.datetime + timedelta(seconds=1)
 
-    before_ac_internals_df = event_handler.aircraft_internals_df
+    before_ac_internals_df = event_handler.ac_internals_df
     before_ac_internals_df = before_ac_internals_df[before_ac_internals_df["callsign"]==callsign]
     rate_of_turn = 1.5
-    event_handler.add_aircraft_internals_event(the_datetime, callsign, rate_of_turn)
+    event_handler.add_ac_internals_event(the_datetime, callsign, rate_of_turn)
 
-    after_ac_internals_df = event_handler.aircraft_internals_df
+    after_ac_internals_df = event_handler.ac_internals_df
     assert len(after_ac_internals_df) > len(before_ac_internals_df)
     after_ac_internals_df = after_ac_internals_df[after_ac_internals_df["callsign"]==callsign]
     newly_added_row = after_ac_internals_df.iloc[-1]
@@ -621,7 +621,7 @@ def test_jump_to_time(flight_plan):
         event_handler = manager.event_handler
 
         event_handler.radar_df = build_jump_to_df(env, radar_props, timedelta_to_test, EventDtypes.radar_dtypes)
-        event_handler.flight_df = build_jump_to_df(env, flight_plan_props, timedelta_to_test, EventDtypes.flight_dtypes)
+        event_handler.flight_plan_df = build_jump_to_df(env, flight_plan_props, timedelta_to_test, EventDtypes.flight_plan_dtypes)
         event_handler.clearances_df = build_jump_to_df(env, clearance_props, timedelta_to_test, EventDtypes.clearance_dtypes)
 
         sectors_df = build_default_test_df(EventDtypes.sectors_dtypes, env)
@@ -633,7 +633,7 @@ def test_jump_to_time(flight_plan):
         event_handler.coordination_df = build_coordination_test_df(env, coord_props, crd_time_delta, EventDtypes.coord_dtypes)
         event_handler.incomm_df = build_jump_to_df(env, [("sector_name", sector_name_to_test)], timedelta_to_test, EventDtypes.incomm_dtypes)
         event_handler.ac_attribute_update_df = build_jump_to_df(env, attribute_props, timedelta_to_test, EventDtypes.ac_attribute_update_dtypes)
-        event_handler.aircraft_internals_df = build_jump_to_df(env, aircraft_internals_props, timedelta_to_test, EventDtypes.aircraft_internals_dtypes)
+        event_handler.ac_internals_df = build_jump_to_df(env, aircraft_internals_props, timedelta_to_test, EventDtypes.ac_internals_dtypes)
 
         # Now perform the jump and then verify that the env time has changed correctly
         env_jump_to_time = env.datetime - time_jump_back_delta
@@ -748,10 +748,10 @@ def test_forward(flight_plan):
         event_handler.ignore.coordination_if_simmed = False
         event_handler.ignore.incomm_if_simmed = False
         event_handler.ignore.ac_attribute_if_simmed = False
-        event_handler.ignore.aircraft_internals_if_simmed = not include_internals
+        event_handler.ignore.ac_internals_if_simmed = not include_internals
 
         event_handler.radar_df = build_test_df(env, radar_props, timedelta_to_test, EventDtypes.radar_dtypes)
-        event_handler.flight_df = build_test_df(env, flight_plan_props, timedelta_to_test, EventDtypes.flight_dtypes)
+        event_handler.flight_plan_df = build_test_df(env, flight_plan_props, timedelta_to_test, EventDtypes.flight_plan_dtypes)
         event_handler.clearances_df = build_test_df(env, clearance_props, timedelta_to_test, EventDtypes.clearance_dtypes)
 
         sectors_df = build_default_test_df(EventDtypes.sectors_dtypes, env)
@@ -769,7 +769,7 @@ def test_forward(flight_plan):
                 ("selected_fl", selected_fl_to_test),
                 ("cleared_fl", cleared_fl_to_test)
             ]
-            event_handler.aircraft_internals_df = build_test_df(env, internals_props, timedelta_to_test, EventDtypes.aircraft_internals_dtypes)
+            event_handler.ac_internals_df = build_test_df(env, internals_props, timedelta_to_test, EventDtypes.ac_internals_dtypes)
 
         env_before = copy.deepcopy(env)
         env_after = event_handler.forward(manager, step_time=step_time)
@@ -940,8 +940,8 @@ def test_trim():
             None,
             "",
         )
-        event_handler.add_aircraft_internals_event(datetime_a, callsign, 1.0)
-        event_handler.add_aircraft_internals_event(datetime_b, callsign, 2.0)
+        event_handler.add_ac_internals_event(datetime_a, callsign, 1.0)
+        event_handler.add_ac_internals_event(datetime_b, callsign, 2.0)
         event_handler.add_flight_plan_event(datetime_a, callsign, ["SMUDJ", "NATEB"])
         return event_handler
 
@@ -954,9 +954,9 @@ def test_trim():
         assert list(event_handler.sectors_df.index) == expected_index
         assert list(event_handler.incomm_df.index) == expected_index
         assert list(event_handler.coordination_df.index) == expected_index
-        assert list(event_handler.aircraft_internals_df.index) == expected_index
+        assert list(event_handler.ac_internals_df.index) == expected_index
         # trim currently does not remove flight plan events
-        assert list(event_handler.flight_df.index) == [datetime_a]
+        assert list(event_handler.flight_plan_df.index) == [datetime_a]
 
     with pytest.raises(ValueError):
         build_handler_with_events().trim("==", datetime_b)
@@ -987,9 +987,9 @@ def test_remove_simmed():
             None,
             "",
         )
-        event_handler.add_aircraft_internals_event(datetime_test, callsign, 1.0)
+        event_handler.add_ac_internals_event(datetime_test, callsign, 1.0)
 
-    event_logger.aircraft_internals_log = [
+    event_logger.ac_internals_log = [
         {"callsign": simmed_callsign, "simulated": True},
         {"callsign": non_simmed_callsign, "simulated": False},
     ]
@@ -1001,15 +1001,15 @@ def test_remove_simmed():
     assert simmed_callsign not in event_handler.clearances_df.callsign.values
     assert simmed_callsign not in event_handler.incomm_df.callsign.values
     assert simmed_callsign not in event_handler.coordination_df.callsign.values
-    assert simmed_callsign not in event_handler.aircraft_internals_df.callsign.values
+    assert simmed_callsign not in event_handler.ac_internals_df.callsign.values
 
     assert non_simmed_callsign in event_handler.radar_df.callsign.values
     assert non_simmed_callsign in event_handler.clearances_df.callsign.values
     assert non_simmed_callsign in event_handler.incomm_df.callsign.values
     assert non_simmed_callsign in event_handler.coordination_df.callsign.values
-    assert non_simmed_callsign in event_handler.aircraft_internals_df.callsign.values
+    assert non_simmed_callsign in event_handler.ac_internals_df.callsign.values
     # remove_simmed only filters callsign-indexed dataframes; these remain unchanged.
-    assert event_handler.flight_df.empty
+    assert event_handler.flight_plan_df.empty
     assert event_handler.sectors_df.empty
 
 class TestUpdateSelectedFlFromRadar:
@@ -1436,10 +1436,10 @@ class TestUpdateAircraftInternals:
 
     def test_null_input_df(self):
         env, _, _, _, episode_start, episode_end = setup_test_sim()
-        df = build_test_df_for_multiple_ac(EventDtypes.aircraft_internals_dtypes, env, self.props_to_set)
+        df = build_test_df_for_multiple_ac(EventDtypes.ac_internals_dtypes, env, self.props_to_set)
         empty_df = df.drop(df.index)
         ac_before = { callsign: copy.deepcopy(ac) for callsign, ac in env.aircraft.items() }
-        update_aircraft_internals(env, empty_df, episode_start, episode_end, self.ignore_simmed)
+        update_ac_internals(env, empty_df, episode_start, episode_end, self.ignore_simmed)
         assert all(is_deeply_equal(ac, ac_before[callsign]) for callsign, ac in env.aircraft.items())
 
     def test_outside_allowed_time_window(self ):
@@ -1451,8 +1451,8 @@ class TestUpdateAircraftInternals:
             ac_before = { callsign: copy.deepcopy(ac) for callsign, ac in env.aircraft.items() }
             start_time = episode_start - timedelta(seconds=1)
             df_datetime = start_time + timedelta(seconds=1) * i
-            df = build_test_df_for_multiple_ac(EventDtypes.aircraft_internals_dtypes, env, self.props_to_set, df_datetime)
-            env_after = update_aircraft_internals(env, df, episode_start, episode_end, self.ignore_simmed)
+            df = build_test_df_for_multiple_ac(EventDtypes.ac_internals_dtypes, env, self.props_to_set, df_datetime)
+            env_after = update_ac_internals(env, df, episode_start, episode_end, self.ignore_simmed)
             if i > LOWER_EPISODE_BOUNDARY and i <= UPPER_EPISODE_BOUNDARY:
                 assert all(
                     all(getattr(ac, prop) == value for prop, value in self.props_to_set if prop != "pilot_type")
@@ -1564,7 +1564,7 @@ class TestUpdateFromFlightPlans:
     def test_null_input_df(self, flight_plan: dict[str, Any]):
         env, manager, _, _, episode_start, episode_end = setup_test_sim()
         props_to_set = list(flight_plan.items())
-        df = build_test_df_for_multiple_ac(EventDtypes.flight_dtypes, env, props_to_set)
+        df = build_test_df_for_multiple_ac(EventDtypes.flight_plan_dtypes, env, props_to_set)
         empty_df = df.drop(df.index)
         ac_before = { callsign: copy.deepcopy(ac) for callsign, ac in env.aircraft.items() }
         update_from_flight_plans(env, empty_df, episode_start, episode_end, self.ignore_simmed)
@@ -1588,7 +1588,7 @@ class TestUpdateFromFlightPlans:
             env, _, _, _, episode_start, episode_end = setup_test_sim()
             df_datetime = time_samples[i]
             fp_before = { callsign: copy.deepcopy(ac.flight_plan) for callsign, ac in env.aircraft.items() }
-            df = build_test_df_for_multiple_ac(EventDtypes.flight_dtypes, env, props_to_set, df_datetime)
+            df = build_test_df_for_multiple_ac(EventDtypes.flight_plan_dtypes, env, props_to_set, df_datetime)
             update_from_flight_plans(env, df, episode_start, episode_end, self.ignore_simmed)
             props_to_test = [ "origin", "dest", "unexpanded_route", "milcivil", "requested_flight_level", "filed_true_airspeed", "intention_code", "assigned_squawk" ]
             if i >= LOWER_EPISODE_BOUNDARY and i <= UPPER_EPISODE_BOUNDARY:
@@ -1607,28 +1607,27 @@ def test_update_flight_plan(generate_i):
     em = Custom(1, airspace=airspace, routes=routes).create_env_manager()
 
     # duplicate the flight plan event, give the first an earlier end time and the second a different route
-    df = em.event_handler.flight_df
-    em.event_handler.flight_df = pd.concat([df, pd.DataFrame([df.iloc[0]])], ignore_index=False)
+    df = em.event_handler.flight_plan_df
+    em.event_handler.flight_plan_df = pd.concat([df, pd.DataFrame([df.iloc[0]])], ignore_index=False)
     first_plan_route = ["FIRE", "EARTH", "WATER"]
     second_plan_route = ["AIR", "SPIRIT"]
-    em.event_handler.flight_df["route_filed"] = [first_plan_route, second_plan_route]
+    em.event_handler.flight_plan_df["route_filed"] = [first_plan_route, second_plan_route]
 
     # set end datetime of first and second flight plan to be 1 minute and 1 hour after scenario start
     first_plan_end_time = em.event_handler.radar_df.index.min() + timedelta(minutes=1)
     second_plan_end_time = em.event_handler.radar_df.index.min() + timedelta(hours=1)
-    em.event_handler.flight_df["end_datetime"] = [first_plan_end_time, second_plan_end_time]
+    em.event_handler.flight_plan_df["end_datetime"] = [first_plan_end_time, second_plan_end_time]
 
     # initialise the environment
     em.initialise_env_with_event_handler()
 
     # ensure that the flight plans are being updated from the event handler
-    em.event_handler.ignore.flight_if_simmed = False
+    em.event_handler.ignore.flight_plan_if_simmed = False
 
     # loop for 2 mins and check flight plan changes
     end_time = 120
     while em.environment.time < end_time:
         em.evolve(6)
-
         aircraft = em.environment.aircraft["AIR0"]
 
         assert aircraft.flight_plan is not None
