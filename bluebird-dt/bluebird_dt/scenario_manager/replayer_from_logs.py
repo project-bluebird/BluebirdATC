@@ -74,23 +74,20 @@ class ReplayerFromLogs(
     typeof_simulator: type[TSimulator] = Simulator
     typeof_simconfig: type[TSimConfig] = BluebirdSimConfig
 
-    def __init__(self, replay_dir_name: str, replay_buffer: tarfile.TarFile):
+    def __init__(self, replay_buffer: tarfile.TarFile):
         """
         Create a ScenarioManager to load data from log files in memory
 
         Parameters
         ----------
-        replay_dir_name: str
-            Name of replay directory containing the log files to be used to create the simulation
-        replay_buffer: TarFile | None, default is None
-            A tarfile object passed by simulator class if the tar file is loaded in memory
+        replay_buffer: TarFile
+            A tarfile object passed by the simulator class if the tar file is loaded in memory
 
         Returns
         -------
         ReplayerFromLogs scenario manager
             ScenarioManager to create scenarios from logs
         """
-        self.replay_dir_name = replay_dir_name
         self.replay = replay_buffer
 
         file = replay_buffer.extractfile("config.json")
@@ -138,7 +135,7 @@ class ReplayerFromLogs(
         full_path = os.path.join(replay_dir_path, replay_dir_name + ".tar.gz")
         if not os.path.exists(full_path):
             raise ValueError(f"File {full_path} doesn't exist")
-        return cls(replay_dir_name, tarfile.open(full_path, "r:gz"))  # noqa: SIM115
+        return cls(tarfile.open(full_path, "r:gz"))  # noqa: SIM115
 
     @override
     def create_event_handler(self) -> TEventHandler:
@@ -228,7 +225,7 @@ class ReplayerFromLogs(
         logger.info(
             f"""
 ===================================================================
-Loading Replay Scenario:- Sectors: {self.replay_dir_name}
+Loading Replay Scenario:- Sectors: {os.path.basename(self.replay.name)}
 ===================================================================
         """
         )
