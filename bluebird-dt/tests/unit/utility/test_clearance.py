@@ -247,10 +247,10 @@ def test_change_cas_clearance_resume_speed(env: Environment):
 
     assert_action_voice_and_text(
             action,
-            "AIR0 resume normal speed",
-            "resume normal speed AIR0",
-            "alpha india romeo zero resume normal speed",
-            "resume normal speed alpha india romeo zero",
+            "AIR0 no ATC speed restriction",
+            "no speed restriction AIR0",
+            "alpha india romeo zero no a t c speed restriction",
+            "no speed restriction alpha india romeo zero",
             env,
             )
 
@@ -337,15 +337,15 @@ def test_change_mach_clearance(env: Environment):
             )
 
 
-def test_change_mach_clearance_normal_speed(env: Environment):
+def test_change_mach_clearance_resume_speed(env: Environment):
     action = Action("AIR0", "change_mach_to", None)
 
     assert_action_voice_and_text(
             action,
-            "AIR0 resume normal speed",
-            "resume normal speed AIR0",
-            "alpha india romeo zero resume normal speed",
-            "resume normal speed alpha india romeo zero",
+            "AIR0 no ATC speed restriction",
+            "no speed restriction AIR0",
+            "alpha india romeo zero no a t c speed restriction",
+            "no speed restriction alpha india romeo zero",
             env,
             )
 
@@ -409,10 +409,10 @@ def test_not_using_speed_limit(env: Environment):
 
     assert_action_voice_and_text(
             action,
-            "AIR0 no speed restrictions",
-            "no speed restrictions AIR0",
-            "alpha india romeo zero no a t c speed restrictions",
-            "no speed restrictions alpha india romeo zero",
+            "AIR0 no ATC speed restriction",
+            "no speed restriction AIR0",
+            "alpha india romeo zero no a t c speed restriction",
+            "no speed restriction alpha india romeo zero",
             env
             )
 
