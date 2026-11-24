@@ -803,11 +803,17 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
                 clearance_parts.extend(["resume own navigation", str(fix)])
 
         case "change_cas_to":
-            clearance_parts.extend(["fly speed", str(value), "knots"])
+            if value is not None:
+                clearance_parts.extend(["fly speed", str(value), "knots"])
+            else:
+                clearance_parts.append("resume normal speed")
 
         case "change_mach_to":
             # Future phonetic clearance example: 0.74 -> "decimal seven four"
-            clearance_parts.extend(["fly speed mach", str(value)])
+            if value is not None:
+                clearance_parts.extend(["fly speed mach", str(value)])
+            else:
+                clearance_parts.append("resume normal speed")
 
         # outcomm action: "outcomm"
         case "outcomm":
@@ -1015,10 +1021,16 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
                 clearance_parts.extend(["resume own navigation", str(fix)])
 
         case "change_cas_to":
-            clearance_parts.extend(["speed", spell_phonetically(str(value)), "knots"])
+            if value is not None:
+                clearance_parts.extend(["speed", spell_phonetically(str(value)), "knots"])
+            else:
+                clearance_parts.append("resume normal speed")
 
         case "change_mach_to":
-            clearance_parts.extend(["speed mach", spell_phonetically(str(value))])
+            if value is not None:
+                clearance_parts.extend(["speed mach", spell_phonetically(str(value))])
+            else:
+                clearance_parts.append("resume normal speed")
 
         case "using_speed_limit":
             if value:
