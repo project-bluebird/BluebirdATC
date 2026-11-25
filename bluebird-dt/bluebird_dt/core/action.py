@@ -84,6 +84,7 @@ class Action(Comparison, typing.Generic[TSector]):
             cleared level. The value property should be (cleared level: int, target fix: str, expected level
             at target fix: int)
             - `expect_level_by_fix,descend`: Equivalent to the expect_level_by_fix,climb, but for descends
+            - `change_altitude_to`: go to the specified altitude
 
         value: Union[int, float, str]
             Allowed values for each Action kind differs:
@@ -95,17 +96,17 @@ class Action(Comparison, typing.Generic[TSector]):
             - `maintain_current_heading`: value will be automatically set to 0
             - `change_flight_level_to`: int
             - `change_flight_level_by`: int
-            - `change_cas_to`: int or None (None indicates "fly at own speed")
             - `descend_when_ready,level_by_fix`: tuple[int, str]
             - `descend_now,level_by_fix`: tuple[int, str]
-            - `expect_level_by_fix,descend`: tuple[int, str, int]
-            - `expect_level_by_fix,climb`: tuple[int, str, int]
-            - `change_cas_to`: float or None (None indicates "fly at own speed")
+            - `change_cas_to`: int or None (None indicates "fly at own speed")
             - `change_mach_to`: float or None (None indicates "fly at own speed")
             - `change_vertical_speed_to`: float
             - `outcomm`: str
             - `using_speed_limit`: bool
             - `message`: str
+            - `expect_level_by_fix,climb`: tuple[int, str, int]
+            - `expect_level_by_fix,descend`: tuple[int, str, int]
+            - `change_altitude_to`: tuple[int, int]
 
         agent: str, optional
             Optional string indicating who sent the Action. In the case of having multiple
@@ -183,6 +184,7 @@ class Action(Comparison, typing.Generic[TSector]):
             "change_heading_to_by_direction",
             "expect_level_by_fix,climb",
             "expect_level_by_fix,descend",
+            "change_altitude_to",
         ]:
             raise Exception(f"Value cannot be None for action kind {self.kind}")
 
@@ -269,6 +271,19 @@ class Action(Comparison, typing.Generic[TSector]):
                 raise ValueError(
                     f"Action value must be a tuple[int, Literal['left', 'right', 'shortest']] for {self.kind}. Got "
                     f"{value} of type {type(value)}"
+                )
+            self._value = value
+        elif self.kind == "change_altitude_to":
+            if isinstance(value, str):
+                value = ast.literal_eval(value)
+            if (
+                not isinstance(value, tuple)
+                or len(value) != 2
+                or not isinstance(value[0], int | float)
+                or not isinstance(value[1], int | float)
+            ):
+                raise ValueError(
+                    f"Action value must be a tuple[int, int] for {self.kind}. Got {value} of type {type(value)}"
                 )
             self._value = value
 
@@ -360,7 +375,7 @@ class Action(Comparison, typing.Generic[TSector]):
         kind = data["kind"]
         value = data["value"]
 
-        if "level_by_fix" in kind or kind == "change_heading_to_by_direction":
+        if "level_by_fix" in kind or kind == "change_heading_to_by_direction" or kind == "change_altitude_to":
             value = tuple(value)
 
         voice_representation: str | None = data.get("voice_representation", None)

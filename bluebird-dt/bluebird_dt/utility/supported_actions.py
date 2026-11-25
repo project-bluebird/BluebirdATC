@@ -7,6 +7,7 @@ SUPPORTED_ACTIONS = {
         "descend_now,level_by_fix",
         "expect_level_by_fix,climb",
         "expect_level_by_fix,descend",
+        "change_altitude_to",
     ],
     "vertical_speed": ["change_vertical_speed_to"],
     "lateral": [
