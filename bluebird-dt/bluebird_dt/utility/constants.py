@@ -48,3 +48,8 @@ EXPO_INV = 1.0 / EXPO
 
 # Approximate nautical miles per degree on the earth
 NM_PER_DEGREE = 60
+
+# Correction factor used to convert barometric altitudes
+# (see Appendix A, MATS Part 1)
+QNE = 1013.25
+H_PA_CORRECTION_FACTOR = 27.3

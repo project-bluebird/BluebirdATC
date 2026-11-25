@@ -13,7 +13,7 @@ from bluebird_dt.core import (
 )
 from bluebird_dt.core.action import ActionValueType
 from bluebird_dt.logger import logger
-from bluebird_dt.utility.convert import FT_TO_FL
+from bluebird_dt.utility.convert import indicated_altitude_to_pressure_altitude
 
 phonetic = {
     "A": "alpha",
@@ -794,7 +794,7 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
             assert isinstance(value, tuple)
             altitude_ft, qnh = value
             # Altitude is in feet, aircraft.fl is in flight levels (hundreds of feet)
-            direction = "climb" if altitude_ft * FT_TO_FL > fl else "descend"
+            direction = "climb" if indicated_altitude_to_pressure_altitude(altitude_ft, qnh) > fl else "descend"
             clearance_parts.extend([direction, "altitude", f"{int(altitude_ft)} feet", "QNH", str(int(qnh))])
 
         # lateral actions: "route_direct_to", "change_heading_to", "change_heading_by", "maintain_current_heading",
@@ -981,7 +981,9 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
             assert isinstance(value, tuple)
             altitude_ft, qnh = value
             # Altitude is in feet, aircraft.fl is in flight levels (hundreds of feet)
-            direction = "climb" if altitude_ft * FT_TO_FL > fl else DESCEND_PHRASEOLOGY
+            direction = (
+                "climb" if indicated_altitude_to_pressure_altitude(altitude_ft, qnh) > fl else DESCEND_PHRASEOLOGY
+            )
             clearance_parts.extend(
                 [
                     direction,

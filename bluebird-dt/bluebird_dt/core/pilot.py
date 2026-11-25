@@ -6,7 +6,7 @@ from typing import TypedDict
 
 from bluebird_dt.core import Action
 from bluebird_dt.logger import logger
-from bluebird_dt.utility.convert import FL_TO_FT, FT_TO_FL, timestamp_to_string
+from bluebird_dt.utility.convert import indicated_altitude_to_pressure_altitude, timestamp_to_string
 from bluebird_dt.utility.number import round_nearest
 from bluebird_dt.utility.supported_actions import SUPPORTED_ACTIONS
 
@@ -350,7 +350,16 @@ class Pilot:
         elif action.kind == "change_flight_level_by":
             cleared_fl = aircraft.fl + action.value
         elif action.kind == "change_altitude_to":
-            cleared_fl = action.value[0] * FT_TO_FL
+            altitude_ft, qnh = action.value
+            if altitude_ft % 500 != 0:
+                rounded_altitude_ft = round_nearest(altitude_ft, 500)
+                logger.warning(
+                    f"{self.callsign}: Cleared or selected altitude ({altitude_ft}) is not a multiple of 500ft. "
+                    f"It will be rounded to the nearest multiple of 500ft ({rounded_altitude_ft}).",
+                    stacklevel=2,
+                )
+                altitude_ft = rounded_altitude_ft
+            cleared_fl = indicated_altitude_to_pressure_altitude(altitude_ft, qnh)
         else:
             cleared_fl = action.value
 
@@ -364,18 +373,6 @@ class Pilot:
                 stacklevel=2,
             )
 
-            cleared_fl = rounded_cleared_fl
-
-        elif action.kind == "change_altitude_to" and cleared_fl % (500 * FT_TO_FL) != 0:
-            # Set altitude ft to nearest 500ft
-            rounded_cleared_fl = round_nearest(cleared_fl, 500 * FT_TO_FL)
-
-            logger.warning(
-                f"{self.callsign}: Cleared or selected altitude ({int(cleared_fl * FL_TO_FT)}) is not a "
-                f"multiple of 500ft. "
-                f"It will be rounded to the nearest multiple of 500 ({int(rounded_cleared_fl * FL_TO_FT)}).",
-                stacklevel=2,
-            )
             cleared_fl = rounded_cleared_fl
 
         aircraft.cleared_fl = cleared_fl
