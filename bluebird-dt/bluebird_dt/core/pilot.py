@@ -317,10 +317,14 @@ class Pilot:
         if action.kind == "change_cas_to":
             aircraft.cleared_instructions.cas = action.value
             aircraft.selected_instructions.cas = action.value
+            aircraft.selected_instructions.mach = None
+            aircraft.cleared_instructions.mach = None
 
         elif action.kind == "change_mach_to":
             aircraft.cleared_instructions.mach = action.value
             aircraft.selected_instructions.mach = action.value
+            aircraft.cleared_instructions.cas = None
+            aircraft.selected_instructions.cas = None
 
         elif action.kind == "using_speed_limit":
             aircraft.predictor_params["obey_speed_limit"] = action.value
