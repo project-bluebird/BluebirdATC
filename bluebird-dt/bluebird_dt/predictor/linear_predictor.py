@@ -234,8 +234,9 @@ class LinearPredictor(Predictor):
     def update_total_speeds_cas_is_tas(self, aircraft: Aircraft):
         """
         Updates total speeds of a selected aircraft by writing the selected_instructions.cas value directly to the true
-        airspeed (speed_tas) value. Mach values are ignored. This method is called when the flag "use_cas_as_tas" is set
-        to True. If selected_instructions.cas is None, CAS is read from speed profile tables.
+        airspeed (speed_tas) value. This method is called when the flag "use_cas_as_tas" is set to True. If
+        selected_instructions.cas is None (e.g. because a Mach clearance was issued), the selected Mach is converted to
+        TAS instead. If neither is set, an error is raised.
 
         Parameters
         ----------
@@ -244,10 +245,14 @@ class LinearPredictor(Predictor):
         """
 
         cas = aircraft.selected_instructions.cas
-        if cas is None:
-            raise ValueError("Aircraft.selected_instructions.cas must be set to use cas_is_tas speed modelling.")
+        mach = aircraft.selected_instructions.mach
 
-        aircraft.speed_tas = cas
+        if cas is not None:
+            aircraft.speed_tas = cas
+        elif mach is not None:
+            aircraft.speed_tas = mach_to_tas(aircraft.fl, mach, self.delta_T) * MPS_TO_KT
+        else:
+            raise ValueError("Aircraft.selected_instructions.cas or .mach must be set for cas_is_tas speed modelling.")
 
     @functools.lru_cache
     def _get_performance_profile(self, key: str | None) -> dict[str, list[float | None] | float]:
