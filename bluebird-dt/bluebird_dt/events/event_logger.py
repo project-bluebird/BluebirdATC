@@ -27,9 +27,7 @@ if typing.TYPE_CHECKING:
     from bluebird_dt.simulator.simconfig import SimConfig
 
 DEFAULT_TRIM_AND_CUT_TIMEDELTA = pd.Timedelta(hours=4)
-
 TScenarioConfig = typing_extensions.TypeVar("TScenarioConfig", bound=BaseModel)
-
 
 class ClearanceLog(typing.TypedDict):
     datetime: pd.Timestamp
