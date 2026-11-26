@@ -37,6 +37,16 @@ class TestAPI:
 
             assert response.status_code == 200
 
+        def test_load_without_wind(self, client):
+            response = client.post("/load/Springfield/testScenario?use_wind=false")
+
+            assert response.status_code == 200
+
+            # the one query parameter turns the wind and its forecast off together
+            sim = client.app.state.runner_store.current_runner.sim
+            assert sim.use_wind is False
+            assert sim.use_forecast is False
+
         def test_tenant(self, client):
             response = client.get(f"/status")
 

@@ -796,6 +796,8 @@ class Simulator:
             scenario_category=self.category,
             simulator=SimulatorConfig(
                 projection_centre=self.projection_centre,
+                use_wind=self.use_wind,
+                use_forecast=self.use_forecast,
             ),
             scenario=self.scenario_manager.config() if self.scenario_manager is not None else None,
             environment_manager=self.manager.config(),
