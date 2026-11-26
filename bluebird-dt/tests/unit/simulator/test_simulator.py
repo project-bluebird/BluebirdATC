@@ -147,6 +147,30 @@ def test_sim_config_serialization() -> None:
     restored = SimConfig[TestScenarioConfig].model_validate_json(serialized)
     assert restored == config
 
+def test_sim_config_records_wind_and_forecast() -> None:
+    """The simulator config must record the wind and forecast settings and keep them through serialization."""
+    sim = Simulator.from_category(
+        category="Springfield",
+        scenario_name="testScenario",
+        use_wind=False,
+        use_forecast=True,
+        autosave_interval=None,
+    )
+
+    simulator_config = sim.config().simulator
+    assert simulator_config.use_wind is False
+    assert simulator_config.use_forecast is True
+
+    restored = SimulatorConfig.model_validate_json(simulator_config.model_dump_json())
+    assert restored == simulator_config
+
+def test_simulator_config_without_wind_and_forecast() -> None:
+    """A config saved before the wind and forecast settings were recorded must load with both as None."""
+    config = SimulatorConfig.model_validate_json('{"projection_centre": [51.0, -1.0]}')
+
+    assert config.use_wind is None
+    assert config.use_forecast is None
+
 @pytest.mark.parametrize(
     "the_datetime, expected_number_of_new_coordinations",
     [
