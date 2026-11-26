@@ -4,6 +4,7 @@ import pytest
 from bluebird_dt.core import Action, Environment
 from bluebird_dt.utility.clearance import (
     add_phraseology,
+    altitude_phraseology,
     beautify_callsign,
     spell_phonetically,
     text_phraseology,
@@ -115,6 +116,48 @@ def test_descend_clearance(env: Environment):
             "dee send flight level wun hundred alpha india romeo zero",
             env,
             )
+
+def test_descend_altitude_clearance(env: Environment):
+    action = Action("AIR0", "change_altitude_to", (5000, 1013))
+    assert env.aircraft["AIR0"].fl > 50
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 descend altitude 5000 feet QNH 1013",
+            "descend altitude 5000 feet QNH 1013 AIR0",
+            "alpha india romeo zero dee send altitude five thousand feet q n h wun zero wun tree",
+            "dee send altitude five thousand feet q n h wun zero wun tree alpha india romeo zero",
+            env,
+            )
+
+
+def test_climb_altitude_clearance(env: Environment):
+    env.aircraft["AIR0"].fl = 30.0
+    action = Action("AIR0", "change_altitude_to", (6500, 998))
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 climb altitude 6500 feet QNH 998",
+            "climb altitude 6500 feet QNH 998 AIR0",
+            "alpha india romeo zero climb altitude six thousand five hundred feet q n h niner niner eight",
+            "climb altitude six thousand five hundred feet q n h niner niner eight alpha india romeo zero",
+            env,
+            )
+
+
+@pytest.mark.parametrize(
+    ("altitude_ft", "expected"),
+    [
+        (3000, "tree thousand"),
+        (3500, "tree thousand five hundred"),
+        (10000, "wun zero thousand"),
+        (11500, "wun wun thousand five hundred"),
+        (600, "six hundred"),
+    ],
+)
+def test_altitude_phraseology(altitude_ft: int, expected: str):
+    assert altitude_phraseology(altitude_ft) == expected
+
 
 def test_route_direct_on_route_clearance(env: Environment):
     action = Action("AIR0", "route_direct_to", "ALPHA")

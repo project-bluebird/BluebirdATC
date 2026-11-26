@@ -566,6 +566,8 @@ def make_action(kind: str) -> Action:
                 make_random_fix_name(),
                 make_random_fl()
                 )
+    if kind == "change_altitude_to":
+        value = (random.randrange(1000, 10000, 500), random.randint(950, 1050))
     agent = random.choice(["Smith", "Bond", "Powers", "J"])
     clearance = " ".join((callsign, kind, str(value), agent))
     pilot_response = " ".join((kind, str(value), agent, callsign))

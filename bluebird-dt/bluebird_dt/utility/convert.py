@@ -642,3 +642,23 @@ def nan_to_none(value: T) -> T | None:  # noqa: ANN001, ANN201
 
 # A shadow type annotation to convert a pandas NaN representation to None during serialisation or initialisation. See https://github.com/pydantic/pydantic/issues/1779#issuecomment-1524062596.
 CouldBePandasNone = typing.Annotated[T | None, BeforeValidator(nan_to_none)]
+
+
+def indicated_altitude_to_pressure_altitude(indicated_alt_ft: float, qnh: int) -> float:
+    """
+    Convert indicated altitude issued by ATC (ft) to a pressure altitude used by an aircraft in FLs
+
+    Parameters
+    ----------
+    indicated_alt_ft : float
+        Indicated altitude (in feet)
+    qnh : int
+        Local pressure altimeter setting (in hPa)
+
+    Returns
+    -------
+    pressure altitude : float
+        Aircraft's pressure altitude (in flight levels)
+    """
+
+    return (indicated_alt_ft + (constants.QNE - qnh) * constants.H_PA_CORRECTION_FACTOR) * FT_TO_FL

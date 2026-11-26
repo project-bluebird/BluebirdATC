@@ -13,6 +13,7 @@ from bluebird_dt.core import (
 )
 from bluebird_dt.core.action import ActionValueType
 from bluebird_dt.logger import logger
+from bluebird_dt.utility.convert import indicated_altitude_to_pressure_altitude
 
 phonetic = {
     "A": "alpha",
@@ -610,6 +611,24 @@ def flight_level_phraseology(flight_level: int) -> str:
     return spell_phonetically(value_string)
 
 
+def altitude_phraseology(altitude_ft: int) -> str:
+    """
+    Read out an altitude in feet following CAP 413, e.g. 3500 -> "tree thousand five hundred",
+    11000 -> "wun wun thousand". The altitude is rounded to the nearest hundred feet.
+    """
+    altitude = round(altitude_ft, -2)
+    thousands, hundreds = divmod(altitude, 1000)
+    hundreds //= 100
+
+    parts: list[str] = []
+    if thousands:
+        parts.append(f"{spell_phonetically(str(thousands))} thousand")
+    if hundreds:
+        parts.append(f"{spell_phonetically(str(hundreds))} hundred")
+
+    return " ".join(parts) if parts else spell_phonetically("0")
+
+
 def beautify_callsign(callsign: str) -> str:
     """
     Abbreviates or reads out callsign
@@ -713,7 +732,7 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
 
     match action_kind:
         # vertical actions: "change_flight_level_to", "change_flight_level_by", "change_vertical_speed_to",
-        #                   "descend_when_ready,level_by_fix", "descend_now,level_by_fix"
+        #                   "descend_when_ready,level_by_fix", "descend_now,level_by_fix", "change_altitude_to"
         case "change_flight_level_to":
             # Only for text clearance, (not phonetic clearance)
             direction = "climb" if value > fl else "descend"
@@ -770,6 +789,13 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
                 clearance_parts.extend(["descend flight level", str(value[0]), "level by", value[1]])
             else:
                 clearance_parts.extend(["descend flight level", str(value[0]), "level abeam", value[1]])
+
+        case "change_altitude_to":
+            assert isinstance(value, tuple)
+            altitude_ft, qnh = value
+            # Altitude is in feet, aircraft.fl is in flight levels (hundreds of feet)
+            direction = "climb" if indicated_altitude_to_pressure_altitude(altitude_ft, qnh) > fl else "descend"
+            clearance_parts.extend([direction, "altitude", f"{int(altitude_ft)} feet", "QNH", str(int(qnh))])
 
         # lateral actions: "route_direct_to", "change_heading_to", "change_heading_by", "maintain_current_heading",
         #                  "change_cas_to", "change_mach_to"
@@ -948,6 +974,24 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
                     flight_level_phraseology(value[0]),
                     "level by",
                     value[1],
+                ]
+            )
+
+        case "change_altitude_to":
+            assert isinstance(value, tuple)
+            altitude_ft, qnh = value
+            # Altitude is in feet, aircraft.fl is in flight levels (hundreds of feet)
+            direction = (
+                "climb" if indicated_altitude_to_pressure_altitude(altitude_ft, qnh) > fl else DESCEND_PHRASEOLOGY
+            )
+            clearance_parts.extend(
+                [
+                    direction,
+                    "altitude",
+                    altitude_phraseology(int(altitude_ft)),
+                    "feet",
+                    "q n h",
+                    spell_phonetically(str(int(qnh))),
                 ]
             )
 
