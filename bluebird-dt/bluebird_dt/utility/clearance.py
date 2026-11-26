@@ -803,11 +803,23 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
                 clearance_parts.extend(["resume own navigation", str(fix)])
 
         case "change_cas_to":
-            clearance_parts.extend(["fly speed", str(value), "knots"])
+            if value is not None:
+                clearance_parts.extend(["fly speed", str(value), "knots"])
+            else:
+                return ClearanceAndResponse(
+                    clearance=f"{callsign} no ATC speed restriction",
+                    pilot_response=f"no speed restriction {callsign}",
+                )
 
         case "change_mach_to":
             # Future phonetic clearance example: 0.74 -> "decimal seven four"
-            clearance_parts.extend(["fly speed mach", str(value)])
+            if value is not None:
+                clearance_parts.extend(["fly speed mach", str(value)])
+            else:
+                return ClearanceAndResponse(
+                    clearance=f"{callsign} no ATC speed restriction",
+                    pilot_response=f"no speed restriction {callsign}",
+                )
 
         # outcomm action: "outcomm"
         case "outcomm":
@@ -817,7 +829,10 @@ def text_phraseology(action: Action, environment: Environment) -> ClearanceAndRe
             if value:
                 clearance_parts.append("obeying speed limit")
             else:
-                clearance_parts.append("no speed restrictions")
+                return ClearanceAndResponse(
+                    clearance=f"{callsign} no ATC speed restriction",
+                    pilot_response=f"no speed restriction {callsign}",
+                )
 
         case "set_squawk":
             return ClearanceAndResponse(
@@ -1015,10 +1030,22 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
                 clearance_parts.extend(["resume own navigation", str(fix)])
 
         case "change_cas_to":
-            clearance_parts.extend(["speed", spell_phonetically(str(value)), "knots"])
+            if value is not None:
+                clearance_parts.extend(["speed", spell_phonetically(str(value)), "knots"])
+            else:
+                return ClearanceAndResponse(
+                    clearance=f"{beautify_callsign(callsign)} no a t c speed restriction",
+                    pilot_response=f"no speed restriction {beautify_callsign(callsign)}",
+                )
 
         case "change_mach_to":
-            clearance_parts.extend(["speed mach", spell_phonetically(str(value))])
+            if value is not None:
+                clearance_parts.extend(["speed mach", spell_phonetically(str(value))])
+            else:
+                return ClearanceAndResponse(
+                    clearance=f"{beautify_callsign(callsign)} no a t c speed restriction",
+                    pilot_response=f"no speed restriction {beautify_callsign(callsign)}",
+                )
 
         case "using_speed_limit":
             if value:
@@ -1028,8 +1055,8 @@ def voice_phraseology(action: Action, environment: Environment) -> ClearanceAndR
                 )
             # Compliant phraseology with CAP413, paragraph 6.3.
             return ClearanceAndResponse(
-                clearance=f"{beautify_callsign(callsign)} no a t c speed restrictions",
-                pilot_response=f"no speed restrictions {beautify_callsign(callsign)}",
+                clearance=f"{beautify_callsign(callsign)} no a t c speed restriction",
+                pilot_response=f"no speed restriction {beautify_callsign(callsign)}",
             )
 
         case "change_heading_to_by_direction":

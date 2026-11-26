@@ -38,6 +38,7 @@ def env(generate_simple_environment: Environment) -> Environment:
 
     return environment
 
+
 def assert_action_voice_and_text(
         action: Action,
         expected_text_clearance: str,
@@ -56,6 +57,7 @@ def assert_action_voice_and_text(
 
     if expected_voice_response is not None:
         assert voice_representation.pilot_response == expected_voice_response
+
 
 def test_missing_callsign(env: Environment, caplog: pytest.LogCaptureFixture):
     action = Action("MISS", "outcomm", None)
@@ -103,6 +105,7 @@ def test_climb_clearance_float_to_int(env: Environment):
             env,
             )
 
+
 def test_descend_clearance(env: Environment):
     action = Action("AIR0", "change_flight_level_to", 100)
     assert env.aircraft["AIR0"].fl > 100
@@ -115,6 +118,7 @@ def test_descend_clearance(env: Environment):
             "dee send flight level wun hundred alpha india romeo zero",
             env,
             )
+
 
 def test_route_direct_on_route_clearance(env: Environment):
     action = Action("AIR0", "route_direct_to", "ALPHA")
@@ -129,6 +133,7 @@ def test_route_direct_on_route_clearance(env: Environment):
             env,
             )
 
+
 def test_route_direct_not_on_route_clearance(env: Environment):
     action = Action("AIR1", "route_direct_to", "BRAVO")
     assert not env.aircraft["AIR1"].cleared_instructions.on_route
@@ -142,6 +147,7 @@ def test_route_direct_not_on_route_clearance(env: Environment):
             env,
             )
 
+
 def test_change_heading_clearance(env: Environment):
     action = Action("AIR0", "change_heading_to", 90)
 
@@ -153,6 +159,7 @@ def test_change_heading_clearance(env: Environment):
             "turn right heading zero niner zero degrees alpha india romeo zero",
             env,
             )
+
 
 def test_float_heading_clearance(env: Environment):
     action = Action("AIR0", "change_heading_to", 12.0)
@@ -166,6 +173,7 @@ def test_float_heading_clearance(env: Environment):
             "turn right heading zero wun too alpha india romeo zero",
             env,
             )
+
 
 def test_change_heading_by_left_clearance(env: Environment):
     action = Action("AIR0", "change_heading_by", -15)
@@ -192,6 +200,7 @@ def test_change_heading_by_right_clearance(env: Environment):
             env,
             )
 
+
 def test_change_vertical_speed_climbing_clearance(env: Environment):
     action = Action("AIR0", "change_vertical_speed_to", 120)
     assert env.aircraft["AIR0"].cleared_fl > env.aircraft["AIR0"].fl
@@ -204,6 +213,7 @@ def test_change_vertical_speed_climbing_clearance(env: Environment):
             "rate of climb 120 feet per minute alpha india romeo zero",
             env,
             )
+
 
 def test_change_vertical_speed_descending_clearance(env: Environment):
     action = Action("AIR1", "change_vertical_speed_to", 130)
@@ -218,6 +228,7 @@ def test_change_vertical_speed_descending_clearance(env: Environment):
             env,
             )
 
+
 def test_change_cas_clearance(env: Environment):
     action = Action("AIR0", "change_cas_to", 300)
 
@@ -227,6 +238,19 @@ def test_change_cas_clearance(env: Environment):
             "fly speed 300 knots AIR0",
             "alpha india romeo zero speed tree zero zero knots",
             "speed tree zero zero knots alpha india romeo zero",
+            env,
+            )
+
+
+def test_change_cas_clearance_resume_speed(env: Environment):
+    action = Action("AIR0", "change_cas_to", None)
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 no ATC speed restriction",
+            "no speed restriction AIR0",
+            "alpha india romeo zero no a t c speed restriction",
+            "no speed restriction alpha india romeo zero",
             env,
             )
 
@@ -312,6 +336,20 @@ def test_change_mach_clearance(env: Environment):
             env,
             )
 
+
+def test_change_mach_clearance_resume_speed(env: Environment):
+    action = Action("AIR0", "change_mach_to", None)
+
+    assert_action_voice_and_text(
+            action,
+            "AIR0 no ATC speed restriction",
+            "no speed restriction AIR0",
+            "alpha india romeo zero no a t c speed restriction",
+            "no speed restriction alpha india romeo zero",
+            env,
+            )
+
+
 def test_outcomm_clearance(env: Environment):
     action = Action("AIR0", "outcomm", None)
 
@@ -323,6 +361,7 @@ def test_outcomm_clearance(env: Environment):
             "contact next frequency alpha india romeo zero",
             env,
             )
+
 
 def test_route_direct_waypoint_clearance(env: Environment):
     action = Action("AIR0", "route_direct_to", "LON")
@@ -337,6 +376,7 @@ def test_route_direct_waypoint_clearance(env: Environment):
             env,
             )
 
+
 def test_route_direct_multi_waypoint_clearance(env: Environment):
     action = Action("AIR0", "route_direct_to", ["ALPHA", "LON"])
     assert env.aircraft["AIR0"].cleared_instructions.on_route
@@ -350,6 +390,7 @@ def test_route_direct_multi_waypoint_clearance(env: Environment):
             env,
             )
 
+
 def test_using_speed_limit(env: Environment):
     action = Action("AIR0", "using_speed_limit", True)
 
@@ -362,17 +403,19 @@ def test_using_speed_limit(env: Environment):
             env
             )
 
+
 def test_not_using_speed_limit(env: Environment):
     action = Action("AIR0", "using_speed_limit", False)
 
     assert_action_voice_and_text(
             action,
-            "AIR0 no speed restrictions",
-            "no speed restrictions AIR0",
-            "alpha india romeo zero no a t c speed restrictions",
-            "no speed restrictions alpha india romeo zero",
+            "AIR0 no ATC speed restriction",
+            "no speed restriction AIR0",
+            "alpha india romeo zero no a t c speed restriction",
+            "no speed restriction alpha india romeo zero",
             env
             )
+
 
 def test_descend_now_level_by_fix(env: Environment):
     action = Action("AIR0", "descend_now,level_by_fix", (150, "OCK"))
@@ -386,6 +429,7 @@ def test_descend_now_level_by_fix(env: Environment):
             env,
             )
 
+
 def test_descend_when_ready_level_by_fix(env: Environment):
     action = Action("AIR0", "descend_when_ready,level_by_fix", (100, "OCK"))
 
@@ -397,6 +441,7 @@ def test_descend_when_ready_level_by_fix(env: Environment):
             "when ready dee send flight level wun hundred level by OCK alpha india romeo zero",
             env,
             )
+
 
 def test_expect_level_by_fix_climb_now(env: Environment):
     action = Action("AIR0", "expect_level_by_fix,climb",
@@ -411,6 +456,7 @@ def test_expect_level_by_fix_climb_now(env: Environment):
             "expect flight level tree tree zero level by OCK climb now flight level tree hundred alpha india romeo zero",
             env,
             )
+
 
 def test_expect_level_abeam_fix_climb_now(env: Environment):
     aircraft = env.aircraft.get("AIR0")
@@ -428,6 +474,7 @@ def test_expect_level_abeam_fix_climb_now(env: Environment):
             env,
             )
 
+
 def test_expect_level_by_fix_descend_now(env: Environment):
     action = Action("AIR0", "expect_level_by_fix,descend", (150, "OCK", 100))
 
@@ -439,6 +486,7 @@ def test_expect_level_by_fix_descend_now(env: Environment):
             "expect flight level wun hundred level by OCK dee send now flight level wun five zero alpha india romeo zero",
             env,
             )
+
 
 def test_expect_level_abeam_fix_descend_now(env: Environment):
     aircraft = env.aircraft.get("AIR0")
