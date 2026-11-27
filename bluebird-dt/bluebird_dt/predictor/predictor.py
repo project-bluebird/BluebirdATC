@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 from abc import ABC, abstractmethod
 from math import degrees, radians, tan
-from typing import Literal
 
 import numpy as np
 
@@ -329,9 +328,10 @@ class Predictor(ABC):
             )
 
             # if a route direct has been issued (which sets the turn radius to None, then recalculate the turn radius)
+            # from the turn the aircraft's ground track makes onto the bearing to the fix
             if last_lateral_action_kind == "route_direct_to" and aircraft.predictor_params.get("turn_radius") is None:
                 bearing_to_fix = aircraft.pos2d().bearing_to(target_pos)
-                turn_angle = aircraft.heading - bearing_to_fix
+                turn_angle = ground_track_angle - bearing_to_fix
                 _, turn_radius = self.distance_and_turn_radius_from_angle(aircraft, turn_angle, ground_speed)
                 aircraft.predictor_params["turn_radius"] = turn_radius
 
@@ -400,33 +400,17 @@ class Predictor(ABC):
                 rate_of_turn = ground_speed / aircraft.predictor_params["turn_radius"]  # radians per hour
                 rate_of_turn = degrees(rate_of_turn) / 3600  # degrees per second
 
-            # None represents uninitialised
-            turn_direction: Literal["left", "right"] | None = None
-
-            # If aircraft is flying a heading
-            if (
-                aircraft.cleared_instructions.lateral_action is not None
-                and aircraft.cleared_instructions.lateral_action.kind == "change_heading_to_by_direction"
-                and aircraft.cleared_instructions.lateral_action.value[1] != "shortest"
-            ):
-                turn_direction = aircraft.cleared_instructions.lateral_action.value[1]
-
-            if turn_direction is None:
-                if (current_bearing > target_bearing and current_bearing - target_bearing <= 180) or (
-                    target_bearing > current_bearing and target_bearing - current_bearing > 180
-                ):
-                    turn_direction = "left"
-                else:
-                    turn_direction = "right"
+            turn_direction = aircraft.turn_direction()
 
             delta_phi = -1.0 * rate_of_turn * time_evolve if turn_direction == "left" else rate_of_turn * time_evolve
 
             new_bearing = (current_bearing + delta_phi) % 360
 
-            # del_phi_a is the change in bearing needed to reach the target bearing
-            del_phi_a = abs(target_bearing - current_bearing)
-            if del_phi_a > 180:
-                del_phi_a = 360 - del_phi_a
+            # del_phi_a is the change in bearing needed to reach the target bearing, turning in turn_direction
+            if turn_direction == "left":
+                del_phi_a = (current_bearing - target_bearing) % 360
+            else:
+                del_phi_a = (target_bearing - current_bearing) % 360
 
             # If we'll overshoot the target bearing, set heading directly from target bearing
             if abs(delta_phi) >= del_phi_a:

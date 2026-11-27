@@ -17,6 +17,7 @@ from bluebird_dt.core.sector import Sector
 from bluebird_dt.logger import logger
 from bluebird_dt.mixin import Comparison
 from bluebird_dt.utility.convert import nan_to_none
+from bluebird_dt.utility.number import which_way
 
 if typing.TYPE_CHECKING:
     from bluebird_dt.core import Airspace
@@ -879,6 +880,29 @@ class Aircraft(Comparison):
             flight_state = FlightState.CLIMB
 
         return flight_state
+
+    def turn_direction(self) -> typing.Literal["left", "right"]:
+        """
+        Return the direction to turn towards heading_changing_to, which must be set.
+
+        A heading clearance can set the direction: the side given in change_heading_to_by_direction, or the sign of
+        the change in change_heading_by. Otherwise the aircraft turns the shorter way, worked out on headings with
+        which_way, as in the clearance phraseology, so that a turn of about 180 degrees goes the way the clearance
+        says.
+
+        Returns
+        -------
+        Literal["left", "right"]
+            The direction to turn
+        """
+        assert self.heading_changing_to is not None
+        lateral_action = self.cleared_instructions.lateral_action
+        if lateral_action is not None:
+            if lateral_action.kind == "change_heading_to_by_direction" and lateral_action.value[1] != "shortest":
+                return lateral_action.value[1]
+            if lateral_action.kind == "change_heading_by" and lateral_action.value != 0:
+                return "right" if lateral_action.value > 0 else "left"
+        return which_way(self.heading, self.heading_changing_to)
 
     def randomise_performance(self, random_seed: int | None):
         """
