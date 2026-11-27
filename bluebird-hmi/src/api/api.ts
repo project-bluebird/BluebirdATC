@@ -107,6 +107,9 @@ const injectedRtkApi = api.injectEndpoints({
       query: (queryArg) => ({
         url: `/load/${queryArg.category}/${queryArg.scenarioName}`,
         method: "POST",
+        params: {
+          use_wind: queryArg.useWind,
+        },
       }),
     }),
   }),
@@ -190,6 +193,7 @@ export type LoadApiResponse = /** status 200 Successful Response */ boolean;
 export type LoadApiArg = {
   category: string;
   scenarioName: string;
+  useWind?: boolean;
 };
 export type ValidationError = {
   loc: (string | number)[];

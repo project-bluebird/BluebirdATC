@@ -111,8 +111,16 @@ class RunnerStore(typing.Generic[TRunner, TSimulator]):
     def initialise_from_simulator(self, sim: Simulator):
         self.current_runner = self.typeof_runner(sim)
 
-    def initialise_from_category(self, category: str, scenario_name: str):
-        self.initialise_from_simulator(self.typeof_simulator.from_category(category, scenario_name))
+    def initialise_from_category(self, category: str, scenario_name: str, *, use_wind: bool = True):
+        """
+        Creates a runner for the given scenario.
+
+        The use_wind argument sets both the wind and its forecast, so the simulator is created with use_wind and
+        use_forecast equal.
+        """
+        self.initialise_from_simulator(
+            self.typeof_simulator.from_category(category, scenario_name, use_wind=use_wind, use_forecast=use_wind)
+        )
 
     def start(self):
         assert self.current_runner is not None
