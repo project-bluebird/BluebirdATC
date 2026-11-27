@@ -639,6 +639,9 @@ class SpringfieldScenarioManager(
 
         # build the aircraft
         seed = getattr(row, "random_seed", None)
+        # pilot_delay is an optional column in flight.csv; missing or blank means no delay
+        pilot_delay = getattr(row, "pilot_delay", None)
+        pilot_delay = 0.0 if pilot_delay is None or pd.isna(pilot_delay) else float(pilot_delay)
         aircraft = Aircraft(
             row.start_lat,
             row.start_lon,
@@ -650,7 +653,7 @@ class SpringfieldScenarioManager(
             aircraft_type=row.aircraft_type,
             ufid=row.callsign,
             squawk=squawk,
-            pilot=Pilot(row.callsign, row.pilot_delay),
+            pilot=Pilot(row.callsign, pilot_delay),
             wake_vortex=row.wake_vortex_category,
             selected_fl=row.cleared_fl,
             random_seed=int(seed) if seed is not None and not pd.isna(seed) else None,
