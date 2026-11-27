@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from typing import Literal
 
 from bluebird_dt.core import (
     Action,
@@ -13,6 +12,7 @@ from bluebird_dt.core import (
 )
 from bluebird_dt.core.action import ActionValueType
 from bluebird_dt.logger import logger
+from bluebird_dt.utility.number import which_way
 
 phonetic = {
     "A": "alpha",
@@ -642,14 +642,6 @@ def beautify_callsign(callsign: str) -> str:
 
     abbreviation = callsign[0] + callsign[-2:]
     return spell_phonetically(abbreviation)
-
-
-def which_way(current: float, cleared: float) -> Literal["left", "right"]:
-    left = ((current - cleared) + 360) % 360
-    right = ((cleared - current) + 360) % 360
-    if left < right:
-        return "left"
-    return "right"
 
 
 def text_phraseology(action: Action, environment: Environment) -> ClearanceAndResponse:

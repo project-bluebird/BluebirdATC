@@ -1,5 +1,6 @@
 import math
 from decimal import Decimal
+from typing import Literal
 
 
 def round_nearest(num: float, to: float, direction: str | None = None) -> float:
@@ -44,3 +45,11 @@ def round_nearest(num: float, to: float, direction: str | None = None) -> float:
         raise ValueError(f'Invalid direction given: {direction} -- Must be one of: "up", "down", None')
 
     return float(div * dec_to)
+
+
+def which_way(current: float, cleared: float) -> Literal["left", "right"]:
+    left = ((current - cleared) + 360) % 360
+    right = ((cleared - current) + 360) % 360
+    if left < right:
+        return "left"
+    return "right"

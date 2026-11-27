@@ -3,13 +3,11 @@ from __future__ import annotations
 import copy
 from abc import ABC, abstractmethod
 from math import degrees, radians, tan
-from typing import Literal
 
 import numpy as np
 
 from bluebird_dt.core import Aircraft, Fixes, Pos2D, Pos4D
 from bluebird_dt.core.wind import WindField
-from bluebird_dt.utility.clearance import which_way
 from bluebird_dt.utility.constants import G_ACC
 from bluebird_dt.utility.convert import (
     KT_TO_MPS,
@@ -402,7 +400,7 @@ class Predictor(ABC):
                 rate_of_turn = ground_speed / aircraft.predictor_params["turn_radius"]  # radians per hour
                 rate_of_turn = degrees(rate_of_turn) / 3600  # degrees per second
 
-            turn_direction = self.turn_direction(aircraft)
+            turn_direction = aircraft.turn_direction()
 
             delta_phi = -1.0 * rate_of_turn * time_evolve if turn_direction == "left" else rate_of_turn * time_evolve
 
@@ -441,34 +439,6 @@ class Predictor(ABC):
 
         aircraft.lat = new_pos.lat
         aircraft.lon = new_pos.lon
-
-    def turn_direction(self, aircraft: Aircraft) -> Literal["left", "right"]:
-        """
-        Return the direction to turn towards aircraft.heading_changing_to.
-
-        A heading clearance can set the direction: the side given in change_heading_to_by_direction, or the sign of
-        the change in change_heading_by. Otherwise the aircraft turns the shorter way, worked out on headings with
-        which_way, as in the clearance phraseology, so that a turn of about 180 degrees goes the way the clearance
-        says.
-
-        Parameters
-        ----------
-        aircraft: Aircraft
-            The turning aircraft, with heading_changing_to set
-
-        Returns
-        -------
-        Literal["left", "right"]
-            The direction to turn
-        """
-        assert aircraft.heading_changing_to is not None
-        lateral_action = aircraft.cleared_instructions.lateral_action
-        if lateral_action is not None:
-            if lateral_action.kind == "change_heading_to_by_direction" and lateral_action.value[1] != "shortest":
-                return lateral_action.value[1]
-            if lateral_action.kind == "change_heading_by" and lateral_action.value != 0:
-                return "right" if lateral_action.value > 0 else "left"
-        return which_way(aircraft.heading, aircraft.heading_changing_to)
 
     def update_position_without_turn_model(self, aircraft: Aircraft, time_evolve: float, wind_field: WindField | None):
         """

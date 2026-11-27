@@ -5,8 +5,8 @@ import pytest
 from bluebird_dt.core import Action, Aircraft, Environment, Fixes, FlightPlan, Pos2D, Route
 from bluebird_dt.core.wind import WindField
 from bluebird_dt.predictor import LinearPredictor
-from bluebird_dt.utility.clearance import which_way
 from bluebird_dt.utility.convert import KT_TO_MPS, heading_from_ground_track
+from bluebird_dt.utility.number import which_way
 
 # An approach with a 98 degree turn at the second to last fix and only 4 nmi of final leg
 # to run, which an aircraft with a large turn radius cannot fly.
