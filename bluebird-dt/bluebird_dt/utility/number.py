@@ -47,9 +47,27 @@ def round_nearest(num: float, to: float, direction: str | None = None) -> float:
     return float(div * dec_to)
 
 
-def which_way(current: float, cleared: float) -> Literal["left", "right"]:
-    left = ((current - cleared) + 360) % 360
-    right = ((cleared - current) + 360) % 360
+def which_way(current_heading: float, target_heading: float) -> Literal["left", "right"]:
+    """
+    Return the shorter way to turn from one heading to another.
+
+    A turn of exactly 180 degrees, or no turn at all, gives "right".
+
+    Parameters
+    ----------
+    current_heading : float
+        The heading turned from, in degrees
+    target_heading : float
+        The heading turned to, in degrees
+
+    Returns
+    ----------
+    Literal["left", "right"]
+        The direction of the shorter turn
+    """
+
+    left = ((current_heading - target_heading) + 360) % 360
+    right = ((target_heading - current_heading) + 360) % 360
     if left < right:
         return "left"
     return "right"
