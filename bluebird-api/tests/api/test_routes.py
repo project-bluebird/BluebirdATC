@@ -122,6 +122,46 @@ class TestAPI:
             response = client.get(f"/selected_aircraft/{sector_id}")
             assert response.status_code == 200
 
+        def test_replace_environment_round_trip(self, client, callsign):
+            environment = client.get("/environment").json()
+            moved_lat = environment["aircraft"][callsign]["lat"] + 0.1
+            environment["aircraft"][callsign]["lat"] = moved_lat
+
+            response = client.post("/environment", params={"keep_events": True}, json=environment)
+            assert response.status_code == 200
+
+            synced = client.get("/environment").json()
+            assert synced["aircraft"][callsign]["lat"] == pytest.approx(moved_lat)
+            assert synced["time"] == environment["time"]
+            assert set(synced["aircraft"]) == set(environment["aircraft"])
+
+        def test_replace_environment_keep_events(self, client):
+            handler = client.app.state.runner_store.current_runner.sim.manager.event_handler
+            n_radar_events = len(handler.radar_df)
+            assert n_radar_events > 0
+
+            environment = client.get("/environment").json()
+            client.post("/environment", params={"keep_events": True}, json=environment)
+            assert len(handler.radar_df) == n_radar_events
+
+            client.post("/environment", json=environment)
+            assert len(handler.radar_df) == 0
+
+            # restore the scenario for the remaining tests
+            client.post("/load/Springfield/testScenario")
+
+        def test_replace_environment_without_airspace(self, client, callsign):
+            environment = client.get("/environment", params={"no_airspace": True}).json()
+            assert "airspace" not in environment
+
+            response = client.post("/environment", params={"keep_events": True}, json=environment)
+            assert response.status_code == 200
+            assert callsign in client.get("/environment").json()["aircraft"]
+
+        def test_replace_environment_bad_payload(self, client):
+            response = client.post("/environment", json={"time": 0, "aircraft": {"BAD": {"callsign": "BAD"}}})
+            assert response.status_code == 422
+
     class TestSubmit:
         """
         Test API calls corresponding to 'Submit' metadata tag

@@ -751,6 +751,60 @@ def test_replace_environment(generate_i):
     assert em.predictor.fixes is new_env.airspace.fixes
     assert em.reload_environment is True
 
+def test_replace_environment_keep_events(generate_i, monkeypatch):
+    """
+    Test that replace_environment with reset_events=False swaps the environment without resetting events.
+    """
+    airspace, routes = generate_i
+    em = Tactical(1, airspace=airspace, routes=routes).create_env_manager()
+    em.initialise_env_with_event_handler()
+
+    called = {"reset": 0}
+
+    def _dummy_reset_events():
+        called["reset"] += 1
+
+    monkeypatch.setattr(em.event_handler, "reset_events", _dummy_reset_events)
+
+    new_env = em.typeof_environment()(time=123.0, airspace=airspace, aircraft={}, coordinations=[])
+    em.replace_environment(new_env, reset_events=False)
+
+    assert em.environment is new_env
+    assert called["reset"] == 0
+    assert em.predictor.fixes is new_env.airspace.fixes
+    assert em.reload_environment is True
+
+
+def test_environment_from_data(generate_i):
+    """
+    Test that environment_from_data rebuilds an environment from Environment.data() output, using the
+    manager's aircraft class, carrying over omitted keys and leaving the current environment untouched.
+    """
+    airspace, routes = generate_i
+    em = Tactical(1, airspace=airspace, routes=routes).create_env_manager()
+    em.initialise_env_with_event_handler()
+
+    callsign = next(iter(em.environment.aircraft))
+    original_lat = em.environment.aircraft[callsign].lat
+
+    data = em.environment.data()
+    data["aircraft"][callsign]["lat"] = original_lat + 0.1
+    # keys the manager should fill in from the current environment
+    del data["airspace"]
+    del data["start_time"]
+
+    new_env = em.environment_from_data(data)
+
+    assert new_env is not em.environment
+    assert new_env.time == em.environment.time
+    assert new_env.start_time == em.environment.start_time
+    assert set(new_env.airspace.fixes.places) == set(em.environment.airspace.fixes.places)
+    assert isinstance(new_env.aircraft[callsign], em.event_handler.typeof_aircraft)
+    assert new_env.aircraft[callsign].lat == pytest.approx(original_lat + 0.1)
+    # the live environment is not modified
+    assert em.environment.aircraft[callsign].lat == original_lat
+
+
 def test_save_logs(generate_i):
     """
     Test that write_logs_to_buffer returns a BytesIO containing a tar archive (by default).

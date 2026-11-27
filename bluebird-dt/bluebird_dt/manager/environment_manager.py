@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 import typing
 from datetime import timezone
 from typing import Generic, NamedTuple
@@ -820,10 +821,55 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
 
         self.event_handler.reset_events()
 
+    def environment_from_data(
+        self, data: dict[str, typing.Any]
+    ) -> Environment[TAircraft, TWindField, TForecastWindField]:
+        """
+        Build an Environment from its serialised form, using the Aircraft and WindField classes this manager
+        is running with.
+
+        Intended for loading the output of `Environment.data()` from another digital twin instance. Any of
+        `airspace`, `start_time`, `wind_field` and `forecast_wind_field` that are missing from `data` are taken
+        from the current environment, so a payload with only `time` and `aircraft` is sufficient.
+
+        Parameters
+        ----------
+        data: dict
+            Serialised environment, as produced by `Environment.data()`.
+
+        Returns
+        -------
+        Environment
+            A new environment. The current environment is not modified.
+        """
+        current = self.environment
+
+        data = dict(data)
+        data.setdefault("airspace", current.airspace.data())
+        if data.get("start_time") is None:
+            data["start_time"] = current.start_time
+        if "wind_field" not in data and current.wind_field is not None:
+            data["wind_field"] = current.wind_field.data()
+        if "forecast_wind_field" not in data and current.forecast_wind_field is not None:
+            data["forecast_wind_field"] = current.forecast_wind_field.data()
+
+        typeof_windfield = WindField if current.wind_field is None else type(current.wind_field)
+        typeof_forecastwindfield = (
+            WindField if current.forecast_wind_field is None else type(current.forecast_wind_field)
+        )
+
+        return self.typeof_environment().from_json(
+            json.dumps(data),
+            typeof_aircraft=self.event_handler.typeof_aircraft,
+            typeof_windfield=typeof_windfield,
+            typeof_forecastwindfield=typeof_forecastwindfield,
+        )
+
     def replace_environment(
         self,
         new_environment: Environment[TAircraft, TWindField, TForecastWindField],
         airspace_settings: AirspaceSettingsType | None = None,
+        reset_events: bool = True,
     ):
         """
         Replace the whole simulation environment.
@@ -834,11 +880,16 @@ class EnvironmentManager(Generic[TAircraft, TWindField, TForecastWindField]):
             The simulation environment to load in place of the current one.
         airspace_settings: AirspaceSettingsType
             Settings such as FL and lon/lat penumbra for the new airspace.
+        reset_events: bool, default True
+            If True, discard the event handler's scheduled events (radar, flight, clearances, ...) so that only
+            simulated aircraft move afterwards. Set False to keep them, e.g. when syncing the state from another
+            digital twin that should carry on replaying.
         """
 
         self.environment = new_environment
-        # remove existing events from event_handler
-        self.event_handler.reset_events()
+
+        if reset_events:
+            self.event_handler.reset_events()
 
         if airspace_settings is None:
             penumbra_fl = default_airspace_settings["penumbra_fl"]

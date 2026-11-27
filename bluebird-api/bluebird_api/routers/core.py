@@ -5,7 +5,8 @@ import pandas as pd
 from bluebird_dt.core import WindField
 from bluebird_dt.events.event_logger import SimStartStop
 from bluebird_dt.simulator.common import list_sim_scenario_categories, list_sim_scenarios
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from pydantic import ValidationError
 
 from bluebird_api.models import ActionInput
 from bluebird_api.runner import RunnerDep, RunnerStoreDep
@@ -107,6 +108,41 @@ async def environment(  # noqa: ANN201
         no_airspace=no_airspace,
         last_n_observations=last_n_observations,
     )
+
+
+@core_router.post("/environment", tags=["Submit"])
+async def replace_environment(
+    runner: RunnerDep, environment_data: dict[str, typing.Any], keep_events: bool = False
+) -> bool:
+    """
+    Replace the current environment with the supplied one, e.g. to sync this digital twin to the state of another.
+
+    The body is the JSON returned by `GET /environment`, optionally extended with `wind_field` and
+    `forecast_wind_field` from the corresponding GET routes. Any of `airspace`, `start_time`, `wind_field` and
+    `forecast_wind_field` that are omitted are carried over from the current environment.
+
+    By default the event handler's scheduled events (radar, flight, clearances, ...) are discarded, so after the
+    call only simulated aircraft move. Pass `keep_events=true` to retain them, e.g. when this twin should carry on
+    replaying from the supplied state.
+    """
+    manager = runner.sim.manager
+
+    try:
+        new_environment = manager.environment_from_data(environment_data)
+    except (KeyError, TypeError, ValueError, ValidationError) as error:
+        raise HTTPException(
+            status_code=422, detail=f"Could not build an environment from the supplied data: {error}"
+        ) from error
+
+    # a sync does not change the airspace, so keep the current penumbra settings
+    airspace_settings = {"penumbra_fl": manager.penumbra_fl, "penumbra_lat": manager.penumbra_lat}
+    manager.replace_environment(new_environment, airspace_settings=airspace_settings, reset_events=not keep_events)
+
+    # these caches are keyed on sim time, which the new environment may share with the old one
+    runner.sim.environment.cache_clear()
+    runner.sim.dynamic_data.cache_clear()
+
+    return True
 
 
 @core_router.get("/wind_field", tags=["State"])
