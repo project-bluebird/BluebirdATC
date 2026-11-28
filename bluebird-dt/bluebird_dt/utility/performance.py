@@ -56,6 +56,38 @@ def get_performance_table(
 
 
 @functools.cache
+def get_performance_table_with_maxima(
+    path: str | None,
+) -> dict[str, dict[str, list[float | None] | float | None]]:
+    """
+    get_performance_table plus, for each CAS and Mach schedule column (e.g. "cas_cr"), its largest value under the
+    key "max_<column>" (e.g. "max_cas_cr"), or None if the column has no values.
+
+    The linear predictor's Mach/CAS transition check needs these maxima at every integration step, so they are
+    computed once here, beside the cached loader.
+
+    Parameters
+    ----------
+    path: str
+        Path to speed table data
+
+    Return
+    ------
+    Dict:
+        Dictionary containing speed profile data, with the added "max_<column>" keys
+    """
+    tables = {}
+    for aircraft_type, table in get_performance_table(path=path).items():
+        with_maxima = dict(table)
+        for key, value in table.items():
+            if key.startswith(("cas_", "mach_")) and isinstance(value, list):
+                values = [speed for speed in value if speed is not None]
+                with_maxima[f"max_{key}"] = max(values) if values else None
+        tables[aircraft_type] = with_maxima
+    return tables
+
+
+@functools.cache
 def get_performance_uncertainty_table(
     path: str | None,
 ) -> dict[str, dict[str, dict[str, float]]]:

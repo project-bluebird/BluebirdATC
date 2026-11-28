@@ -27,7 +27,7 @@ from bluebird_dt.utility.paths import (
 from bluebird_dt.utility.performance import (
     apply_lateral_speed_uncertainty,
     cas_and_mach_from_table,
-    get_performance_table,
+    get_performance_table_with_maxima,
     get_performance_uncertainty_table,
     lateral_speed_keys,
     lateral_speed_offset,
@@ -96,7 +96,7 @@ class LinearPredictor(Predictor):
         self.use_cas_as_tas = use_cas_as_tas
 
         # Load performance data
-        self.performance_data = get_performance_table(path=performance_profile_data_path)
+        self.performance_data = get_performance_table_with_maxima(path=performance_profile_data_path)
         self.uncertainty_data = get_performance_uncertainty_table(path=performance_uncertainty_data_path)
 
         # Slow descent rate for use with descend_now,level_by_fix actions
@@ -256,7 +256,7 @@ class LinearPredictor(Predictor):
         aircraft.speed_tas = cas
 
     @functools.lru_cache
-    def _get_performance_profile(self, key: str | None) -> dict[str, list[float | None] | float]:
+    def _get_performance_profile(self, key: str | None) -> dict[str, list[float | None] | float | None]:
         if not self.performance_data:
             raise ValueError("Missing performance data in Linear Predictor")
         # key will be a weight category in the simple case or an aircraft type if full
@@ -373,6 +373,7 @@ class LinearPredictor(Predictor):
             Boolean indicating whether Aircraft is flying below transition (True) or above transition (False)
         """
         ac_lookup_key = self._get_aircraft_lookup_key(aircraft.aircraft_type)
+        performance_table = self._get_performance_profile(ac_lookup_key)
         speed_uncertainty = self._get_performance_uncertainty(ac_lookup_key)
 
         # Use the speed schedule for the aircraft's current flight phase, so the transition altitude is consistent
@@ -381,7 +382,7 @@ class LinearPredictor(Predictor):
         ranks = aircraft.percentile_rank_dict
 
         if aircraft.selected_instructions.cas is None:
-            cas_trans = self._max_schedule_speed(ac_lookup_key, cas_key)
+            cas_trans = performance_table[f"max_{cas_key}"]  # see get_performance_table_with_maxima
             if cas_trans is None:
                 return False  # no CAS schedule — aircraft always uses Mach
             cas_trans += lateral_speed_offset(speed_uncertainty, cas_key, ranks.get(cas_key))
@@ -389,7 +390,7 @@ class LinearPredictor(Predictor):
             cas_trans = aircraft.selected_instructions.cas
 
         if aircraft.selected_instructions.mach is None:
-            mach_trans = self._max_schedule_speed(ac_lookup_key, mach_key)
+            mach_trans = performance_table.get(f"max_{mach_key}")
             if mach_trans is None:
                 return True  # no Mach schedule — aircraft always uses CAS
             mach_trans += lateral_speed_offset(speed_uncertainty, mach_key, ranks.get(mach_key))
@@ -400,12 +401,6 @@ class LinearPredictor(Predictor):
         current_altitude_Hp = aircraft.fl * FL_TO_M
         transition_delta = current_altitude_Hp - mach_cas_transition_altitude
         return transition_delta < 0
-
-    @functools.lru_cache
-    def _max_schedule_speed(self, ac_lookup_key: str | None, speed_key: str) -> float | None:
-        """Largest non-None value of a speed schedule (e.g. "cas_cr"), or None if it has none."""
-        values = [value for value in (self._get_performance_profile(ac_lookup_key).get(speed_key) or []) if value is not None]
-        return max(values) if values else None
 
     def speed_from_tables(self, aircraft: Aircraft) -> tuple[float, float | None]:
         """
