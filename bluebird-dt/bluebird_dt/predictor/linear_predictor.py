@@ -27,12 +27,18 @@ from bluebird_dt.utility.paths import (
 from bluebird_dt.utility.performance import (
     apply_lateral_speed_uncertainty,
     cas_and_mach_from_table,
-    get_performance_table,
+    get_performance_table_with_maxima,
     get_performance_uncertainty_table,
     lateral_speed_keys,
     lateral_speed_offset,
     rocd_from_table,
 )
+
+
+@functools.lru_cache(maxsize=1024)
+def _mach_cas_transition_altitude(mach: float, cas_mps: float, delta_T: float) -> float:
+    """`mach_cas_trans_altitude`, cached: its inputs take very few distinct values."""
+    return mach_cas_trans_altitude(mach, cas_mps, delta_T=delta_T)
 
 
 class LinearPredictor(Predictor):
@@ -90,7 +96,7 @@ class LinearPredictor(Predictor):
         self.use_cas_as_tas = use_cas_as_tas
 
         # Load performance data
-        self.performance_data = get_performance_table(path=performance_profile_data_path)
+        self.performance_data = get_performance_table_with_maxima(path=performance_profile_data_path)
         self.uncertainty_data = get_performance_uncertainty_table(path=performance_uncertainty_data_path)
 
         # Slow descent rate for use with descend_now,level_by_fix actions
@@ -250,7 +256,7 @@ class LinearPredictor(Predictor):
         aircraft.speed_tas = cas
 
     @functools.lru_cache
-    def _get_performance_profile(self, key: str | None) -> dict[str, list[float | None] | float]:
+    def _get_performance_profile(self, key: str | None) -> dict[str, list[float | None] | float | None]:
         if not self.performance_data:
             raise ValueError("Missing performance data in Linear Predictor")
         # key will be a weight category in the simple case or an aircraft type if full
@@ -376,24 +382,22 @@ class LinearPredictor(Predictor):
         ranks = aircraft.percentile_rank_dict
 
         if aircraft.selected_instructions.cas is None:
-            cas_values = [value for value in performance_table[cas_key] if value is not None]
-            if not cas_values:
+            cas_trans = performance_table[f"max_{cas_key}"]  # see get_performance_table_with_maxima
+            if cas_trans is None:
                 return False  # no CAS schedule — aircraft always uses Mach
-            cas_trans = max(cas_values)
             cas_trans += lateral_speed_offset(speed_uncertainty, cas_key, ranks.get(cas_key))
         else:
             cas_trans = aircraft.selected_instructions.cas
 
         if aircraft.selected_instructions.mach is None:
-            mach_values = [value for value in (performance_table.get(mach_key) or []) if value is not None]
-            if not mach_values:
+            mach_trans = performance_table.get(f"max_{mach_key}")
+            if mach_trans is None:
                 return True  # no Mach schedule — aircraft always uses CAS
-            mach_trans = max(mach_values)
             mach_trans += lateral_speed_offset(speed_uncertainty, mach_key, ranks.get(mach_key))
         else:
             mach_trans = aircraft.selected_instructions.mach
 
-        mach_cas_transition_altitude = mach_cas_trans_altitude(mach_trans, cas_trans * KT_TO_MPS, delta_T=self.delta_T)
+        mach_cas_transition_altitude = _mach_cas_transition_altitude(mach_trans, cas_trans * KT_TO_MPS, self.delta_T)
         current_altitude_Hp = aircraft.fl * FL_TO_M
         transition_delta = current_altitude_Hp - mach_cas_transition_altitude
         return transition_delta < 0
