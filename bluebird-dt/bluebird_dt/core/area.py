@@ -37,6 +37,11 @@ class Area(Comparison):
 
         self.boundary = Polygon([[location.lon, location.lat] for location in boundary])
 
+        # (boundary, epsilon, boundary buffered by epsilon) from the last `contains` call: buffering is the costly
+        # part of `contains` and gives the same polygon every time, so it is kept until the boundary (e.g. `Airspace`
+        # reassigns `area.boundary` when bandboxing sectors) or epsilon changes
+        self._buffered_boundary: tuple[Polygon, float, Polygon] | None = None
+
         # Delete the last vertex if it's the same as the first
         eps = 1e-3
         if math.fabs(boundary[0].lat - boundary[-1].lat) < eps and math.fabs(boundary[0].lon - boundary[-1].lon) < eps:
@@ -146,7 +151,11 @@ class Area(Comparison):
         bool
         """
 
-        return self.boundary.buffer(epsilon).intersects(Point(position.lon, position.lat))
+        cached = self._buffered_boundary
+        if cached is None or cached[0] is not self.boundary or cached[1] != epsilon:
+            cached = (self.boundary, epsilon, self.boundary.buffer(epsilon))
+            self._buffered_boundary = cached
+        return cached[2].intersects(Point(position.lon, position.lat))
 
     def on_boundary(self, position: Pos2D | Pos3D | Pos4D, epsilon: float = 0.08) -> bool:
         """

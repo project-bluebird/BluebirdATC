@@ -317,10 +317,13 @@ class Predictor(ABC):
 
         ground_speed, ground_track_angle = ground_speed_from_tas(horizontal_speed_kts, aircraft.heading, wind_vector)
 
+        # The aircraft's position only changes at the end of this method, so build it once.
+        pos = aircraft.pos2d()
+
         # If route-following, check if we need to increment the next_fix_index.
         if aircraft.on_route:
             target_pos = self.get_target_pos(aircraft)
-            distance_to_fix = aircraft.pos2d().distance(target_pos)
+            distance_to_fix = pos.distance(target_pos)
 
             last_lateral_action_kind = (
                 None
@@ -330,7 +333,7 @@ class Predictor(ABC):
 
             # if a route direct has been issued (which sets the turn radius to None, then recalculate the turn radius)
             if last_lateral_action_kind == "route_direct_to" and aircraft.predictor_params.get("turn_radius") is None:
-                bearing_to_fix = aircraft.pos2d().bearing_to(target_pos)
+                bearing_to_fix = pos.bearing_to(target_pos)
                 turn_angle = aircraft.heading - bearing_to_fix
                 _, turn_radius = self.distance_and_turn_radius_from_angle(aircraft, turn_angle, ground_speed)
                 aircraft.predictor_params["turn_radius"] = turn_radius
@@ -373,7 +376,7 @@ class Predictor(ABC):
                 None if wind_field is None else wind_field.get_wind_vector(aircraft.fl, aircraft.lat, aircraft.lon)
             )
             aircraft.heading_changing_to = heading_from_ground_track(
-                aircraft.pos2d().bearing_to(target_pos),
+                pos.bearing_to(target_pos),
                 horizontal_speed_kts,
                 wind_vector,
             )
@@ -446,15 +449,15 @@ class Predictor(ABC):
         midpoint_heading = heading_from_ground_track(mid_point_bearing, horizontal_speed_kts, wind_vector)
         ground_speed, _ = ground_speed_from_tas(horizontal_speed_kts, midpoint_heading, wind_vector)
 
-        pos = aircraft.pos2d()
-
         # Update position of the aircraft using the midpoint bearing. This gives better
         # accuracy when aircraft is turning than using a simple forward extrapolation.
+        # Same as `pos.forward(delta_s, mid_point_bearing)`, without building a Pos2D
+        # for the result (float() matches the conversion Pos2D would apply).
         delta_s = ground_speed * (time_evolve / 3600.0)
-        new_pos = pos.forward(delta_s, mid_point_bearing)
+        lon, lat = Pos2D.geo_helper.forward(pos.lon, pos.lat, heading=mid_point_bearing, distance=delta_s)
 
-        aircraft.lat = new_pos.lat
-        aircraft.lon = new_pos.lon
+        aircraft.lat = float(lat)
+        aircraft.lon = float(lon)
 
     def update_position_without_turn_model(self, aircraft: Aircraft, time_evolve: float, wind_field: WindField | None):
         """
